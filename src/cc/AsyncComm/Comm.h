@@ -31,8 +31,7 @@
 #include "DispatchHandler.h"
 #include "HandlerMap.h"
 
-
-namespace Hypertable {
+namespace Hypertable {	
 
   /**
    * Provides communication (message passing) services to an application.
@@ -42,6 +41,15 @@ namespace Hypertable {
    */
   class Comm : public ReferenceCount {
   public:
+
+#ifdef _WIN32
+
+	static LPFN_ACCEPTEX pfnAcceptEx;
+	static LPFN_CONNECTEX pfnConnectEx;
+	static LPFN_GETACCEPTEXSOCKADDRS pfnGetAcceptExSockaddrs;
+
+#endif
+
     static Comm *instance() {
       ScopedLock lock(ms_mutex);
 

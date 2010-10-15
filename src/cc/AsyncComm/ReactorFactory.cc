@@ -40,8 +40,12 @@ std::vector<ReactorPtr> ReactorFactory::ms_reactors;
 boost::thread_group ReactorFactory::ms_threads;
 Mutex        ReactorFactory::ms_mutex;
 atomic_t     ReactorFactory::ms_next_reactor = ATOMIC_INIT(0);
+#ifndef _WIN32
 bool         ReactorFactory::ms_epollet = true;
 bool         ReactorFactory::use_poll = false;
+#else
+HANDLE		 ReactorFactory::hIOCP = 0;
+#endif
 bool         ReactorFactory::proxy_master = false;
 
 /**
@@ -53,7 +57,27 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
   ReactorPtr reactor_ptr;
   ReactorRunner rrunner;
   ReactorRunner::handler_map = new HandlerMap();
+
+#ifdef _WIN32
+
+  WSADATA wsaData;
+  int err = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (err != 0) {
+    HT_ERRORF("WSAStartup failed with error: %s", winapi_strerror(err));
+    return;
+  }
+
+  hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, reactor_count);
+  if(hIOCP == 0) {
+    HT_ERRORF( "CreateIoCompletionPort failed: %s", winapi_strerror(GetLastError()));
+    return;
+  }
+
+#else
+
   signal(SIGPIPE, SIG_IGN);
+
+#endif
   assert(reactor_count > 0);
 
 #if defined(__linux__)
@@ -66,10 +90,10 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
   if (System::os_info().version_major < 2 ||
       System::os_info().version_minor < 5)
     use_poll = true;
-#endif
-
+#elif !defined(_WIN32)
   if (Config::properties->get_bool("Comm.UsePoll") == true)
     use_poll = true;
+#endif
 
   for (uint16_t i=0; i<reactor_count; i++) {
     reactor_ptr = new Reactor();
@@ -86,4 +110,11 @@ void ReactorFactory::destroy() {
   ms_threads.join_all();
   ms_reactors.clear();
   ReactorRunner::handler_map = 0;
+
+#ifdef _WIN32
+
+  if( WSACleanup() != 0 )
+    HT_ERRORF( "WSACleanup: %s", winapi_strerror(WSAGetLastError()));
+
+#endif
 }

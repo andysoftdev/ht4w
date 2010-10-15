@@ -59,6 +59,8 @@ namespace Hypertable {
       return (flags & MEMORY_PURGE_CELLSTORE) == MEMORY_PURGE_CELLSTORE;
     }
 
+#ifndef _WIN32
+
     class Hash {
     public:
       size_t operator () (const void *obj) const {
@@ -72,8 +74,27 @@ namespace Hypertable {
       }
     };
 
-    
-    class Map : public hash_map<const void *, int, Hash, Equal> {
+class Map : public hash_map<const void *, int, Hash, Equal> {
+
+#else
+
+    class HashCompare {
+    public:
+      enum {   // parameters for hash table
+        bucket_size = 4,    // 0 < bucket_size
+        min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
+      size_t operator () (const void *obj) const {
+        return (size_t)obj;
+      }
+      bool operator()(const void *obj1, const void *obj2) const {
+        return obj1 < obj2;
+      }
+    };
+
+    class Map : public hash_map<const void *, int, HashCompare> {
+
+#endif
+
     public:
       int flags(const void *key) {
 	iterator iter = this->find(key);

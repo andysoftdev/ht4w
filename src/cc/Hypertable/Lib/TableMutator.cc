@@ -42,7 +42,7 @@ void TableMutator::handle_exceptions() {
   try {
     throw;
   }
-  catch (std::bad_alloc &e) {
+  catch (std::bad_alloc &) {
     m_last_error = Error::BAD_MEMORY_ALLOCATION;
     HT_ERROR("caught bad_alloc here");
   }
@@ -84,7 +84,7 @@ void
 TableMutator::set(const KeySpec &key, const void *value, uint32_t value_len) {
   Timer timer(m_timeout_ms);
   bool unknown_cf;
-  bool ignore_unknown_cfs = (m_flags & FLAG_IGNORE_UNKNOWN_CFS) ;
+  bool ignore_unknown_cfs = (m_flags & FLAG_IGNORE_UNKNOWN_CFS) > 0;
 
   try {
     m_last_op = SET;
@@ -110,7 +110,7 @@ void
 TableMutator::set_cells(Cells::const_iterator it, Cells::const_iterator end) {
   Timer timer(m_timeout_ms);
   bool unknown_cf;
-  bool ignore_unknown_cfs = (m_flags & FLAG_IGNORE_UNKNOWN_CFS) ;
+  bool ignore_unknown_cfs = (m_flags & FLAG_IGNORE_UNKNOWN_CFS) > 0;
 
   try {
     m_last_op = SET_CELLS;
@@ -155,7 +155,7 @@ void TableMutator::set_delete(const KeySpec &key) {
   Timer timer(m_timeout_ms);
   Key full_key;
   bool unknown_cf;
-  bool ignore_unknown_cfs = (m_flags & FLAG_IGNORE_UNKNOWN_CFS) ;
+  bool ignore_unknown_cfs = (m_flags & FLAG_IGNORE_UNKNOWN_CFS) > 0;
 
   try {
     m_last_op = SET_DELETE;
@@ -186,7 +186,7 @@ void
 TableMutator::to_full_key(const void *row, const char *column_family,
     const void *column_qualifier, int64_t timestamp, int64_t revision,
     uint8_t flag, Key &full_key, bool &unknown_cf) {
-  bool ignore_unknown_cfs = (m_flags & FLAG_IGNORE_UNKNOWN_CFS);
+  bool ignore_unknown_cfs = (m_flags & FLAG_IGNORE_UNKNOWN_CFS) > 0;
 
   unknown_cf = false;
 
@@ -404,10 +404,10 @@ void TableMutator::wait_for_previous_buffer(Timer &timer) {
     else
       HT_THROW2_(e.code(), e);
   }
-  catch (std::bad_alloc &e) {
+  catch (std::bad_alloc &) {
     HT_THROW(Error::BAD_MEMORY_ALLOCATION, "waiting for previous buffer");
   }
-  catch (std::exception &e) {
+  catch (std::exception &) {
     HT_THROW(Error::EXTERNAL, "caught std::exception: waiting for previous buffer ");
   }
   catch (...) {

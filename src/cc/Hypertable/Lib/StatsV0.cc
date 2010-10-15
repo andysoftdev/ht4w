@@ -22,9 +22,11 @@
 
 #include "Common/Compat.h"
 
+#ifndef _WIN32
 extern "C" {
 #include <rrd.h>
 }
+#endif
 
 #include "Common/Serialization.h"
 #include "Common/Error.h"
@@ -365,6 +367,8 @@ void RangeServerStatsV0::process_stats(const uint8_t **bufp, size_t *remainp,
 
 }
 
+#ifndef _WIN32
+
 void RangeServerStatsV0::dump_rrd(const String &file_prefix)
 {
   String filename = file_prefix + "_stats_v0.rrd";
@@ -486,6 +490,8 @@ void RangeServerStatsV0::dump_rrd(const String &file_prefix)
   delete [] argv;
   rrd_clear_error();
 }
+
+#endif
 
 void RangeServerStatsV0::get_hl_stats(RangeServerHLStats &hl_stats) {
   ScopedLock lock(mutex);

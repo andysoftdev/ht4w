@@ -508,7 +508,7 @@ BerkeleyDbFilesystem::get_xattr_i32(BDbTxn &txn, const String &fname,
 
   try {
     if ((ret = txn.m_handle_namespace_db->get(txn.m_db_txn, &key, &data, 0)) == 0) {
-      *valuep = strtoll((const char *)data.get_data(), 0, 0);
+      *valuep = (uint32_t)strtoll((const char *)data.get_data(), 0, 0);
       HT_DEBUG_ATTR(txn, fname, aname, key, *valuep);
       return true;
     }
@@ -661,7 +661,7 @@ BerkeleyDbFilesystem::incr_attr(BDbTxn &txn, const String &fname, const String &
       *valuep = strtoull(numbuf, 0, 0);
 
       // Sanity check value
-      if (*valuep == 0 && errno == EINVAL)
+	  if (*valuep == 0 && errno == EINVAL)
         HT_THROWF(HYPERSPACE_BAD_ATTRIBUTE,
                   "incr attr '%s' invalid: '%s', cannot convert to integer",
                   aname.c_str(), numbuf);

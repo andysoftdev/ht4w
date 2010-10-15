@@ -371,7 +371,7 @@ TableMutatorScatterBuffer::create_redo_buffer(Timer &timer) {
 
     }
   }
-  catch (Exception &e) {
+  catch (Exception &) {
     delete redo_buffer;
     throw;
   }

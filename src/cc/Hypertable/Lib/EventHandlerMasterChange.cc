@@ -20,6 +20,7 @@
  */
 
 #include "Common/Compat.h"
+
 extern "C" {
 #include <poll.h>
 }

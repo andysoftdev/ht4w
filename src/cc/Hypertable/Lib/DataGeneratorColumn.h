@@ -136,7 +136,7 @@ namespace Hypertable {
     String m_qualifier;
     boost::shared_array<char> m_render_buf;
     boost::shared_array<const char> m_source;
-    off_t m_source_len;
+    size_t m_source_len;
   };
 
 }

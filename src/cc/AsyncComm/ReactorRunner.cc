@@ -53,7 +53,9 @@ HandlerMapPtr Hypertable::ReactorRunner::handler_map;
 
 
 void ReactorRunner::operator()() {
+#ifndef _WIN32
   int n;
+#endif
   IOHandler *handler;
   std::set<IOHandler *> removed_handlers;
   PollTimeout timeout;
@@ -61,12 +63,16 @@ void ReactorRunner::operator()() {
   clock_t arrival_clocks = 0;
   time_t arrival_time = 0;
   bool got_clocks = false;
+#ifndef _WIN32
   std::vector<struct pollfd> pollfds;
+#endif
   std::vector<IOHandler *> handlers;
 
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
 
   uint32_t dispatch_delay = Config::properties->get_i32("Comm.DispatchDelay");
+
+#ifndef _WIN32
 
   if (ReactorFactory::use_poll) {
 
@@ -133,6 +139,8 @@ void ReactorRunner::operator()() {
 
     return;
   }
+
+#endif
 
 #if defined(__linux__)
   struct epoll_event events[256];
@@ -285,6 +293,84 @@ void ReactorRunner::operator()() {
   if (!shutdown)
     HT_ERRORF("kevent(%d) failed : %s", m_reactor_ptr->kqd, strerror(errno));
 
+
+#elif defined(_WIN32)
+
+  while (1) {
+    DWORD numberOfBytes;
+    ULONG_PTR completionKey;
+    OverlappedEx* pol;
+    //HT_DEBUGF("GetQueuedCompletionStatus waiting %d ms....", timeout.get_millis());
+    if(GetQueuedCompletionStatus(ReactorFactory::hIOCP,
+                                 &numberOfBytes,
+                                 &completionKey,
+                                 (LPOVERLAPPED*)&pol,
+                                 timeout.get_millis())) {
+      if (pol == 0) {
+        // interrupted by PostQueuedCompletionStatus()
+      }
+      else {
+        // IO completed with no error
+        pol->m_err = NOERROR;
+        pol->m_numberOfBytes = numberOfBytes;
+//        HT_DEBUGF("GQCS TRUE: %s", pol->to_str().c_str());
+      }
+    }
+    else {
+      DWORD err = GetLastError();
+      //if( err != ERROR_ABANDONED_WAIT_0
+      if( err == WAIT_TIMEOUT ) {
+        HT_ASSERT(pol==0);
+      }
+      else {
+        // IO error
+        HT_ASSERT(pol!=0);
+        pol->m_err = err;
+        pol->m_numberOfBytes = numberOfBytes;
+//        HT_DEBUGF("GQCS FALSE: %s", pol->to_str().c_str());
+      }
+    }
+
+    if (record_arrival_clocks)
+      got_clocks = false;
+    if (dispatch_delay)
+      did_delay = false;
+
+    // handlers removed by shutdown call (program exit or error in send/recv/...)
+    m_reactor_ptr->get_removed_handlers(removed_handlers);
+
+    if(pol) { // IO completed, not a timeout return
+      HT_ASSERT( pol->m_handler == (IOHandler*)completionKey );
+      handler = (IOHandler*)completionKey;
+      if (!handler->isclosed() && removed_handlers.count(handler) == 0) {
+        // dispatch delay for testing
+        if (dispatch_delay && !did_delay &&
+          (pol->m_type == OverlappedEx::RECV ||
+           pol->m_type == OverlappedEx::RECVFROM)) {
+          SLEEP( (int)dispatch_delay);
+          did_delay = true;
+        }
+        if (record_arrival_clocks && !got_clocks &&
+          (pol->m_type == OverlappedEx::RECV ||
+           pol->m_type == OverlappedEx::RECVFROM)) {
+          arrival_clocks = std::clock();
+          got_clocks = true;
+        }
+        if (handler && handler->handle_event(pol, arrival_clocks)) {
+          handler_map->decomission_handler(handler->get_address());
+          removed_handlers.insert(handler);
+        }
+      }
+      delete pol; // also deletes commbuf
+    }
+    if (!removed_handlers.empty())
+      cleanup_and_remove_handlers( removed_handlers);
+    m_reactor_ptr->handle_timeouts(timeout);
+
+    if (shutdown)
+      break;
+  }
+
 #else
   ImplementMe;
 #endif
@@ -297,6 +383,8 @@ ReactorRunner::cleanup_and_remove_handlers(std::set<IOHandler *> &handlers) {
   foreach(IOHandler *handler, handlers) {
 
     HT_ASSERT(handler);
+
+#ifndef _WIN32
 
     if (ReactorFactory::use_poll)
       m_reactor_ptr->remove_poll_interest(handler->get_sd());
@@ -323,6 +411,12 @@ ReactorRunner::cleanup_and_remove_handlers(std::set<IOHandler *> &handlers) {
 #endif
     }
     close(handler->get_sd());
+
+#else
+
+    handler->close();
+
+#endif
     m_reactor_ptr->cancel_requests(handler);
     handler_map->purge_handler(handler);
   }

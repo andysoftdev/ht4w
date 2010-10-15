@@ -650,7 +650,7 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
       {
         String metadata_schema_file = System::install_dir
                                       + "/conf/METADATA.xml";
-        off_t schemalen;
+        size_t schemalen;
         const char *schemastr =
           FileUtils::file_to_buffer(metadata_schema_file.c_str(), &schemalen);
 
@@ -1647,8 +1647,9 @@ Master::get_statistics(bool snapshot) {
         // just get stats for changed ranges next time
         m_server_stats_state_map[proxy_addr] = false;
         ++responses_it;
-
+#ifndef _WIN32
         stats_it->second->dump_rrd(ms_monitoring_dir + stats_it->first);
+#endif
       }
 
       table_stats->timestamp = Hypertable::get_ts64();

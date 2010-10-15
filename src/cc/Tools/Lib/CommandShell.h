@@ -41,7 +41,11 @@ namespace Hypertable {
 
     static void add_options(PropertiesDesc &);
 
+#ifndef _WIN32
+
     static String ms_history_file;
+
+#endif
 
   private:
     char *rl_gets ();

@@ -27,6 +27,8 @@
 
 namespace Hypertable {
 
+#ifndef _WIN32
+
 class SockAddrHash {
  public:
   size_t operator () (const InetAddr &addr) const {
@@ -44,6 +46,29 @@ struct SockAddrEqual {
 template<typename TypeT, typename addr=InetAddr>
 class SockAddrMap : public hash_map<addr, TypeT, SockAddrHash, SockAddrEqual> {
 };
+
+#else
+
+class SockAddrHashCompare {
+ public:
+   enum {   // parameters for hash table
+     bucket_size = 4,    // 0 < bucket_size
+     min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
+  size_t operator () (const InetAddr &addr) const {
+    return (size_t)(addr.sin_family ^ addr.sin_addr.s_addr ^ addr.sin_port);
+  }
+  // test if addr1 ordered before addr2
+  bool operator()(const InetAddr &addr1, const InetAddr &addr2) const {
+    return addr1 < addr2;
+  }
+};
+
+template<typename TypeT, typename addr=InetAddr>
+class SockAddrMap : public hash_map<addr, TypeT, SockAddrHashCompare> {
+};
+
+#endif
+
 
 } // namespace Hypertable
 

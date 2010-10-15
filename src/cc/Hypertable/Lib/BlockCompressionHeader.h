@@ -30,7 +30,11 @@ namespace Hypertable {
   class BlockCompressionHeader {
   public:
 
+#ifdef _WIN32
+	  enum { LENGTH = 26 };
+#else
     static const size_t LENGTH = 26;
+#endif
 
     BlockCompressionHeader() : m_data_length(0), m_data_zlength(0),
         m_data_checksum(0), m_compression_type((uint16_t)-1) { }

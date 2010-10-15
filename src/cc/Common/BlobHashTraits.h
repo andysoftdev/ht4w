@@ -40,6 +40,8 @@ template <typename HashFunT = MurmurHash2>
 struct BlobHashTraits {
   typedef CharArena key_allocator;
 
+#ifndef _WIN32
+
   struct hasher {
     HashFunT hash_fun;
 
@@ -56,6 +58,28 @@ struct BlobHashTraits {
       return memcmp(x.start, y.start, x.size) == 0;
     }
   };
+
+#else
+
+  struct hash_compare {
+    enum {   // parameters for hash table
+        bucket_size = 4,    // 0 < bucket_size
+        min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
+    HashFunT hash_fun;
+    size_t operator()(const Blob &b) const {
+      return hash_fun(b.start, b.size);
+    }
+    bool operator()(const Blob &x, const Blob &y) const {
+      if (x.size < y.size)
+        return false;
+      if (x.size > y.size)
+        return true;
+      return memcmp(x.start, y.start, x.size) < 0;
+    }
+  };
+
+#endif
+
 };
 
 } // namespace Hypertable

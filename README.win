@@ -1,0 +1,77 @@
+how-to-build hypertable for Windows
+-----------------------------------
+
+building hypertable from source for Windows requires Microsoft Visual Studio 2010
+
+1. browse or getting the source
+
+   1.1 browse the source at http://github.com/andysoftdev/hypertable
+
+   1.2 get the source from the repository, create a projects folder (the path must not
+       contain any spaces) and use
+
+       git clone git://github.com/andysoftdev/hypertable.git
+
+
+2. download/install boost
+
+   2.1 download latest boost version from http://www.boost.org/users/download/
+       or http://sourceforge.net/projects/boost/files/boost/
+
+   2.2 unpack the package content (e.g. below boost_1_44_0/...) into ...\hypertable\deps\boost\
+
+   2.3 go to ...\hypertable\deps\boost\ and run build-win32.bat or build-x64.bat
+
+       be patient wiht the build...
+       after successful build the intermediate files located in .\build\deps\boost could be deleted
+
+
+3. download/install berkeley db
+
+   3.1 download latest berkeley db from http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html
+
+   3.2 unpack the package content (e.g. below db-5.1.19/...) into ...\hypertable\deps\db\
+
+   3.3 run ...\hypertable\deps\db\libdb.js
+
+   notice, libdb will be build within the regular hypertable solution
+
+
+4. build hypertable servers/clients and tools
+
+   4.1 open ...\hypertable\hypertable.sln Microsoft Visual Studio 2010 solution and build the required configuration(s)
+
+
+5. start/stop hypertable servers
+
+   5.1 using the command line
+
+       go to ...\hypertable\ and invoke start-all-servers [x86|x64|debug] [debug] [options]
+
+       e.g. start-all-servers               starts Win32|Release
+            start-all-servers x86           starts Win32|Release
+            start-all-servers debug         starts Win32|Debug
+
+            start-all-servers x64           starts x64|Release
+            start-all-servers x64 debug     starts x64|Debug
+
+       if the the config file hypertable.cfg and METADATA.xml does not exists in the
+       ...\hypertable\dist\[Win32|x64]\[Release|Debug]\conf folder than those file will be copied
+       from ...\hypertable\conf
+
+       the same for stop-all-servers [x86|x64|debug] [debug]
+
+       notice, each configuration will create it's own database for a shared database update conf\hypertbale.cfg file
+
+   5.2 install and run the hypertable servers as a windows service
+
+       [TODO will come later]
+
+6. start hypertable shell
+
+   go to ...\hypertable\dist\[Win32|x64]\[Release|Debug] and invoke hypertable.exe
+
+
+7. redistribute hypertable servers/clients/tools
+
+   download and install the Microsoft Visual C++ 2010 Redistributable Package [x86|x64] on the target machine

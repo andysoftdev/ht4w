@@ -47,9 +47,13 @@ namespace Hypertable {
       return;
     }
 
+#ifndef _WIN32
+
     // define default poll() interface for everyone since it is chosen at runtime
     virtual bool handle_event(struct pollfd *event, clock_t arrival_clocks,
 			      time_t arival_time=0);
+
+#endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
     virtual bool handle_event(struct kevent *event, clock_t arrival_clocks,
@@ -60,6 +64,10 @@ namespace Hypertable {
 #elif defined(__sun__)
     virtual bool handle_event(port_event_t *event, clock_t arrival_clocks,
 			      time_t arival_time=0);
+#elif defined(_WIN32)
+    bool async_accept();
+    virtual bool handle_event(OverlappedEx *event, clock_t arrival_clocks,
+                              time_t arival_time=0);
 #else
     ImplementMe;
 #endif

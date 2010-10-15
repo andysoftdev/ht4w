@@ -29,7 +29,17 @@
 #include <map>
 #include <ostream>
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4005 ) // 'off_t' : macro redefinition
+#pragma warning( disable : 4995 ) // 'strerror': name was marked as #pragma deprecated
+#endif
+
 #include <db_cxx.h>
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
 
 #include "Common/String.h"
 #include "Common/StringExt.h"
@@ -106,7 +116,7 @@ namespace Hyperspace {
           m_open = false;
         }
         catch(DbException &e) {
-          HT_ERROR_OUT << "Error closing Berkeley DB handles" << HT_END;
+			HT_ERROR_OUT << "Error closing Berkeley DB handles: " << e.what() << HT_END;
         }
       }
     }

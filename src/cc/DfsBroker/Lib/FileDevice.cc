@@ -19,10 +19,12 @@
  * 02110-1301, USA.
  */
 
+#include "Common/Compat.h"
 #include "FileDevice.h"
 #include "Common/StaticBuffer.h"
 #include "Common/Error.h"
 
+using namespace Hypertable;
 using namespace Hypertable::DfsBroker;
 using namespace std;
 using namespace boost::iostreams;

@@ -25,6 +25,7 @@ extern "C" {
 #include <sys/socket.h>
 #include <sys/types.h>
 }
+
 #include "Common/String.h"
 
 namespace Hypertable {
@@ -32,6 +33,20 @@ namespace Hypertable {
   class FileUtils {
 
   public:
+
+	#ifdef _WIN32
+
+	static ssize_t read(const String &fname, String &contents);
+    static ssize_t read(HANDLE fd, void *vptr, size_t n);
+	static ssize_t read(int fd, void *vptr, size_t n);
+    static ssize_t pread(HANDLE fd, void *vptr, size_t n, uint64_t offset);
+	static ssize_t pread(int fd, void *vptr, size_t n, uint64_t offset);
+    static ssize_t write(const String &fname, String &contents);
+    static ssize_t write(HANDLE fd, const void *vptr, size_t n);
+	static ssize_t write(int fd, const void *vptr, size_t n);
+	
+	#else
+
     static ssize_t read(const String &fname, String &contents);
     static ssize_t read(int fd, void *vptr, size_t n);
     static ssize_t pread(int fd, void *vptr, size_t n, off_t offset);
@@ -45,7 +60,10 @@ namespace Hypertable {
                             struct sockaddr *from, socklen_t *fromlen);
     static ssize_t recv(int fd, void *vptr, size_t n);
     static void set_flags(int fd, int flags);
-    static char *file_to_buffer(const String &fname, off_t *lenp);
+
+	#endif
+
+    static char *file_to_buffer(const String &fname, size_t *lenp);
     static bool mkdirs(const String &dirname);
     static bool exists(const String &fname);
     static bool unlink(const String &fname);

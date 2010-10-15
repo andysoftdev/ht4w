@@ -71,7 +71,11 @@ void CommandCopyToLocal::run() {
   try {
 
     if ((fp = fopen(m_args[src_arg+1].first.c_str(), "w+")) == 0)
-      HT_THROW(Error::EXTERNAL, strerror(errno));
+#ifdef _WIN32
+	  HT_THROW(Error::EXTERNAL, winapi_strerror(::GetLastError()));
+#else
+	  HT_THROW(Error::EXTERNAL, strerror(errno));
+#endif
 
     fd = m_client->open(m_args[src_arg].first);
 
@@ -88,7 +92,11 @@ void CommandCopyToLocal::run() {
                                                        &dst);
       if (amount > 0) {
         if (fwrite(dst, amount, 1, fp) != 1)
-          HT_THROW(Error::EXTERNAL, strerror(errno));
+#ifdef _WIN32
+	  	 HT_THROW(Error::EXTERNAL, winapi_strerror(::GetLastError()));
+#else
+         HT_THROW(Error::EXTERNAL, strerror(errno));
+#endif
       }
 
       if (amount < (uint32_t)BUFFER_SIZE) {

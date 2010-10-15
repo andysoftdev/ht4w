@@ -465,6 +465,11 @@ namespace Hypertable { namespace Serialization {
     encode_vstr(bufp, s.data(), s.length());
   }
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4244 ) //  conversion from 'uint64_t' to 'size_t', possible loss of data
+#endif
+
   /**
    * Decode a vstr (vint64, data, null)
    * Note, decoding a vstr longer than 4GiB on a 32-bit platform
@@ -510,6 +515,10 @@ namespace Hypertable { namespace Serialization {
     HT_DECODE_VSTR(*bufp, *remainp, buf, *lenp);
     return buf;
   }
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
 
 
   /**

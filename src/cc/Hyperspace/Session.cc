@@ -94,7 +94,7 @@ void Session::add_callback(SessionCallback *cb)
 bool Session::remove_callback(SessionCallback *cb)
 {
   ScopedLock lock(m_callback_mutex);
-  return m_callbacks.erase(cb->get_id());
+  return m_callbacks.erase(cb->get_id()) != 0;
 }
 
 uint64_t

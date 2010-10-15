@@ -181,6 +181,8 @@ namespace Hypertable {
     RangeSpec range;
   };
 
+#ifndef _WIN32
+
   class QualifiedRangeHash {
   public:
     size_t operator()(const QualifiedRangeSpec &spec) const {
@@ -198,6 +200,40 @@ namespace Hypertable {
         !strcmp(x.range.end_row, y.range.end_row);
     }
   };
+
+  #else
+
+  class QualifiedRangeHashCompare {
+  public:
+    enum { // parameters for hash table
+        bucket_size = 4,    // 0 < bucket_size
+        min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
+    size_t operator()(const QualifiedRangeSpec &spec) const {
+      return murmurhash2(spec.range.start_row, strlen(spec.range.start_row),
+                         murmurhash2(spec.range.end_row,
+                                     strlen(spec.range.end_row),
+                                     murmurhash2(&spec.table.id, 4, 0)));
+    }
+    bool
+    operator()(const QualifiedRangeSpec &x, const QualifiedRangeSpec &y) const {
+      if (x.table.id < y.table.id)
+        return true;
+      if (x.table.id > y.table.id)
+        return false;
+      int i = strcmp(x.range.start_row, y.range.start_row);
+      if(i < 0)
+        return true;
+      if(i > 0)
+        return false;
+      i = strcmp(x.range.end_row, y.range.end_row);
+      if(i < 0)
+        return true;
+      return false;
+    }
+  };
+
+#endif
+
 
 
   std::ostream &operator<<(std::ostream &os, const TableIdentifier &tid);

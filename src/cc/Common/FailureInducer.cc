@@ -19,7 +19,8 @@
  * 02110-1301, USA.
  */
 
-#include "Compat.h"
+#include "Common/Compat.h"
+
 #include "FailureInducer.h"
 #include "Error.h"
 #include "Logger.h"

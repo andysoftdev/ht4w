@@ -1,0 +1,538 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\bmz">
+      <UniqueIdentifier>{33d04587-9501-4061-a611-6185f15d2c10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lzo">
+      <UniqueIdentifier>{2d39d0f7-c015-40cc-bda9-e9352a106d4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\quicklz">
+      <UniqueIdentifier>{1315969e-1f65-411d-8235-e14c9cb365fd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ApacheLogParser.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionCodec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionCodecBmz.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionCodecLzo.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionCodecNone.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionCodecQuicklz.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionCodecZlib.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionHeader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionHeaderCommitLog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cell.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Client.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommitLog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommitLogBlockStream.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommitLogReader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CompressorFactory.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Config.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DataGenerator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EventHandlerMasterChange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FixedRandomStringGenerator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HqlCommandInterpreter.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HqlHelpText.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HqlInterpreter.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IntervalScanner.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Key.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KeySpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadDataEscape.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadDataSource.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadDataSourceFactory.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadDataSourceFileDfs.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadDataSourceFileLocal.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadDataSourceStdin.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LocationCache.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MasterClient.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MasterFileHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MasterMetaLog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MasterMetaLogEntryFactory.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MasterMetaLogReader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MasterProtocol.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogDfsBase.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogEntryBase.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogReader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogReaderDfsBase.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogVersion.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NameIdMapper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Namespace.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NamespaceCache.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeLocator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerClient.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerMetaLog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerMetaLogEntries.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerMetaLogEntryFactory.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerMetaLogReader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerProtocol.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeState.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RootFileHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScanBlock.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScanSpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Schema.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Stats.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StatsV0.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableCache.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableDumper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorDispatchHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorFlushHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorIntervalHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorScatterBuffer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorShared.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorSyncDispatchHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableScanner.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableSplit.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Types.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bmz\bmz.c">
+      <Filter>Source Files\bmz</Filter>
+    </ClCompile>
+    <ClCompile Include="lzo\minilzo.c">
+      <Filter>Source Files\lzo</Filter>
+    </ClCompile>
+    <ClCompile Include="quicklz\quicklz.cc">
+      <Filter>Source Files\quicklz</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\stdafx.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ApacheLogParser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockCompressionCodec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockCompressionCodecBmz.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockCompressionCodecLzo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockCompressionCodecNone.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockCompressionCodecQuicklz.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockCompressionCodecZlib.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockCompressionHeader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockCompressionHeaderCommitLog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cell.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cells.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Client.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommitLog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommitLogBase.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommitLogBlockStream.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommitLogReader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CompressorFactory.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataGenerator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataGeneratorColumn.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataGeneratorQualifier.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataGeneratorRowComponent.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataSource.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EventHandlerMasterChange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FixedRandomStringGenerator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HqlCommandInterpreter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HqlHelpText.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HqlInterpreter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HqlParser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IntervalScanner.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Key.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeySpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadDataEscape.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadDataFlags.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadDataSource.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadDataSourceFactory.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadDataSourceFileDfs.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadDataSourceFileLocal.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadDataSourceStdin.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LocationCache.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MasterClient.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MasterFileHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MasterMetaLog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MasterMetaLogEntryFactory.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MasterMetaLogReader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MasterProtocol.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogDfsBase.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogEntryBase.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogReader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogReaderDfsBase.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogVersion.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NameIdMapper.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Namespace.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NamespaceCache.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NamespaceListing.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeLocationInfo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeLocator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerClient.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerMetaLog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerMetaLogEntries.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerMetaLogEntryFactory.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerMetaLogReader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerProtocol.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RootFileHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScanBlock.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScanSpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Schema.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SerializedKey.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Stats.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StatsV0.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Table.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableCache.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableDumper.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorCompletionCounter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorDispatchHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorFlushHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorIntervalHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorScatterBuffer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorSendBuffer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorShared.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorSyncDispatchHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableScanner.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableSplit.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Timestamp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bmz\bmz.h">
+      <Filter>Source Files\bmz</Filter>
+    </ClInclude>
+    <ClInclude Include="bmz\bmz-internal.h">
+      <Filter>Source Files\bmz</Filter>
+    </ClInclude>
+    <ClInclude Include="lzo\lzoconf.h">
+      <Filter>Source Files\lzo</Filter>
+    </ClInclude>
+    <ClInclude Include="lzo\lzodefs.h">
+      <Filter>Source Files\lzo</Filter>
+    </ClInclude>
+    <ClInclude Include="lzo\minilzo.h">
+      <Filter>Source Files\lzo</Filter>
+    </ClInclude>
+    <ClInclude Include="quicklz\quicklz.h">
+      <Filter>Source Files\quicklz</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

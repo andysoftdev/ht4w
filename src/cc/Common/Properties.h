@@ -244,6 +244,19 @@ public:
     }
   }
 
+#ifdef _WIN32
+
+  template <>
+  int32_t get<int32_t>(const String &name) const {
+    try {  return m_map[name].value().type() == typeid(int32_t) ? m_map[name].template as<int32_t>() :  m_map[name].template as<long>(); }
+    catch (std::exception &e) {
+     HT_THROWF(Error::CONFIG_GET_ERROR, "getting value of '%s': %s",
+                name.c_str(), e.what());
+    }
+  }
+
+#endif
+
   /**
    * Get the value of option of type T. Returns supplied default value if
    * not found. Try use the first form in usual cases and supply default
@@ -269,6 +282,26 @@ public:
     }
   }
 
+ #ifdef _WIN32
+
+  template <>
+  int32_t get<int32_t>(const String &name, const int32_t &default_value) const {
+    try {
+      Map::const_iterator it = m_map.find(name);
+
+      if (it != m_map.end())
+        return (*it).second.value().type() == typeid(int32_t) ? (*it).second.template as<int32_t>() :  (*it).second.template as<long>();
+
+      return default_value;
+    }
+    catch (std::exception &e) {
+      HT_THROWF(Error::CONFIG_GET_ERROR, "getting value of '%s': %s",
+                name.c_str(), e.what());
+    }
+  }
+
+#endif
+
   /**
    * Get the underlying boost::any value of 'name'
    *
@@ -288,7 +321,7 @@ public:
     return m_map[name].defaulted();
   }
 
-  bool has(const String &name) const { return m_map.count(name); }
+  bool has(const String &name) const { return m_map.count(name) > 0; }
 
   HT_PROPERTIES_ABBR_ACCESSORS(const)
 

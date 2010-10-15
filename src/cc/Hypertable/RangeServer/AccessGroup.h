@@ -118,7 +118,7 @@ namespace Hypertable {
           timestamp_max = boost::any_cast<int64_t>(cs->get_trailer()->get("timestamp_max"));
           expirable_data = boost::any_cast<int64_t>(cs->get_trailer()->get("expirable_data"));
         }
-        catch (std::exception &e) {
+        catch (std::exception &) {
           timestamp_min = TIMESTAMP_MAX;
           timestamp_max = TIMESTAMP_MIN;
           expirable_data = 0;

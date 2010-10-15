@@ -1,0 +1,5 @@
+// stub for <ext/hash_set>
+
+#pragma once
+
+#include <hash_set>

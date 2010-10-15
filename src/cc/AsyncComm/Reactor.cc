@@ -51,13 +51,25 @@ extern "C" {
 using namespace Hypertable;
 using namespace std;
 
+#ifndef _WIN32
+
 const int Reactor::READ_READY   = 0x01;
 const int Reactor::WRITE_READY  = 0x02;
+
+#endif
 
 
 /**
  *
  */
+
+#ifdef _WIN32
+
+Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
+}
+
+#else
+
 Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
   struct sockaddr_in addr;
 
@@ -157,6 +169,8 @@ Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
   memset(&m_next_wakeup, 0, sizeof(m_next_wakeup));
 }
 
+#endif
+
 
 void Reactor::handle_timeouts(PollTimeout &next_timeout) {
   vector<ExpireTimer> expired_timers;
@@ -245,6 +259,20 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
 /**
  *
  */
+
+#ifdef _WIN32
+
+int Reactor::poll_loop_interrupt() {
+  m_interrupt_in_progress = true;
+  if(!PostQueuedCompletionStatus(ReactorFactory::hIOCP, 0, 0, 0)) {
+    HT_ERRORF("PostQueuedCompletionStatus failed - %s",  winapi_strerror(GetLastError()));
+    return Error::COMM_SEND_ERROR;
+  }
+  return Error::OK;
+}
+
+#else
+
 int Reactor::poll_loop_interrupt() {
 
   m_interrupt_in_progress = true;
@@ -318,10 +346,21 @@ int Reactor::poll_loop_interrupt() {
 }
 
 
+#endif
+
 
 /**
  *
  */
+
+#ifdef _WIN32
+
+int Reactor::poll_loop_continue() {
+  return Error::OK;
+}
+
+#else
+
 int Reactor::poll_loop_continue() {
 
   if (!m_interrupt_in_progress || ReactorFactory::use_poll) {
@@ -428,3 +467,5 @@ void Reactor::fetch_poll_array(std::vector<struct pollfd> &fdarray,
     }
   }
 }
+
+#endif

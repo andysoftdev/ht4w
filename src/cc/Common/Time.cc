@@ -19,7 +19,7 @@
  * 02110-1301, USA.
  */
 
-#include "Compat.h"
+#include "Common/Compat.h"
 
 #include <time.h>
 #include <iomanip>
@@ -27,6 +27,21 @@
 #include "Time.h"
 #include "Mutex.h"
 
+#ifdef _WIN32
+
+struct tm* gmtime_r (const time_t *timer, struct tm *result)
+{
+   struct tm *local_result;
+   local_result = gmtime (timer);
+
+   if (local_result == NULL || result == NULL)
+     return NULL;
+
+   memcpy (result, local_result, sizeof(struct tm));
+   return result;
+}
+
+#endif
 
 using namespace std;
 
@@ -115,7 +130,7 @@ std::ostream &hires_ts_date(std::ostream &out) {
              << right << setw(9) << setfill('0') << now.nsec;
 }
 
-#if defined(__sun__)
+#if defined(__sun__) || defined(_WIN32)
   time_t timegm(struct tm *t) {
     time_t tl, tb;
     struct tm *tg;

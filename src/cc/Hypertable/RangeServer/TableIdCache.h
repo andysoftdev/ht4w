@@ -46,7 +46,7 @@ namespace Hypertable {
       String,
       indexed_by<
         sequenced<>,
-        hashed_unique< identity<String> >
+        hashed_unique< boost::multi_index::identity<String> >
       >
     > TableIdCacheT;
 

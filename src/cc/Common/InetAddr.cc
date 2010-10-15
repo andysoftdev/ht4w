@@ -87,6 +87,28 @@ bool InetAddr::initialize(sockaddr_in *addr, const char *host, uint16_t port) {
       HT_THROW(Error::BAD_DOMAIN_NAME, errmsg);
       return false;
     }
+#elif defined(_WIN32)
+    struct hostent *he = gethostbyname(host);
+    if (he == 0) {
+      int err = WSAGetLastError();
+      if( err == WSANOTINITIALISED ) {
+        WSADATA wsaData;
+        err = WSAStartup(MAKEWORD(2, 2), &wsaData);
+        if (err != 0) {
+          HT_ERRORF("WSAStartup failed with error: %s\n", winapi_strerror(err));
+          return false;
+        }
+        he = gethostbyname(host);
+        if (he == 0) {
+          HT_ERRORF("gethostbyname '%s': error: %s", host, winapi_strerror(WSAGetLastError()));
+          return false;
+        }
+      } else
+      {
+        HT_ERRORF("gethostbyname '%s': error: %s", host, winapi_strerror(err));
+        return false;
+      }
+    }
 #else
 #error TODO
 #endif

@@ -45,7 +45,7 @@ namespace Hypertable {
         exit(1);
       }
       m_addr = inet_addr;
-      InetAddr::initialize(&inet_addr, INADDR_ANY, 0);
+      InetAddr::initialize(&inet_addr, uint32_t(INADDR_ANY), 0);
       m_send_addr = inet_addr;
       m_comm->create_datagram_receive_socket(m_send_addr, 0x10, null_handler);
     }

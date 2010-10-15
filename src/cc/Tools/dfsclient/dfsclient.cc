@@ -83,8 +83,13 @@ namespace {
     line_read = readline ("dfsclient> ");
 
     /* If the line has any text in it, save it on the history. */
+
+#ifndef _WIN32
+
     if (line_read && *line_read)
       add_history (line_read);
+
+#endif
 
     return line_read;
   }
@@ -148,7 +153,12 @@ int main(int argc, char **argv) {
     cout <<"Welcome to dsftool, a command-line interface to the DFS broker.\n"
          <<"Type 'help' for a description of commands.\n" << endl;
 
+#ifndef _WIN32
+
     using_history();
+
+#endif
+
     const char *line;
 
     while ((line = rl_gets()) != 0) {

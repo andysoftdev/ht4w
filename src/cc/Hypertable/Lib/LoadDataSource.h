@@ -78,7 +78,7 @@ namespace Hypertable {
 	       m_first_line_cached = false;
 	       return true;
       }
-      return getline(m_fin, line);
+      return getline(m_fin, line) != 0;
     }
 
     virtual void parse_header(const String& header,

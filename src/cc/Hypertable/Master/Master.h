@@ -134,8 +134,13 @@ namespace Hypertable {
     String m_root_server_location;
     struct sockaddr_in m_root_server_addr;
 
+#ifndef _WIN32
     typedef hash_map<QualifiedRangeSpec, String,
                      QualifiedRangeHash, QualifiedRangeEqual> RangeToLocationMap;
+#else
+    typedef hash_map<QualifiedRangeSpec, String,
+                     QualifiedRangeHashCompare> RangeToLocationMap;
+#endif
 
     typedef map<String, bool> RangeServerStatsStateMap;
 

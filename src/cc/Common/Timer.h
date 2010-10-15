@@ -60,11 +60,11 @@ namespace Hypertable {
       assert(m_started);
 
       if (start_time.sec == stop_time.sec) {
-        adjustment = (stop_time.nsec - start_time.nsec) / 1000000;
+        adjustment = uint32_t((stop_time.nsec - start_time.nsec) / 1000000);
         m_remaining = (adjustment < m_remaining) ? m_remaining - adjustment : 0;
       }
       else {
-        adjustment = ((stop_time.sec - start_time.sec) - 1) * 1000;
+        adjustment = uint32_t(((stop_time.sec - start_time.sec) - 1) * 1000);
         m_remaining = (adjustment < m_remaining) ? m_remaining - adjustment : 0;
         adjustment = ((1000000000 - start_time.nsec) + stop_time.nsec)
                       / 1000000;

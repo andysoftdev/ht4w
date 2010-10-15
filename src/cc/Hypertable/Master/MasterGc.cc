@@ -251,10 +251,14 @@ struct GcWorker {
   void
   operator()() {
     do {
+#ifndef _WIN32
       int remain = poll(0, 0, m_interval_millis);
 
       if (remain)
         break; // interrupted
+#else
+      Sleep(m_interval_millis);
+#endif
 
       if (m_metadata) gc();
       else HT_INFOF("MasterGc: METADATA not ready, will try again in "

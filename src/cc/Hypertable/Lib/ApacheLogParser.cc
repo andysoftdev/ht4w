@@ -246,7 +246,7 @@ char *ApacheLogParser::extract_timestamp(char *base, struct tm *tmp) {
   if (!positive)
     offset *= -1;
 
-#if !defined(__sun__)
+#if !defined(__sun__) && !defined(_WIN32)
   tmp->tm_gmtoff = offset;
 #endif
 

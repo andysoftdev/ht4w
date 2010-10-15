@@ -51,7 +51,19 @@ extern "C" {
 #include "ReactorFactory.h"
 #include "ExpireTimer.h"
 
+#ifdef _WIN32
+
+#include "CommBuf.h"
+
+#endif
+
 namespace Hypertable {
+
+#ifdef _WIN32
+
+struct OverlappedEx;
+
+#endif
 
   /**
    *
@@ -63,17 +75,23 @@ namespace Hypertable {
     IOHandler(int sd, const InetAddr &addr, DispatchHandlerPtr &dhp)
       : m_free_flag(0), m_addr(addr), m_sd(sd), m_dispatch_handler_ptr(dhp) {
       ReactorFactory::get_reactor(m_reactor_ptr);
+
+#ifndef _WIN32
       m_poll_interest = 0;
+#endif
+
       socklen_t namelen = sizeof(m_local_addr);
       getsockname(m_sd, (sockaddr *)&m_local_addr, &namelen);
       memset(&m_alias, 0, sizeof(m_alias));
     }
 
+#ifndef _WIN32
+
     // define default poll() interface for everyone since it is chosen at runtime
     virtual bool handle_event(struct pollfd *event, clock_t arrival_clocks,
 			      time_t arival_time=0) = 0;
 
-#if defined(__APPLE__) || defined(__FreeBSD__)
+#elif defined(__APPLE__) || defined(__FreeBSD__)
     virtual bool handle_event(struct kevent *event, clock_t arrival_clocks,
 			      time_t arival_time=0) = 0;
 #elif defined(__linux__)
@@ -82,6 +100,9 @@ namespace Hypertable {
 #elif defined(__sun__)
     virtual bool handle_event(port_event_t *event, clock_t arrival_clocks,
 			      time_t arival_time=0) = 0;
+
+#elif defined(_WIN32)
+	virtual bool handle_event(OverlappedEx *event, clock_t arrival_clocks, time_t arival_time=0) = 0;
 #else
     ImplementMe;
 #endif
@@ -122,6 +143,35 @@ namespace Hypertable {
       }
     }
 
+#ifdef _WIN32
+
+    bool start_polling() {
+      HANDLE hcp = CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_sd),
+                                          ReactorFactory::hIOCP,
+                                          (ULONG_PTR)this,
+                                          0);
+      if( ReactorFactory::hIOCP != hcp ) {
+          HT_ERRORF("CreateIoCompletionPort failed : %s", winapi_strerror(WSAGetLastError()));
+          return false;
+      }
+      return true;
+    }
+
+    bool isclosed() const {
+      return m_sd == -1;
+    }
+
+    void close() {
+      ScopedLock lock(m_mutex);
+      if(m_sd != -1) {
+        HT_DEBUGF("closesocket(%d)", m_sd);
+        closesocket(m_sd);
+        m_sd = -1;
+      }
+    }
+
+#else
+
     int start_polling(int mode=Reactor::READ_READY) {
       if (ReactorFactory::use_poll) {
 	m_poll_interest = mode;
@@ -157,6 +207,8 @@ namespace Hypertable {
       return add_poll_interest(m_poll_interest);
     }
 
+#endif
+
     InetAddr &get_address() { return m_addr; }
 
     InetAddr &get_local_address() { return m_local_addr; }
@@ -191,7 +243,11 @@ namespace Hypertable {
       m_reactor_ptr->add_timer(timer);
     }
 
+#ifndef _WIN32
+
     void display_event(struct pollfd *event);
+
+#endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
     void display_event(struct kevent *event);
@@ -199,9 +255,13 @@ namespace Hypertable {
     void display_event(struct epoll_event *event);
 #elif defined(__sun__)
     void display_event(port_event_t *event);
+#elif defined(_WIN32)
+    void display_event(OverlappedEx *event);
 #endif
 
   protected:
+
+#ifndef _WIN32
 
     short poll_events(int mode) {
       short events = 0;
@@ -231,6 +291,8 @@ namespace Hypertable {
 #endif
     }
 
+#endif
+
     Mutex               m_mutex;
     uint32_t            m_free_flag;
     String              m_proxy;
@@ -240,7 +302,12 @@ namespace Hypertable {
     int                 m_sd;
     DispatchHandlerPtr  m_dispatch_handler_ptr;
     ReactorPtr          m_reactor_ptr;
+
+#ifndef _WIN32
+
     int                 m_poll_interest;
+
+#endif
   };
   typedef boost::intrusive_ptr<IOHandler> IOHandlerPtr;
 
@@ -249,6 +316,30 @@ namespace Hypertable {
       return p1.get() < p2.get();
     }
   };
+
+  #ifdef _WIN32
+
+  struct OverlappedEx : OVERLAPPED {
+    enum Type { CONNECT, ACCEPT, RECV, SEND, RECVFROM, SENDTO };
+    OverlappedEx(SOCKET s, Type t, IOHandler* handler) :
+        m_sd(s),
+        m_type(t),
+        m_handler(handler),
+        m_err(NOERROR),
+        m_commbuf(0) {
+      ZeroMemory(this, sizeof(OVERLAPPED));
+    }
+    const SOCKET m_sd;
+    const Type m_type;
+    IOHandlerPtr m_handler; // prevent Handler to be deleted until all the IOCP done
+    DWORD m_numberOfBytes;  // from GetQueuedCompletionStatus
+    DWORD m_err;            // GetLastError just after GetQueuedCompletionStatus
+    CommBufPtr m_commbuf;   // buffer to be freed after WSASend (or WSASentTo) is complete
+    BYTE  m_addresses[(sizeof(struct sockaddr_in) + 16)*2]; // for AcceptEx
+    String to_str() const;
+  };
+
+#endif
 
 }
 

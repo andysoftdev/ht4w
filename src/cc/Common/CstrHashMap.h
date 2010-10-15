@@ -28,6 +28,8 @@ namespace Hypertable {
 /**
  * A hash map for storing and lookup char *strings efficiently
  */
+#ifndef _WIN32
+
 template <typename DataT, class TraitsT = CstrHashTraits<> >
 class CstrHashMap : public hash_map<const char *, DataT,
                                     typename TraitsT::hasher,
@@ -35,6 +37,17 @@ class CstrHashMap : public hash_map<const char *, DataT,
 private:
   typedef hash_map<const char *, DataT, typename TraitsT::hasher,
                    typename TraitsT::key_equal> Base;
+
+#else
+
+template <typename DataT, class TraitsT = CstrHashTraits<> >
+class CstrHashMap : public hash_map<const char *, DataT,
+                                    typename TraitsT::hash_compare> {
+private:
+  typedef hash_map<const char *, DataT, typename TraitsT::hash_compare> Base;
+
+#endif
+
 public:
   typedef typename Base::iterator iterator;
   typedef typename Base::key_type key_type;

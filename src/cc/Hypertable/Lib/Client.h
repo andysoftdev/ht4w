@@ -61,6 +61,16 @@ namespace Hypertable {
      * @param default_timeout_ms default method call timeout in milliseconds
      */
     Client(const String &install_dir = String(), uint32_t default_timeout_ms=0);
+
+	/**
+     * Constructs the client object
+     *
+     * @param install_dir path to Hypertable installation directory
+     * @param default_timeout_ms default method call timeout in milliseconds
+     */
+	Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hyperspace::SessionPtr& session, PropertiesPtr &props,
+               uint32_t default_timeout_ms=0);
+
     ~Client() {}
 
     /**
@@ -119,6 +129,7 @@ namespace Hypertable {
   private:
 
     void initialize();
+	void initialize_with_hyperspace();
 
     PropertiesPtr           m_props;
     Comm                   *m_comm;

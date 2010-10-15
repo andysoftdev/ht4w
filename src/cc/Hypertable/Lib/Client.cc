@@ -77,6 +77,26 @@ Client::Client(const String &install_dir, uint32_t default_timeout_ms)
   initialize();
 }
 
+
+Client::Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hyperspace::SessionPtr& session, PropertiesPtr &props, uint32_t default_timeout_ms)
+: m_timeout_ms(default_timeout_ms), m_install_dir(install_dir) {
+  ScopedRecLock lock(rec_mutex);
+
+  if (!properties)
+    init_with_policy<DefaultCommPolicy>(0, 0);
+
+  if (m_install_dir.empty())
+    m_install_dir = System::install_dir;
+
+  m_conn_manager = conn_mgr;
+  m_comm = conn_mgr->get_comm();
+  m_hyperspace = session;
+  m_props = props;
+
+  initialize_with_hyperspace();
+}
+
+
 void Client::create_namespace(const String &name, Namespace *base, bool create_intermediate) {
 
   String full_name;
@@ -177,30 +197,31 @@ HqlInterpreter *Client::create_hql_interpreter(bool immutable_namespace) {
 }
 
 // ------------- PRIVATE METHODS -----------------
-void Client::initialize() {
-  uint32_t wait_time, remaining;
-  uint32_t interval=5000;
+void Client::initialize() {  
+  m_comm = Comm::instance();
+  m_conn_manager = new ConnectionManager(m_comm);    
+  m_hyperspace = new Hyperspace::Session(m_comm, m_props);
+  initialize_with_hyperspace();  
+}
 
+void Client::initialize_with_hyperspace() {
+  m_hyperspace_reconnect = m_props->get_bool("Hyperspace.Session.Reconnect");
   m_toplevel_dir = m_props->get_str("Hypertable.Directory");
   boost::trim_if(m_toplevel_dir, boost::is_any_of("/"));
   m_toplevel_dir = String("/") + m_toplevel_dir;
-
-  m_comm = Comm::instance();
-  m_conn_manager = new ConnectionManager(m_comm);
-
-  if (m_timeout_ms == 0)
-    m_timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
-
-  m_hyperspace_reconnect = m_props->get_bool("Hyperspace.Session.Reconnect");
-
-  m_hyperspace = new Hyperspace::Session(m_comm, m_props);
 
   m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
 
   m_refresh_schema = m_props->get_bool("Hypertable.Client.RefreshSchema");
 
+  if (m_timeout_ms == 0)
+    m_timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
+
   Timer timer(m_timeout_ms, true);
 
+  uint32_t wait_time, remaining;
+  uint32_t interval=5000;
+  
   remaining = timer.remaining();
   wait_time = (remaining < interval) ? remaining : interval;
 

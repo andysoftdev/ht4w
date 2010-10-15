@@ -25,6 +25,8 @@
  *  http://www.ietf.org/rfc/rfc1321.txt
  */
 
+#include "Common/Compat.h"
+
 #define SELF_TEST 1
 #ifndef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE 1

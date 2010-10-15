@@ -51,6 +51,25 @@ extern "C" {
 
 #include "LocalBroker.h"
 
+#ifdef _WIN32
+
+#define IO_ERROR \
+	winapi_strerror(::GetLastError())
+
+inline int fsync( int fd ) {
+	if( !::FlushFileBuffers((HANDLE) _get_osfhandle(fd)) ) {
+		return ::GetLastError();
+	}
+	return 0;
+}
+
+#else
+
+#define IO_ERROR \
+	strerror(errno)
+
+#endif
+
 using namespace Hypertable;
 
 atomic_t LocalBroker::ms_next_fd = ATOMIC_INIT(0);
@@ -119,7 +138,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
    */
   if ((local_fd = ::open(abspath.c_str(), oflags)) == -1) {
     report_error(cb);
-    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), strerror(errno));
+    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
     return;
   }
 
@@ -179,7 +198,7 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
    */
   if ((local_fd = ::open(abspath.c_str(), oflags, 0644)) == -1) {
     report_error(cb);
-    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), strerror(errno));
+    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
     return;
   }
 
@@ -242,15 +261,14 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
 
   if ((offset = (uint64_t)lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
     report_error(cb);
-    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd,
-              strerror(errno));
+    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, IO_ERROR);
     return;
   }
 
   if ((nread = FileUtils::read(fdata->fd, buf.base, amount)) == -1) {
     report_error(cb);
     HT_ERRORF("read failed: fd=%d offset=%llu amount=%d - %s",
-	      fdata->fd, (Llu)offset, amount, strerror(errno));
+	      fdata->fd, (Llu)offset, amount, IO_ERROR);
     return;
   }
 
@@ -278,21 +296,20 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
 
   if ((offset = (uint64_t)lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
     report_error(cb);
-    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd,
-              strerror(errno));
+    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, IO_ERROR);
     return;
   }
 
   if ((nwritten = FileUtils::write(fdata->fd, data, amount)) == -1) {
     report_error(cb);
     HT_ERRORF("write failed: fd=%d offset=%llu amount=%d data=%p- %s",
-	      fdata->fd, (Llu)offset, amount, data, strerror(errno));
+	      fdata->fd, (Llu)offset, amount, data, IO_ERROR);
     return;
   }
 
   if (sync && fsync(fdata->fd) != 0) {
     report_error(cb);
-    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, strerror(errno));
+    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, IO_ERROR);
     return;
   }
 
@@ -314,8 +331,7 @@ void LocalBroker::seek(ResponseCallback *cb, uint32_t fd, uint64_t offset) {
 
   if ((offset = (uint64_t)lseek(fdata->fd, offset, SEEK_SET)) == (uint64_t)-1) {
     report_error(cb);
-    HT_ERRORF("lseek failed: fd=%d offset=%llu - %s", fdata->fd, (Llu)offset,
-              strerror(errno));
+    HT_ERRORF("lseek failed: fd=%d offset=%llu - %s", fdata->fd, (Llu)offset, IO_ERROR);
     return;
   }
 
@@ -335,8 +351,7 @@ void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
 
   if (unlink(abspath.c_str()) == -1) {
     report_error(cb);
-    HT_ERRORF("unlink failed: file='%s' - %s", abspath.c_str(),
-              strerror(errno));
+    HT_ERRORF("unlink failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
     return;
   }
 
@@ -357,8 +372,7 @@ void LocalBroker::length(ResponseCallbackLength *cb, const char *fname) {
 
   if ((length = FileUtils::length(abspath)) == (uint64_t)-1) {
     report_error(cb);
-    HT_ERRORF("length (stat) failed: file='%s' - %s", abspath.c_str(),
-              strerror(errno));
+    HT_ERRORF("length (stat) failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
     return;
   }
 
@@ -391,11 +405,10 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
     return;
   }
 
-  if ((nread = FileUtils::pread(fdata->fd, buf.base, amount, (off_t)offset))
-      == -1) {
+  if ((nread = FileUtils::pread(fdata->fd, buf.base, amount, (off_t)offset)) == -1) {
     report_error(cb);
     HT_ERRORF("pread failed: fd=%d amount=%d offset=%llu - %s", fdata->fd,
-              amount, (Llu)offset, strerror(errno));
+              amount, (Llu)offset, IO_ERROR);
     return;
   }
 
@@ -417,8 +430,7 @@ void LocalBroker::mkdirs(ResponseCallback *cb, const char *dname) {
 
   if (!FileUtils::mkdirs(absdir)) {
     report_error(cb);
-    HT_ERRORF("mkdirs failed: dname='%s' - %s", absdir.c_str(),
-              strerror(errno));
+    HT_ERRORF("mkdirs failed: dname='%s' - %s", absdir.c_str(), IO_ERROR);
     return;
   }
 
@@ -451,7 +463,7 @@ void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
 #if 0
   if (rmdir(absdir.c_str()) != 0) {
     report_error(cb);
-    HT_ERRORF("rmdir failed: dname='%s' - %s", absdir.c_str(), strerror(errno));
+    HT_ERRORF("rmdir failed: dname='%s' - %s", absdir.c_str(), IO_ERROR);
     return;
   }
 #endif
@@ -470,10 +482,27 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
   else
     absdir = m_rootdir + "/" + dname;
 
+#ifdef _WIN32
+
+  WIN32_FIND_DATA ffd;
+  HANDLE hFind = FindFirstFile( (absdir + "\\*").c_str(), &ffd);
+  if( hFind == INVALID_HANDLE_VALUE ) {
+    report_error(cb);
+    return;
+  }
+  do {
+    if (ffd.cFileName[0] != '.' && ffd.cFileName[0] != 0) {
+      listing.push_back((String)ffd.cFileName);
+    }
+  } while( FindNextFile( hFind, &ffd ) != 0 );
+  FindClose(hFind);
+
+#else
+
   DIR *dirp = opendir(absdir.c_str());
   if (dirp == 0) {
     report_error(cb);
-    HT_ERRORF("opendir('%s') failed - %s", absdir.c_str(), strerror(errno));
+    HT_ERRORF("opendir('%s') failed - %s", absdir.c_str(), IO_ERROR);
     return;
   }
 
@@ -482,7 +511,7 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
 
   if (readdir_r(dirp, dp, &result) != 0) {
     report_error(cb);
-    HT_ERRORF("readdir('%s') failed - %s", absdir.c_str(), strerror(errno));
+    HT_ERRORF("readdir('%s') failed - %s", absdir.c_str(), IO_ERROR);
     (void)closedir(dirp);
     delete [] (uint8_t *)dp;
     return;
@@ -496,7 +525,7 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
 
     if (readdir_r(dirp, dp, &result) != 0) {
       report_error(cb);
-      HT_ERRORF("readdir('%s') failed - %s", absdir.c_str(), strerror(errno));
+      HT_ERRORF("readdir('%s') failed - %s", absdir.c_str(), IO_ERROR);
       delete [] (uint8_t *)dp;
       return;
     }
@@ -504,6 +533,8 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
   (void)closedir(dirp);
 
   delete [] (uint8_t *)dp;
+
+#endif
 
   HT_DEBUGF("Sending back %d listings", (int)listing.size());
 
@@ -525,7 +556,7 @@ void LocalBroker::flush(ResponseCallback *cb, uint32_t fd) {
 
   if (fsync(fdata->fd) != 0) {
     report_error(cb);
-    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, strerror(errno));
+    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, IO_ERROR);
     return;
   }
 
@@ -583,7 +614,35 @@ LocalBroker::debug(ResponseCallback *cb, int32_t command,
             command));
 }
 
+#ifdef _WIN32
 
+void LocalBroker::report_error(ResponseCallback *cb) {
+  DWORD err = GetLastError(); // TODO: FileUtils::last_error()
+  const char* errbuf = winapi_strerror(err);
+
+  switch(err) {
+  case ERROR_FILE_NOT_FOUND:
+  case ERROR_PATH_NOT_FOUND:
+  case ERROR_INVALID_DRIVE:
+    cb->error(Error::DFSBROKER_BAD_FILENAME, errbuf);
+    break;
+  case ERROR_ACCESS_DENIED:
+  case ERROR_NETWORK_ACCESS_DENIED:
+    cb->error(Error::DFSBROKER_PERMISSION_DENIED, errbuf);
+    break;
+  case ERROR_INVALID_HANDLE:
+    cb->error(Error::DFSBROKER_BAD_FILE_HANDLE, errbuf);
+    break;
+  case ERROR_INVALID_ACCESS:
+    cb->error(Error::DFSBROKER_INVALID_ARGUMENT, errbuf);
+    break;
+  default:
+    cb->error(Error::DFSBROKER_IO_ERROR, errbuf);
+    break;
+  }
+}
+
+#else
 
 void LocalBroker::report_error(ResponseCallback *cb) {
   char errbuf[128];
@@ -602,3 +661,5 @@ void LocalBroker::report_error(ResponseCallback *cb) {
   else
     cb->error(Error::DFSBROKER_IO_ERROR, errbuf);
 }
+
+#endif

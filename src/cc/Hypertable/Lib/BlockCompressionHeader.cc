@@ -32,7 +32,9 @@
 using namespace Hypertable;
 using namespace Serialization;
 
+#ifndef _WIN32
 const size_t BlockCompressionHeader::LENGTH;
+#endif
 
 
 /**

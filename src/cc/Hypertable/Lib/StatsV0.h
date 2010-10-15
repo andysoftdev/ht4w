@@ -118,7 +118,9 @@ namespace Hypertable {
     void process_stats(const uint8_t **bufp, size_t *remainp, bool update_table_stats,
                        TableStatsMap  &table_stats_map);
     void dump_str(String &out);
+#ifndef _WIN32
     void dump_rrd(const String &file_prefix);
+#endif
     void get_hl_stats(RangeServerHLStats &hl_stats);
 
   protected:

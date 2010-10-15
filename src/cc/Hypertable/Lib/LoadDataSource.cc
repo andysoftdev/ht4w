@@ -680,7 +680,7 @@ bool LoadDataSource::parse_date_format(const char *str, int64_t &timestamp) {
   dval = strtod(ptr, &end_ptr);
   tm.tm_sec = 0;
 
-#if !defined(__sun__)
+#if !defined(__sun__) && !defined(_WIN32)
   tm.tm_gmtoff = 0;
   tm.tm_zone = (char *)"GMT";
 #endif

@@ -20,6 +20,17 @@
 #ifndef HYPERTABLE_HASHMAP_H
 #define HYPERTABLE_HASHMAP_H
 
+#ifdef _MSC_VER
+#include <hash_set>
+#include <hash_map>
+
+namespace Hypertable {
+  using stdext::hash_map;
+  using stdext::hash_set;
+}
+
+#else
+
 #include <boost/config.hpp>
 #include BOOST_HASH_MAP_HEADER
 #include BOOST_HASH_SET_HEADER
@@ -52,5 +63,7 @@ namespace Hypertable {
   using BOOST_STD_EXTENSION_NAMESPACE::hash_map;
   using BOOST_STD_EXTENSION_NAMESPACE::hash_set;
 } // namespace Hypertable
+
+#endif // _MSC_VER
 
 #endif // HYPERTABLE_HASHMAP_H

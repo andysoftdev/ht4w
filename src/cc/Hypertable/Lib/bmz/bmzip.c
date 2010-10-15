@@ -23,9 +23,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
 #include <limits.h>
 #include <stdint.h>
+#else
+#define HT_NO_MMAP
+#endif
 #include <stdarg.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -39,9 +43,18 @@ static int s_no_mmap = 1;
 
 #include "bmz-internal.h"
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4995 ) // 'strerror': name was marked as #pragma deprecated
+#endif
+
 #define BMZ_MAGIC       "BMZ"
 #define BMZIP_VER       0x0110
+#ifdef _WIN32
+#define BMZ_HEADER_SZ   (3 + 2 + 1 + 6 + 4)
+#else
 #define BMZ_HEADER_SZ   (strlen(BMZ_MAGIC) + 2 + 1 + 6 + 4)
+#endif
 
 #define BMZ_A_PACK      0
 #define BMZ_A_UNPACK    1
@@ -404,6 +417,8 @@ bm_hash(const char *name) {
   return 0;
 }
 
+#ifndef _WIN32
+
 static void HT_NORETURN
 show_usage() {
   fprintf(stderr, "%s%s", /* c89 string literal limit is 509 */
@@ -473,3 +488,9 @@ main(int ac, char *av[]) {
 
   return 0;
 }
+
+#endif
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif

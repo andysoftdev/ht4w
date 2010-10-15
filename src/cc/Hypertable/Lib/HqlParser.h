@@ -56,6 +56,12 @@
 #include "LoadDataFlags.h"
 #include "LoadDataSource.h"
 
+#ifdef _WIN32
+#undef TRUE
+#undef FALSE
+#undef DELETE
+#endif
+
 namespace Hypertable {
   namespace Hql {
     using namespace boost;

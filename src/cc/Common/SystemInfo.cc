@@ -297,11 +297,21 @@ LoadAvgStat &LoadAvgStat::refresh() {
   ScopedRecLock lock(_mutex);
   sigar_loadavg_t m;
 
+#ifndef _WIN32
+
   HT_ASSERT(sigar_loadavg_get(sigar(), &m) == SIGAR_OK);
 
   loadavg[0] = m.loadavg[0];
   loadavg[1] = m.loadavg[1];
   loadavg[2] = m.loadavg[2];
+
+#else
+
+  loadavg[0] = 0;
+  loadavg[1] = 0;
+  loadavg[2] = 0;
+
+#endif
 
   return *this;
 }
@@ -577,13 +587,27 @@ FsStat &FsStat::refresh(const char *dir_prefix) {
 
 TermInfo &TermInfo::init() {
   ScopedRecLock lock(_mutex);
-  int err;
 
+#ifdef _WIN32
+  
+  CONSOLE_SCREEN_BUFFER_INFO csbi;
+  if(GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+	term = "winnt";
+    num_lines = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    num_cols = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+  }
+
+#else
+
+  int err;
   if (setupterm(0,  1, &err) != ERR) {
     term = getenv("TERM");
     num_lines = lines;
     num_cols = columns;
   }
+
+#endif
+
   else {
     term = "dumb";
     num_lines = 24;

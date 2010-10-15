@@ -32,7 +32,7 @@ namespace Hypertable {
   class FailureInducer {
   public:
     static FailureInducer *instance;
-    static bool enabled() { return (bool)instance; }
+    static bool enabled() { return instance != 0; }
     void parse_option(String option);
     void maybe_fail(const String &label);
   private:

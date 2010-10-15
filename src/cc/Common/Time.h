@@ -70,7 +70,7 @@ namespace Hypertable {
   std::ostream &hires_ts(std::ostream &);
   std::ostream &hires_ts_date(std::ostream &);
 
-#if defined(__sun__)
+#if defined(__sun__) || defined(_WIN32)
   time_t timegm(struct tm *t);
 #endif
 

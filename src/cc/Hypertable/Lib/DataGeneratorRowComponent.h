@@ -30,6 +30,9 @@
 extern "C" {
 #include <limits.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#include "Common/strptime.h"
+#endif
 }
 
 #include "Common/Config.h"

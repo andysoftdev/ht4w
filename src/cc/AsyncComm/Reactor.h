@@ -41,10 +41,14 @@ extern "C" {
 
 namespace Hypertable {
 
+#ifndef _WIN32
+
   typedef struct {
     struct pollfd pollfd;
     IOHandler *handler;
   } PollDescriptorT;
+
+#endif
 
   class Reactor : public ReferenceCount {
 
@@ -52,8 +56,12 @@ namespace Hypertable {
 
   public:
 
+#ifndef _WIN32
+
     static const int READ_READY;
     static const int WRITE_READY;
+
+#endif
 
     Reactor();
     ~Reactor() {
@@ -103,7 +111,7 @@ namespace Hypertable {
     int poll_fd;
 #elif defined (__APPLE__) || defined(__FreeBSD__)
     int kqd;
-#endif
+#elif !defined(_WIN32)
 
     int add_poll_interest(int sd, short events, IOHandler *handler);
     int remove_poll_interest(int sd);
@@ -114,10 +122,16 @@ namespace Hypertable {
     Mutex m_poll_array_mutex;
     std::vector<PollDescriptorT> polldata;
 
+#endif
+
     int poll_loop_interrupt();
     int poll_loop_continue();
 
+#ifndef _WIN32
+
     int interrupt_sd() { return m_interrupt_sd; }
+
+#endif
 
   protected:
     typedef std::priority_queue<ExpireTimer, std::vector<ExpireTimer>, LtTimer>
@@ -126,7 +140,11 @@ namespace Hypertable {
     Mutex           m_mutex;
     RequestCache    m_request_cache;
     TimerHeap       m_timer_heap;
+
+#ifndef _WIN32
     int             m_interrupt_sd;
+#endif
+
     bool            m_interrupt_in_progress;
     boost::xtime    m_next_wakeup;
     std::set<IOHandler *> m_removed_handlers;

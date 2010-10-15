@@ -32,11 +32,35 @@ template <class HashT = TclHash2>
 struct CstrHashTraits {
   typedef CharArena key_allocator;
 
+ #ifndef _WIN32
+
   struct hasher {
     HashT hasher;
 
     size_t operator()(const char *s) const { return hasher(s); }
   };
+
+  struct key_equal {
+    bool
+    operator()(const char *a, const char *b) const {
+      return std::strcmp(a, b) == 0;
+    }
+  };
+
+#else
+
+  struct hash_compare {
+    enum {   // parameters for hash table
+        bucket_size = 4,    // 0 < bucket_size
+        min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
+    HashT hash_fun;
+    size_t operator()(const char *s) const { return hash_fun(s); }
+    bool operator()(const char *a, const char *b) const {
+      return std::strcmp(a, b) == 0;
+    }
+  };
+
+#endif
 
   struct key_equal {
     bool

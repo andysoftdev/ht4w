@@ -50,12 +50,17 @@ extern "C" {
 using namespace Hypertable;
 using namespace std;
 
+#ifndef _WIN32
 
 String CommandShell::ms_history_file = "";
 
+#endif
+
 namespace {
   void termination_handler (int signum) {
+#ifndef _WIN32
     write_history(CommandShell::ms_history_file.c_str());
+#endif
     exit(1);
   }
 
@@ -134,7 +139,7 @@ char *CommandShell::rl_gets () {
       strcpy(m_line_read, m_cmd_str.c_str());
     }
     else {
-      off_t len;
+      size_t len;
       char *tmp;
       // copy bcos readline uses malloc, FileUtils::file_to_buffer uses new
       tmp = FileUtils::file_to_buffer(m_cmd_file, &len);
@@ -161,8 +166,10 @@ char *CommandShell::rl_gets () {
     m_line_read = readline("         -> ");
 
   /* If the line has any text in it, save it on the history. */
+#ifndef _WIN32
   if (!m_batch_mode && !m_test_mode && m_line_read && *m_line_read)
     add_history (m_line_read);
+#endif
 
   return m_line_read;
 }
@@ -194,7 +201,9 @@ int CommandShell::run() {
   String source_commands;
   const char *base, *ptr;
 
+#ifndef _WIN32
   ms_history_file = (String)getenv("HOME") + "/." + m_program_name + "_history";
+#endif
 
   if (m_props->has("timestamp-format"))
     timestamp_format = m_props->get_str("timestamp-format");
@@ -203,8 +212,9 @@ int CommandShell::run() {
     m_interp_ptr->set_timestamp_output_format(timestamp_format);
 
   if (!m_batch_mode && !m_silent) {
-
+#ifndef _WIN32
     read_history(ms_history_file.c_str());
+#endif
 
     cout << endl;
     cout << "Welcome to the " << m_program_name << " command interpreter."
@@ -217,16 +227,22 @@ int CommandShell::run() {
     cout << endl << flush;
   }
 
+#ifndef _WIN32
   if (signal (SIGINT, termination_handler) == SIG_IGN)
     signal (SIGINT, SIG_IGN);
   if (signal (SIGHUP, termination_handler) == SIG_IGN)
     signal (SIGHUP, SIG_IGN);
   if (signal (SIGTERM, termination_handler) == SIG_IGN)
     signal (SIGTERM, SIG_IGN);
+#endif
 
   m_accum = "";
+
+#ifndef _WIN32
   if (!m_batch_mode)
     using_history();
+#endif
+
   while ((line = rl_gets()) != 0) {
     try {
 
@@ -250,8 +266,10 @@ int CommandShell::run() {
       }
       else if (!strcasecmp(line, "quit") || !strcasecmp(line, "exit")
                || !strcmp(line, "\\q")) {
+#ifndef _WIN32
         if (!m_batch_mode)
           write_history(ms_history_file.c_str());
+#endif
         return 0;
       }
       else if (!strcasecmp(line, "print") || !strcmp(line, "\\p")) {
@@ -271,7 +289,7 @@ int CommandShell::run() {
         }
         String fname = base;
         trim_if(fname, boost::is_any_of(" \t\n\r;"));
-        off_t flen;
+        size_t flen;
         if ((base = FileUtils::file_to_buffer(fname.c_str(), &flen)) == 0)
           continue;
         source_commands = "";
@@ -335,8 +353,10 @@ int CommandShell::run() {
       while (!command_queue.empty()) {
         if (command_queue.front() == "quit"
             || command_queue.front() == "exit") {
+#ifndef _WIN32
           if (!m_batch_mode)
             write_history(ms_history_file.c_str());
+#endif
           return 0;
         }
         command = command_queue.front();
@@ -383,8 +403,10 @@ int CommandShell::run() {
 
   }
 
+#ifndef _WIN32
   if (!m_batch_mode)
     write_history(ms_history_file.c_str());
+#endif
 
   return 0;
 }

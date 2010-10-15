@@ -1,0 +1,244 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\stdafx.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BerkeleyDbFilesystem.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Event.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Master.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerAttrDel.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerAttrExists.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerAttrGet.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerAttrIncr.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerAttrList.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerAttrSet.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerClose.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerDelete.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerDoMaintenance.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerExists.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerExpireSessions.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerHandshake.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerLock.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerMkdir.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerOpen.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerReaddir.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerReaddirAttr.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerReadpathAttr.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerRelease.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerRenewSession.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerStatus.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackAttrExists.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackAttrGet.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackAttrIncr.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackAttrList.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackExists.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackLock.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackOpen.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackReaddir.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackReaddirAttr.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackReadpathAttr.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerConnectionHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerKeepaliveHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StateDbKeys.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BerkeleyDbFilesystem.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Event.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Master.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerAttrDel.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerAttrExists.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerAttrGet.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerAttrIncr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerAttrList.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerAttrSet.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerClose.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerDelete.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerDoMaintenance.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerExists.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerExpireSessions.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerHandshake.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerLock.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerMkdir.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerOpen.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerReaddir.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerReaddirAttr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerReadpathAttr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerRelease.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerRenewSession.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerStatus.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackAttrExists.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackAttrGet.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackAttrIncr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackAttrList.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackExists.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackLock.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackOpen.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackReaddir.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackReaddirAttr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackReadpathAttr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerConnectionHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerKeepaliveHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StateDbKeys.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\hypertable.rc" />
+  </ItemGroup>
+</Project>

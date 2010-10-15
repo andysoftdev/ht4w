@@ -47,6 +47,7 @@ extern "C" {
 using namespace Hypertable;
 using namespace std;
 
+#ifndef _WIN32
 
 namespace {
 
@@ -537,6 +538,109 @@ bool IOHandlerData::handle_event(struct kevent *event, clock_t arrival_clocks, t
   ImplementMe;
 #endif
 
+#else
+
+bool IOHandlerData::async_recv(void* buf, size_t len)
+{
+  HT_ASSERT(len > 0);
+
+  DWORD flags = 0;
+  OverlappedEx* pol = new OverlappedEx(m_sd, OverlappedEx::RECV, this);
+
+  WSABUF wsabuf;
+  wsabuf.buf = (char*)buf;
+  wsabuf.len = len;
+
+  if (WSARecv(m_sd, &wsabuf, 1, 0, &flags, pol, NULL) == SOCKET_ERROR) {
+    int err = WSAGetLastError();
+    if (err != WSA_IO_PENDING) {
+      HT_ERRORF("WSARecv error: %s\n", winapi_strerror(err));
+      delete pol;
+      return false;
+    }
+  }
+  return true;
+}
+
+bool IOHandlerData::handle_event(OverlappedEx *pol, clock_t arrival_clocks, time_t arrival_time) {
+
+  try {
+
+    if (pol->m_type == OverlappedEx::CONNECT) {
+      // actually, it does initial socket setup
+      if (pol->m_err != NOERROR ) {
+        handle_disconnect(Error::COMM_CONNECT_ERROR);
+        return true;
+      }
+      if (handle_write_readiness()) {
+        handle_disconnect();
+        return true;
+      }
+    }
+
+    if (pol->m_type == OverlappedEx::SEND) {
+      if (pol->m_err != NOERROR ) {
+        handle_disconnect(Error::COMM_SEND_ERROR);
+        return true;
+      }
+      const size_t nread = pol->m_numberOfBytes;
+      if (0==nread) {
+        handle_disconnect(Error::COMM_SEND_ERROR);
+        return true;
+      }
+    }
+
+    if (pol->m_type == OverlappedEx::RECV) {
+      if( pol->m_err != NOERROR ) {
+        handle_disconnect(Error::COMM_RECEIVE_ERROR);
+        return true;
+      }
+      const size_t nread = pol->m_numberOfBytes;
+      if( 0==nread ) {
+        handle_disconnect();
+        return true;
+      }
+
+      if (!m_got_header) {
+        if (nread < m_message_header_remaining) {
+          m_message_header_remaining -= nread;
+          m_message_header_ptr += nread;
+          async_recv(m_message_header_ptr, m_message_header_remaining);
+        }
+        else {
+          m_message_header_ptr += nread;
+          handle_message_header(arrival_clocks, arrival_time);
+          if( m_message_remaining != 0)
+            async_recv(m_message_ptr, m_message_remaining);
+          else {
+            handle_message_body();
+            async_recv(m_message_header_ptr, m_message_header_remaining);
+          }
+        }
+      }
+      else {
+        if (nread < m_message_remaining) {
+          m_message_ptr += nread;
+          m_message_remaining -= nread;
+          async_recv(m_message_ptr, m_message_remaining);
+        }
+        else {
+          handle_message_body();
+          async_recv(m_message_header_ptr, m_message_header_remaining);
+        }
+      }
+    }
+  }
+  catch (Hypertable::Exception &e) {
+    HT_ERROR_OUT << e << HT_END;
+    handle_disconnect();
+    return true;
+  }
+
+  return false;
+}
+
+#endif
 
 void IOHandlerData::handle_message_header(clock_t arrival_clocks, time_t arrival_time) {
   size_t header_len = (size_t)m_message_header[1];
@@ -623,6 +727,38 @@ bool IOHandlerData::handle_write_readiness() {
       int sockerr = 0;
       socklen_t sockerr_len = sizeof(sockerr);
 
+ #ifdef _WIN32
+
+      if (getsockopt(m_sd, SOL_SOCKET, SO_ERROR, (char*)&sockerr, &sockerr_len) == SOCKET_ERROR) {
+        HT_ERRORF("getsockopt(SO_ERROR) failed - %s", winapi_strerror(WSAGetLastError()));
+      }
+
+      if (sockerr) {
+        HT_ERRORF("connect() completion error - %s", winapi_strerror(sockerr));
+        break;
+      }
+
+      int bufsize = 4*32768;
+      if (setsockopt(m_sd, SOL_SOCKET, SO_SNDBUF, (char *)&bufsize,
+                     sizeof(bufsize)) == SOCKET_ERROR) {
+        HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", winapi_strerror(WSAGetLastError()));
+      }
+      if (setsockopt(m_sd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize,
+                     sizeof(bufsize)) == SOCKET_ERROR) {
+        HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", winapi_strerror(WSAGetLastError()));
+      }
+
+      if (getsockname(m_sd, (struct sockaddr *)&m_local_addr, &name_len) == SOCKET_ERROR) {
+        HT_ERRORF("getsockname(%d) failed - %s", m_sd, winapi_strerror(WSAGetLastError()));
+        break;
+      }
+
+      // try to receive message header,
+      // result will be in ReactorRunner, then in handle_event
+      async_recv_header();
+
+#else
+
       if (getsockopt(m_sd, SOL_SOCKET, SO_ERROR, &sockerr, &sockerr_len) < 0) {
 	HT_ERRORF("getsockopt(SO_ERROR) failed - %s", strerror(errno));
       }
@@ -646,6 +782,7 @@ bool IOHandlerData::handle_write_readiness() {
 	HT_ERRORF("getsockname(%d) failed - %s", m_sd, strerror(errno));
 	break;
       }
+#endif
       //HT_INFO("Connection established.");
       m_connected = true;
       deliver_conn_estab_event = true;
@@ -656,9 +793,14 @@ bool IOHandlerData::handle_write_readiness() {
       HT_DEBUG("error flushing send queue");
       break;
     }
+
+#ifndef _WIN32
+
     //HT_INFO("about to remove poll interest");
     if (m_send_queue.empty())
       remove_poll_interest(Reactor::WRITE_READY);
+
+#endif
 
     rval = false;
     break;
@@ -702,6 +844,8 @@ IOHandlerData::send_message(CommBufPtr &cbp, uint32_t timeout_ms,
       HT_WARNF("Problem flushing send queue - %s", Error::get_text(error));
   }
 
+#ifndef _WIN32
+
   if (initially_empty && !m_send_queue.empty()) {
     add_poll_interest(Reactor::WRITE_READY);
     //HT_INFO("Adding Write interest");
@@ -710,6 +854,8 @@ IOHandlerData::send_message(CommBufPtr &cbp, uint32_t timeout_ms,
     remove_poll_interest(Reactor::WRITE_READY);
     //HT_INFO("Removing Write interest");
   }
+
+#endif
 
   return Error::OK;
 }
@@ -859,6 +1005,54 @@ int IOHandlerData::flush_send_queue() {
   return Error::OK;
 }
 
+#elif defined(_WIN32)
+
+int IOHandlerData::flush_send_queue() {
+  //HT_DEBUGF("IOHandlerData::flush_send_queue()");
+
+  ssize_t remaining;
+  WSABUF vec[2];
+  int count;
+
+  while (!m_send_queue.empty()) {
+
+    CommBufPtr &cbp = m_send_queue.front();
+
+    count = 0;
+    remaining = cbp->data.size - (cbp->data_ptr - cbp->data.base);
+    if (remaining > 0) {
+      vec[0].buf = (char*)cbp->data_ptr;
+      vec[0].len = remaining;
+      ++count;
+    }
+    if (cbp->ext.base != 0) {
+      remaining = cbp->ext.size - (cbp->ext_ptr - cbp->ext.base);
+      if (remaining > 0) {
+        vec[count].buf = (char*)cbp->ext_ptr;
+        vec[count].len = remaining;
+        ++count;
+      }
+    }
+
+    OverlappedEx* pol = new OverlappedEx(m_sd, OverlappedEx::SEND, this);
+    pol->m_commbuf = m_send_queue.front();
+
+    int rc = WSASend(m_sd, vec, count, 0, 0, pol, 0);
+    if (rc == SOCKET_ERROR) {
+      int err = WSAGetLastError();
+      if(err != WSA_IO_PENDING) {
+        HT_WARNF("WSASend(%d) failed : %s", m_sd, winapi_strerror(err));
+        delete pol;
+        return Error::COMM_BROKEN_CONNECTION;
+      }
+    }
+
+    // buffer written successfully, now remove from queue (buffer will destroed in completion routine)
+    m_send_queue.pop_front();
+  }
+
+  return Error::OK;
+}
 #else
   ImplementMe;
 #endif

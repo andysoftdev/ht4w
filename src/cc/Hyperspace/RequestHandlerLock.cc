@@ -45,7 +45,7 @@ void RequestHandlerLock::run() {
   try {
     uint64_t handle = decode_i64(&decode_ptr, &decode_remain);
     uint32_t mode = decode_i32(&decode_ptr, &decode_remain);
-    bool try_lock = decode_i8(&decode_ptr, &decode_remain);
+    bool try_lock = decode_i8(&decode_ptr, &decode_remain) != 0;
 
     m_master->lock(&cb, m_session_id, handle, mode, try_lock);
   }

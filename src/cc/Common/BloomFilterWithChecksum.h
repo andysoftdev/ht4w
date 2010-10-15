@@ -46,9 +46,9 @@ public:
     m_items_actual = 0;
     m_items_estimate = items_estimate;
     m_false_positive_prob = false_positive_prob;
-    double num_hashes = -std::log(m_false_positive_prob) / std::log(2);
+    double num_hashes = -std::log(m_false_positive_prob) / std::log(2.);
     m_num_hash_functions = (size_t)num_hashes;
-    m_num_bits = (size_t)(m_items_estimate * num_hashes / std::log(2));
+    m_num_bits = (size_t)(m_items_estimate * num_hashes / std::log(2.));
     if (m_num_bits == 0) {
       HT_THROWF(Error::EMPTY_BLOOMFILTER, "Num elements=%lu false_positive_prob=%.3f",
                 (Lu)items_estimate, false_positive_prob);

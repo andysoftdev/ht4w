@@ -71,6 +71,8 @@ namespace Hypertable {
     int32_t m_type;
   };
 
+#ifndef _WIN32
+
   class CommAddressHash {
   public:
     size_t operator () (const CommAddress &addr) const {
@@ -97,6 +99,37 @@ namespace Hypertable {
   template<typename TypeT, typename addr=CommAddress>
   class CommAddressMap : public hash_map<addr, TypeT, CommAddressHash, CommAddressEqual> {
   };
+
+#else
+
+  class CommAddressHashCompare {
+  public:
+    enum {   // parameters for hash table
+        bucket_size = 4,    // 0 < bucket_size
+        min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
+    size_t operator () (const CommAddress &addr) const {
+      if (addr.is_inet())
+        return (size_t)(addr.inet.sin_addr.s_addr ^ addr.inet.sin_port);
+      else if (addr.is_proxy()) {
+        return stdext::hash_value(addr.proxy.c_str());
+      }
+      return 0;
+    }
+    bool operator()(const CommAddress &addr1, const CommAddress &addr2) const {
+      if(addr1.type() < addr2.type())
+        return true;
+      if(addr1.type() > addr2.type())
+        return false;
+      return (addr1.is_proxy() && addr1.proxy<addr2.proxy) ||
+              (addr1.is_inet() && addr1.inet<addr2.inet);
+    }
+  };
+
+  template<typename TypeT, typename addr=CommAddress>
+  class CommAddressMap : public hash_map<addr, TypeT, CommAddressHashCompare> {
+  };
+
+#endif
 
   typedef std::set<CommAddress> CommAddressSet;
 

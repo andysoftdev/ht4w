@@ -70,8 +70,13 @@ namespace Hypertable {
 
     static boost::thread_group ms_threads;
 
-    static bool ms_epollet;
+#ifdef _WIN32
+    static HANDLE hIOCP;
+#else
+	static bool ms_epollet;
     static bool use_poll;
+#endif
+        
     static bool proxy_master;
 
   private:

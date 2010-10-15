@@ -56,7 +56,7 @@ namespace Hypertable {
      */
     ApplicationHandler(EventPtr &event_ptr) : m_event_ptr(event_ptr) {
       if (m_event_ptr)
-        m_urgent = (bool)(m_event_ptr->header.flags & CommHeader::FLAGS_BIT_URGENT);
+        m_urgent = (m_event_ptr->header.flags & CommHeader::FLAGS_BIT_URGENT) > 0;
       else
         m_urgent = false;
     }
@@ -89,7 +89,7 @@ namespace Hypertable {
           ReactorRunner::record_arrival_clocks) {
 	uint32_t wait_ms;
 	if (m_event_ptr->arrival_time != 0)
-	  wait_ms = (time(0) - m_event_ptr->arrival_time) * 1000;
+	  wait_ms = uint32_t((time(0) - m_event_ptr->arrival_time) * 1000);
 	else {
 	  clock_t clock_diff = std::clock() - m_event_ptr->arrival_clocks;
 	  wait_ms = (clock_diff * 1000) / CLOCKS_PER_SEC;

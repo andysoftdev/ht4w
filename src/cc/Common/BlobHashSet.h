@@ -28,12 +28,24 @@ namespace Hypertable {
 /**
  * A hash set for storing and lookup blob efficiently
  */
+#ifndef _WIN32
+
 template <class TraitsT = BlobHashTraits<> >
 class BlobHashSet : public hash_set<Blob, typename TraitsT::hasher,
                                     typename TraitsT::key_equal> {
 private:
   typedef hash_set<Blob, typename TraitsT::hasher,
                    typename TraitsT::key_equal> Base;
+
+#else
+
+template <class TraitsT = BlobHashTraits<> >
+class BlobHashSet : public hash_set<Blob, typename TraitsT::hash_compare> {
+private:
+  typedef hash_set<Blob, typename TraitsT::hash_compare> Base;
+
+#endif
+
 public:
   typedef typename Base::iterator iterator;
   typedef typename Base::key_type key_type;

@@ -56,6 +56,7 @@ TableScanner::TableScanner(Comm *comm, Table *table,
       m_interval_scanners.push_back(ri_scanner);
     }
     else {
+	  m_interval_scanners.reserve(scan_spec.cell_intervals.size());
       for (size_t i=0; i<scan_spec.cell_intervals.size(); i++) {
         scan_spec.base_copy(interval_scan_spec);
         interval_scan_spec.cell_intervals.push_back(
@@ -67,6 +68,7 @@ TableScanner::TableScanner(Comm *comm, Table *table,
     }
   }
   else {
+	m_interval_scanners.reserve(scan_spec.row_intervals.size());      
     for (size_t i=0; i<scan_spec.row_intervals.size(); i++) {
       scan_spec.base_copy(interval_scan_spec);
       interval_scan_spec.row_intervals.push_back(scan_spec.row_intervals[i]);

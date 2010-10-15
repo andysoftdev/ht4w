@@ -216,7 +216,11 @@ namespace Hyperspace {
     uint32_t      m_maintenance_interval;
     std::string   m_base_dir;
     std::string   m_lock_file;
-    int           m_lock_fd;
+#ifdef _WIN32
+    HANDLE        m_lock_fd;
+#else
+	int           m_lock_fd;	
+#endif
     uint32_t      m_generation;
     uint64_t      m_next_handle_number;
     uint64_t      m_next_session_id;

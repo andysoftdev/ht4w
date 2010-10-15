@@ -19,6 +19,7 @@
  * 02110-1301, USA.
  */
 
+#include "Common/Compat.h"
 #include "NameIdMapper.h"
 #include "Common/ScopeGuard.h"
 #include "Common/Error.h"
@@ -286,7 +287,7 @@ void NameIdMapper::drop_mapping(const String &name) {
 
 bool NameIdMapper::do_mapping(const String &input, bool id_in, String &output,
                               bool *is_namespacep) {
-  vector <struct DirEntryAttr> listing;
+  vector <DirEntryAttr> listing;
   uint32_t oflags = OPEN_FLAG_READ | OPEN_FLAG_WRITE | OPEN_FLAG_LOCK;
   uint64_t handle = 0;
   int num_path_components = 0;
@@ -355,7 +356,7 @@ bool NameIdMapper::do_mapping(const String &input, bool id_in, String &output,
 }
 
 void NameIdMapper::id_to_sublisting(const String &id, vector<NamespaceListing> &listing) {
-  vector <struct DirEntryAttr> dir_listing;
+  vector <DirEntryAttr> dir_listing;
   uint32_t oflags = OPEN_FLAG_READ | OPEN_FLAG_WRITE | OPEN_FLAG_LOCK;
   uint64_t handle = 0;
   HandleCallbackPtr null_handle_callback;

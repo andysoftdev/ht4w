@@ -24,7 +24,17 @@
 
 #include <cstdlib>
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4005 ) // 'off_t' : macro redefinition
+#pragma warning( disable : 4995 ) // 'strerror': name was marked as #pragma deprecated
+#endif
+
 #include <db_cxx.h>
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
 
 namespace Hyperspace {
 

@@ -43,9 +43,16 @@ extern "C" {
 #include "IOHandlerData.h"
 #include "ReactorFactory.h"
 
+#ifdef _WIN32
+
+#include "Comm.h"
+
+#endif
+
 using namespace Hypertable;
 using namespace std;
 
+#ifndef _WIN32
 
 bool
 IOHandlerAccept::handle_event(struct pollfd *event, clock_t arrival_clocks, time_t arival_time) {
@@ -53,6 +60,8 @@ IOHandlerAccept::handle_event(struct pollfd *event, clock_t arrival_clocks, time
     return handle_incoming_connection();
   return true;
 }
+
+#endif
 
 /**
  *
@@ -75,11 +84,100 @@ bool IOHandlerAccept::handle_event(port_event_t *event, clock_t, time_t) {
     return handle_incoming_connection();
   return true;
 }
+#elif defined(_WIN32)
+
+bool IOHandlerAccept::handle_event(OverlappedEx *pol, clock_t, time_t) {
+  const SOCKET sd = pol->m_sd;
+  const int one = 1;
+
+  HT_DEBUGF("IOHandlerAccept::handle_event(%d)", pol);
+
+  struct sockaddr_in *sa_local=NULL, *sa_remote=NULL;
+  int socklen_local=0, socklen_remote=0;
+
+  Comm::pfnGetAcceptExSockaddrs( &pol->m_addresses, 0,
+                        sizeof(struct sockaddr_in) + 16,
+                        sizeof(struct sockaddr_in) + 16,
+                        (LPSOCKADDR*)&sa_local, &socklen_local,
+                        (LPSOCKADDR*)&sa_remote, &socklen_remote);
+
+  HT_DEBUGF("Just accepted incoming connection, fd=%d (%s:%d)",
+              sd, inet_ntoa(sa_remote->sin_addr), ntohs(sa_remote->sin_port));
+
+  u_long arg_one = 1;
+  if( ioctlsocket(sd, FIONBIO, &arg_one) == SOCKET_ERROR ) {
+    int err = WSAGetLastError();
+    HT_ERRORF("ioctlsocket(FIONBIO) failed : %s", winapi_strerror(err));
+    WSASetLastError(err);
+  }
+
+  if (setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, (const char*)&one, sizeof(one)) == SOCKET_ERROR)
+    HT_ERRORF("setsockopt(TCP_NODELAY) failure: %s", winapi_strerror(WSAGetLastError()));
+
+  const int bufsize = 4*32768;
+
+  if (setsockopt(sd, SOL_SOCKET, SO_SNDBUF, (const char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
+    HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", winapi_strerror(WSAGetLastError()));
+  if (setsockopt(sd, SOL_SOCKET, SO_RCVBUF, (const char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
+    HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", winapi_strerror(WSAGetLastError()));
+
+
+  DispatchHandlerPtr dhp;
+  m_handler_factory_ptr->get_instance(dhp);
+
+  IOHandlerData *data_handler = new IOHandlerData(pol->m_sd, *sa_remote, dhp, true);
+
+  IOHandlerPtr handler(data_handler);
+  m_handler_map_ptr->insert_handler(data_handler);
+
+  data_handler->start_polling();
+  data_handler->async_recv_header();
+
+  deliver_event(new Event(Event::CONNECTION_ESTABLISHED, *sa_remote, Error::OK));
+
+  // accept next connection
+  async_accept();
+
+  return false;
+}
+
 #else
   ImplementMe;
 #endif
 
 
+#ifdef _WIN32
+
+bool IOHandlerAccept::async_accept() {
+  SOCKET sd2 = socket( AF_INET, SOCK_STREAM, IPPROTO_TCP );
+  if ( sd2 == INVALID_SOCKET ) {
+    HT_ERRORF("socket creation error: %s", winapi_strerror(WSAGetLastError()));
+    return false;
+  }
+
+  DWORD bytesReceived = 0;
+  OverlappedEx* pol = new OverlappedEx(sd2, OverlappedEx::ACCEPT, this);
+  if ( ! Comm::pfnAcceptEx(m_sd, sd2, &pol->m_addresses, 0,
+                  sizeof(struct sockaddr_in) + 16,
+                  sizeof(struct sockaddr_in) + 16,
+                  &bytesReceived,
+                  pol ) ) {
+    int err = WSAGetLastError();
+    if (err != ERROR_IO_PENDING) {
+      HT_ERRORF("AcceptEx error: %s", winapi_strerror(err));
+      return false;
+    }
+  }
+  else {
+    // immediate success
+    HT_INFOF("AcceptEx: immediate success");
+    handle_event(pol, 0, 0);
+    delete pol;
+  }
+  return true;
+}
+
+#else
 
 bool IOHandlerAccept::handle_incoming_connection() {
   int sd;
@@ -142,3 +240,6 @@ bool IOHandlerAccept::handle_incoming_connection() {
 
   return false;
  }
+
+#endif
+

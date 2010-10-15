@@ -31,10 +31,15 @@ extern "C" {
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#if defined(__FreeBSD__)
-#include <sys/extattr.h>
-#else
-#include <sys/xattr.h>
+#ifdef HT_XATTR_ENABLED
+# if defined(__FreeBSD__)
+#   include <sys/extattr.h>
+# else
+#   include <sys/xattr.h>
+# endif
+# if defined(__linux__)
+#   include <attr/xattr.h>
+# endif
 #endif
 #include <unistd.h>
 }
@@ -154,12 +159,32 @@ Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
     HT_INFOF("Base directory '%s' does not exist, creating...",
 	     m_base_dir.c_str());
     if (!FileUtils::mkdirs(m_base_dir.c_str())) {
+#ifdef _WIN32
+		HT_ERRORF("Unable to create base directory %s - %s",
+                m_base_dir.c_str(), winapi_strerror(::GetLastError()));
+#else
       HT_ERRORF("Unable to create base directory %s - %s",
                 m_base_dir.c_str(), strerror(errno));
+#endif
       exit(1);
     }
   }
 
+#ifdef _WIN32
+  m_lock_fd = ::CreateFile(m_lock_file.c_str(), GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, 0, NULL);
+  if (m_lock_fd == INVALID_HANDLE_VALUE) {
+    DWORD err = ::GetLastError();
+    if (err == ERROR_SHARING_VIOLATION) {
+      HT_ERRORF("Lock file '%s' is locked by another process.",
+        m_lock_file.c_str());
+    }
+    else {
+      HT_ERRORF("Unable to create lock file '%s' - %s",
+        m_lock_file.c_str(), winapi_strerror(err));
+    }
+    exit(1);
+  }
+#else
   if (!FileUtils::exists(m_lock_file.c_str())) {
     HT_INFOF("Lock file '%s' does not exist, creating...",
 	     m_lock_file.c_str());
@@ -214,6 +239,8 @@ Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
   }
 #endif
 
+#endif
+
   app_queue_ptr = new ApplicationQueue( get_i32("workers") );
   vector<Thread::id> thread_ids = app_queue_ptr->get_thread_ids();
   thread_ids.push_back(ThisThread::get_id());
@@ -230,7 +257,7 @@ Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
     get_generation_number();
 
   uint16_t port = props->get_i16("Hyperspace.Replica.Port");
-  InetAddr::initialize(&m_local_addr, INADDR_ANY, port);
+  InetAddr::initialize(&m_local_addr, uint32_t(INADDR_ANY), port);
 
 
   boost::xtime_get(&m_last_tick, boost::TIME_UTC);
@@ -243,7 +270,11 @@ Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
 
 Master::~Master() {
   delete m_bdb_fs;
+#ifdef _WIN32
+  ::CloseHandle(m_lock_fd);
+#else
   ::close(m_lock_fd);
+#endif
 }
 
 /**
@@ -568,7 +599,12 @@ Master::mkdir(ResponseCallback *cb, uint64_t session_id, const char *name) {
   // check for errors
   if (aborted) {
     cb->error(error, error_msg);
-    HT_ERROR_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
+	if( error == Error::HYPERSPACE_FILE_EXISTS ) { // warning should be sufficient
+		HT_WARN_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
+	}
+	else {
+		HT_ERROR_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
+	}
     return;
   }
 
@@ -813,12 +849,12 @@ Master::open(ResponseCallbackOpen *cb, uint64_t session_id, const char *name,
       }
       // create new node
       lock_generation = 1;
-      m_bdb_fs->create(txn, name, (flags & OPEN_FLAG_TEMP));
+      m_bdb_fs->create(txn, name, (flags & OPEN_FLAG_TEMP) > 0);
       m_bdb_fs->set_xattr_i64(txn, name, "lock.generation",
                               lock_generation);
 
       // create a new node data object in hyperspace
-      m_bdb_fs->create_node(txn, node, (flags & OPEN_FLAG_TEMP), lock_generation);
+      m_bdb_fs->create_node(txn, node, (flags & OPEN_FLAG_TEMP) > 0, lock_generation);
 
       // Set the initial attributes
       for (size_t i=0; i<init_attrs.size(); i++)

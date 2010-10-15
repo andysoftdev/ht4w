@@ -63,7 +63,12 @@ void CommandCopyFromLocal::run() {
   try {
 
     if ((fp = fopen(m_args[src_arg].first.c_str(), "r")) == 0)
+#ifdef _WIN32
+	  HT_THROW(Error::EXTERNAL, winapi_strerror(::GetLastError()));
+#else
       HT_THROW(Error::EXTERNAL, strerror(errno));
+#endif
+
 
     fd = m_client->create(m_args[src_arg+1].first, Filesystem::OPEN_FLAG_OVERWRITE, -1, -1, -1);
 

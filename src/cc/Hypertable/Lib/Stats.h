@@ -143,7 +143,9 @@ namespace Hypertable {
     virtual void process_stats(const uint8_t **bufp, size_t *remainp,
                                bool update_table_stats, TableStatsMap  &table_stats)=0;
     virtual void dump_str(String &out)=0;
+#ifndef _WIN32
     virtual void dump_rrd(const String &file_prefix)=0;
+#endif
     virtual void get_hl_stats(RangeServerHLStats &hl_stats)=0;
 
   };

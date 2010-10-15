@@ -17,7 +17,8 @@
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#include "Compat.h"
+#include "Common/Compat.h"
+
 #include <arpa/inet.h>
 #include <zlib.h>
 #include "Checksum.h"

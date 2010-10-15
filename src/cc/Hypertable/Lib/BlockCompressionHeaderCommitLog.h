@@ -33,7 +33,11 @@ namespace Hypertable {
 
   public:
 
+#ifdef _WIN32
+	enum { LENGTH = BlockCompressionHeader::LENGTH + 8 };
+#else
     static const size_t LENGTH = BlockCompressionHeader::LENGTH + 8;
+#endif
 
     BlockCompressionHeaderCommitLog();
     BlockCompressionHeaderCommitLog(const char *magic, int64_t revision);

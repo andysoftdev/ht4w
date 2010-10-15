@@ -53,7 +53,7 @@ inline size_t get_align_offset(void *p) {
 
 
 // base classes for our stl allocators
-template <typename T> class AllocatorBase;
+template <typename T> struct AllocatorBase;
 
 template <>
 struct AllocatorBase<void> {

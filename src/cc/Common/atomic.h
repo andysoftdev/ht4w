@@ -22,6 +22,59 @@
 #ifndef ATOMIC_H
 #define ATOMIC_H
 
+#ifdef _WIN32
+
+#include <intrin.h>
+
+typedef struct { volatile LONG counter; } atomic_t;
+
+inline void atomic_add(int i, atomic_t *v)
+{
+  _InterlockedExchangeAdd(&v->counter, i);
+}
+
+inline void atomic_sub(int i, atomic_t *v)
+{
+  _InterlockedExchangeAdd(&v->counter, -i);
+}
+
+inline int atomic_add_return(int i, atomic_t *v)
+{
+  return _InterlockedExchangeAdd(&v->counter, i) + i;
+}
+
+inline int atomic_sub_and_test(int i, atomic_t *v)
+{
+  return _InterlockedExchangeAdd(&v->counter, -i) == i;
+}
+
+inline void atomic_inc(atomic_t *v)
+{
+  _InterlockedIncrement(&v->counter);
+}
+
+inline void atomic_dec(atomic_t *v)
+{
+  _InterlockedDecrement(&v->counter);
+}
+
+inline int atomic_dec_and_test(atomic_t *v)
+{
+  return 0 == _InterlockedDecrement(&v->counter);
+}
+
+inline int atomic_inc_and_test(atomic_t *v)
+{
+  return 0 == _InterlockedIncrement(&v->counter);
+}
+
+inline int atomic_add_negative(int i, atomic_t *v)
+{
+  return (_InterlockedExchangeAdd(&v->counter, i) + i) < 0;
+}
+
+#else
+
 /*
  * Atomic operations that C can't guarantee us.  Useful for
  * resource counting etc..
@@ -35,25 +88,6 @@
  * not some alias that contains the same information.
  */
 typedef struct { volatile int counter; } atomic_t;
-
-#define ATOMIC_INIT(i)  { (i) }
-
-/**
- * atomic_read - read atomic variable
- * @param v pointer of type atomic_t
- *
- * Atomically reads the value of v.
- */
-#define atomic_read(v)          ((v)->counter)
-
-/**
- * atomic_set - set atomic variable
- * @param v pointer of type atomic_t
- * @param i required value
- *
- * Atomically sets the value of v to i.
- */
-#define atomic_set(v,i)         (((v)->counter) = (i))
 
 /**
  * atomic_add - add integer to atomic variable
@@ -226,7 +260,29 @@ __asm__ __volatile__(LOCK "andl %0,%1" \
 __asm__ __volatile__(LOCK "orl %0,%1" \
 : : "r" (mask),"m" (*(addr)) : "memory")
 
+#endif
+
+#define ATOMIC_INIT(i)  { (i) }
+
+/**
+ * atomic_read - read atomic variable
+ * @param v pointer of type atomic_t
+ *
+ * Atomically reads the value of v.
+ */
+#define atomic_read(v)          ((v)->counter)
+
+/**
+ * atomic_set - set atomic variable
+ * @param v pointer of type atomic_t
+ * @param i required value
+ *
+ * Atomically sets the value of v to i.
+ */
+#define atomic_set(v,i)         (((v)->counter) = (i))
+
 #define atomic_inc_return(v)  (atomic_add_return(1,v))
 #define atomic_dec_return(v)  (atomic_sub_return(1,v))
+
 
 #endif // ATOMIC_H

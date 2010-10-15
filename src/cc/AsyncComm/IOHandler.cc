@@ -41,6 +41,8 @@ extern "C" {
 #include "Reactor.h"
 using namespace Hypertable;
 
+#ifndef _WIN32
+
 #define HANDLE_POLL_INTERFACE_MODIFY \
   if (ReactorFactory::use_poll) \
     return m_reactor_ptr->modify_poll_interest(m_sd, poll_events(m_poll_interest));
@@ -404,3 +406,50 @@ void IOHandler::display_event(struct kevent *event) {
 #else
   ImplementMe;
 #endif
+
+#else
+
+void IOHandler::display_event(OverlappedEx *pol) {
+  clog << pol->to_str() << endl;
+}
+
+
+String OverlappedEx::to_str() const {
+  switch(m_type) {
+  case CONNECT:
+    if(m_err!=NOERROR)
+      return format("CONNECT error: %s", winapi_strerror(m_err));
+    return "CONNECT";
+
+  case ACCEPT:
+    if(m_err!=NOERROR)
+      return format("ACCEPT error: %s", winapi_strerror(m_err));
+    return "ACCEPT";
+
+  case RECV:
+    if(m_err!=NOERROR)
+      return format("RECV error: %s", winapi_strerror(m_err));
+    return format("RECV %d bytes", m_numberOfBytes);
+
+  case SEND:
+    if(m_err!=NOERROR)
+      return format("SEND error: %s", winapi_strerror(m_err));
+    return format("SEND %d bytes", m_numberOfBytes);
+
+  case RECVFROM:
+    if(m_err!=NOERROR)
+      return format("RECVFROM error: %s", winapi_strerror(m_err));
+    return format("RECVFROM %d bytes", m_numberOfBytes);
+
+  case SENDTO:
+    if(m_err!=NOERROR)
+      return format("SENDTO error: %s", winapi_strerror(m_err));
+    return format("SENDTO %d bytes", m_numberOfBytes);
+
+  default:
+    HT_ASSERT(false);
+  }
+}
+
+#endif
+

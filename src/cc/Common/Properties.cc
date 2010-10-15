@@ -124,7 +124,11 @@ parse(command_line_parser &parser, const PropertiesDesc &desc,
     if (allow_unregistered)
       store(parser.allow_unregistered().run(), result);
     else
-      store(parser.run(), result);
+#if BOOST_VERSION >= 104200
+     store(parser.style(command_line_style::default_style & ~command_line_style::allow_guessing).run(), result);
+#else
+     store(parser.run(), result);
+#endif
 #else
     store(parser.run(), result);
 #endif
@@ -145,8 +149,13 @@ Properties::load(const String &fname, const PropertiesDesc &desc,
   try {
     std::ifstream in(fname.c_str());
 
+#ifdef _WIN32
+    if (!in)
+      HT_THROWF(Error::CONFIG_BAD_CFG_FILE, "%s", winapi_strerror(GetLastError()));
+#else
     if (!in)
       HT_THROWF(Error::CONFIG_BAD_CFG_FILE, "%s", strerror(errno));
+#endif
 
 
 #if BOOST_VERSION >= 103500

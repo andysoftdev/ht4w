@@ -1,0 +1,11 @@
+how-to-build berkeley db for Hypertable
+---------------------------------------
+
+1. download latest berkeley db from http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html
+
+2. unpack the package content (e.g. below db-5.1.19/...) into this
+  folder e.g. ...\hypertable\deps\db\
+
+3. run libdb.js
+
+notice, libdb will be build within the regular hypertable solution

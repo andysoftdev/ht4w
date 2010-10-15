@@ -31,6 +31,11 @@ extern "C" {
 #include <time.h>
 }
 
+#ifdef _WIN32
+#define BOOST_IOSTREAMS_USE_DEPRECATED
+#define BOOST_IOSTREAMS_WINDOWS
+#endif
+
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -195,7 +200,7 @@ cmd_create_table(NamespacePtr &ns, ParserState &state,
       if (state.table_blocksize != 0 && ag->blocksize == 0)
         ag->blocksize = state.table_blocksize;
       if (state.table_replication != -1 && ag->replication == -1)
-        ag->replication = (int16_t)state.table_replication;
+        ag->replication = (::int16_t)state.table_replication;
       schema->add_access_group(ag);
     }
 
@@ -213,7 +218,7 @@ cmd_create_table(NamespacePtr &ns, ParserState &state,
           if (state.table_blocksize != 0 && ag->blocksize == 0)
             ag->blocksize = state.table_blocksize;
           if (state.table_replication != -1 && ag->replication == -1)
-            ag->replication = (int16_t)state.table_replication;
+            ag->replication = (::int16_t)state.table_replication;
           schema->add_access_group(ag);
           need_default_ag = false;
         }
@@ -560,7 +565,7 @@ cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
   FILE *outf = cb.output;
   int out_fd = -1;
   bool largefile_mode = false;
-  int64_t last_total = 0, new_total;
+  ::int64_t last_total = 0, new_total;
 
   if (LoadDataFlags::ignore_unknown_cfs(state.load_flags))
     mutator_flags |= TableMutator::FLAG_IGNORE_UNKNOWN_CFS;
