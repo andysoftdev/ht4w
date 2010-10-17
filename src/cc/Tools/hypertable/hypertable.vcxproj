@@ -28,7 +28,12 @@
     <ClCompile Include="hypertable.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\hypertable.rc" />
+    <ResourceCompile Include="..\..\hypertable.rc">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">HYPERTABLE_SHELL</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">HYPERTABLE_SHELL</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">HYPERTABLE_SHELL</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">HYPERTABLE_SHELL</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D09D88FC-B838-4892-99C1-7E2EA3DAF77C}</ProjectGuid>

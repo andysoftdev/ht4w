@@ -137,6 +137,7 @@ run/monitoring/*stats.txt
 *.suo
 *.sdf
 *.opensdf
+*.aps
 /contrib/net
 /build
 /dist
