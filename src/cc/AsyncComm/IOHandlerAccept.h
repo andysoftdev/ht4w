@@ -36,7 +36,7 @@ namespace Hypertable {
 
   public:
 
-    IOHandlerAccept(int sd, const InetAddr &addr, DispatchHandlerPtr &dhp,
+    IOHandlerAccept(socket_t sd, const InetAddr &addr, DispatchHandlerPtr &dhp,
                     HandlerMapPtr &hmap, ConnectionHandlerFactoryPtr &chfp)
       : IOHandler(sd, addr, dhp), m_handler_map_ptr(hmap),
         m_handler_factory_ptr(chfp) {

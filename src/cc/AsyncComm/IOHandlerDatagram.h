@@ -43,7 +43,7 @@ namespace Hypertable {
 
   public:
 
-    IOHandlerDatagram(int sd, const InetAddr &addr, DispatchHandlerPtr &dhp)
+    IOHandlerDatagram(socket_t sd, const InetAddr &addr, DispatchHandlerPtr &dhp)
       : IOHandler(sd, addr, dhp)
 
 #ifndef _WIN32

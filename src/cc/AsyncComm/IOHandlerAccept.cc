@@ -87,7 +87,7 @@ bool IOHandlerAccept::handle_event(port_event_t *event, clock_t, time_t) {
 #elif defined(_WIN32)
 
 bool IOHandlerAccept::handle_event(OverlappedEx *pol, clock_t, time_t) {
-  const SOCKET sd = pol->m_sd;
+  const socket_t sd = pol->m_sd;
   const int one = 1;
 
   HT_DEBUGF("IOHandlerAccept::handle_event(%d)", pol);
@@ -149,7 +149,7 @@ bool IOHandlerAccept::handle_event(OverlappedEx *pol, clock_t, time_t) {
 #ifdef _WIN32
 
 bool IOHandlerAccept::async_accept() {
-  SOCKET sd2 = socket( AF_INET, SOCK_STREAM, IPPROTO_TCP );
+  socket_t sd2 = socket( AF_INET, SOCK_STREAM, IPPROTO_TCP );
   if ( sd2 == INVALID_SOCKET ) {
     HT_ERRORF("socket creation error: %s", winapi_strerror(WSAGetLastError()));
     return false;

@@ -103,7 +103,7 @@ namespace Hypertable {
      * @param buf buffer containing serialized header
      * @param len length of buffer
      */
-    void load_header(int sd, const uint8_t *buf, size_t len) {
+    void load_header(socket_t sd, const uint8_t *buf, size_t len) {
       header.decode(&buf, &len);
       if (header.gid != 0)
         thread_group = ((uint64_t)sd << 32) | header.gid;

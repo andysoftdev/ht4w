@@ -148,15 +148,8 @@
 
 #endif
 
+typedef SOCKET socket_t;
 typedef int socklen_t;
-typedef signed __int8 int8_t;
-typedef unsigned __int8 uint8_t;
-typedef signed __int16 int16_t;
-typedef unsigned __int16 uint16_t;
-typedef signed __int32 int32_t;
-typedef unsigned __int32 uint32_t;
-typedef signed __int64 int64_t;
-typedef unsigned __int64 uint64_t;
 
 typedef signed __int64 _off64_t;
 typedef signed __int64 off64_t;
@@ -167,6 +160,7 @@ typedef signed __int64 off64_t;
 typedef int pid_t;
 extern struct tm * gmtime_r(const time_t *timer, struct tm *result);
 
+#define HAVE_STRUCT_TIMESPEC
 typedef struct timespec {
     time_t tv_sec;	// Seconds since 00:00:00 GMT, 1 January 1970
     long tv_nsec;	// Additional nanoseconds since tv_sec
@@ -185,6 +179,7 @@ const char* winapi_strerror( DWORD err );
 #define strtoull _strtoui64
 #define snprintf _snprintf
 #define getpid _getpid
+#define atoll _atoi64
 #define SLEEP Sleep
 
 #undef ERROR
@@ -202,6 +197,8 @@ typedef int32_t ssize_t;
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+
+typedef int socket_t;
 
 #endif 
 

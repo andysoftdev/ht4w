@@ -295,7 +295,7 @@ namespace Hypertable {
     int send_request(IOHandlerDataPtr &data_handler, uint32_t timeout_ms,
                      CommBufPtr &cbuf, DispatchHandler *response_handler);
 
-    int connect_socket(int sd, const CommAddress &addr,
+    int connect_socket(socket_t sd, const CommAddress &addr,
                        DispatchHandlerPtr &default_handler);
 
     static atomic_t ms_next_request_id;

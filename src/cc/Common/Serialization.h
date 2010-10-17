@@ -343,7 +343,7 @@ namespace Hypertable { namespace Serialization {
    */
   template <class StringT>
   inline void encode_str16(uint8_t **bufp, const StringT &str) {
-    encode_str16(bufp, str.c_str(), str.length());
+    encode_str16(bufp, str.c_str(), (uint16_t)str.length());
   }
 
   /**

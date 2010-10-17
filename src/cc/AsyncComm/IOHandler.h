@@ -72,7 +72,7 @@ struct OverlappedEx;
 
   public:
 
-    IOHandler(int sd, const InetAddr &addr, DispatchHandlerPtr &dhp)
+    IOHandler(socket_t sd, const InetAddr &addr, DispatchHandlerPtr &dhp)
       : m_free_flag(0), m_addr(addr), m_sd(sd), m_dispatch_handler_ptr(dhp) {
       ReactorFactory::get_reactor(m_reactor_ptr);
 
@@ -230,7 +230,7 @@ struct OverlappedEx;
       m_proxy = proxy;
     }
 
-    int get_sd() { return m_sd; }
+    socket_t get_sd() { return m_sd; }
 
     void get_reactor(ReactorPtr &reactor_ptr) { reactor_ptr = m_reactor_ptr; }
 
@@ -299,7 +299,7 @@ struct OverlappedEx;
     InetAddr            m_addr;
     InetAddr            m_local_addr;
     InetAddr            m_alias;
-    int                 m_sd;
+    socket_t            m_sd;
     DispatchHandlerPtr  m_dispatch_handler_ptr;
     ReactorPtr          m_reactor_ptr;
 
@@ -321,7 +321,7 @@ struct OverlappedEx;
 
   struct OverlappedEx : OVERLAPPED {
     enum Type { CONNECT, ACCEPT, RECV, SEND, RECVFROM, SENDTO };
-    OverlappedEx(SOCKET s, Type t, IOHandler* handler) :
+    OverlappedEx(socket_t s, Type t, IOHandler* handler) :
         m_sd(s),
         m_type(t),
         m_handler(handler),
@@ -329,7 +329,7 @@ struct OverlappedEx;
         m_commbuf(0) {
       ZeroMemory(this, sizeof(OVERLAPPED));
     }
-    const SOCKET m_sd;
+    const socket_t m_sd;
     const Type m_type;
     IOHandlerPtr m_handler; // prevent Handler to be deleted until all the IOCP done
     DWORD m_numberOfBytes;  // from GetQueuedCompletionStatus

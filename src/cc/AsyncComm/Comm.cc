@@ -65,7 +65,7 @@ Mutex Comm::ms_mutex;
 
 #ifdef _WIN32
 
-static void* get_extension_function(SOCKET s, const GUID *which_fn)
+static void* get_extension_function(socket_t s, const GUID *which_fn)
 {
   void *ptr = NULL;
   DWORD bytes=0;
@@ -91,7 +91,7 @@ Comm::Comm() {
 
   #ifdef _WIN32
     
-  SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
+  socket_t s = socket(AF_INET, SOCK_STREAM, 0);
   if(s != INVALID_SOCKET) {
 	static const GUID acceptex = WSAID_ACCEPTEX;
 	static const GUID connectex = WSAID_CONNECTEX;
@@ -143,7 +143,7 @@ void Comm::destroy() {
 
 int
 Comm::connect(const CommAddress &addr, DispatchHandlerPtr &default_handler) {
-  int sd;
+  socket_t sd;
   int error = m_handler_map->contains_data_handler(addr);
 
   if (error == Error::OK)
@@ -176,7 +176,7 @@ Comm::connect(const CommAddress &addr, DispatchHandlerPtr &default_handler) {
 int
 Comm::connect(const CommAddress &addr, const CommAddress &local_addr,
               DispatchHandlerPtr &default_handler) {
-  int sd;
+  socket_t sd;
   int error = m_handler_map->contains_data_handler(addr);
 
   HT_ASSERT(local_addr.is_inet());
@@ -250,7 +250,7 @@ Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
   IOHandlerPtr handler;
   IOHandlerAccept *accept_handler;
   int one = 1;
-  int sd;
+  socket_t sd;
 
   HT_ASSERT(addr.is_inet());
 
@@ -403,7 +403,7 @@ Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
   IOHandlerPtr handler;
   IOHandlerDatagram *dg_handler;
   int one = 1;
-  int sd;
+  socket_t sd;
 
   HT_ASSERT(addr.is_inet());
   int bufsize = 4*32768;
@@ -579,7 +579,7 @@ int Comm::close_socket(const CommAddress &addr) {
  */
 
 int
-Comm::connect_socket(int sd, const CommAddress &addr,
+Comm::connect_socket(socket_t sd, const CommAddress &addr,
                      DispatchHandlerPtr &default_handler) {
   IOHandlerPtr handler;
   IOHandlerData *data_handler;

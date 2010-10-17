@@ -1047,7 +1047,7 @@ int IOHandlerData::flush_send_queue() {
       }
     }
 
-    // buffer written successfully, now remove from queue (buffer will destroed in completion routine)
+    // buffer written successfully, now remove from queue (buffer will destroyed in completion routine)
     m_send_queue.pop_front();
   }
 
