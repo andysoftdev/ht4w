@@ -6,8 +6,13 @@ set PLATFORM=x64
 set ZLIB_SOURCE=%THIS_PATH%\..\zlib
 set BZIP2_SOURCE=%THIS_PATH%\..\bzip2
 set VCVARSALL="c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"
-if not exist %VCVARSALL% goto missing_vcvarsall  
+if not exist %VCVARSALL% goto vcvarsall  
 call %VCVARSALL% x64
+
+:vcvarsall
+set VCVARSALL="c:\Program Files\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"
+if not exist %VCVARSALL% goto missing_vcvarsall  
+call %VCVARSALL% x86_amd64
 
 :bootstrap
 if exist bjam.exe goto build_boost  
@@ -18,7 +23,6 @@ call "%THIS_PATH%\bootstrap.bat"
 :build_boost
 if not exist "%THIS_PATH%\stage" md "%THIS_PATH%\stage"
 if not exist "%THIS_PATH%\stage\%PLATFORM%" md "%THIS_PATH%\stage\%PLATFORM%"
-
 
 bjam --build-dir="%THIS_PATH%\..\..\build\deps\boost\%PLATFORM%" --stagedir="%THIS_PATH%\stage\%PLATFORM%" --without-python --without-mpi -sNO_COMPRESSION=0 -sNO_ZLIB=0 -sZLIB_SOURCE="%ZLIB_SOURCE%" -sNO_BZIP2=0 -sBZIP2_SOURCE="%BZIP2_SOURCE%" address-model=64 debug link=static runtime-link=shared cflags=/GF cxxflags=/GF stage
 bjam --build-dir="%THIS_PATH%\..\..\build\deps\boost\%PLATFORM%" --stagedir="%THIS_PATH%\stage\%PLATFORM%" --without-python --without-mpi -sNO_COMPRESSION=0 -sNO_ZLIB=0 -sZLIB_SOURCE="%ZLIB_SOURCE%" -sNO_BZIP2=0 -sBZIP2_SOURCE="%BZIP2_SOURCE%" address-model=64 release link=static runtime-link=shared cflags="/GL /GF /fp:precise" cxxflags="/GL /GF /fp:precise" linkflags=/LTCG stage
