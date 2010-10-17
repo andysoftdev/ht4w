@@ -90,7 +90,7 @@ namespace log4cpp {
                     WSADATA wsaData;
                     int err;
  
-                    err = WSAStartup (0x101, &wsaData );
+                    err = WSAStartup(MAKEWORD(2, 2), &wsaData );
                     if (err) {
                         // loglog("RemoteSyslogAppender: WSAStartup returned %d", err);
                         return; // fail silently
