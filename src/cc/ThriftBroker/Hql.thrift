@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-include "Client.thrift"
+include "client.thrift"
 
 /**
  * namespace for target languages
@@ -44,7 +44,7 @@ namespace rb    Hypertable.ThriftGen
  */
 struct HqlResult {
   1: optional list<string> results,
-  2: optional list<Client.Cell> cells,
+  2: optional list<client.Cell> cells,
   3: optional i64 scanner,
   4: optional i64 mutator
 }
@@ -54,7 +54,7 @@ struct HqlResult {
  */
 struct HqlResult2 {
   1: optional list<string> results,
-  2: optional list<Client.CellAsArray> cells,
+  2: optional list<client.CellAsArray> cells,
   3: optional i64 scanner,
   4: optional i64 mutator
 }
@@ -64,7 +64,7 @@ struct HqlResult2 {
  *
  * It adds capability to execute HQL queries to the service
  */
-service HqlService extends Client.ClientService {
+service HqlService extends client.ClientService {
 
   /**
    * Execute an HQL command
@@ -79,7 +79,7 @@ service HqlService extends Client.ClientService {
    */
   HqlResult hql_exec(1:i64 ns, 2:string command, 3:bool noflush = 0,
                      4:bool unbuffered = 0)
-      throws (1:Client.ClientException e),
+      throws (1:client.ClientException e),
 
   /**
    * Convenience method for executing an buffered and flushed query
@@ -90,17 +90,17 @@ service HqlService extends Client.ClientService {
    * 
    * @param command - HQL command
    */
-  HqlResult hql_query(1:i64 ns, 2:string command) throws (1:Client.ClientException e)
+  HqlResult hql_query(1:i64 ns, 2:string command) throws (1:client.ClientException e)
 
   /**
    * @see hql_exec
    */
   HqlResult2 hql_exec2(1:i64 ns, 2:string command, 3:bool noflush = 0,
                        4:bool unbuffered = 0)
-      throws (1:Client.ClientException e),
+      throws (1:client.ClientException e),
 
   /**
    * @see hql_query
    */
-  HqlResult2 hql_query2(1:i64 ns, 2:string command) throws (1:Client.ClientException e)
+  HqlResult2 hql_query2(1:i64 ns, 2:string command) throws (1:client.ClientException e)
 }

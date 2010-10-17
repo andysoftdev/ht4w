@@ -7,7 +7,7 @@
 #define ClientService_H
 
 #include <TProcessor.h>
-#include "Client_types.h"
+#include "client_types.h"
 
 namespace Hypertable { namespace ThriftGen {
 

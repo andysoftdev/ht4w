@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#include "Hql_types.h"
+#include "hql_types.h"
 
 namespace Hypertable { namespace ThriftGen {
 

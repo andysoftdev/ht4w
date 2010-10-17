@@ -55,12 +55,17 @@ if not exist %bin%\conf md %bin%\conf
 if not exist %bin%\conf\hypertable.cfg xcopy ..\conf\hypertable.cfg %bin%\conf\
 if not exist %bin%\conf\METADATA.xml xcopy ..\conf\METADATA.xml %bin%\conf\
 
+echo shutdown Hypertable.ThriftBroker...
+taskkill /F /IM "Hypertable.ThriftBroker.exe" /T
+
 echo shutdown Hypertable.RangeServer/Hypertable.Master...
 if not exist %bin%\hypertable.exe goto :missing_exe
 %bin%\hypertable.exe --batch --execute shutdown;quit;
-@ping 127.0.0.1 -n 1 -w 1000 > nul
+@ping 127.0.0.1 -n 3 -w 1000 > nul
+
 echo shutdown Hyperspace.Master...
 taskkill /F /IM "Hyperspace.Master.exe" /T
+
 echo shutdown Hypertable.LocalBroker...
 taskkill /F /IM "Hypertable.LocalBroker.exe" /T
 

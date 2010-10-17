@@ -3,7 +3,7 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#include "Client_types.h"
+#include "client_types.h"
 
 namespace Hypertable { namespace ThriftGen {
 

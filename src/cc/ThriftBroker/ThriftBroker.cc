@@ -42,6 +42,12 @@
 #include "SerializedCellsWriter.h"
 #include "ThriftHelper.h"
 
+#ifdef _WIN32
+
+#include "pthread.h"
+
+#endif
+
 #define THROW_TE(_code_, _str_) do { ThriftGen::ClientException te; \
   te.code = _code_; te.message = _str_; \
   te.__isset.code = te.__isset.message = true; \
@@ -1356,6 +1362,12 @@ int main(int argc, char **argv) {
   using namespace ThriftBroker;
   Random::seed(time(NULL));
 
+#ifdef _WIN32
+
+  pthread_win32_process_attach_np();
+
+#endif
+
   try {
     init_with_policies<Policies>(argc, argv);
 
@@ -1377,5 +1389,12 @@ int main(int argc, char **argv) {
   catch (Hypertable::Exception &e) {
     HT_ERROR_OUT << e << HT_END;
   }
+
+  #ifdef _WIN32
+
+  pthread_win32_process_detach_np();
+
+  #endif
+
   return 0;
 }

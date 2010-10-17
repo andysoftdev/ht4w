@@ -3,20 +3,20 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#ifndef Client_CONSTANTS_H
-#define Client_CONSTANTS_H
+#ifndef client_CONSTANTS_H
+#define client_CONSTANTS_H
 
-#include "Client_types.h"
+#include "client_types.h"
 
 namespace Hypertable { namespace ThriftGen {
 
-class ClientConstants {
+class clientConstants {
  public:
-  ClientConstants();
+  clientConstants();
 
 };
 
-extern const ClientConstants g_Client_constants;
+extern const clientConstants g_client_constants;
 
 }} // namespace
 

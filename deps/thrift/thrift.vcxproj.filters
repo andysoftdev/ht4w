@@ -1,0 +1,205 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\concurrency">
+      <UniqueIdentifier>{74a987ec-0192-44e1-923a-e90b21830297}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\protocol">
+      <UniqueIdentifier>{6f884ece-6903-4b96-a408-1f5e992afd85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\server">
+      <UniqueIdentifier>{608006a8-cb8c-40f6-8c36-3fdd9180da3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\transport">
+      <UniqueIdentifier>{b9d286cb-5783-4e63-9a25-836e94ac66b8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="lib\cpp\src\TApplicationException.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\Thrift.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\concurrency\Monitor.cpp">
+      <Filter>Source Files\concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\concurrency\Mutex.cpp">
+      <Filter>Source Files\concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\concurrency\PosixThreadFactory.cpp">
+      <Filter>Source Files\concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\concurrency\ThreadManager.cpp">
+      <Filter>Source Files\concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\concurrency\TimerManager.cpp">
+      <Filter>Source Files\concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\concurrency\Util.cpp">
+      <Filter>Source Files\concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\TBufferTransports.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\THttpClient.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\THttpServer.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\THttpTransport.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\TServerSocket.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\TSocket.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\TSocketPool.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\TTransportException.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\TTransportUtils.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\transport\TZlibTransport.cpp">
+      <Filter>Source Files\transport</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\server\TServer.cpp">
+      <Filter>Source Files\server</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\server\TSimpleServer.cpp">
+      <Filter>Source Files\server</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\server\TThreadedServer.cpp">
+      <Filter>Source Files\server</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\server\TThreadPoolServer.cpp">
+      <Filter>Source Files\server</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\protocol\TBase64Utils.cpp">
+      <Filter>Source Files\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\protocol\TBinaryProtocol.cpp">
+      <Filter>Source Files\protocol</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lib\cpp\src\TApplicationException.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\Thrift.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\TLogging.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\TProcessor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\TReflectionLocal.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\Exception.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\FunctionRunner.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\Monitor.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\Mutex.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\PosixThreadFactory.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\Thread.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\ThreadManager.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\TimerManager.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\concurrency\Util.h">
+      <Filter>Source Files\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TBufferTransports.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\THttpClient.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\THttpServer.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\THttpTransport.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TServerSocket.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TServerTransport.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TShortReadTransport.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TSocket.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TSocketPool.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TTransport.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TTransportException.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TTransportUtils.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\transport\TZlibTransport.h">
+      <Filter>Source Files\transport</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\server\TServer.h">
+      <Filter>Source Files\server</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\server\TSimpleServer.h">
+      <Filter>Source Files\server</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\server\TThreadedServer.h">
+      <Filter>Source Files\server</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\server\TThreadPoolServer.h">
+      <Filter>Source Files\server</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\protocol\TBase64Utils.h">
+      <Filter>Source Files\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\protocol\TBinaryProtocol.h">
+      <Filter>Source Files\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\protocol\TProtocol.h">
+      <Filter>Source Files\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\protocol\TProtocolException.h">
+      <Filter>Source Files\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\protocol\TProtocolTap.h">
+      <Filter>Source Files\protocol</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -3,13 +3,13 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#include "Client_constants.h"
+#include "client_constants.h"
 
 namespace Hypertable { namespace ThriftGen {
 
-const ClientConstants g_Client_constants;
+const clientConstants g_client_constants;
 
-ClientConstants::ClientConstants() {
+clientConstants::clientConstants() {
 }
 
 }} // namespace

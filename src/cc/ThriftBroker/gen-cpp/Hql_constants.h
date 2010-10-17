@@ -3,20 +3,20 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#ifndef Hql_CONSTANTS_H
-#define Hql_CONSTANTS_H
+#ifndef hql_CONSTANTS_H
+#define hql_CONSTANTS_H
 
-#include "Hql_types.h"
+#include "hql_types.h"
 
 namespace Hypertable { namespace ThriftGen {
 
-class HqlConstants {
+class hqlConstants {
  public:
-  HqlConstants();
+  hqlConstants();
 
 };
 
-extern const HqlConstants g_Hql_constants;
+extern const hqlConstants g_hql_constants;
 
 }} // namespace
 

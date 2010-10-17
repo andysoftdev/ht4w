@@ -3,8 +3,8 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#ifndef Client_TYPES_H
-#define Client_TYPES_H
+#ifndef client_TYPES_H
+#define client_TYPES_H
 
 #include <Thrift.h>
 #include <TApplicationException.h>

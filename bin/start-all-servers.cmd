@@ -75,6 +75,10 @@ if not exist %bin%\Hypertable.RangeServer.exe goto :missing_exe
 @start cmd /c "%bin%\Hypertable.RangeServer.exe %params%"
 @ping 127.0.0.1 -n 5 -w 1000 > nul
 
+echo Starting Hypertable.ThriftBroker...
+if not exist %bin%\Hypertable.ThriftBroker.exe goto :missing_exe
+@start cmd /c "%bin%\Hypertable.ThriftBroker.exe %params%"
+
 echo completed.
 
 goto done

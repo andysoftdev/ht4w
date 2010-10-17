@@ -7,7 +7,7 @@
 #define HqlService_H
 
 #include <TProcessor.h>
-#include "Hql_types.h"
+#include "hql_types.h"
 #include "ClientService.h"
 
 namespace Hypertable { namespace ThriftGen {

@@ -3,13 +3,13 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#include "Hql_constants.h"
+#include "hql_constants.h"
 
 namespace Hypertable { namespace ThriftGen {
 
-const HqlConstants g_Hql_constants;
+const hqlConstants g_hql_constants;
 
-HqlConstants::HqlConstants() {
+hqlConstants::hqlConstants() {
 }
 
 }} // namespace

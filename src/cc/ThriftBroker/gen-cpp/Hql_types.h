@@ -3,15 +3,15 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#ifndef Hql_TYPES_H
-#define Hql_TYPES_H
+#ifndef hql_TYPES_H
+#define hql_TYPES_H
 
 #include <Thrift.h>
 #include <TApplicationException.h>
 #include <protocol/TProtocol.h>
 #include <transport/TTransport.h>
 
-#include "Client_types.h"
+#include "client_types.h"
 
 
 namespace Hypertable { namespace ThriftGen {
