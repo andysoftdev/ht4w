@@ -5,7 +5,11 @@ building hypertable from source for Windows requires Microsoft Visual Studio 201
 
 1. browse or getting the source
 
-   1.1 browse the source at http://github.com/andysoftdev/hypertable
+   1.1 browse or download the source at http://github.com/andysoftdev/hypertable
+   
+       download the latest sources by pressing the "Downloads" button and choosing
+	   Download.tar.gz or Download.zip
+	   
 
    1.2 get the source from the repository, create a projects folder (the path must not
        contain any spaces) and use
