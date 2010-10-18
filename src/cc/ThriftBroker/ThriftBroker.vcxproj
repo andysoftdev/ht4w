@@ -19,29 +19,29 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{FAF84E37-97A3-490e-9D93-42105AAB9915}</ProjectGuid>
+    <ProjectGuid>{5D91E49E-11B4-4826-A5A3-8471CB89F97E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ThriftBroker</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
@@ -63,22 +63,22 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\libs\</OutDir>
     <IntDir>$(SolutionDir)build\libs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\libs\</OutDir>
     <IntDir>$(SolutionDir)build\libs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\libs\</OutDir>
     <IntDir>$(SolutionDir)build\libs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\libs\</OutDir>
     <IntDir>$(SolutionDir)build\libs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
@@ -100,7 +100,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;ThriftBroker.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;pthread.lib;thrift.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;pthread.lib;thrift.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -124,7 +124,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;ThriftBroker.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;pthread.lib;thrift.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;pthread.lib;thrift.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -154,7 +154,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;ThriftBroker.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;pthread.lib;thrift.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;pthread.lib;thrift.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -184,7 +184,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;ThriftBroker.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;pthread.lib;thrift.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;pthread.lib;thrift.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -201,15 +201,92 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Common/Compat.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Common/Compat.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="ThriftBroker.cc" />
+    <ClCompile Include="Config.cc" />
+    <ClCompile Include="gen-cpp\ClientService.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\Client_constants.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\Client_types.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\HqlService.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\Hql_constants.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\Hql_types.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="SerializedCellsReader.cc" />
+    <ClCompile Include="SerializedCellsWriter.cc" />
+    <ClCompile Include="ThriftHelper.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\hypertable.rc">
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">HYPERTABLE_THRIFTBROKER</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">HYPERTABLE_THRIFTBROKER</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">HYPERTABLE_THRIFTBROKER</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">HYPERTABLE_THRIFTBROKER</PreprocessorDefinitions>
-    </ResourceCompile>
+    <ClInclude Include="Client.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="gen-cpp\ClientService.h" />
+    <ClInclude Include="gen-cpp\Client_constants.h" />
+    <ClInclude Include="gen-cpp\Client_types.h" />
+    <ClInclude Include="gen-cpp\HqlService.h" />
+    <ClInclude Include="gen-cpp\Hql_constants.h" />
+    <ClInclude Include="gen-cpp\Hql_types.h" />
+    <ClInclude Include="SerializedCellsFlag.h" />
+    <ClInclude Include="SerializedCellsReader.h" />
+    <ClInclude Include="SerializedCellsWriter.h" />
+    <ClInclude Include="ThriftHelper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Client.thrift">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)deps\thrift\thrift-0.5.0.exe --gen cpp %(Filename).thrift</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">thrift %(Filename)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)deps\thrift\thrift-0.5.0.exe --gen cpp %(Filename).thrift</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">thrift %(Filename)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)deps\thrift\thrift-0.5.0.exe --gen cpp %(Filename).thrift</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">thrift %(Filename)</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)deps\thrift\thrift-0.5.0.exe --gen cpp %(Filename).thrift</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">thrift %(Filename)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">./gen-cpp/ClientService_server.skeleton.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">./gen-cpp/ClientService_server.skeleton.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">./gen-cpp/ClientService_server.skeleton.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">./gen-cpp/ClientService_server.skeleton.cpp</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="Hql.thrift">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)deps\thrift\thrift-0.5.0.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)deps\thrift\thrift-0.5.0.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)deps\thrift\thrift-0.5.0.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)deps\thrift\thrift-0.5.0.exe --gen cpp %(Filename).thrift</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">thrift %(Filename)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">thrift %(Filename)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">thrift %(Filename)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">thrift %(Filename)</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">./gen-cpp/HqlService_server.skeleton.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">./gen-cpp/HqlService_server.skeleton.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">./gen-cpp/HqlService_server.skeleton.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">./gen-cpp/HqlService_server.skeleton.cpp</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

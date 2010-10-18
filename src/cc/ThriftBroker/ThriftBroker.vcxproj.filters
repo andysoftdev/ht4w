@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\gen-cpp">
+      <UniqueIdentifier>{b8964354-9c42-40f3-9ab5-bf66a4d99a44}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\stdafx.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Config.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SerializedCellsReader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SerializedCellsWriter.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThriftHelper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\Client_constants.cpp">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\Client_types.cpp">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\ClientService.cpp">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\Hql_constants.cpp">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\Hql_types.cpp">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="gen-cpp\HqlService.cpp">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Client.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SerializedCellsFlag.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SerializedCellsReader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SerializedCellsWriter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThriftHelper.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gen-cpp\Client_constants.h">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="gen-cpp\Client_types.h">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="gen-cpp\ClientService.h">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="gen-cpp\Hql_constants.h">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="gen-cpp\Hql_types.h">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="gen-cpp\HqlService.h">
+      <Filter>Source Files\gen-cpp</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Client.thrift">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Hql.thrift">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>
