@@ -711,13 +711,14 @@ typedef struct ptw32_cleanup_t ptw32_cleanup_t;
 
 #if defined(_MSC_VER)
 /* Disable MSVC 'anachronism used' warning */
+#pragma warning( push )
 #pragma warning( disable : 4229 )
 #endif
 
 typedef void (* PTW32_CDECL ptw32_cleanup_callback_t)(void *);
 
 #if defined(_MSC_VER)
-#pragma warning( default : 4229 )
+#pragma warning( pop )
 #endif
 
 struct ptw32_cleanup_t
