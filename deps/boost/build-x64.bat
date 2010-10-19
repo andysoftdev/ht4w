@@ -8,6 +8,7 @@ set BZIP2_SOURCE=%THIS_PATH%\..\bzip2
 set VCVARSALL="c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"
 if not exist %VCVARSALL% goto vcvarsall  
 call %VCVARSALL% x64
+goto :bootstrap
 
 :vcvarsall
 set VCVARSALL="c:\Program Files\Microsoft Visual Studio 10.0\VC\vcvarsall.bat"
