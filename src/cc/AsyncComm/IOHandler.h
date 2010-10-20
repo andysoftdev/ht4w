@@ -158,15 +158,15 @@ struct OverlappedEx;
     }
 
     bool isclosed() const {
-      return m_sd == -1;
+      return m_sd == INVALID_SOCKET;
     }
 
     void close() {
       ScopedLock lock(m_mutex);
-      if(m_sd != -1) {
+      if(m_sd != INVALID_SOCKET) {
         HT_DEBUGF("closesocket(%d)", m_sd);
         closesocket(m_sd);
-        m_sd = -1;
+        m_sd = INVALID_SOCKET;
       }
     }
 

@@ -116,7 +116,7 @@ TSocket::TSocket(string host, int port) :
   host_(host),
   port_(port),
   path_(""),
-  socket_(-1),
+  socket_(INVALID_SOCKET),
   connTimeout_(0),
   sendTimeout_(0),
   recvTimeout_(0),
@@ -132,7 +132,7 @@ TSocket::TSocket(string path) :
   host_(""),
   port_(0),
   path_(path),
-  socket_(-1),
+  socket_(INVALID_SOCKET),
   connTimeout_(0),
   sendTimeout_(0),
   recvTimeout_(0),
@@ -148,7 +148,7 @@ TSocket::TSocket() :
   host_(""),
   port_(0),
   path_(""),
-  socket_(-1),
+  socket_(INVALID_SOCKET),
   connTimeout_(0),
   sendTimeout_(0),
   recvTimeout_(0),
@@ -181,7 +181,7 @@ TSocket::~TSocket() {
 }
 
 bool TSocket::isOpen() {
-  return (socket_ >= 0);
+  return (socket_ != INVALID_SOCKET);
 }
 
 bool TSocket::peek() {
@@ -226,7 +226,7 @@ void TSocket::openConnection(struct addrinfo *res) {
     socket_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
   }
 
-  if (socket_ == -1) {
+  if (socket_ == INVALID_SOCKET) {
    THROW( TTransportException::NOT_OPEN, "TSocket::open() socket()",  SOCKETERRNO )
   }
 
@@ -311,7 +311,7 @@ void TSocket::openConnection(struct addrinfo *res) {
 #ifndef _WIN32
   if (SOCKETERRNO != EINPROGRESS) {
 #else
-   if (SOCKETERRNO != WSAEINPROGRESS) {
+   if (SOCKETERRNO != WSAEINPROGRESS && SOCKETERRNO != WSAEWOULDBLOCK) {
 #endif
     THROW( TTransportException::NOT_OPEN, "TSocket::open() connect()", SOCKETERRNO )
   }
@@ -448,7 +448,7 @@ void TSocket::local_open(){
 }
 
 void TSocket::close() {
-  if (socket_ >= 0) {
+  if (socket_ != INVALID_SOCKET) {
     shutdown(socket_, SHUT_RDWR);
 #ifndef _WIN32
     ::close(socket_);
@@ -456,11 +456,11 @@ void TSocket::close() {
 	::closesocket(socket_);
 #endif
   }
-  socket_ = -1;
+  socket_ = INVALID_SOCKET;
 }
 
 uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
-  if (socket_ < 0) {
+  if (socket_ == INVALID_SOCKET) {
     throw TTransportException(TTransportException::NOT_OPEN, "Called read on non-open socket");
   }
 
@@ -588,7 +588,7 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
 }
 
 void TSocket::write(const uint8_t* buf, uint32_t len) {
-  if (socket_ < 0) {
+  if (socket_ == INVALID_SOCKET) {
     throw TTransportException(TTransportException::NOT_OPEN, "Called write on non-open socket");
   }
 
@@ -654,7 +654,7 @@ void TSocket::setPort(int port) {
 void TSocket::setLinger(bool on, int linger) {
   lingerOn_ = on;
   lingerVal_ = linger;
-  if (socket_ < 0) {
+  if (socket_ == INVALID_SOCKET) {
     return;
   }
 
@@ -668,7 +668,7 @@ void TSocket::setLinger(bool on, int linger) {
 
 void TSocket::setNoDelay(bool noDelay) {
   noDelay_ = noDelay;
-  if (socket_ < 0) {
+  if (socket_ == INVALID_SOCKET) {
     return;
   }
 
@@ -694,7 +694,7 @@ void TSocket::setRecvTimeout(int ms) {
   }
   recvTimeout_ = ms;
 
-  if (socket_ < 0) {
+  if (socket_ == INVALID_SOCKET) {
     return;
   }
 
@@ -702,8 +702,13 @@ void TSocket::setRecvTimeout(int ms) {
   recvTimeval_.tv_usec = (int)((recvTimeout_%1000)*1000);
 
   // Copy because poll may modify
+#ifndef _WIN32
   struct timeval r = recvTimeval_;
   int ret = setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &r, sizeof(r));
+#else
+  DWORD recvTimeout( recvTimeout_ );
+  int ret = setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &recvTimeout, sizeof(recvTimeout));
+#endif
   if (ret == -1) {
     int errno_copy = SOCKETERRNO;  // Copy errno because we're allocating memory.
     GlobalOutput.perror("TSocket::setRecvTimeout() setsockopt() " + getSocketInfo(), errno_copy);
@@ -719,13 +724,18 @@ void TSocket::setSendTimeout(int ms) {
   }
   sendTimeout_ = ms;
 
-  if (socket_ < 0) {
+  if (socket_ == INVALID_SOCKET) {
     return;
   }
 
+#ifndef _WIN32
   struct timeval s = {(int)(sendTimeout_/1000),
                       (int)((sendTimeout_%1000)*1000)};
   int ret = setsockopt(socket_, SOL_SOCKET, SO_SNDTIMEO, &s, sizeof(s));
+#else
+  DWORD sendTimeout( sendTimeout_ );
+  int ret = setsockopt(socket_, SOL_SOCKET, SO_SNDTIMEO, &sendTimeout, sizeof(sendTimeout));
+#endif
   if (ret == -1) {
     int errno_copy = SOCKETERRNO;  // Copy errno because we're allocating memory.
     GlobalOutput.perror("TSocket::setSendTimeout() setsockopt() " + getSocketInfo(), errno_copy);
@@ -747,7 +757,7 @@ std::string TSocket::getPeerHost() {
     struct sockaddr_storage addr;
     socklen_t addrLen = sizeof(addr);
 
-    if (socket_ < 0) {
+    if (socket_ == INVALID_SOCKET) {
       return host_;
     }
 
@@ -774,7 +784,7 @@ std::string TSocket::getPeerAddress() {
     struct sockaddr_storage addr;
     socklen_t addrLen = sizeof(addr);
 
-    if (socket_ < 0) {
+    if (socket_ == INVALID_SOCKET) {
       return peerAddress_;
     }
 

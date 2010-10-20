@@ -175,8 +175,8 @@ void TServerSocket::listen() {
   int sv[2];
   if (-1 == socketpair(AF_LOCAL, SOCK_STREAM, 0, sv)) {
     GlobalOutput.perror("TServerSocket::listen() socketpair() ", errno);
-    intSock1_ = -1;
-    intSock2_ = -1;
+    intSock1_ = INVALID_SOCKET;
+    intSock2_ = INVALID_SOCKET;
   } else {
     intSock1_ = sv[1];
     intSock2_ = sv[0];
@@ -219,7 +219,7 @@ void TServerSocket::listen() {
 	server_addr_info_ = *res;
   }
 
-  if (serverSocket_ == -1) {
+  if (serverSocket_ == INVALID_SOCKET) {
     int errno_copy = SOCKETERRNO;
 	close();
 	THROW( TTransportException::NOT_OPEN, "Could not create server socket, TServerSocket::listen() socket()",  errno_copy )
@@ -609,10 +609,10 @@ void TServerSocket::close() {
   if (intSock2_ >= 0) {
     ::close(intSock2_);
   }  
-  intSock1_ = -1;
-  intSock2_ = -1;
+  intSock1_ = INVALID_SOCKET;
+  intSock2_ = INVALID_SOCKET;
 #endif
-  serverSocket_ = -1;
+  serverSocket_ = INVALID_SOCKET;
 }
 
 

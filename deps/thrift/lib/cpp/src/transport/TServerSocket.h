@@ -31,11 +31,12 @@
 #include <mswsock.h>
 #include <ws2tcpip.h>
 
-typedef SOCKET socket_t;
+typedef int socket_t; // should be SOCKET, but SOCKET is unsigned 32/64
 
 #else 
 
 typedef int socket_t;
+#define INVALID_SOCKET -1
 
 #endif
 

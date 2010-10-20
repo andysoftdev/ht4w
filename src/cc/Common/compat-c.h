@@ -148,7 +148,7 @@
 
 #endif
 
-typedef SOCKET socket_t;
+typedef int socket_t; // should be SOCKET, but SOCKET is unsigned 32/64
 typedef int socklen_t;
 
 typedef signed __int64 _off64_t;
@@ -199,6 +199,7 @@ typedef int32_t ssize_t;
 #include <stdlib.h>
 
 typedef int socket_t;
+#define INVALID_SOCKET -1
 
 #endif 
 
