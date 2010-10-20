@@ -849,7 +849,7 @@ public:
     try {
       CellsBuilder cb;
       Hypertable::Cell hcell;
-      SerializedCellsReader reader((void *)cells.c_str(), (uint32_t)cells.length());
+	  SerializedCellsReader reader((void *)cells.c_str(), (uint32_t)cells.length());
       while (reader.next()) {
         reader.get(hcell);
         cb.add(hcell, false);
