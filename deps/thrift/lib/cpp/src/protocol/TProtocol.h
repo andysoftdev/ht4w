@@ -86,10 +86,10 @@ using apache::thrift::transport::TTransport;
 #  define __LITTLE_ENDIAN LITTLE_ENDIAN
 #  define __BIG_ENDIAN BIG_ENDIAN
 # else
-#  include <boost/config.hpp>
+#  include <boost/detail/endian.hpp>
 #  define __BYTE_ORDER BOOST_BYTE_ORDER
-#  define __LITTLE_ENDIAN BOOST_LITTLE_ENDIAN
-#  define __BIG_ENDIAN BOOST_BIG_ENDIAN
+#  define __LITTLE_ENDIAN 1234
+#  define __BIG_ENDIAN 4321
 # endif
 #endif
 
