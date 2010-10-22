@@ -326,8 +326,28 @@ void TSocket::openConnection(struct addrinfo *res) {
 
 #else
 
-  ret = 1;
-
+	WSAEVENT wait = WSACreateEvent();  
+	if( (ret = WSAEventSelect(socket_, wait, FD_CONNECT)) == 0 ) {
+		switch( WaitForSingleObject(wait, connTimeout_) ) {
+			case WAIT_OBJECT_0:
+				ret = 1;
+				break;
+			case WAIT_TIMEOUT:
+				ret = 0;
+				break;
+			default:
+				WSACloseEvent( wait );  
+				THROW( TTransportException::NOT_OPEN, "TSocket::open() WaitForSingleObject()", GetLastError() )
+				break;
+		}	
+		WSAEventSelect( socket_, 0, 0 );
+	}
+	else {
+		WSACloseEvent( wait );  
+		THROW( TTransportException::NOT_OPEN, "TSocket::open() WSAEventSelect()", SOCKETERRNO )
+	}
+    WSACloseEvent( wait );
+ 
 #endif
 
   if (ret > 0) {
