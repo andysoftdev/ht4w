@@ -32,6 +32,15 @@
 #include <fstream>
 #include <errno.h>
 
+#ifdef _WIN32
+
+#include <Shlobj.h>
+#include <Shlwapi.h>
+
+#pragma comment( lib, "Shlwapi.lib" )
+
+#endif
+
 
 namespace Hypertable { namespace Config {
 
@@ -133,6 +142,25 @@ void DefaultPolicy::init_options() {
     default_config = config.string();
   }
   String default_data_dir = System::install_dir;
+
+#ifdef _WIN32
+
+    char str_common_app_data[MAX_PATH] = { 0 };
+    if( SUCCEEDED(::SHGetFolderPathA(0, CSIDL_COMMON_APPDATA, 0, SHGFP_TYPE_CURRENT, str_common_app_data)) ) {
+        if( !*str_common_app_data ) {
+            ::SHGetFolderPathA( 0, CSIDL_COMMON_APPDATA, 0, SHGFP_TYPE_DEFAULT, str_common_app_data );
+        }
+        if( *str_common_app_data ) {
+            ::PathAddBackslashA( str_common_app_data );
+            default_data_dir = str_common_app_data;
+            default_data_dir += "Hypertable";
+        }
+    }
+    else {
+        HT_ERRORF("SHGetFolderPathA failure - %s", winapi_strerror(::GetLastError()));
+    }
+
+#endif
 
   cmdline_desc().add_options()
     ("help,h", "Show this help message and exit")
