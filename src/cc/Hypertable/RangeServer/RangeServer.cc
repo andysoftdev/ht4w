@@ -381,7 +381,7 @@ void RangeServer::local_recover() {
       const RangeStates &range_states = rsml_reader->load_range_states();
 
       // Re-open RSML for writing
-      Global::range_log = new RangeServerMetaLog(Global::log_dfs, meta_log_dir);
+      Global::range_log = new RangeServerMetaLog(Global::log_dfs, meta_log_dir, m_props);
 
       /**
        * First ROOT metadata range
@@ -569,7 +569,8 @@ void RangeServer::local_recover() {
           + "/user", m_props, user_log_reader.get());
 
       Global::range_log = new RangeServerMetaLog(Global::log_dfs,
-                                                 meta_log_dir);
+                                                 meta_log_dir,
+                                                 m_props);
 
       m_root_replay_finished = true;
       m_metadata_replay_finished = true;

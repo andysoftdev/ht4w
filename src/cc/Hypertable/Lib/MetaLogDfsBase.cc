@@ -52,7 +52,7 @@ namespace {
   };
 } // local namespace
 
-MetaLogDfsBase::MetaLogDfsBase(Filesystem *fs, const String &path)
+MetaLogDfsBase::MetaLogDfsBase(Filesystem *fs, const String &path, const PropertiesPtr &props)
   : m_fd(-1), m_fs(fs), m_path(path), m_fileno(-1) {
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
   Path data_dir = Config::properties->get_str("Hypertable.DataDirectory"); 

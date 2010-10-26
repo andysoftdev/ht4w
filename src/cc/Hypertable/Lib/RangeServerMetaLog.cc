@@ -45,8 +45,8 @@ struct OrderByTimestamp {
 
 } // local namespace
 
-RangeServerMetaLog::RangeServerMetaLog(Filesystem *fs, const String &path)
-    : Parent(fs, path) {
+RangeServerMetaLog::RangeServerMetaLog(Filesystem *fs, const String &path, const PropertiesPtr &props)
+    : Parent(fs, path, props) {
 
   while (fd() == -1) {
     HT_DEBUG_OUT << path <<" exists, recovering..."<< HT_END;

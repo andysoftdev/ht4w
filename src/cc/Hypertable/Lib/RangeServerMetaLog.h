@@ -32,7 +32,7 @@ class RangeServerMetaLog : public MetaLogDfsBase {
 public:
   typedef MetaLogDfsBase Parent;
 
-  RangeServerMetaLog(Filesystem *fs, const String &path);
+  RangeServerMetaLog(Filesystem *fs, const String &path, const PropertiesPtr &props);
 
   /**
    * Purge metalog of old/redundant entries

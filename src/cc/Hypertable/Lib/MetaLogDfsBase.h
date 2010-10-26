@@ -24,6 +24,7 @@
 
 #include "Common/String.h"
 #include "Common/Mutex.h"
+#include "Common/Properties.h"
 #include "MetaLog.h"
 
 namespace Hypertable {
@@ -32,7 +33,7 @@ class Filesystem;
 
 class MetaLogDfsBase : public MetaLog {
 public:
-  MetaLogDfsBase(Filesystem *fs, const String &path);
+  MetaLogDfsBase(Filesystem *fs, const String &path, const PropertiesPtr &props);
   virtual ~MetaLogDfsBase() { close(); }
 
   virtual void write(MetaLogEntry *entry);
