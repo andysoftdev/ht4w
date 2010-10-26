@@ -102,7 +102,7 @@ Comm::Comm() {
     closesocket(s);
 
 	if( pfnAcceptEx == 0 || pfnConnectEx == 0 || pfnGetAcceptExSockaddrs == 0 ) {
-		HT_ERROR("ReactorFactory::initialize unable to qury socket extension functions");
+		HT_ERROR("ReactorFactory::initialize unable to query socket extension functions");
 		HT_ABORT;
 	}
   }
