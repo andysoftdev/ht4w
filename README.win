@@ -50,7 +50,7 @@ building hypertable from source for Windows requires Microsoft Visual Studio 201
 
    5.1 using the command line
 
-       go to ...\hypertable\ and invoke start-all-servers [x86|x64|debug] [debug] [options]
+       to start all servers go to ...\hypertable\bin and invoke start-all-servers [x86|x64|debug] [debug] [options]
 
        e.g. start-all-servers               starts Win32|Release
             start-all-servers x86           starts Win32|Release
@@ -63,9 +63,7 @@ building hypertable from source for Windows requires Microsoft Visual Studio 201
        ...\hypertable\dist\[Win32|x64]\[Release|Debug]\conf folder than those file will be copied
        from ...\hypertable\conf
 
-       the same for stop-all-servers [x86|x64|debug] [debug]
-
-       notice, each configuration will create it's own database for a shared database update conf\hypertbale.cfg file
+       to stop all servers go to ...\hypertable\bin and invoke stop-all-servers [x86|x64|debug] [debug]
 
    5.2 install and run the hypertable servers as a windows service
 
