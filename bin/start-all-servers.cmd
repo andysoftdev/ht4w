@@ -54,30 +54,42 @@ if "%bin%" == "" goto usage
 if not exist %bin%\conf md %bin%\conf
 if not exist %bin%\conf\hypertable.cfg xcopy ..\conf\hypertable.cfg %bin%\conf\
 if not exist %bin%\conf\METADATA.xml xcopy ..\conf\METADATA.xml %bin%\conf\
+if not exist %bin%\serverup.exe goto :missing_exe
 
 echo Starting Hypertable.LocalBroker...
 if not exist %bin%\Hypertable.LocalBroker.exe goto :missing_exe
 @start cmd /c "%bin%\Hypertable.LocalBroker.exe %params%"
-@ping 127.0.0.1 -n 3 -w 1000 > nul
+@ping 127.0.0.1 -n 1 -w 1000 > nul
+@%bin%\serverup.exe --silent --wait 5000 dfsbroker
+if "%ERRORLEVEL%" NEQ "0" goto failed
 
 echo Starting Hyperspace.Master...
 if not exist %bin%\Hyperspace.Master.exe goto :missing_exe
 @start cmd /c "%bin%\Hyperspace.Master.exe %params%"
-@ping 127.0.0.1 -n 5 -w 1000 > nul
+@ping 127.0.0.1 -n 3 -w 1000 > nul
+@%bin%\serverup.exe --silent --wait 5000 hyperspace
+if "%ERRORLEVEL%" NEQ "0" goto failed
 
 echo Starting Hypertable.Master...
 if not exist %bin%\Hypertable.Master.exe goto :missing_exe
 @start cmd /c "%bin%\Hypertable.Master.exe %params%"
-@ping 127.0.0.1 -n 5 -w 1000 > nul
+@ping 127.0.0.1 -n 1 -w 1000 > nul
+@%bin%\serverup.exe --silent --wait 5000 master
+if "%ERRORLEVEL%" NEQ "0" goto failed
 
 echo Starting Hypertable.RangeServer...
 if not exist %bin%\Hypertable.RangeServer.exe goto :missing_exe
 @start cmd /c "%bin%\Hypertable.RangeServer.exe %params%"
-@ping 127.0.0.1 -n 5 -w 1000 > nul
+@ping 127.0.0.1 -n 1 -w 1000 > nul
+@%bin%\serverup.exe --silent --wait 5000 rangeserver
+if "%ERRORLEVEL%" NEQ "0" goto failed
 
 echo Starting Hypertable.ThriftBroker...
 if not exist %bin%\Hypertable.ThriftBroker.exe goto :missing_exe
 @start cmd /c "%bin%\Hypertable.ThriftBroker.exe %params%"
+@ping 127.0.0.1 -n 1 -w 1000 > nul
+rem @%bin%\serverup.exe --silent --wait 5000 thriftbroker
+rem if "%ERRORLEVEL%" NEQ "0" goto failed
 
 echo completed.
 
@@ -89,6 +101,10 @@ goto done:
 
 :missing_exe
 echo Hypertable executable does not exists
+goto done:
+
+:failed
+echo Unable to start servers
 goto done:
 
 :done
