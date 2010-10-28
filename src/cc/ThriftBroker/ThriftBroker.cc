@@ -1390,11 +1390,11 @@ int main(int argc, char **argv) {
     HT_ERROR_OUT << e << HT_END;
   }
 
-  #ifdef _WIN32
+#ifdef _WIN32
 
   pthread_win32_process_detach_np();
 
-  #endif
+#endif
 
   return 0;
 }

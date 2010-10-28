@@ -53,6 +53,11 @@ extern "C" {
 #ifdef HT_WITH_THRIFT
 # include "ThriftBroker/Config.h"
 # include "ThriftBroker/Client.h"
+
+#ifdef _WIN32
+#include "pthread.h"
+#endif
+
 #endif
 
 using namespace Hypertable;
@@ -66,7 +71,11 @@ namespace {
     "Description:\n"
     "  This program checks to see if the server, specified by <server-name>\n"
     "  is up. return 0 if true, 1 otherwise. <server-name> may be one of the\n"
-    "  following values: dfsbroker, hyperspace, master rangeserver\n\n"
+#ifdef HT_WITH_THRIFT
+    "  following values: dfsbroker, hyperspace, master, rangeserver, thriftbroker\n\n"
+#else
+	"  following values: dfsbroker, hyperspace, master, rangeserver\n\n"
+#endif
     "Options";
 
   struct AppPolicy : Config::Policy {
@@ -214,6 +223,12 @@ namespace {
 int main(int argc, char **argv) {
   int down = 0;
 
+#ifdef _WIN32
+
+  pthread_win32_process_attach_np();
+
+#endif
+
   try {
     init_with_policies<Policies>(argc, argv);
 
@@ -255,7 +270,21 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
+
+#ifdef _WIN32
+
+  pthread_win32_process_detach_np();
+
+#endif
+
     _exit(1);    // don't bother with global/static objects
   }
+
+#ifdef _WIN32
+
+  pthread_win32_process_detach_np();
+
+#endif
+
   _exit(down);   // ditto
 }
