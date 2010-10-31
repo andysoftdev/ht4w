@@ -635,7 +635,8 @@ Comm::connect_socket(socket_t sd, const CommAddress &addr,
   ((sockaddr_in *)&ss)->sin_family = AF_INET;
   ((sockaddr_in *)&ss)->sin_addr.s_addr = INADDR_ANY;
   if( ::bind(sd, (struct sockaddr *)&ss, sizeof(ss)) == SOCKET_ERROR )
-    HT_ERRORF("bind failure: %s", winapi_strerror(WSAGetLastError()));
+    if( WSAGetLastError() != WSAEINVAL ) // The socket is already bound to an address.
+        HT_ERRORF("bind failure: %s (%d)", winapi_strerror(WSAGetLastError()), WSAGetLastError());
 
   if(!data_handler->start_polling())
     return Error::COMM_POLL_ERROR;
