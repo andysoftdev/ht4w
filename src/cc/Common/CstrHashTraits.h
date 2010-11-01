@@ -56,7 +56,7 @@ struct CstrHashTraits {
     HashT hash_fun;
     size_t operator()(const char *s) const { return hash_fun(s); }
     bool operator()(const char *a, const char *b) const {
-      return std::strcmp(a, b) == 0;
+      return std::strcmp(a, b) < 0;
     }
   };
 
