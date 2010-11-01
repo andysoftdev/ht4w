@@ -599,12 +599,12 @@ Master::mkdir(ResponseCallback *cb, uint64_t session_id, const char *name) {
   // check for errors
   if (aborted) {
     cb->error(error, error_msg);
-	if( error == Error::HYPERSPACE_FILE_EXISTS ) { // warning should be sufficient
-		HT_WARN_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
-	}
-	else {
-		HT_ERROR_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
-	}
+    if( error == Error::HYPERSPACE_FILE_EXISTS ) { // warning should be sufficient
+        HT_WARN_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
+    }
+    else {
+        HT_ERROR_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
+    }
     return;
   }
 
