@@ -161,7 +161,11 @@ void CommTestThreadFunction::operator()() {
     infile.close();
   }
   else {
+#ifndef _WIN32
     HT_ERRORF("Unable to open file '%s' : %s", m_input_file, strerror(errno));
+#else
+    HT_ERRORF("Unable to open file '%s' : %s", m_input_file, winapi_strerror(::GetLastError()));
+#endif
     return;
   }
 

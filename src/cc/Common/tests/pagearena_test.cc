@@ -196,21 +196,21 @@ int main(int ac, char *av[]) {
 
       foreach(const String &co, get_strs("components")) {
         if (co == "malloc")
-          run_test(bind(test_malloc_frag, n), true);
+          run_test(boost::bind(test_malloc_frag, n), true);
         else if (co == "arena")
-          run_test(bind(test_pagearena_frag, n, pagesize), true);
+          run_test(boost::bind(test_pagearena_frag, n, pagesize), true);
         else if (co == "arena_alloc")
-          run_test(bind(test_pagearena_alloc_frag, n, pagesize), true);
+          run_test(boost::bind(test_pagearena_alloc_frag, n, pagesize), true);
         else if (co == "arena_downalloc")
-          run_test(bind(test_pagearena_downalloc_frag, n, pagesize), true);
+          run_test(boost::bind(test_pagearena_downalloc_frag, n, pagesize), true);
         else if (co == "string")
-          run_test(bind(test_strings_frag, n), true);
+          run_test(boost::bind(test_strings_frag, n), true);
         else
           cout <<"Unknown component: "<< co << endl;
       }
     }
     else
-      run_test(bind(random_test, n), true);
+      run_test(boost::bind(random_test, n), true);
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

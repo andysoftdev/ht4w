@@ -31,7 +31,7 @@ extern "C" {
 #include <netdb.h>
 #include <errno.h>
 #include <poll.h>
-#include <pthread.h>
+//#include <pthread.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -312,7 +312,11 @@ int main(int argc, char **argv) {
   ifstream myfile(in_file);
 
   if (!myfile.is_open()) {
+#ifndef _WIN32
     HT_ERRORF("Unable to open file '%s' : %s", in_file, strerror(errno));
+#else
+    HT_ERRORF("Unable to open file '%s' : %s", in_file, winapi_strerror(::GetLastError()));
+#endif
     return 0;
   }
 
@@ -321,7 +325,7 @@ int main(int argc, char **argv) {
     resp_handler = new ResponseHandlerUDP();
     dhp = resp_handler;
     port++;
-    InetAddr::initialize(&inet_addr, INADDR_ANY, port);
+    InetAddr::initialize(&inet_addr, (uint32_t)INADDR_ANY, port);
     udp_send_addr.set_inet(inet_addr);
     comm->create_datagram_receive_socket(udp_send_addr, 0, dhp);
   }

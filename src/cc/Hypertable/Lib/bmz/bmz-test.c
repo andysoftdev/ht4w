@@ -345,7 +345,11 @@ test_from_stdin() {
 
 static void
 test_from_file(const char *fname) {
+#ifndef _WIN32
   int fd = open(fname, O_RDONLY, 0);
+#else
+  int fd = open(fname, O_RDONLY|O_BINARY, 0);
+#endif
   char *data = NULL;
   struct stat st;
   long len;

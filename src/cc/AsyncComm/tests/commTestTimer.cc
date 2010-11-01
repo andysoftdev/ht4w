@@ -95,12 +95,12 @@ namespace {
 int main(int argc, char **argv) {
   Comm *comm;
   int error;
-  TestHarness harness("commTestTimer");
   bool golden = false;
   TimerHandler *timer_handler;
   uint32_t wait_time = 0;
 
   Config::init(argc, argv);
+  TestHarness harness("commTestTimer");
 
   if (argc > 1) {
     if (!strcmp(argv[1], "--golden"))
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
   poll(0, 0, (wait_time+1)*1000);
 
   if (!golden)
-    harness.validate_and_exit("commTestTimer.golden");
+    return harness.validate("commTestTimer.golden");
 
   harness.regenerate_golden_file("commTestTimer.golden");
 

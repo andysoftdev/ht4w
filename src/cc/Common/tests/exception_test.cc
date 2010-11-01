@@ -42,4 +42,5 @@ int main(int ac, char *av[]) {
     HT_INFO_OUT <<"Error: "<< e.messages() << HT_END;
     HT_INFO_OUT <<"Exception trace: "<< e << HT_END;
   }
+  return 0;
 }

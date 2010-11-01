@@ -10,10 +10,18 @@ using namespace Hypertable;
 
 namespace {
 
-volatile int n_sigs = 0;
-volatile bool last_try = false;
-const int N_EXPECTED_SIGS = 4;
 jmp_buf jmp_ctx;
+volatile bool last_try = false;
+volatile int n_sigs = 0;
+const int N_EXPECTED_SIGS = 4;
+
+#ifndef _WIN32
+
+#define TRY_FATAL(_code_) do { \
+  if (setjmp(jmp_ctx) == 0) { \
+    _code_; \
+  } \
+} while (0)
 
 #define DEF_SIG_HANDLER(_sig_) \
 void _sig_##_handler(int) { \
@@ -33,12 +41,6 @@ void _sig_##_handler(int) { \
   HT_ASSERT(sigaction(_sig_, &sa, NULL) == 0); \
 } while (0)
 
-#define TRY_FATAL(_code_) do { \
-  if (setjmp(jmp_ctx) == 0) { \
-    _code_; \
-  } \
-} while (0)
-
 DEF_SIG_HANDLER(SIGABRT)
 DEF_SIG_HANDLER(SIGSEGV)
 DEF_SIG_HANDLER(SIGBUS)
@@ -47,6 +49,29 @@ void test_basic_logging(const char *msg) {
   INSTALL_SIG_HANDLER(SIGABRT);
   INSTALL_SIG_HANDLER(SIGSEGV);
   INSTALL_SIG_HANDLER(SIGBUS);
+
+#else
+
+#define TRY_FATAL(_code_) do { \
+  signal(SIGABRT, signal_handler); \
+  if (setjmp(jmp_ctx) == 0) { \
+    _code_; \
+  } \
+} while (0)
+
+void signal_handler(int signal) {
+  if (++n_sigs >= N_EXPECTED_SIGS && !last_try) {
+    HT_INFO("Caught unexpected abort signal, aborting...");
+    exit(1);
+  }
+  HT_INFO("Caught abort signal, continuing...");
+  longjmp(jmp_ctx, 1);
+}
+
+void test_basic_logging(const char *msg) {
+  _set_abort_behavior( 0, _WRITE_ABORT_MSG|_CALL_REPORTFAULT );
+
+#endif
 
   HT_DEBUG(msg);
   HT_DEBUGF("%s", msg);

@@ -21,6 +21,9 @@
 #define HT_SIMPLE_TEST_HELPER_H
 
 #include <sys/time.h>
+#ifdef _WIN32
+#include <sys/timeb.h>
+#endif
 
 #define HT_MEASURE(_t_, _code_) do { \
   double t0 = ht_time_d(); _code_; _t_ = ht_time_d() - t0; \
@@ -28,11 +31,23 @@
 
 static inline double
 ht_time_d() {
+
+#ifndef _WIN32
+
   struct timeval tv;
   if (gettimeofday(&tv, NULL)) {
     perror(__FUNCTION__);
   }
   return (double)(tv.tv_sec) + (double)(tv.tv_usec) / 1e6;
+
+#else
+
+   struct timeb tb;
+   ftime(&tb);
+   return (double)(tb.time) + (double)(tb.millitm) / 1e3;
+
+#endif
+
 }
 
 #define HT_CHECK(e) \

@@ -61,6 +61,60 @@ namespace {
   const int DEFAULT_PORT = 32998;
   const char *DEFAULT_PORT_ARG = "--port=32998";
 
+#ifdef _WIN32
+
+  class ServerLauncher {
+  public:
+    ServerLauncher() {
+      std::string cmdline = format("test_server.exe %s %s", DEFAULT_PORT_ARG, "--delay=120000");
+      ZeroMemory( &pi, sizeof(pi) );
+      STARTUPINFO si;
+      ZeroMemory( &si, sizeof(si) );
+      si.cb = sizeof(STARTUPINFO);
+      if (!::CreateProcessA(0, (LPSTR)cmdline.c_str(), 0, 0, TRUE, 0, 0, 0, &si, &pi)) {
+        std::cerr << format("CreateProcess error: %s", winapi_strerror(::GetLastError()));
+        exit(1);
+      }
+      if (!::CloseHandle(pi.hProcess)) {
+         std::cerr << format("CloseHandle error: %s", winapi_strerror(::GetLastError()));
+      }
+      if (!::CloseHandle(pi.hThread)) {
+         std::cerr << format("CloseHandle error: %s", winapi_strerror(::GetLastError()));
+      }  
+      ::Sleep(2000);
+    }
+
+    ~ServerLauncher() {
+      kill(pi.dwProcessId);
+    }
+
+    static void kill(pid_t pid) {
+      HANDLE handle = ::OpenProcess(SYNCHRONIZE|PROCESS_TERMINATE, FALSE, pid);
+      if (handle) {
+        std::cerr << "Killing pid=" << pid
+                  << std::endl << std::flush;
+
+        if (!::TerminateProcess(handle, -1)) {
+          std::cerr << format("TerminateProcess pid=%d error: %s", pid, winapi_strerror(::GetLastError()));
+        }
+        if (::WaitForSingleObject(handle, 5000) != WAIT_OBJECT_0) {
+            std::cerr << format("TerminateProcess pid=%d time out", pid);
+        }
+        if (!::CloseHandle(handle)) {
+          std::cerr << format("CloseHandle error: %s", winapi_strerror(::GetLastError()));
+        }
+      }
+      else if( ::GetLastError() != ERROR_INVALID_PARAMETER ) {
+        std::cerr << format("OpenProcess pid=%d error: %s", pid, winapi_strerror(::GetLastError()));
+      }
+    }
+
+    private:
+      PROCESS_INFORMATION pi;
+  };
+
+#else
+
   class ServerLauncher {
   public:
     ServerLauncher() {
@@ -77,6 +131,8 @@ namespace {
     private:
       pid_t m_child_pid;
   };
+
+#endif
 
   /**
    *
@@ -120,14 +176,13 @@ int main(int argc, char **argv) {
   struct sockaddr_in addr;
   Comm *comm;
   int error;
-  EventPtr event_ptr;
-  TestHarness harness("commTestTimeout");
+  EventPtr event_ptr;  
   bool golden = false;
   ResponseHandler *resp_handler = new ResponseHandler();
   DispatchHandlerPtr dhp(resp_handler);
-  int diff_exit = 0;
 
-  Config::init(0, 0);
+  Config::init(argc, argv);
+  TestHarness harness("commTestTimeout");
 
   {
     ServerLauncher slauncher;
@@ -178,11 +233,8 @@ int main(int argc, char **argv) {
     poll(0, 0, 8000);
 
     if (!golden)
-      diff_exit = harness.validate("commTestTimeout.golden");
+      return harness.validate("commTestTimeout.golden");
   }
-
-  if (!golden)
-    _exit(diff_exit);
 
   harness.regenerate_golden_file("commTestTimeout.golden");
   return 0;

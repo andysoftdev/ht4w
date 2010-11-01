@@ -51,7 +51,7 @@ namespace {
 const char MAGIC[12] = { '-','-','-','-','-','-','-','-','-','-','-','-' };
 
 int main(int argc, char **argv) {
-  off_t len;
+  size_t len;
   DynamicBuffer input(0);
   DynamicBuffer output1(0);
   DynamicBuffer output2(0);

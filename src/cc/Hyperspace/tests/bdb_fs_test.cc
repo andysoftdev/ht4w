@@ -55,7 +55,16 @@ int main(int argc, char **argv) {
 
   fp = fopen("./bdb_fs_test.output", "w");
 
+#ifndef _WIN32
+
   String filename = format("/tmp/bdb_fs_test%d", (int)getpid());
+
+#else
+
+  String filename = format("./tmp/bdb_fs_test%d", (int)getpid());
+
+#endif
+
   FileUtils::mkdirs(filename);
   vector<Thread::id> thread_ids;
   thread_ids.push_back(ThisThread::get_id());
@@ -63,6 +72,9 @@ int main(int argc, char **argv) {
   props->set("Hyperspace.Checkpoint.Size", 1000000);
   props->set("Hyperspace.LogGc.Interval", 3600000);
   props->set("Hyperspace.LogGc.MaxUnusedLogs", 200);
+#ifdef _WIN32
+  props->set("Hypertable.DataDirectory", System::install_dir);
+#endif
 
   bdb_fs = new BerkeleyDbFilesystem(props, localhost, filename, thread_ids);
 
@@ -213,11 +225,21 @@ int main(int argc, char **argv) {
     ret = 1;
   }
 
+#ifndef _WIN32
+
   std::string command = std::string("/bin/rm -rf ") + filename;
 
   HT_ASSERT(system(command.c_str()) == 0);
 
   command = "diff bdb_fs_test.output bdb_fs_test.golden";
+
+#else
+
+  HT_ASSERT(system("rd /S /Q .\\tmp") == 0);
+  std::string command = "fc bdb_fs_test.output bdb_fs_test.golden";
+
+#endif
+
   if (system(command.c_str()) != 0)
     ret = 1;
 

@@ -89,11 +89,15 @@ namespace {
 
   void IssueCommandNoWait(int fd, const char *command) {
     if (write(fd, command, strlen(command)) != (ssize_t)strlen(command)) {
+#ifndef _WIN32
       perror("write");
+#endif
       exit(1);
     }
     if (write(fd, ";\n", 2) != 2) {
+#ifndef _WIN32
       perror("write");
+#endif
       exit(1);
     }
   }
@@ -145,6 +149,8 @@ int main(int argc, char **argv) {
   addr.set_inet(inet_addr);
   comm->create_datagram_receive_socket(addr, 0x10, dhp);
 
+#ifndef _WIN32
+
   if (system("/bin/rm -rf ./hsroot") != 0) {
     HT_ERROR("Problem removing ./hsroot directory");
     exit(1);
@@ -155,21 +161,50 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+#else
+
+  if (system("if exist .\\hsroot rd /S /Q .\\hsroot") != 0) {
+    HT_ERROR("Problem removing ./hsroot directory");
+    exit(1);
+  }
+
+  if (system("md .\\hsroot") != 0) {
+    HT_ERROR("Unable to create ./hsroot directory");
+    exit(1);
+  }
+
+  std::string data_root_dir = std::string("\"--Hypertable.DataDirectory=") + System::install_dir + "\"";
+
+#endif
+
   master_args.push_back("Hyperspace.Master");
+#ifdef _WIN32
+  master_args.push_back(data_root_dir.c_str());
+  master_args.push_back("--logging-level=fatal");
+#endif
   master_args.push_back("--config=./hyperspaceTest.cfg");
   master_args.push_back("--verbose");
   master_args.push_back((const char *)0);
 
   client_args.push_back("hyperspace");
+#ifdef _WIN32
+  client_args.push_back(data_root_dir.c_str());
+  client_args.push_back("--logging-level=fatal");
+#endif
   client_args.push_back("--config=./hyperspaceTest.cfg");
   client_args.push_back("--test-mode");
   client_args.push_back("--notification-address=23451");
   client_args.push_back((const char *)0);
 
+#ifndef _WIN32
   unlink("./Hyperspace.Master");
   HT_ASSERT(link("../../Hyperspace/Hyperspace.Master", "./Hyperspace.Master") == 0);
+#endif
 
   {
+
+#ifndef _WIN32
+
     ServerLauncher master("./Hyperspace.Master",
                           (char * const *)&master_args[0]);
     ServerLauncher client1("./hyperspace",
@@ -178,6 +213,19 @@ int main(int argc, char **argv) {
                            (char * const *)&client_args[0], "client2.out");
     ServerLauncher client3("./hyperspace",
                            (char * const *)&client_args[0], "client3.out");
+
+#else
+
+    ServerLauncher master("../Hyperspace.Master.exe",
+                          (char * const *)&master_args[0]);
+    ServerLauncher client1("../hyperspace.exe",
+                           (char * const *)&client_args[0], "client1.out");
+    ServerLauncher client2("../hyperspace.exe",
+                           (char * const *)&client_args[0], "client2.out");
+    ServerLauncher client3("../hyperspace.exe",
+                           (char * const *)&client_args[0], "client3.out");
+
+#endif
 
     g_fd1 = client1.get_write_descriptor();
     g_fd2 = client2.get_write_descriptor();
@@ -196,8 +244,10 @@ int main(int argc, char **argv) {
     IssueCommandNoWait(g_fd1, "quit");
     IssueCommandNoWait(g_fd2, "quit");
     IssueCommandNoWait(g_fd3, "quit");
-    poll(0, 0, 1000);
+    poll(0, 0, 5000);
   }
+
+#ifndef _WIN32
 
   if (system("diff ./client1.out ./client1.golden"))
     return 1;
@@ -207,6 +257,24 @@ int main(int argc, char **argv) {
 
   if (system("diff ./client3.out ./client3.golden"))
     return 1;
+
+#else
+
+  if (system("fc client1.out client1.golden"))
+    return 1;
+
+  if (system("fc client2.out client2.golden"))
+    return 1;
+
+  if (system("fc client3.out client3.golden"))
+    return 1;
+
+  if (system("if exist .\\hsroot rd /S /Q .\\hsroot") != 0) {
+    HT_ERROR("Problem removing ./hsroot directory");
+    exit(1);
+  }
+
+#endif
 
   return 0;
 }
@@ -403,8 +471,18 @@ namespace {
     IssueCommand(g_fd2, "open dir1/foo flags=READ|CREATE|WRITE|TEMP");
     IssueCommand(g_fd2, "open dir1 flags=READ|WRITE|LOCK");
     IssueCommand(g_fd2, "lock dir1 EXCLUSIVE");
+
+#ifndef _WIN32
+
     if (kill(g_pid2, SIGSTOP) == -1)
       perror("kill");
+
+#else
+
+    ServerLauncher::kill(g_pid2);
+
+#endif
+
     poll(0, 0, 9000);
     // IssueCommand(g_fd2, "close dir1/foo");
     IssueCommand(g_fd1, "close dir1");

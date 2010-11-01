@@ -28,7 +28,6 @@
 extern "C" {
 #include <arpa/inet.h>
 #include <poll.h>
-#include <pthread.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>

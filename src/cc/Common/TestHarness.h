@@ -48,7 +48,11 @@ namespace Hypertable {
 
       if ((m_fd = open(m_output_file, O_CREAT | O_TRUNC | O_WRONLY, 0644))
           < 0) {
+#ifndef _WIN32
         HT_ERRORF("open(%s) failed - %s", m_output_file, strerror(errno));
+#else
+        HT_ERRORF("open(%s) failed - %s", m_output_file, winapi_strerror(::GetLastError()));
+#endif
         exit(1);
       }
 
@@ -67,8 +71,13 @@ namespace Hypertable {
     }
 
     int validate(const char *golden_file) {
-      close(m_fd);
+      _commit(m_fd);
+      Logger::logger->removeAllAppenders();
+#ifndef _WIN32
       String command = (String)"diff " + m_output_file + " " + golden_file;
+#else
+      String command = (String)"fc " + m_output_file + " " + golden_file;
+#endif
       m_error = system(command.c_str());
 
       if (m_error)

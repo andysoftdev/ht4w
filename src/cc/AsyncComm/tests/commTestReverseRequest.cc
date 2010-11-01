@@ -83,14 +83,26 @@ int main(int argc, char **argv) {
   server_args.push_back((const char *)0);
 
   {
+#ifndef _WIN32
     ServerLauncher client("./sampleClient", (char * const *)&client_args[0],
                           "commTestReverseRequest.out");
     poll(0, 0, 2000);
     ServerLauncher server("./testServer", (char * const *)&server_args[0]);
+#else
+    ServerLauncher client("test_client.exe", (char * const *)&client_args[0],
+                          "commTestReverseRequest.out");
+    ::Sleep(2000);
+    ServerLauncher server("test_server.exe", (char * const *)&server_args[0]);
+#endif
   }
 
+#ifndef _WIN32
   if (system("diff commTestReverseRequest.out commTestReverseRequest.golden"))
     _exit(1);
 
   _exit(0);
+#else
+  return system("fc commTestReverseRequest.out commTestReverseRequest.golden");
+#endif
+
 }

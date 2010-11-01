@@ -116,7 +116,7 @@ void CommTestDatagramThreadFunction::operator()() {
 
   header.gid = rand();
 
-  InetAddr::initialize(&inet_addr, INADDR_ANY, m_port);
+  InetAddr::initialize(&inet_addr, (uint32_t)INADDR_ANY, m_port);
 
   local_addr.set_inet(inet_addr);
 
@@ -165,7 +165,11 @@ void CommTestDatagramThreadFunction::operator()() {
     infile.close();
   }
   else {
+#ifndef _WIN32
     HT_ERRORF("Unable to open file '%s' : %s", m_input_file, strerror(errno));
+#else
+    HT_ERRORF("Unable to open file '%s' : %s", m_input_file, winapi_strerror(::GetLastError()));
+#endif
     return;
   }
 
