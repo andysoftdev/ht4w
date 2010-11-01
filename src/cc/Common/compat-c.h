@@ -148,6 +148,8 @@
 
 #endif
 
+#define HT_USE_ABORT
+
 typedef int socket_t; // should be SOCKET, but SOCKET is unsigned 32/64
 typedef int socklen_t;
 
