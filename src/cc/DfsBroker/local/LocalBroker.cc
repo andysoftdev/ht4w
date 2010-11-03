@@ -452,7 +452,11 @@ void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
     absdir = m_rootdir + "/" + dname;
 
   if (FileUtils::exists(absdir)) {
+#ifndef _WIN32
     cmd_str = (String)"/bin/rm -rf " + absdir;
+#else
+    cmd_str = format("rd /S /Q \"%s\"", absdir.c_str());
+#endif
     if (system(cmd_str.c_str()) != 0) {
       HT_ERRORF("%s failed.", cmd_str.c_str());
       cb->error(Error::DFSBROKER_IO_ERROR, cmd_str);
