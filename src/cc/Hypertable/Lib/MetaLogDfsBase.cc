@@ -27,7 +27,6 @@
 #include "Common/StringExt.h"
 #include "Common/System.h"
 #include "Common/Filesystem.h"
-#include "Common/Path.h"
 #include "Common/Config.h"
 #include "MetaLogDfsBase.h"
 #include "MetaLogVersion.h"
@@ -52,7 +51,7 @@ namespace {
   };
 } // local namespace
 
-MetaLogDfsBase::MetaLogDfsBase(Filesystem *fs, const String &path, const PropertiesPtr &props)
+MetaLogDfsBase::MetaLogDfsBase(Filesystem *fs, const String &path)
   : m_fd(-1), m_fs(fs), m_path(path), m_fileno(-1) {
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
   Path data_dir = Config::properties->get_str("Hypertable.DataDirectory"); 

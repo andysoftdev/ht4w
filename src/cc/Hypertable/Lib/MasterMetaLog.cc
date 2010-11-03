@@ -25,8 +25,8 @@
 using namespace std;
 using namespace Hypertable;
 
-MasterMetaLog::MasterMetaLog(Filesystem *fs, const String &path, const PropertiesPtr &props)
-    : MetaLogDfsBase(fs, path, props) {
+MasterMetaLog::MasterMetaLog(Filesystem *fs, const String &path)
+    : MetaLogDfsBase(fs, path) {
   // TODO
 }
 

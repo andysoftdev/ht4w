@@ -30,7 +30,7 @@ namespace Hypertable {
 
 class MasterMetaLog : public MetaLogDfsBase {
 public:
-  MasterMetaLog(Filesystem *, const String &path, const PropertiesPtr &props);
+  MasterMetaLog(Filesystem *, const String &path);
 
   virtual void write(MetaLogEntry *);
   virtual void close();
