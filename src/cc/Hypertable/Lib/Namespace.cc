@@ -236,11 +236,9 @@ bool Namespace::exists_table(const String &table_name) {
   HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
 
   try {
-    if (m_hyperspace->exists(table_file)) {
-      handle = m_hyperspace->open(table_file, OPEN_FLAG_READ, null_handle_callback);
-      if (m_hyperspace->attr_exists(handle, "x"))
-        return true;
-    }
+    handle = m_hyperspace->open(table_file, OPEN_FLAG_READ, null_handle_callback);
+    if (!m_hyperspace->attr_exists(handle, "x"))
+      return false;
   }
   catch(Exception &e) {
     if (e.code() == Error::HYPERSPACE_FILE_NOT_FOUND ||
@@ -248,7 +246,7 @@ bool Namespace::exists_table(const String &table_name) {
       return false;
     HT_THROW(e.code(), e.what());
   }
-  return false;
+  return true;
 }
 
 
