@@ -1,55 +1,50 @@
 @echo off
-if "%1" == "" goto default
-if /i "%1" == "x86" goto x86
-if /i "%1" == "x64" goto x64
-if /i "%1" == "debug" goto default_debug
+setlocal EnableDelayedExpansion
 
-goto default
+set platform=Win32
+set configuration=Release
+set params=
+set no_thriftbroker=
+set wait=3
 
-:x86
-if "%2" NEQ "" (
-	if /i "%2" == "debug" goto x86_debug	
+for %%p in (%*) do (
+	if /i "%%~p" == "x86" (
+		set platform=Win32
+	) else (
+		if /i "%%~p" == "win32" (
+			set platform=Win32
+		) else (
+			if /i "%%~p" == "x64" (
+				set platform=x64
+			) else (
+				if /i "%%~p" == "win64" (
+					set platform=x64					
+				) else (
+					if /i "%%~p" == "release" (
+						set configuration=Release
+					) else (
+						if /i "%%~p" == "debug" (
+							set configuration=Debug
+							set wait=5
+						) else (							
+							if /i "%%~p" == "no-thriftbroker" (
+								set no_thriftbroker=1
+							) else (
+								set params=!params! %%p		
+							)
+						)
+					)
+				)
+			)
+		)
+	)
 )
-set params=%2 %3 %4 %5 %6 %7 %8 %9
-if "%2" == "" (
+
+set bin=%~dp0..\dist\%platform%\%configuration%\
+
+if "%params%" == "" (
 	set params=-l error
 )
-set bin=%~dp0\..\dist\Win32\Release\
-goto stop
-
-:x86_debug
-set params=%3 %4 %5 %6 %7 %8 %9
-set bin=%~dp0\..\dist\Win32\Debug\
-goto stop
-
-:x64
-if "%2" NEQ "" (
-	if /i "%2" == "debug" goto x64_debug	
-)
-set params=%2 %3 %4 %5 %6 %7 %8 %9
-if "%2" == "" (
-	set params=-l error
-)
-set bin=%~dp0\..\dist\x64\Release\
-goto stop
-
-:x64_debug
-set params=%3 %4 %5 %6 %7 %8 %9
-set bin=%~dp0\..\dist\x64\Debug\
-goto stop
-
-:default
-set params=-l error
-set bin=%~dp0\..\dist\Win32\Release\
-goto stop
-
-:default_debug
-set params=-l error
-set bin=%~dp0\..\dist\Win32\Debug\
-goto stop
-
-:stop
-if "%bin%" == "" goto usage
 
 if not exist %bin%\conf md %bin%\conf
 if not exist %bin%\conf\hypertable.cfg xcopy ..\conf\hypertable.cfg %bin%\conf\
@@ -58,26 +53,22 @@ if not exist %bin%\conf\METADATA.xml xcopy ..\conf\METADATA.xml %bin%\conf\
 if not exist %bin%\hypertable.exe goto :missing_exe
 if not exist %bin%\dfsclient.exe goto :missing_exe
 
-echo shutdown Hypertable.ThriftBroker...
-taskkill /F /IM "Hypertable.ThriftBroker.exe" /T > nul
+if "%no_thriftbroker%" == "" (
+	echo shutdown Hypertable.ThriftBroker...
+	@taskkill /F /IM "Hypertable.ThriftBroker.exe" /T > nul
+)
 
 echo shutdown Hypertable.RangeServer/Hypertable.Master...
-%bin%\hypertable.exe --batch --execute shutdown;quit; > nul
-@ping 127.0.0.1 -n 3 -w 1000 > nul
+@%bin%\hypertable.exe --batch --execute shutdown;quit; > nul
+@ping 127.0.0.1 -n %wait% -w 1000 > nul
 
 echo shutdown Hyperspace.Master...
-taskkill /F /IM "Hyperspace.Master.exe" /T > nul
+@taskkill /F /IM "Hyperspace.Master.exe" /T > nul
 
 echo shutdown Hypertable.LocalBroker...
-%bin%\dfsclient.exe --silent --eval shutdown
-
-echo completed.
+@%bin%\dfsclient.exe --silent --eval shutdown
 
 goto done
-
-:usage
-echo Invalid argument, use "stop-all-servers [x86|x64] [debug]"
-goto done:
 
 :missing_exe
 echo Hypertable executable does not exists
