@@ -765,7 +765,14 @@ public:
       ThriftGen::Namespace id = get_namespace_id(&namespace_ptr);
       LOG_API("namespace name=" << ns << " namespace id="<< id);
       return id;
-    } RETHROW()
+    } catch (Hypertable::Exception &e) {
+      std::ostringstream oss;  oss << HT_FUNC <<": "<< e;
+      if( e.code() == Error::NAMESPACE_DOES_NOT_EXIST) // warning should be sufficient
+          HT_WARN_OUT << oss.str() << HT_END;
+      else
+          HT_ERROR_OUT << oss.str() << HT_END;
+      THROW_TE(e.code(), oss.str());
+    }
   }
 
   virtual Mutator open_mutator(const ThriftGen::Namespace ns, const String &table, ::int32_t flags,
