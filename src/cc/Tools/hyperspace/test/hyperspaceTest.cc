@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  std::string data_root_dir = std::string("\"--Hypertable.DataDirectory=") + System::install_dir + "\"";
+  std::string data_root_dir = std::string("--Hypertable.DataDirectory=") + System::install_dir;
 
 #endif
 
