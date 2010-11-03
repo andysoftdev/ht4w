@@ -264,8 +264,17 @@ int main(int argc, char **argv) {
 
   outfile.close();
 
+#ifndef _WIN32
+
   if (system("diff ./locationCacheTest.output ./locationCacheTest.golden"))
     return 1;
+
+#else
+
+  if (system("fc locationCacheTest.output locationCacheTest.golden"))
+    return 1;
+
+#endif
 
   return 0;
 }

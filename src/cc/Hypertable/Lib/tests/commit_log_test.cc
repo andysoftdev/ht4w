@@ -37,6 +37,11 @@
 
 #include "DfsBroker/Lib/Client.h"
 
+#ifdef _WIN32
+#define srandom srand
+#define random rand
+#endif
+
 using namespace Hypertable;
 using namespace Config;
 
@@ -83,7 +88,7 @@ int main(int argc, char **argv) {
 
     srandom(1);
 
-    //test1(dfs);
+    test1(dfs);
     test_link(dfs);
   }
   catch (Exception &e) {

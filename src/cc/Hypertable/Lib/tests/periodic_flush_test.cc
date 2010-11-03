@@ -26,6 +26,14 @@
 #include "Hypertable/Lib/Client.h"
 #include "Hypertable/Lib/HqlInterpreter.h"
 
+#ifdef _WIN32
+
+inline void sleep( int sec ) {
+    ::Sleep( 1000 * sec );
+}
+
+#endif
+
 using namespace Hypertable;
 using namespace Config;
 using namespace std;

@@ -117,7 +117,7 @@ namespace Hypertable {
       if (!::CloseHandle(pi.hThread)) {
          HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
       }     
-      ::Sleep(4000);
+      ::Sleep(5000);
     }
 
     ~ServerLauncher() {

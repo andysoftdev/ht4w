@@ -57,7 +57,9 @@ int main(int argc, char **argv) {
     String output_fn = testnames[i] + ".output";
 
     if ((fd = open(output_fn.c_str(), O_WRONLY|O_CREAT|O_TRUNC, 0644)) < 0) {
+#ifndef _WIN32
       perror("open");
+#endif
       return 1;
     }
 
@@ -79,7 +81,13 @@ int main(int argc, char **argv) {
     }
 
     String golden_fn = testnames[i] + ".golden";
+#ifndef _WIN32
     String sys_cmd = "diff " + output_fn + " " + golden_fn;
+#else
+    _commit(fd);
+    close(fd);
+    String sys_cmd = "fc " + output_fn + " " + golden_fn;
+#endif    
     if (system(sys_cmd.c_str()) != 0)
       return 1;
   }

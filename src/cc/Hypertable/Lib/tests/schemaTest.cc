@@ -63,7 +63,7 @@ namespace {
 
 
 int main(int argc, char **argv) {
-  off_t len;
+  size_t len;
   const char *buf;
   bool golden = false;
   TestHarness harness("schemaTest");
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
   delete schema;
 
   if (!golden)
-    harness.validate_and_exit("schemaTest.golden");
+    return harness.validate("schemaTest.golden");
 
   harness.regenerate_golden_file("schemaTest.golden");
 

@@ -28,6 +28,11 @@
 
 #include "Hypertable/Lib/Client.h"
 
+#ifdef _WIN32
+#define random rand
+#define srandom srand
+#endif
+
 using namespace std;
 using namespace Hypertable;
 

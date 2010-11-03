@@ -1,4 +1,4 @@
-ERROR schemaTest : Schema Parse Error: Schema Parse Error: not well-formed (invalid token) line 2, offset 29
+ERROR schemaTest : Schema Parse Error: Schema Parse Error: not well-formed (invalid token) line 2, offset 30
 ERROR schemaTest : Schema Parse Error: Nested ColumnFamily elements not allowed
 ERROR schemaTest : Schema Parse Error: ColumnFamily defined outside of AccessGroup
 ERROR schemaTest : Schema Parse Error: Invalid AccessGroup attribute 'foo'

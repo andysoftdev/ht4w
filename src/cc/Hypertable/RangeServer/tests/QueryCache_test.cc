@@ -40,6 +40,11 @@ extern "C" {
 
 #include "Hypertable/RangeServer/QueryCache.h"
 
+#ifdef _WIN32
+#define random rand
+#define srandom srand
+#endif
+
 using namespace Hypertable;
 using namespace std;
 

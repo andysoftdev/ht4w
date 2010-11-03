@@ -1529,8 +1529,14 @@ int main(int argc, char **argv) {
 
     out << flush;
 
+#ifndef _WIN32
     String cmd_str = "diff CellStoreScanner_test.output "
                      "CellStoreScanner_test.golden";
+#else
+    out.close();
+    String cmd_str = "fc CellStoreScanner_test.output "
+                     "CellStoreScanner_test.golden";
+#endif
     if (system(cmd_str.c_str()) != 0)
       return 1;
 

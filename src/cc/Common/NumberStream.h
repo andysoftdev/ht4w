@@ -41,7 +41,11 @@ namespace Hypertable {
       struct stat statbuf;
 
       if (stat(fname, &statbuf) != 0) {
+#ifndef _WIN32
         HT_ERRORF("Problem stating file '%s' - %s", fname, strerror(errno));
+#else
+        HT_ERRORF("Problem stating file '%s' - %s", fname, winapi_strerror(::GetLastError()));
+#endif
         exit(1);
       }
       if (statbuf.st_size < (off_t)sizeof(int32_t)) {

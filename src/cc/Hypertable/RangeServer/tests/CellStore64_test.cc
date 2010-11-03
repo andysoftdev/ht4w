@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     Config::properties->set("Hypertable.RangeServer.CellStore.DefaultCompressor", String("none"));
     Config::properties->set("Hypertable.RangeServer.CellStore.DefaultBlockSize", 4*1024*1024);
 
-    cs = new CellStoreV4(Global::dfs);
+    cs = new CellStoreV4(Global::dfs, Schema::new_instance(schema_str, strlen(schema_str), true));
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 4096, Config::properties));
 
     // setup value
@@ -152,8 +152,13 @@ int main(int argc, char **argv) {
 
     //cs = CellStoreFactory::open(csname, "", Key::END_ROW_MARKER);
 
+#ifndef _WIN32
     String cmd_str = install_dir + "/csdump /test/CellStore/cs64 | grep -v create_time > "
       + output_file;
+#else
+    String cmd_str = "../csdump /test/CellStore/cs64 > "
+      + output_file;
+#endif
     if (system(cmd_str.c_str()) != 0)
       return 1;
 
@@ -216,8 +221,13 @@ int main(int argc, char **argv) {
 
     out.close();
 
+#ifndef _WIN32
     cmd_str = String("diff ") + install_dir + "/CellStore64_test.output "
       + install_dir + "/CellStore64_test.golden";
+#else
+    cmd_str = "fc CellStore64_test.output "
+                 "CellStore64_test.golden";
+#endif
     if (system(cmd_str.c_str()) != 0)
       return 1;
 

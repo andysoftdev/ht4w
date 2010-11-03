@@ -44,6 +44,12 @@ extern "C" {
 
 #include "AsyncComm/ReactorFactory.h"
 
+#ifdef _WIN32
+inline void sleep( int sec ) {
+    ::Sleep( 1000 * sec );
+}
+#endif
+
 using namespace Hypertable;
 using namespace Hypertable::Config;
 using namespace std;
@@ -63,9 +69,9 @@ namespace {
   };
 
   void start_rangeservers(vector<ServerLauncher *> &rangeservers, uint32_t n,
-                          String split_size_arg="", uint32_t sleep_sec=2);
-  void stop_rangeservers(vector<ServerLauncher *> &rangeservers, uint32_t sleep_sec=2);
-  void restart_rangeservers(vector<ServerLauncher *> &rangeservers, uint32_t sleep_sec=2);
+                          String split_size_arg="", uint32_t sleep_sec=5);
+  void stop_rangeservers(vector<ServerLauncher *> &rangeservers, uint32_t sleep_sec=5);
+  void restart_rangeservers(vector<ServerLauncher *> &rangeservers, uint32_t sleep_sec=5);
 
   const char *numbers[] = {
     "0123456789",
@@ -257,18 +263,24 @@ int main(int argc, char **argv) {
 
   // Setup dirs /links
   unlink("rs1.out");unlink("rs2.out");unlink("rs3.out");
+#ifndef _WIN32
   unlink("./Hypertable.RangeServer");
   HT_ASSERT(link("../RangeServer/Hypertable.RangeServer",
                  "./Hypertable.RangeServer") == 0);
+#endif
 
   config_file = install_dir + config_file;
   Config::parse_file(config_file, file_desc());
+
+#ifndef _WIN32
   start_all = ht_bin_path + "/start-test-servers.sh --clear --no-rangeserver"
               " --no-thriftbroker --config=" + config_file;
   if (system(start_all.c_str()) !=0) {
     HT_ERROR("Unable to start servers");
     exit(1);
   }
+  sleep(5);
+#endif
 
   // launch rangeservers with small split size so we have multiple ranges on multiple servers
   start_rangeservers(rangeservers, num_rs, "--Hypertable.RangeServer.Range.SplitSize=700");
@@ -286,7 +298,9 @@ int main(int argc, char **argv) {
   catch (Hypertable::Exception &e) {
     cerr << e << endl;
     stop_rangeservers(rangeservers);
+#ifndef _WIN32
     HT_EXPECT(system(clean_db.c_str()) == 0, Error::EXTERNAL);
+#endif
     _exit(1);
   }
 
@@ -303,12 +317,12 @@ int main(int argc, char **argv) {
         value = words[ii];
         mutator_ptr->set(key, value.c_str(), value_size);
         sleep(1);
-        expected_output.push_back(row_key + " " + value.substr(0,value_size));
+        expected_output.push_back(row_key + " " + value.substr(0,value_size));        
       }
     }
 
     // sleep so ranges can split
-    sleep(1);
+    sleep(5);
 
     // restart rangeservers
     restart_rangeservers(rangeservers);
@@ -322,13 +336,13 @@ int main(int argc, char **argv) {
         key.row = row_key.c_str();
         value = words[ii];
         mutator_ptr->set(key, value.c_str(), value_size);
-        expected_output.push_back(row_key + " " + value.substr(0,value_size));
-      }
+        expected_output.push_back(row_key + " " + value.substr(0,value_size));        
+      }      
       mutator_ptr->flush();
     }
 
     // sleep so ranges can split
-    sleep(1);
+    sleep(5);
 
     // restart rangeservers
     restart_rangeservers(rangeservers);
@@ -342,7 +356,7 @@ int main(int argc, char **argv) {
         key.row = row_key.c_str();
         value = words[ii];
         mutator_ptr->set(key, value.c_str(), value_size);
-        expected_output.push_back(row_key + " " + value.substr(0,value_size));
+        expected_output.push_back(row_key + " " + value.substr(0,value_size));        
       }
     }
 
@@ -391,13 +405,17 @@ int main(int argc, char **argv) {
     cerr << e << endl;
     cout << "Test failed" << endl;
     stop_rangeservers(rangeservers);
+#ifndef _WIN32
     HT_EXPECT(system(clean_db.c_str()) == 0, Error::EXTERNAL);
+#endif
     _exit(1);
   }
 
   // stop all servers
   stop_rangeservers(rangeservers);
+#ifndef _WIN32
   HT_EXPECT(system(clean_db.c_str()) == 0, Error::EXTERNAL);
+#endif
 
   cout << "Test passed"<< endl;
 
@@ -412,28 +430,40 @@ namespace {
     ServerLauncher *rs;
     uint32_t base_port = 38060;
     vector<const char *> rs_args;
-    String port;
+    String proxy_name;    
     String outfile;
+    String port;
+#ifdef _WIN32
+    String data_dir;
+#endif
     static int file_counter=1;
 
     for (uint32_t ii=0; ii<nn; ii++) {
-      String proxy_name = (String)"--Hypertable.RangeServer.ProxyName=rs" + (ii+1);
+      proxy_name = (String)"--Hypertable.RangeServer.ProxyName=rs" + (ii+1);
       outfile = (String)"rs" + (file_counter++) + (String)".out";
       port = (String) "--Hypertable.RangeServer.Port=" + (base_port+ii);
       rs_args.clear();
       rs_args.push_back("Hypertable.RangeServer");
       rs_args.push_back(port.c_str());
+#ifdef _WIN32
+      data_dir = (String)"--Hypertable.DataDirectory=" +  System::install_dir;
+      rs_args.push_back(data_dir.c_str());
+#endif
       rs_args.push_back("--config=./MutatorNoLogSyncTest.cfg");
       rs_args.push_back(proxy_name.c_str());
 
       if (split_size_arg != "")
         rs_args.push_back(split_size_arg.c_str());
-
       rs_args.push_back("--debug");
       rs_args.push_back((const char *)0);
 
+#ifndef _WIN32
       rs = new ServerLauncher("./Hypertable.RangeServer", (char * const *)&rs_args[0],
                               outfile.c_str());
+#else
+      rs = new ServerLauncher("..\\Hypertable.RangeServer.exe", (char * const *)&rs_args[0],
+                              outfile.c_str());
+#endif
       rangeservers.push_back(rs);
     }
     sleep(sleep_sec);
