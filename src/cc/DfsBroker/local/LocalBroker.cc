@@ -92,10 +92,8 @@ LocalBroker::LocalBroker(PropertiesPtr &cfg) {
    */
   Path root = cfg->get_str("root", "");
 
-  if (!root.is_complete()) {
-    Path data_dir = cfg->get_str("Hypertable.DataDirectory");
-    root = data_dir / root;
-  }
+  if (!root.is_complete())
+    root = Path(System::install_dir) / root;
 
   m_rootdir = root.directory_string();
 
