@@ -28,6 +28,7 @@
 #include "Common/System.h"
 #include "Common/Filesystem.h"
 #include "Common/Config.h"
+#include "Common/Config.h"
 #include "MetaLogDfsBase.h"
 #include "MetaLogVersion.h"
 
