@@ -167,6 +167,8 @@ int main(int argc, char *argv[]) {
   typedef Cons<DefaultServerPolicy, HyperspaceClientPolicy> MyPolicy;
   std::vector<const char *> master_args;
 
+#ifndef _WIN32
+
   if (system("/bin/rm -rf ./hsroot") != 0) {
     HT_ERROR("Problem removing ./hsroot directory");
     exit(1);
@@ -177,9 +179,13 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+#endif
+
   master_args.push_back("Hyperspace.Master");
   master_args.push_back("--config=./name_id_mapper_test.cfg");
   master_args.push_back((const char *)0);
+
+#ifndef _WIN32
 
   unlink("./Hyperspace.Master");
   HT_ASSERT(link("../../Hyperspace/Hyperspace.Master", "./Hyperspace.Master") == 0);
@@ -188,11 +194,25 @@ int main(int argc, char *argv[]) {
     ServerLauncher master("./Hyperspace.Master",
                           (char * const *)&master_args[0]);
 
+#else
+
+  std::string data_dir = "--Hypertable.DataDirectory=" + System::locate_install_dir(argv[0]);
+  master_args.insert(master_args.begin() + 1, data_dir.c_str());
+
+  {
+    ServerLauncher master("..\\Hyperspace.Master",
+                          (char * const *)&master_args[0]);
+
+#endif
+
     try {
       init_with_policy<MyPolicy>(argc, argv);
 
       Comm *comm = Comm::instance();
 
+      Strings hosts;
+      hosts.push_back("localhost");
+      properties->set("Hyperspace.Replica.Host", hosts);
       properties->set("Hyperspace.Replica.Port", (uint16_t)48122);
 
       SessionPtr session = new Hyperspace::Session(comm, properties);
