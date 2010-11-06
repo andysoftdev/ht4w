@@ -54,19 +54,25 @@ extern "C" {
 #ifdef _WIN32
 
 #define IO_ERROR \
-	winapi_strerror(::GetLastError())
+    winapi_strerror(::GetLastError())
+
+#define CRT_IO_ERROR \
+    _strerror(0)
 
 inline int fsync( int fd ) {
-	if( !::FlushFileBuffers((HANDLE) _get_osfhandle(fd)) ) {
-		return ::GetLastError();
-	}
-	return 0;
+    if( !::FlushFileBuffers((HANDLE) _get_osfhandle(fd)) ) {
+        return ::GetLastError();
+    }
+    return 0;
 }
 
 #else
 
 #define IO_ERROR \
-	strerror(errno)
+    strerror(errno)
+
+#define CRT_IO_ERROR \
+    strerror(errno)
 
 #endif
 
@@ -138,7 +144,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
    */
   if ((local_fd = ::open(abspath.c_str(), oflags)) == -1) {
     report_error(cb);
-    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
+    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), CRT_IO_ERROR);
     return;
   }
 
@@ -198,7 +204,7 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
    */
   if ((local_fd = ::open(abspath.c_str(), oflags, 0644)) == -1) {
     report_error(cb);
-    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
+    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), CRT_IO_ERROR);
     return;
   }
 
@@ -259,16 +265,20 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
     return;
   }
 
+#ifndef _WIN32
   if ((offset = (uint64_t)lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
+#else
+  if ((offset = (uint64_t)_telli64(fdata->fd)) == (uint64_t)-1) {
+#endif
     report_error(cb);
-    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, IO_ERROR);
+    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, CRT_IO_ERROR);
     return;
   }
 
   if ((nread = FileUtils::read(fdata->fd, buf.base, amount)) == -1) {
     report_error(cb);
     HT_ERRORF("read failed: fd=%d offset=%llu amount=%d - %s",
-	      fdata->fd, (Llu)offset, amount, IO_ERROR);
+          fdata->fd, (Llu)offset, amount, IO_ERROR);
     return;
   }
 
@@ -294,16 +304,20 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
     return;
   }
 
+#ifndef _WIN32
   if ((offset = (uint64_t)lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
+#else
+  if ((offset = (uint64_t)_telli64(fdata->fd)) == (uint64_t)-1) {
+#endif
     report_error(cb);
-    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, IO_ERROR);
+    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, CRT_IO_ERROR);
     return;
   }
 
   if ((nwritten = FileUtils::write(fdata->fd, data, amount)) == -1) {
     report_error(cb);
     HT_ERRORF("write failed: fd=%d offset=%llu amount=%d data=%p- %s",
-	      fdata->fd, (Llu)offset, amount, data, IO_ERROR);
+    fdata->fd, (Llu)offset, amount, data, IO_ERROR);
     return;
   }
 
@@ -329,9 +343,13 @@ void LocalBroker::seek(ResponseCallback *cb, uint32_t fd, uint64_t offset) {
     return;
   }
 
+#ifndef _WIN32
   if ((offset = (uint64_t)lseek(fdata->fd, offset, SEEK_SET)) == (uint64_t)-1) {
+#else
+  if ((offset = (uint64_t)_lseeki64(fdata->fd, offset, SEEK_SET)) == (uint64_t)-1) {
+#endif
     report_error(cb);
-    HT_ERRORF("lseek failed: fd=%d offset=%llu - %s", fdata->fd, (Llu)offset, IO_ERROR);
+    HT_ERRORF("lseek failed: fd=%d offset=%llu - %s", fdata->fd, (Llu)offset, CRT_IO_ERROR);
     return;
   }
 
@@ -349,7 +367,11 @@ void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
   else
     abspath = m_rootdir + "/" + fname;
 
+#ifndef _WIN32
   if (unlink(abspath.c_str()) == -1) {
+#else
+  if (!::DeleteFileA(abspath.c_str())) {
+#endif
     report_error(cb);
     HT_ERRORF("unlink failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
     return;
@@ -603,8 +625,13 @@ LocalBroker::rename(ResponseCallback *cb, const char *src, const char *dst) {
 
   HT_DEBUGF("rename %s -> %s", asrc.c_str(), adst.c_str());
 
+#ifndef _WIN32
   if (std::rename(asrc.c_str(), adst.c_str()) != 0) {
+#else
+  if (!::MoveFile(asrc.c_str(), adst.c_str())) {
+#endif
     report_error(cb);
+    HT_ERRORF("rename failed: %s -> %s - %s", asrc.c_str(), adst.c_str(), IO_ERROR);
     return;
   }
   cb->response_ok();
@@ -621,28 +648,51 @@ LocalBroker::debug(ResponseCallback *cb, int32_t command,
 #ifdef _WIN32
 
 void LocalBroker::report_error(ResponseCallback *cb) {
-  DWORD err = GetLastError(); // TODO: FileUtils::last_error()
-  const char* errbuf = winapi_strerror(err);
+  DWORD err = ::GetLastError();
+  if( !err ) {
+    errno_t err;
+    _get_errno(&err);
+    char errbuf[128];
+    errbuf[0] = 0;
+    strcpy_s(errbuf, _strerror(0));
 
-  switch(err) {
-  case ERROR_FILE_NOT_FOUND:
-  case ERROR_PATH_NOT_FOUND:
-  case ERROR_INVALID_DRIVE:
-    cb->error(Error::DFSBROKER_BAD_FILENAME, errbuf);
-    break;
-  case ERROR_ACCESS_DENIED:
-  case ERROR_NETWORK_ACCESS_DENIED:
-    cb->error(Error::DFSBROKER_PERMISSION_DENIED, errbuf);
-    break;
-  case ERROR_INVALID_HANDLE:
-    cb->error(Error::DFSBROKER_BAD_FILE_HANDLE, errbuf);
-    break;
-  case ERROR_INVALID_ACCESS:
-    cb->error(Error::DFSBROKER_INVALID_ARGUMENT, errbuf);
-    break;
-  default:
-    cb->error(Error::DFSBROKER_IO_ERROR, errbuf);
-    break;
+    if (err == ENOTDIR || err == ENAMETOOLONG || err == ENOENT)
+      cb->error(Error::DFSBROKER_BAD_FILENAME, errbuf);
+    else if (err == EACCES || err == EPERM)
+      cb->error(Error::DFSBROKER_PERMISSION_DENIED, errbuf);
+    else if (err == EBADF)
+      cb->error(Error::DFSBROKER_BAD_FILE_HANDLE, errbuf);
+    else if (err == EINVAL)
+      cb->error(Error::DFSBROKER_INVALID_ARGUMENT, errbuf);
+    else
+      cb->error(Error::DFSBROKER_IO_ERROR, errbuf);
+
+    _set_errno(err);
+  }
+  else {
+    const char* errbuf = winapi_strerror(err);
+
+    switch(err) {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+    case ERROR_INVALID_DRIVE:
+      cb->error(Error::DFSBROKER_BAD_FILENAME, errbuf);
+      break;
+    case ERROR_ACCESS_DENIED:
+    case ERROR_NETWORK_ACCESS_DENIED:
+      cb->error(Error::DFSBROKER_PERMISSION_DENIED, errbuf);
+      break;
+    case ERROR_INVALID_HANDLE:
+      cb->error(Error::DFSBROKER_BAD_FILE_HANDLE, errbuf);
+      break;
+    case ERROR_INVALID_ACCESS:
+      cb->error(Error::DFSBROKER_INVALID_ARGUMENT, errbuf);
+      break;
+    default:
+      cb->error(Error::DFSBROKER_IO_ERROR, errbuf);
+      break;
+    }
+    ::SetLastError(err);
   }
 }
 
