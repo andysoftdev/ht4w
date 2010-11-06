@@ -77,6 +77,54 @@ private:
   bool m_do_close;
 };
 
+#ifdef _WIN32
+
+class ThriftClient : public Client, public ReferenceCount {
+  public:
+    ThriftClient(const std::string &host, int port, int timeout_ms = 300000, bool open = true) 
+    : Client( host, port, timeout_ms, open ) {
+      ::InitializeCriticalSection( &cs );
+    }
+
+    virtual ~ThriftClient() {
+      ::DeleteCriticalSection( &cs );
+    }
+
+    class Lock {
+    public:
+
+      inline Lock( ThriftClient* _client )
+      : client( _client ) {
+        client->lock();
+      }
+
+      inline ~Lock( ) {
+        client->unlock();
+      }
+
+    private:
+
+      ThriftClient* client;
+    };
+    friend class Lock;
+
+  private:
+
+    inline void lock( ) {
+        ::EnterCriticalSection( &cs );
+    }
+
+    inline void unlock( ) {
+        ::LeaveCriticalSection( &cs );
+    }
+
+      CRITICAL_SECTION cs;
+};
+
+typedef ::boost::intrusive_ptr<ThriftClient> ClientPtr;
+
+#endif
+
 }} // namespace Hypertable::Thrift
 
 #endif /* HYPERTABLE_THRIFT_CLIENT_H */
