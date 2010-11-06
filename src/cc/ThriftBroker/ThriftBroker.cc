@@ -395,8 +395,8 @@ public:
   }
 
   virtual void
-  hql_exec(HqlResult& result, const ThriftGen::Namespace ns, const String &hql, bool noflush,
-           bool unbuffered) {
+  hql_exec(HqlResult& result, const ThriftGen::Namespace ns, const String &hql, const bool noflush,
+           const bool unbuffered) {
     LOG_API("namespace=" << ns << " hql="<< hql <<" noflush="<< noflush <<
             " unbuffered="<< unbuffered);
 
@@ -414,8 +414,8 @@ public:
   }
 
   virtual void
-  hql_exec2(HqlResult2& result, const ThriftGen::Namespace ns, const String &hql, bool noflush,
-            bool unbuffered) {
+  hql_exec2(HqlResult2& result, const ThriftGen::Namespace ns, const String &hql, const bool noflush,
+            const bool unbuffered) {
     LOG_API("namespace=" << ns << " hql="<< hql <<" noflush="<< noflush <<
             " unbuffered="<< unbuffered);
 
@@ -453,7 +453,7 @@ public:
 
   virtual Scanner
   open_scanner(const ThriftGen::Namespace ns, const String &table, const ThriftGen::ScanSpec &ss,
-               bool retry_table_not_found) {
+               const bool retry_table_not_found) {
     LOG_API("namespace=" << ns << " table="<< table <<" scan_spec="<< ss);
 
     try {
@@ -775,8 +775,8 @@ public:
     }
   }
 
-  virtual Mutator open_mutator(const ThriftGen::Namespace ns, const String &table, ::int32_t flags,
-                               ::int32_t flush_interval) {
+  virtual Mutator open_mutator(const ThriftGen::Namespace ns, const String &table, const ::int32_t flags,
+                               const ::int32_t flush_interval) {
     LOG_API("namespace=" << ns << "table="<< table <<" flags="<< flags <<
             " flush_interval="<< flush_interval);
 

@@ -366,7 +366,17 @@ int CommandShell::run() {
           boost::trim(sec_str);
           char *endptr;
           long secs = strtol(sec_str.c_str(), &endptr, 0);
+
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4995 ) // '_errno': name was marked as #pragma deprecated
+#endif
+
           if ((secs == 0 && errno == EINVAL) || *endptr != 0) {
+
+#ifdef _WIN32
+#pragma warning( pop )
+#endif
             cout << "error: invalid seconds specification" << endl;
             if (m_batch_mode)
               return 1;

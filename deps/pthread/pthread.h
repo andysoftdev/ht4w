@@ -1234,7 +1234,7 @@ PTW32_DLLPORT int PTW32_CDECL pthreadCancelableTimedWait (HANDLE waitHandle,
  * actually exist on WIN32.
  */
 
-#if !defined(__MINGW32__)
+#if !defined(__MINGW32__) && !defined(strtok_r)
 #define strtok_r( _s, _sep, _lasts ) \
         ( *(_lasts) = strtok( (_s), (_sep) ) )
 #endif /* !__MINGW32__ */

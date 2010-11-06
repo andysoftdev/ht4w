@@ -295,10 +295,9 @@ CpuStat &CpuStat::refresh() {
 
 LoadAvgStat &LoadAvgStat::refresh() {
   ScopedRecLock lock(_mutex);
-  sigar_loadavg_t m;
 
 #ifndef _WIN32
-
+  sigar_loadavg_t m;
   HT_ASSERT(sigar_loadavg_get(sigar(), &m) == SIGAR_OK);
 
   loadavg[0] = m.loadavg[0];

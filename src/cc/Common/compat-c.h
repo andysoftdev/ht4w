@@ -81,6 +81,7 @@
 #pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
 #pragma warning( disable : 4003 ) // not enough actual parameters for macro
 #pragma warning( disable : 4996 ) // the POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name
+#pragma warning( disable : 4244 ) // conversion from 'x' to 'y', possible loss of data
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN

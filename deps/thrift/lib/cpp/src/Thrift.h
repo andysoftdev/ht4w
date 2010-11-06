@@ -69,10 +69,20 @@ class TOutput {
   // just the string version, otherwise errno could be corrupted
   // if there is some problem allocating memory when constructing
   // the string.
+
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4995 ) // 'perror': name was marked as #pragma deprecated
+#endif
+
   void perror(const char *message, int errno_copy);
   inline void perror(const std::string &message, int errno_copy) {
     perror(message.c_str(), errno_copy);
   }
+
+#ifdef _WIN32
+#pragma warning( pop )
+#endif
 
   void printf(const char *message, ...);
 

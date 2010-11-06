@@ -207,7 +207,7 @@ BlockCompressionCodecZlib::inflate(const DynamicBuffer &input,
 
     output.ptr = output.base + header.get_data_length();
   }
-  catch (Exception &e) {
+  catch (Exception&) {
     ::inflateReset(&m_stream_inflate);
     output.free();
     throw;

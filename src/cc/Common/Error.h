@@ -337,7 +337,7 @@ operator<<(std::ostream &out, const ExceptionMessagesRenderer &r) {
 
 #define HT_RETHROWF(_fmt_, ...) \
   catch (Exception &e) { HT_THROW2F(e.code(), e, _fmt_, __VA_ARGS__); } \
-  catch (std::bad_alloc &e) { \
+  catch (std::bad_alloc&) { \
     HT_THROWF(Error::BAD_MEMORY_ALLOCATION, _fmt_, __VA_ARGS__); \
   } \
   catch (std::exception &e) { \
@@ -361,7 +361,7 @@ operator<<(std::ostream &out, const ExceptionMessagesRenderer &r) {
 // For catching exceptions in destructors
 #define HT_LOG_EXCEPTION(_s_) \
   catch (Exception &e) { HT_ERROR_OUT << e <<", "<< _s_ << HT_END; } \
-  catch (std::bad_alloc &e) { \
+  catch (std::bad_alloc&) { \
     HT_ERROR_OUT <<"Out of memory, "<< _s_ << HT_END; } \
   catch (std::exception &e) { \
     HT_ERROR_OUT <<"Caught exception: "<< e.what() <<", "<< _s_ << HT_END; } \

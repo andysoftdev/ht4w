@@ -84,7 +84,7 @@ namespace Hypertable {
       }
       else {
         m_source.reset( FileUtils::file_to_buffer(source, &m_source_len) );
-        HT_ASSERT(m_source_len >= size);
+        HT_ASSERT(m_source_len >= (size_t)size);
       }
       m_source_len -= size;
       m_render_buf.reset( new char [ size * 2 ] + 1 );

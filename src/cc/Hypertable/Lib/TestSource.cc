@@ -65,7 +65,18 @@ bool TestSource::next(ByteString &key, ByteString &value) {
     }
     else {
       timestamp = strtoll(ptr, 0, 0);
+
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4995 ) // '_errno': name was marked as #pragma deprecated
+#endif
+
       if (timestamp == 0 && errno == EINVAL) {
+
+#ifdef _WIN32
+#pragma warning( pop )
+#endif
+
         cerr << "Invalid timestamp (" << ptr << ") on line " << (m_cur_line-1)
              << endl;
         continue;

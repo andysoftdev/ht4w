@@ -34,18 +34,18 @@ namespace Hypertable {
 
   public:
 
-	#ifdef _WIN32
+    #ifdef _WIN32
 
-	static ssize_t read(const String &fname, String &contents);
+    static ssize_t read(const String &fname, String &contents);
     static ssize_t read(HANDLE fd, void *vptr, size_t n);
-	static ssize_t read(int fd, void *vptr, size_t n);
+    static ssize_t read(int fd, void *vptr, size_t n);
     static ssize_t pread(HANDLE fd, void *vptr, size_t n, uint64_t offset);
-	static ssize_t pread(int fd, void *vptr, size_t n, uint64_t offset);
+    static ssize_t pread(int fd, void *vptr, size_t n, uint64_t offset);
     static ssize_t write(const String &fname, String &contents);
     static ssize_t write(HANDLE fd, const void *vptr, size_t n);
-	static ssize_t write(int fd, const void *vptr, size_t n);
-	
-	#else
+    static ssize_t write(int fd, const void *vptr, size_t n);
+    
+    #else
 
     static ssize_t read(const String &fname, String &contents);
     static ssize_t read(int fd, void *vptr, size_t n);
@@ -61,7 +61,7 @@ namespace Hypertable {
     static ssize_t recv(int fd, void *vptr, size_t n);
     static void set_flags(int fd, int flags);
 
-	#endif
+    #endif
 
     static char *file_to_buffer(const String &fname, size_t *lenp);
     static bool mkdirs(const String &dirname);

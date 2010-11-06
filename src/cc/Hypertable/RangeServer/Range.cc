@@ -915,8 +915,8 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
       Barrier::ScopedActivator block_updates(m_update_barrier);
       ScopedLock lock(m_mutex);
       for (size_t i=0; i<ag_vector.size(); i++) {
-	if (subtask_map.minor_compaction(ag_vector[i].get()))
-	  ag_vector[i]->stage_compaction();
+    if (subtask_map.minor_compaction(ag_vector[i].get()))
+      ag_vector[i]->stage_compaction();
       }
     }
 
@@ -924,12 +924,12 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
     for (size_t i=0; i<ag_vector.size(); i++) {
       flags = subtask_map.flags(ag_vector[i].get());
       if (flags & MaintenanceFlag::COMPACT) {
-	try {
-	  ag_vector[i]->run_compaction(flags);
-	}
-	catch (Exception &e) {
-	  ag_vector[i]->unstage_compaction();
-	}
+    try {
+      ag_vector[i]->run_compaction(flags);
+    }
+    catch (Exception&) {
+      ag_vector[i]->unstage_compaction();
+    }
       }
     }
 
@@ -962,7 +962,7 @@ void Range::purge_memory(MaintenanceFlag::Map &subtask_map) {
   try {
     for (size_t i=0; i<ag_vector.size(); i++) {
       if ( subtask_map.memory_purge(ag_vector[i].get()) )
-	memory_purged += ag_vector[i]->purge_memory(subtask_map);
+    memory_purged += ag_vector[i]->purge_memory(subtask_map);
     }
   }
   catch (Exception &e) {
@@ -977,7 +977,7 @@ void Range::purge_memory(MaintenanceFlag::Map &subtask_map) {
   }
 
   HT_INFOF("Memory Purge complete for range %s.  Purged %llu bytes of memory",
-	   m_name.c_str(), (Llu)memory_purged);
+       m_name.c_str(), (Llu)memory_purged);
 
 }
 
