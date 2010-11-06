@@ -6,7 +6,7 @@ set configuration=Release
 set params=
 set no_rangeserver=
 set no_thriftbroker=
-set wait=3
+set wait=5
 
 for %%p in (%*) do (
 	if /i "%%~p" == "x86" (
@@ -26,7 +26,6 @@ for %%p in (%*) do (
 					) else (
 						if /i "%%~p" == "debug" (
 							set configuration=Debug
-							set wait=5
 						) else (							
 							if /i "%%~p" == "no-thriftbroker" (
 								set no_thriftbroker=1
