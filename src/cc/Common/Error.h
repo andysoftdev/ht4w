@@ -22,9 +22,15 @@
 #ifndef HYPERTABLE_ERROR_H
 #define HYPERTABLE_ERROR_H
 
+#ifndef __cplusplus_cli
+
 #include "Common/String.h"
 #include <ostream>
 #include <stdexcept>
+
+#else
+#pragma managed( push, off )
+#endif
 
 namespace Hypertable {
   namespace Error {
@@ -209,10 +215,15 @@ namespace Hypertable {
 
     };
 
+#ifndef __cplusplus_cli
+
     const char *get_text(int error);
+
+#endif
 
   } // namespace Error
 
+#ifndef __cplusplus_cli
 
   class Exception;
 
@@ -375,5 +386,12 @@ operator<<(std::ostream &out, const ExceptionMessagesRenderer &r) {
 
 
 } // namespace Hypertable
+
+#else
+
+} // namespace Hypertable
+
+#pragma managed( pop )
+#endif
 
 #endif // HYPERTABLE_ERROR_H
