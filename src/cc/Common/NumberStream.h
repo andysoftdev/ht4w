@@ -54,7 +54,11 @@ namespace Hypertable {
         exit(1);
       }
 
+#ifndef _WIN32
       if ((m_fp = fopen(fname, "r")) == 0) {
+#else
+      if ((m_fp = fopen(fname, "rb")) == 0) {
+#endif
         HT_ERRORF("Unable to open number stream file '%s'", fname);
         exit(1);
       }
