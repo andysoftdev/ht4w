@@ -48,7 +48,7 @@ namespace apache { namespace thrift {
 
 template <size_t size> inline
 errno_t ctime_r( const time_t *time, char (&buffer)[size] ) {
-	return ctime_s( buffer, size, time );
+    return ctime_s( buffer, size, time );
 }
 
 #endif
@@ -62,7 +62,7 @@ class TOutput {
   }
 
   inline void operator()(const char *message){
-    f_(message);
+    if( f_ ) f_(message);
   }
 
   // It is important to have a const char* overload here instead of

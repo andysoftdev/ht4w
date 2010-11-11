@@ -56,7 +56,7 @@ extern std::string winapi_strerror(DWORD err);
 #endif
 
 inline int setsockopt( socket_t s, int level, int optname, void* optval, int optlen ) {
-	return ::setsockopt( s, level, optname, (const char *)optval, optlen );
+    return ::setsockopt( s, level, optname, (const char *)optval, optlen );
 }
 
 HANDLE TServerSocket::hIOCP_ = 0;
@@ -71,8 +71,8 @@ HANDLE TServerSocket::hIOCP_ = 0;
 
 #define THROW( ex, msg, e ) \
 { \
-	const int __err = e; \
-	std::string strerr( msg + std::string(", ") + STRERROR(__err) ); \
+    const int __err = e; \
+    std::string strerr( msg + std::string(", ") + STRERROR(__err) ); \
     GlobalOutput.perror(strerr, __err); \
     throw TTransportException(ex, strerr, __err); \
 }
@@ -92,7 +92,7 @@ TServerSocket::TServerSocket(int port) :
   intSock2_(-1)
 #endif
   {  
-	init();
+    init();
   }
 
 TServerSocket::TServerSocket(int port, int sendTimeout, int recvTimeout) :
@@ -110,7 +110,7 @@ TServerSocket::TServerSocket(int port, int sendTimeout, int recvTimeout) :
   intSock2_(-1)
 #endif
   {
-	init();
+    init();
   }
 
 #ifndef _WIN32
@@ -129,7 +129,7 @@ TServerSocket::TServerSocket(string path) :
   intSock1_(-1),
   intSock2_(-1)
   {  
-	 init();
+     init();
   }
 
 #endif
@@ -216,13 +216,13 @@ void TServerSocket::listen() {
 #endif
   {
     serverSocket_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	server_addr_info_ = *res;
+    server_addr_info_ = *res;
   }
 
   if (serverSocket_ == INVALID_SOCKET) {
     int errno_copy = SOCKETERRNO;
-	close();
-	THROW( TTransportException::NOT_OPEN, "Could not create server socket, TServerSocket::listen() socket()",  errno_copy )
+    close();
+    THROW( TTransportException::NOT_OPEN, "Could not create server socket, TServerSocket::listen() socket()",  errno_copy )
   }
 
   // Set reusaddress to prevent 2MSL delay on accept
@@ -230,8 +230,8 @@ void TServerSocket::listen() {
   if (-1 == setsockopt(serverSocket_, SOL_SOCKET, SO_REUSEADDR,
                        &one, sizeof(one))) {
     int errno_copy = SOCKETERRNO;
-	close();
-	THROW( TTransportException::NOT_OPEN, "Could not set SO_REUSEADDR, TServerSocket::listen() setsockopt() SO_REUSEADDR",  errno_copy )
+    close();
+    THROW( TTransportException::NOT_OPEN, "Could not set SO_REUSEADDR, TServerSocket::listen() setsockopt() SO_REUSEADDR",  errno_copy )
   }
 
   // Set TCP buffer sizes
@@ -239,8 +239,8 @@ void TServerSocket::listen() {
     if (-1 == setsockopt(serverSocket_, SOL_SOCKET, SO_SNDBUF,
                          &tcpSendBuffer_, sizeof(tcpSendBuffer_))) {
       int errno_copy = SOCKETERRNO;
-	  close();
-	  THROW( TTransportException::NOT_OPEN, "Could not set SO_SNDBUF, TServerSocket::listen() setsockopt() SO_SNDBUF",  errno_copy )
+      close();
+      THROW( TTransportException::NOT_OPEN, "Could not set SO_SNDBUF, TServerSocket::listen() setsockopt() SO_SNDBUF",  errno_copy )
     }
   }
 
@@ -248,8 +248,8 @@ void TServerSocket::listen() {
     if (-1 == setsockopt(serverSocket_, SOL_SOCKET, SO_RCVBUF,
                          &tcpRecvBuffer_, sizeof(tcpRecvBuffer_))) {
       int errno_copy = SOCKETERRNO;
-	  close();
-	  THROW( TTransportException::NOT_OPEN, "Could not set SO_RCVBUF, TServerSocket::listen() setsockopt() SO_RCVBUF",  errno_copy )
+      close();
+      THROW( TTransportException::NOT_OPEN, "Could not set SO_RCVBUF, TServerSocket::listen() setsockopt() SO_RCVBUF",  errno_copy )
     }
   }
 
@@ -258,8 +258,8 @@ void TServerSocket::listen() {
   if (-1 == setsockopt(serverSocket_, SOL_SOCKET, TCP_DEFER_ACCEPT,
                        &one, sizeof(one))) {
     int errno_copy = SOCKETERRNO;
-	close();
-	THROW( TTransportException::NOT_OPEN, "Could not set TCP_DEFER_ACCEPT, TServerSocket::listen() setsockopt() TCP_DEFER_ACCEPT",  errno_copy )
+    close();
+    THROW( TTransportException::NOT_OPEN, "Could not set TCP_DEFER_ACCEPT, TServerSocket::listen() setsockopt() TCP_DEFER_ACCEPT",  errno_copy )
   }
   #endif // #ifdef TCP_DEFER_ACCEPT
 
@@ -269,7 +269,7 @@ void TServerSocket::listen() {
     if (-1 == setsockopt(serverSocket_, IPPROTO_IPV6, IPV6_V6ONLY, 
           &zero, sizeof(zero))) {
       int errno_copy = SOCKETERRNO;
-	  GlobalOutput.perror("TServerSocket::listen() IPV6_V6ONLY, " + STRERROR(errno_copy), errno_copy);
+      GlobalOutput.perror("TServerSocket::listen() IPV6_V6ONLY, " + STRERROR(errno_copy), errno_copy);
     }
   }
   #endif // #ifdef IPV6_V6ONLY
@@ -279,8 +279,8 @@ void TServerSocket::listen() {
   if (-1 == setsockopt(serverSocket_, SOL_SOCKET, SO_LINGER,
                        &ling, sizeof(ling))) {
     int errno_copy = SOCKETERRNO;
-	close();
-	THROW( TTransportException::NOT_OPEN, "Could not set SO_LINGER, TServerSocket::listen() setsockopt() SO_LINGER",  errno_copy )
+    close();
+    THROW( TTransportException::NOT_OPEN, "Could not set SO_LINGER, TServerSocket::listen() setsockopt() SO_LINGER",  errno_copy )
   }
 
   // Unix Sockets do not need that
@@ -293,8 +293,8 @@ void TServerSocket::listen() {
     if (-1 == setsockopt(serverSocket_, IPPROTO_TCP, TCP_NODELAY,
                          &one, sizeof(one))) {
       int errno_copy = SOCKETERRNO;
-	  close();
-	  THROW( TTransportException::NOT_OPEN, "Could not set TCP_NODELAY, TServerSocket::listen() setsockopt() TCP_NODELAY",  errno_copy )
+      close();
+      THROW( TTransportException::NOT_OPEN, "Could not set TCP_NODELAY, TServerSocket::listen() setsockopt() TCP_NODELAY",  errno_copy )
     }
   }
 
@@ -304,23 +304,23 @@ void TServerSocket::listen() {
   int flags = fcntl(serverSocket_, F_GETFL, 0);
   if (flags == -1) {
     int errno_copy = SOCKETERRNO;
-	close();
-	THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() fcntl() F_GETFL",  errno_copy )
+    close();
+    THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() fcntl() F_GETFL",  errno_copy )
   }
 
   if (-1 == fcntl(serverSocket_, F_SETFL, flags | O_NONBLOCK)) {
     int errno_copy = SOCKETERRNO;
-	close();
-	THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() fcntl() O_NONBLOCK",  errno_copy )
+    close();
+    THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() fcntl() O_NONBLOCK",  errno_copy )
   }
 
 #else
 
   u_long one_arg = 1;
   if( ioctlsocket(serverSocket_, FIONBIO, &one_arg) == SOCKET_ERROR ) {
-	 int errno_copy = SOCKETERRNO;
-	 close();
-	 THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() ioctlsocket() FIONBIO",  errno_copy )
+     int errno_copy = SOCKETERRNO;
+     close();
+     THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() ioctlsocket() FIONBIO",  errno_copy )
   }
 
 #endif
@@ -340,7 +340,7 @@ void TServerSocket::listen() {
     if (path_.length() > sizeof(address.sun_path)) {
       int errno_copy = errno;
       GlobalOutput.perror("TSocket::listen() Unix Domain socket path too long", errno_copy);
-	  close(); 
+      close(); 
       throw TTransportException(TTransportException::NOT_OPEN, " Unix Domain socket path too long");
     }
 
@@ -355,7 +355,7 @@ void TServerSocket::listen() {
       // use short circuit evaluation here to only sleep if we need to
     } while ((retries++ < retryLimit_) && (sleep(retryDelay_) == 0));
   } else {
-	  do {
+      do {
       if (0 == bind(serverSocket_, res->ai_addr, res->ai_addrlen)) {
         break;
       }
@@ -370,30 +370,30 @@ void TServerSocket::listen() {
 
   HANDLE hIOCP = CreateIoCompletionPort((HANDLE)serverSocket_, hIOCP_, 0, 0);
   if(hIOCP != hIOCP_) {
-	 int errno_copy = ERRNO;
-	 close();
-	 THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() CreateIoCompletionPort()",  errno_copy )
+     int errno_copy = ERRNO;
+     close();
+     THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() CreateIoCompletionPort()",  errno_copy )
   }
   static GUID GuidAcceptEx = WSAID_ACCEPTEX;
   DWORD dwBytes;
   if( WSAIoctl(serverSocket_,  SIO_GET_EXTENSION_FUNCTION_POINTER,  &GuidAcceptEx,  sizeof(GuidAcceptEx), &lpfnAcceptEx_, sizeof(lpfnAcceptEx_), &dwBytes, NULL, NULL) == SOCKET_ERROR ) {
-	  int errno_copy = SOCKETERRNO;
-	  close();
-	  THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() WSAIoctl()",  errno_copy )
+      int errno_copy = SOCKETERRNO;
+      close();
+      THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() WSAIoctl()",  errno_copy )
   }
 
   do {
-		if (0 == ::bind(serverSocket_, res->ai_addr, res->ai_addrlen)) {
-		   break;
-		}
-		if( retries < retryLimit_ ) {
-			::Sleep(retryDelay_);
-		}
-		// use short circuit evaluation here to only sleep if we need to
-	} while ( retries++ < retryLimit_ );
+        if (0 == ::bind(serverSocket_, res->ai_addr, res->ai_addrlen)) {
+           break;
+        }
+        if( retries < retryLimit_ ) {
+            ::Sleep(retryDelay_);
+        }
+        // use short circuit evaluation here to only sleep if we need to
+    } while ( retries++ < retryLimit_ );
 
-	// free addrinfo
-	freeaddrinfo(res0);
+    // free addrinfo
+    freeaddrinfo(res0);
 
   #endif
 
@@ -406,7 +406,7 @@ void TServerSocket::listen() {
     }
     else
 #endif
-	{
+    {
       sprintf(errbuf, "TServerSocket::listen() BIND %d", port_);
     }
     GlobalOutput(errbuf);
@@ -416,9 +416,9 @@ void TServerSocket::listen() {
 
   // Call listen
   if (-1 == ::listen(serverSocket_, acceptBacklog_)) {
-	int errno_copy = SOCKETERRNO;
-	close();
-	THROW( TTransportException::NOT_OPEN, "Could not listen, TServerSocket::listen() listen()",  errno_copy )
+    int errno_copy = SOCKETERRNO;
+    close();
+    THROW( TTransportException::NOT_OPEN, "Could not listen, TServerSocket::listen() listen()",  errno_copy )
   }
 
   // The socket is now listening!
@@ -507,7 +507,7 @@ shared_ptr<TTransport> TServerSocket::acceptImpl() {
   // Create an accepting socket (none overlapped!)
   socket_t clientSocket = WSASocket(server_addr_info_.ai_family, server_addr_info_.ai_socktype, server_addr_info_.ai_protocol, NULL, 0, 0);
   if (clientSocket == INVALID_SOCKET) {
-	THROW( TTransportException::UNKNOWN, "Could not create accepting socket, TServerSocket::acceptImpl() WSASocket()",  WSAGetLastError() )
+    THROW( TTransportException::UNKNOWN, "Could not create accepting socket, TServerSocket::acceptImpl() WSASocket()",  WSAGetLastError() )
   }
 
   char adr[(sizeof(struct sockaddr_in6) + 16)*2];
@@ -516,15 +516,15 @@ shared_ptr<TTransport> TServerSocket::acceptImpl() {
   DWORD dwBytes;
 
   if( !lpfnAcceptEx_(serverSocket_, 
-		clientSocket,
-		adr, 
-		0,
-		sizeof(sockaddr_in6) + 16, 
-		sizeof(sockaddr_in6) + 16, 
-		&dwBytes, 
-		&ol) && WSAGetLastError() != ERROR_IO_PENDING ) {
+        clientSocket,
+        adr, 
+        0,
+        sizeof(sockaddr_in6) + 16, 
+        sizeof(sockaddr_in6) + 16, 
+        &dwBytes, 
+        &ol) && WSAGetLastError() != ERROR_IO_PENDING ) {
 
-	 THROW( TTransportException::UNKNOWN, "TServerSocket::acceptImpl() AcceptEx()",  WSAGetLastError() )
+     THROW( TTransportException::UNKNOWN, "TServerSocket::acceptImpl() AcceptEx()",  WSAGetLastError() )
   }
 
   while (true) {
@@ -547,7 +547,7 @@ shared_ptr<TTransport> TServerSocket::acceptImpl() {
     else {
       DWORD err = GetLastError();
       if( err != WAIT_TIMEOUT ) {
-		THROW( TTransportException::UNKNOWN, "TServerSocket::acceptImpl() GetQueuedCompletionStatus()",  err )
+        THROW( TTransportException::UNKNOWN, "TServerSocket::acceptImpl() GetQueuedCompletionStatus()",  err )
        }
     }
   }
@@ -555,7 +555,7 @@ shared_ptr<TTransport> TServerSocket::acceptImpl() {
   // Make sure client socket is blocking
   u_long zero_arg = 0;
   if( ioctlsocket(clientSocket, FIONBIO, &zero_arg) == SOCKET_ERROR ) {
-	 THROW( TTransportException::UNKNOWN, "TServerSocket::acceptImpl() ioctlsocket() FIONBIO",  WSAGetLastError() )
+     THROW( TTransportException::UNKNOWN, "TServerSocket::acceptImpl() ioctlsocket() FIONBIO",  WSAGetLastError() )
   }
 
 #endif  
@@ -584,9 +584,9 @@ void TServerSocket::interrupt() {
 #else
 
    if (TServerSocket::hIOCP_) {
-	  if(!PostQueuedCompletionStatus(TServerSocket::hIOCP_, 0, 0, 0)) {
-		  GlobalOutput.perror("TServerSocket::interrupt() PostQueuedCompletionStatus() ", GetLastError());
-	  }
+     if(!PostQueuedCompletionStatus(TServerSocket::hIOCP_, 0, 0, 0)) {
+         GlobalOutput.perror("TServerSocket::interrupt() PostQueuedCompletionStatus() " + STRERROR(GetLastError()), GetLastError());
+     }
 
 #endif
 
@@ -599,7 +599,7 @@ void TServerSocket::close() {
 #ifndef _WIN32
     ::close(serverSocket_);
 #else
-	::closesocket(serverSocket_);
+    ::closesocket(serverSocket_);
 #endif
   }
 #ifndef _WIN32
@@ -619,20 +619,20 @@ void TServerSocket::close() {
 #ifdef _WIN32
 
 void TServerSocket::init() {
-	memset( &server_addr_info_, 0, sizeof(server_addr_info_) );
-	lpfnAcceptEx_ = 0;
+    memset( &server_addr_info_, 0, sizeof(server_addr_info_) );
+    lpfnAcceptEx_ = 0;
 
-	WSADATA wsaData;
-	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-		THROW( TTransportException::UNKNOWN, "TServerSocket::init() WSAStartup()",  WSAGetLastError() )
-	}
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        THROW( TTransportException::UNKNOWN, "TServerSocket::init() WSAStartup()",  WSAGetLastError() )
+    }
 
-	if( hIOCP_ == 0 ) {
-		hIOCP_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
-		if(hIOCP_ == 0) {
-			THROW( TTransportException::UNKNOWN, "TServerSocket::init() CreateIoCompletionPort()",  WSAGetLastError() )
-		}
-	}
+    if( hIOCP_ == 0 ) {
+        hIOCP_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+        if(hIOCP_ == 0) {
+            THROW( TTransportException::UNKNOWN, "TServerSocket::init() CreateIoCompletionPort()",  WSAGetLastError() )
+        }
+    }
 }
 
 #endif

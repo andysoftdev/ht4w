@@ -89,8 +89,8 @@ class PthreadThread: public Thread {
 
 #ifdef _WIN32
 
-	pthread_.p = 0;
-	pthread_.x = 0;
+    pthread_.p = 0;
+    pthread_.x = 0;
 
 #endif
 
@@ -134,7 +134,7 @@ class PthreadThread: public Thread {
 
     // Set thread policy
     int re_setschedpolicy;
-	if ((re_setschedpolicy = pthread_attr_setschedpolicy(&thread_attr, policy_)) != 0 && re_setschedpolicy != ENOTSUP) {
+    if ((re_setschedpolicy = pthread_attr_setschedpolicy(&thread_attr, policy_)) != 0 && re_setschedpolicy != ENOTSUP) {
       throw SystemResourceException("pthread_attr_setschedpolicy failed");
     }
 
@@ -175,7 +175,7 @@ class PthreadThread: public Thread {
 #ifndef _WIN32
     return (Thread::id_t)pthread_;
 #else
-	return (Thread::id_t)::GetThreadId(pthread_getw32threadhandle_np(pthread_));
+    return (Thread::id_t)::GetThreadId(pthread_getw32threadhandle_np(pthread_));
 #endif
   }
 

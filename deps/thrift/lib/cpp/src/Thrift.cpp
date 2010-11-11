@@ -39,14 +39,14 @@ void TOutput::printf(const char *message, ...) {
   va_end(ap);
 
   if (need < STACK_BUF_SIZE) {
-    f_(stack_buf);
+    if( f_ ) f_(stack_buf);
     return;
   }
 
   char *heap_buf = (char*)malloc((need+1) * sizeof(char));
   if (heap_buf == NULL) {
     // Malloc failed.  We might as well print the stack buffer.
-    f_(stack_buf);
+    if( f_ ) f_(stack_buf);
     return;
   }
 
@@ -55,14 +55,16 @@ void TOutput::printf(const char *message, ...) {
   va_end(ap);
   // TODO(shigin): inform user
   if (rval != -1) {
-    f_(heap_buf);
+    if( f_ ) f_(heap_buf);
   }
   free(heap_buf);
 }
 
 void TOutput::perror(const char *message, int errno_copy) {
-  std::string out = message + strerror_s(errno_copy);
-  f_(out.c_str());
+  if( f_ ) {
+    std::string out = std::string(message) + " " + strerror_s(errno_copy);
+    f_(out.c_str());
+  }
 }
 
 std::string TOutput::strerror_s(int errno_copy) {

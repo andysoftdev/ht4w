@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 namespace apache { namespace thrift { namespace server {
-	
+
 #ifndef _WIN32
 
 int increase_max_fds(int max_fds=(1<<24))  {

@@ -34,14 +34,14 @@ namespace apache { namespace thrift { namespace concurrency {
 const int64_t Util::currentTimeTicks(int64_t ticksPerSec) {
   int64_t result;
 
-#if _WIN32  
+#if _WIN32
   static LARGE_INTEGER freq = { 0, 0 };
   if( !freq.QuadPart ) {
-	::QueryPerformanceFrequency( &freq );
-	if( !freq.QuadPart ) {
-		assert(false);
-		return 0;
-	}
+    ::QueryPerformanceFrequency( &freq );
+    if( !freq.QuadPart ) {
+        assert(false);
+        return 0;
+    }
   }
   LARGE_INTEGER count;
   ::QueryPerformanceCounter( &count );
