@@ -120,6 +120,7 @@
     <PostBuildEvent>
       <Command>if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf" md "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
 if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cfg" xcopy "$(SolutionDir)conf\hypertable.cfg" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
+if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml" xcopy "$(SolutionDir)conf\METADATA.xml" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -148,6 +149,7 @@ if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cf
     <PostBuildEvent>
       <Command>if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf" md "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
 if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cfg" xcopy "$(SolutionDir)conf\hypertable.cfg" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
+if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml" xcopy "$(SolutionDir)conf\METADATA.xml" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -181,6 +183,7 @@ if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cf
     <PostBuildEvent>
       <Command>if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf" md "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
 if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cfg" xcopy "$(SolutionDir)conf\hypertable.cfg" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
+if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml" xcopy "$(SolutionDir)conf\METADATA.xml" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -214,6 +217,7 @@ if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cf
     <PostBuildEvent>
       <Command>if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf" md "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
 if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cfg" xcopy "$(SolutionDir)conf\hypertable.cfg" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
+if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml" xcopy "$(SolutionDir)conf\METADATA.xml" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
