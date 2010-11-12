@@ -150,6 +150,9 @@
 #endif
 
 #define HT_USE_ABORT
+#ifndef _DEBUG
+#define HT_DISABLE_LOG_DEBUG 1
+#endif
 
 typedef int socket_t; // should be SOCKET, but SOCKET is unsigned 32/64
 typedef int socklen_t;
