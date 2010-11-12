@@ -99,7 +99,10 @@ namespace Hypertable { namespace Logger {
   if (_level_ == log4cpp::Priority::FATAL) HT_ABORT; \
 } /* if enabled */ } while (0)
 
-#define HT_OUT_DISABLED do { if (0) {
+#define HT_OUT_DISABLED(_enabled_, _l_) do { if (0) { \
+  log4cpp::Priority::PriorityLevel _level_ = log4cpp::Priority::_l_; \
+  FixedOstream _out_(0, 0); \
+  _out_ 
 
 // helpers for printing a char pointer field
 #define HT_DUMP_CSTR(_os_, _label_, _str_) do { \
@@ -142,7 +145,7 @@ namespace Hypertable { namespace Logger {
 #define HT_LOG_EXIT
 #define HT_DEBUG(msg)
 #define HT_DEBUGF(msg, ...)
-#define HT_DEBUG_OUT HT_OUT_DISABLED
+#define HT_DEBUG_OUT HT_OUT_DISABLED(isDebugEnabled, DEBUG)
 #endif
 
 #ifndef HT_DISABLE_LOG_INFO
@@ -152,7 +155,7 @@ namespace Hypertable { namespace Logger {
 #else
 #define HT_INFO(msg)
 #define HT_INFOF(msg, ...)
-#define HT_INFO_OUT HT_OUT_DISABLED
+#define HT_INFO_OUT HT_OUT_DISABLED(isInfoEnabled, INFO)
 #endif
 
 #ifndef HT_DISABLE_LOG_NOTICE
@@ -162,7 +165,7 @@ namespace Hypertable { namespace Logger {
 #else
 #define HT_NOTICE(msg)
 #define HT_NOTICEF(msg, ...)
-#define HT_NOTICE_OUT HT_OUT_DISABLED
+#define HT_NOTICE_OUT HT_OUT_DISABLED(isNoticeEnabled, NOTICE)
 #endif
 
 #ifndef HT_DISABLE_LOG_WARN
@@ -172,7 +175,7 @@ namespace Hypertable { namespace Logger {
 #else
 #define HT_WARN(msg)
 #define HT_WARNF(msg, ...)
-#define HT_WARN_OUT HT_OUT_DISABLED
+#define HT_WARN_OUT HT_OUT_DISABLED(isWarnEnabled, WARN)
 #endif
 
 #ifndef HT_DISABLE_LOG_ERROR
@@ -182,7 +185,7 @@ namespace Hypertable { namespace Logger {
 #else
 #define HT_ERROR(msg)
 #define HT_ERRORF(msg, ...)
-#define HT_ERROR_OUT HT_OUT_DISABLED
+#define HT_ERROR_OUT HT_OUT_DISABLED(isErrorEnabled, ERROR)
 #endif
 
 #ifndef HT_DISABLE_LOG_CRIT
@@ -192,7 +195,7 @@ namespace Hypertable { namespace Logger {
 #else
 #define HT_CRIT(msg)
 #define HT_CRITF(msg, ...)
-#define HT_CRIT_OUT HT_OUT_DISABLED
+#define HT_CRIT_OUT HT_OUT_DISABLED(isCritEnabled, CRIT)
 #endif
 
 #ifndef HT_DISABLE_LOG_ALERT
@@ -202,7 +205,7 @@ namespace Hypertable { namespace Logger {
 #else
 #define HT_ALERT(msg)
 #define HT_ALERTF(msg, ...)
-#define HT_ALERT_OUT HT_OUT_DISABLED
+#define HT_ALERT_OUT HT_OUT_DISABLED(isAlertEnabled, ALERT)
 #endif
 
 #ifndef HT_DISABLE_LOG_EMERG
@@ -212,7 +215,7 @@ namespace Hypertable { namespace Logger {
 #else
 #define HT_EMERG(msg)
 #define HT_EMERGF(msg, ...)
-#define HT_EMERG_OUT HT_OUT_DISABLED
+#define HT_EMERG_OUT HT_OUT_DISABLED(isEmergEnabled, EMERG)
 #endif
 
 #ifndef HT_DISABLE_LOG_FATAL
@@ -228,7 +231,7 @@ namespace Hypertable { namespace Logger {
 #else
 #define HT_FATAL(msg)
 #define HT_FATALF(msg, ...)
-#define HT_FATAL_OUT HT_OUT_DISABLED
+#define HT_FATAL_OUT HT_OUT_DISABLED(isFatalEnabled, FATAL)
 #endif
 
 #else // HT_DISABLE_LOGGING
