@@ -963,7 +963,7 @@ public:
     try {
       NamespacePtr namespace_ptr = get_namespace(ns);
       std::vector<Hypertable::NamespaceListing> listing;
-      namespace_ptr->get_listing(listing);
+      namespace_ptr->get_listing(false, listing);
 
       for(size_t ii=0; ii < listing.size(); ++ii)
         if (!listing[ii].is_namespace)
@@ -979,7 +979,7 @@ public:
     try {
       NamespacePtr namespace_ptr = get_namespace(ns);
       std::vector<Hypertable::NamespaceListing> listing;
-      namespace_ptr->get_listing(listing);
+      namespace_ptr->get_listing(false, listing);
       ThriftGen::NamespaceListing entry;
 
       for(size_t ii=0; ii < listing.size(); ++ii) {
