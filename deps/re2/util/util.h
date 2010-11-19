@@ -123,7 +123,9 @@ static inline uint64 Hash64StringWithSeed(const char* s, int len, uint32 seed) {
   return ((uint64)x << 32) | y;
 }
 
+#ifndef _WIN32
 int RunningOnValgrind();
+#endif
 
 }  // namespace re2
 

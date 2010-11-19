@@ -61,6 +61,28 @@ namespace Hypertable {
       filter_by_qualifier = other.filter_by_qualifier;
     }
 
+#ifdef _WIN32
+
+    CellFilterInfo& operator = (const CellFilterInfo& other) {
+      for (size_t ii=0; ii<regexp_qualifiers.size(); ++ii)
+        delete regexp_qualifiers[ii];
+
+      cutoff_time = other.cutoff_time;
+      max_versions = other.max_versions;
+      counter = other.counter;
+      for (size_t ii=0; ii<other.regexp_qualifiers.size(); ++ii) {
+        regexp_qualifiers[ii] = new RE2(other.regexp_qualifiers[ii]->pattern());
+      }
+      exact_qualifiers = other.exact_qualifiers;
+      for (size_t ii=0; ii<exact_qualifiers.size(); ++ii) {
+        exact_qualifiers_set.insert(exact_qualifiers[ii].c_str());
+      }
+      filter_by_qualifier = other.filter_by_qualifier;
+      return *this;
+    }
+
+#endif
+
     ~CellFilterInfo() {
       for (size_t ii=0; ii<regexp_qualifiers.size(); ++ii)
         delete regexp_qualifiers[ii];
@@ -102,7 +124,9 @@ namespace Hypertable {
   private:
     // disable assignment -- if needed then implement with deep copy of
     // qualifier_regexp
+#ifndef _WIN32
     CellFilterInfo& operator = (const CellFilterInfo&);
+#endif
     vector<RE2 *> regexp_qualifiers;
     vector<String> exact_qualifiers;
     typedef set<const char *, LtCstr> QualifierSet;

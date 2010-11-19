@@ -55,6 +55,11 @@ extern "C" {
 #include "LoadThread.h"
 #include "ParallelLoad.h"
 
+#ifdef _WIN32
+#define random rand
+#define srandom srand
+#endif
+
 using namespace Hypertable;
 using namespace Hypertable::Config;
 using namespace std;

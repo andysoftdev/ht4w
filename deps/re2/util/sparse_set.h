@@ -62,12 +62,14 @@ class SparseSet {
     dense_ = new int[max_size];
     // Don't need to zero the memory, but do so anyway
     // to appease Valgrind.
+#ifndef _WIN32
     if (RunningOnValgrind()) {
       for (int i = 0; i < max_size; i++) {
         dense_[i] = 0xababababU;
         sparse_to_dense_[i] = 0xababababU;
       }
     }
+#endif
     size_ = 0;
   }
 
@@ -94,10 +96,12 @@ class SparseSet {
       int* a = new int[new_max_size];
       if (sparse_to_dense_) {
         memmove(a, sparse_to_dense_, max_size_*sizeof a[0]);
+#ifndef _WIN32
         if (RunningOnValgrind()) {
           for (int i = max_size_; i < new_max_size; i++)
             a[i] = 0xababababU;
         }
+#endif
         delete[] sparse_to_dense_;
       }
       sparse_to_dense_ = a;
@@ -105,10 +109,12 @@ class SparseSet {
       a = new int[new_max_size];
       if (dense_) {
         memmove(a, dense_, size_*sizeof a[0]);
+#ifndef _WIN32
         if (RunningOnValgrind()) {
           for (int i = size_; i < new_max_size; i++)
             a[i] = 0xababababU;
         }
+#endif
         delete[] dense_;
       }
       dense_ = a;

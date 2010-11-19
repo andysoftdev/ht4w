@@ -97,6 +97,14 @@ namespace Hypertable {
     ParallelStateRec(const ParallelStateRec& other) {
       finished = other.finished;
     }
+
+#ifdef _WIN32
+    ParallelStateRec& operator=(const ParallelStateRec& other) {
+        finished = other.finished;
+        return *this;
+    }
+#endif
+
     Mutex mutex;
     boost::condition cond;
     std::list<LoadRec *> requests;

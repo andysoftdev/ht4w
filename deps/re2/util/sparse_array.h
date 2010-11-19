@@ -272,10 +272,12 @@ void SparseArray<Value>::resize(int new_max_size) {
     if (sparse_to_dense_) {
       memmove(a, sparse_to_dense_, max_size_*sizeof a[0]);
       // Don't need to zero the memory but appease Valgrind.
+#ifndef _WIN32
       if (RunningOnValgrind()) {
         for (int i = max_size_; i < new_max_size; i++)
           a[i] = 0xababababU;
       }
+#endif
       delete[] sparse_to_dense_;
     }
     sparse_to_dense_ = a;
@@ -419,12 +421,14 @@ template<typename Value> SparseArray<Value>::SparseArray(int max_size) {
   sparse_to_dense_ = new int[max_size];
   dense_.resize(max_size);
   // Don't need to zero the new memory, but appease Valgrind.
+#ifndef _WIN32
   if (RunningOnValgrind()) {
     for (int i = 0; i < max_size; i++) {
       sparse_to_dense_[i] = 0xababababU;
       dense_[i].index_ = 0xababababU;
     }
   }
+#endif
   size_ = 0;
   DebugCheckInvariants();
 }

@@ -151,7 +151,13 @@ class DFA {
 
 #else
 
-  struct StateLess {
+  template<class HashT>
+  struct StateComparer {
+    enum { bucket_size = 4 };
+    HashT hasher;
+    size_t operator()(const State* t) const {
+      return hasher(t);
+    }
     bool operator()(const State* a, const State* b) const { // a < b
       if (a == b)
         return false;
@@ -170,20 +176,7 @@ class DFA {
     }
   };
 
-  template<class T, class LessT, class HashT>
-  struct StateCompare {
-    enum { bucket_size = 4 };
-    HashT hash_fun;
-    LessT less_fun;
-    size_t operator()(const T &t) const {
-      return hash_fun(t);
-    }
-    bool operator()(const T &x, const T &y) const {
-      return less_fun(x, y);
-    }
-  };
-
-  typedef hash_set<State*, StateCompare<State*, StateLess, StateHash>> StateSet;
+  typedef hash_set<State*, StateComparer<StateHash>> StateSet;
 
 #endif
 

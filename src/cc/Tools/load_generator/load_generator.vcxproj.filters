@@ -16,12 +16,21 @@
     <ClCompile Include="ht_load_generator.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LoadThread.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\hypertable.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LoadClient.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadThread.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ParallelLoad.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

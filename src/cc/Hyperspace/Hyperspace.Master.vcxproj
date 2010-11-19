@@ -37,6 +37,7 @@
     <ClCompile Include="RequestHandlerAttrSet.cc" />
     <ClCompile Include="RequestHandlerClose.cc" />
     <ClCompile Include="RequestHandlerDelete.cc" />
+    <ClCompile Include="RequestHandlerDestroySession.cc" />
     <ClCompile Include="RequestHandlerDoMaintenance.cc" />
     <ClCompile Include="RequestHandlerExists.cc" />
     <ClCompile Include="RequestHandlerExpireSessions.cc" />
@@ -66,8 +67,24 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BerkeleyDbFilesystem.h" />
+    <ClInclude Include="ClientConnectionHandler.h" />
+    <ClInclude Include="ClientHandleState.h" />
+    <ClInclude Include="ClientKeepaliveHandler.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="DbtManaged.h" />
+    <ClInclude Include="DirEntry.h" />
+    <ClInclude Include="DirEntryAttr.h" />
     <ClInclude Include="Event.h" />
+    <ClInclude Include="FileHandleCallback.h" />
+    <ClInclude Include="HandleCallback.h" />
+    <ClInclude Include="HsClientState.h" />
+    <ClInclude Include="HsCommandInterpreter.h" />
+    <ClInclude Include="HsHelpText.h" />
+    <ClInclude Include="HsParser.h" />
+    <ClInclude Include="LockSequencer.h" />
     <ClInclude Include="Master.h" />
+    <ClInclude Include="Notification.h" />
+    <ClInclude Include="Protocol.h" />
     <ClInclude Include="RequestHandlerAttrDel.h" />
     <ClInclude Include="RequestHandlerAttrExists.h" />
     <ClInclude Include="RequestHandlerAttrGet.h" />
@@ -76,6 +93,7 @@
     <ClInclude Include="RequestHandlerAttrSet.h" />
     <ClInclude Include="RequestHandlerClose.h" />
     <ClInclude Include="RequestHandlerDelete.h" />
+    <ClInclude Include="RequestHandlerDestroySession.h" />
     <ClInclude Include="RequestHandlerDoMaintenance.h" />
     <ClInclude Include="RequestHandlerExists.h" />
     <ClInclude Include="RequestHandlerExpireSessions.h" />
@@ -101,6 +119,8 @@
     <ClInclude Include="ResponseCallbackReadpathAttr.h" />
     <ClInclude Include="ServerConnectionHandler.h" />
     <ClInclude Include="ServerKeepaliveHandler.h" />
+    <ClInclude Include="Session.h" />
+    <ClInclude Include="SessionData.h" />
     <ClInclude Include="StateDbKeys.h" />
   </ItemGroup>
   <ItemGroup>

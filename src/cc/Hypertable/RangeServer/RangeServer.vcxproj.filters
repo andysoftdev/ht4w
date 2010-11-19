@@ -244,6 +244,15 @@
     <ClCompile Include="TimerHandler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GroupCommit.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GroupCommitTimerHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerGroupCommit.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -529,6 +538,18 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TimerInterface.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GroupCommit.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GroupCommitInterface.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GroupCommitTimerHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerGroupCommit.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

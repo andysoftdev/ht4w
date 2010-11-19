@@ -36,6 +36,7 @@
 #include "Range.h"
 #include "TableInfo.h"
 
+#ifndef _WIN32
 namespace __gnu_cxx {
   template<> struct hash<Hypertable::Range *>  {
     size_t operator()(const Hypertable::Range *x) const {
@@ -43,6 +44,7 @@ namespace __gnu_cxx {
     }
   };
 }
+#endif
 
 namespace Hypertable {
 
@@ -115,7 +117,28 @@ namespace Hypertable {
     uint64_t total_count;
     uint64_t total_buffer_size;
     TableInfoPtr table_info;
+
+#ifndef _WIN32
+
     hash_map<Range *, RangeUpdateList *> range_map;
+
+
+#else
+
+    struct RangeComparer {
+      enum { bucket_size = 4 };
+      size_t operator()(const Range *x) const {
+        return (size_t)x;
+      }
+      bool operator()(const Range* a, const Range* b) const { // a < b
+        return a < b;
+      }
+    };
+
+    hash_map<Range *, RangeUpdateList *, RangeComparer> range_map;
+
+#endif
+
     std::set<Range *> wait_ranges;
     DynamicBuffer go_buf;
     bool wait_for_metadata_recovery;
@@ -134,6 +157,7 @@ namespace Hypertable {
   typedef boost::intrusive_ptr<GroupCommitInterface> GroupCommitInterfacePtr;
 }
 
+#ifndef _WIN32
 namespace __gnu_cxx {
   template<> struct hash<Hypertable::TableIdentifier>  {
     size_t operator()(Hypertable::TableIdentifier tid) const {
@@ -142,6 +166,7 @@ namespace __gnu_cxx {
     }
   };
 }
+#endif
 
 namespace Hypertable {
   struct eqtid {

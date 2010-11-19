@@ -52,6 +52,8 @@
     <ClCompile Include="FileBlockCache.cc" />
     <ClCompile Include="FillScanBlock.cc" />
     <ClCompile Include="Global.cc" />
+    <ClCompile Include="GroupCommit.cc" />
+    <ClCompile Include="GroupCommitTimerHandler.cc" />
     <ClCompile Include="HyperspaceSessionHandler.cc" />
     <ClCompile Include="KeyCompressorNone.cc" />
     <ClCompile Include="KeyCompressorPrefix.cc" />
@@ -85,6 +87,7 @@
     <ClCompile Include="RequestHandlerDump.cc" />
     <ClCompile Include="RequestHandlerFetchScanblock.cc" />
     <ClCompile Include="RequestHandlerGetStatistics.cc" />
+    <ClCompile Include="RequestHandlerGroupCommit.cc" />
     <ClCompile Include="RequestHandlerLoadRange.cc" />
     <ClCompile Include="RequestHandlerReplayBegin.cc" />
     <ClCompile Include="RequestHandlerReplayCommit.cc" />
@@ -137,6 +140,9 @@
     <ClInclude Include="FileBlockCache.h" />
     <ClInclude Include="FillScanBlock.h" />
     <ClInclude Include="Global.h" />
+    <ClInclude Include="GroupCommit.h" />
+    <ClInclude Include="GroupCommitInterface.h" />
+    <ClInclude Include="GroupCommitTimerHandler.h" />
     <ClInclude Include="HandlerFactory.h" />
     <ClInclude Include="HyperspaceSessionHandler.h" />
     <ClInclude Include="KeyCompressor.h" />
@@ -179,6 +185,7 @@
     <ClInclude Include="RequestHandlerDump.h" />
     <ClInclude Include="RequestHandlerFetchScanblock.h" />
     <ClInclude Include="RequestHandlerGetStatistics.h" />
+    <ClInclude Include="RequestHandlerGroupCommit.h" />
     <ClInclude Include="RequestHandlerLoadRange.h" />
     <ClInclude Include="RequestHandlerReplayBegin.h" />
     <ClInclude Include="RequestHandlerReplayCommit.h" />
@@ -269,7 +276,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\sparsehash\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -286,7 +293,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\sparsehash\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -305,7 +312,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\sparsehash\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -328,7 +335,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\sparsehash\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>

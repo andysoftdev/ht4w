@@ -124,6 +124,9 @@
     <ClCompile Include="StateDbKeys.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RequestHandlerDestroySession.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BerkeleyDbFilesystem.h">
@@ -235,6 +238,63 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="StateDbKeys.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientConnectionHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientHandleState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientKeepaliveHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DbtManaged.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DirEntry.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DirEntryAttr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileHandleCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HandleCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HsClientState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HsCommandInterpreter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HsHelpText.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HsParser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LockSequencer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Notification.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Protocol.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerDestroySession.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionData.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
