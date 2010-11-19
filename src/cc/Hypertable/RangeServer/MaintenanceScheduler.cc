@@ -77,7 +77,7 @@ void MaintenanceScheduler::schedule() {
     if (Global::maintenance_queue->pending() < Global::maintenance_queue->workers())
       m_scheduling_needed = true;
     int64_t excess = (memory_state.balance > Global::memory_limit) ? memory_state.balance - Global::memory_limit : 0;
-    memory_state.needed = ((Global::memory_limit * 30) / 100) + excess;
+    memory_state.needed = ((Global::memory_limit * 10) / 100) + excess;
   }
 
   boost::xtime now;
