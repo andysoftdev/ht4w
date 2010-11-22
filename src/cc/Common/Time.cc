@@ -29,16 +29,27 @@
 
 #ifdef _WIN32
 
-struct tm* gmtime_r (const time_t *timer, struct tm *result)
+struct tm* gmtime_r(const time_t *timer, struct tm *result)
 {
-   struct tm *local_result;
-   local_result = gmtime (timer);
-
-   if (local_result == NULL || result == NULL)
-     return NULL;
-
-   memcpy (result, local_result, sizeof(struct tm));
-   return result;
+  if (timer && *timer < 0) { // handle date/times before 1970
+    static time_t ofs = 0;
+    if( !ofs ) {
+      struct tm t_ofs;
+      memset(&t_ofs, 0, sizeof(t_ofs));
+      t_ofs.tm_year = 126;
+      t_ofs.tm_mday = 1;
+      ofs = _mkgmtime(&t_ofs);
+    }
+    time_t t = *timer + ofs;
+    if (gmtime_s(result, &t)) {
+      return 0;
+    }
+    result->tm_year -= 56;
+  }
+  else if (gmtime_s(result, timer)) {
+    return 0;
+  }
+  return result;
 }
 
 #endif
@@ -130,33 +141,51 @@ std::ostream &hires_ts_date(std::ostream &out) {
              << right << setw(9) << setfill('0') << now.nsec;
 }
 
-#if defined(__sun__) || defined(_WIN32)
-  time_t timegm(struct tm *t) {
-    time_t tl, tb;
-    struct tm *tg;
+#if defined(__sun__)
+time_t timegm(struct tm *t) {
+  time_t tl, tb;
+  struct tm *tg;
 
-    tl = mktime (t);
-    if (tl == -1)
-      {
-	t->tm_hour--;
-	tl = mktime (t);
-	if (tl == -1)
-	  return -1; /* can't deal with output from strptime */
-	tl += 3600;
-      }
-    tg = gmtime (&tl);
-    tg->tm_isdst = 0;
-    tb = mktime (tg);
-    if (tb == -1)
-      {
-	tg->tm_hour--;
-	tb = mktime (tg);
-	if (tb == -1)
-	  return -1; /* can't deal with output from gmtime */
-	tb += 3600;
-      }
-    return (tl - (tb - tl));
+  tl = mktime (t);
+  if (tl == -1)
+    {
+      t->tm_hour--;
+      tl = mktime (t);
+      if (tl == -1)
+        return -1; /* can't deal with output from strptime */
+      tl += 3600;
+    }
+  tg = gmtime (&tl);
+  tg->tm_isdst = 0;
+  tb = mktime (tg);
+  if (tb == -1)
+    {
+      tg->tm_hour--;
+      tb = mktime (tg);
+      if (tb == -1)
+        return -1; /* can't deal with output from gmtime */
+      tb += 3600;
+    }
+  return (tl - (tb - tl));
+}
+#elif defined(_WIN32)
+time_t timegm(struct tm *t) {
+  if( t && t->tm_year <= 70 ) { // handle date/times before 1970
+    static time_t ofs = 0;
+    if( !ofs ) {
+      struct tm t_ofs;
+      memset(&t_ofs, 0, sizeof(t_ofs));
+      t_ofs.tm_year = 126;
+      t_ofs.tm_mday = 1;
+      ofs = _mkgmtime(&t_ofs);
+    }
+
+    struct tm t2 = *t;
+    t2.tm_year += 56;
+    return _mkgmtime(&t2) - ofs;
   }
+  return _mkgmtime(t);
+}
 #endif
 
 } // namespace Hypertable
