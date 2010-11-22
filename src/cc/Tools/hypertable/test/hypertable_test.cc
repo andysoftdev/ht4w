@@ -39,7 +39,9 @@ using namespace std;
 
 namespace {
   const char *required_files[] = {
+#ifndef _WIN32
     "./hypertable_test",
+#endif
     "./hypertable.cfg",
     "./hypertable_test.hql",
     "./hypertable_test.golden",
@@ -64,20 +66,41 @@ int main(int argc, char **argv) {
   /**
    *  hypertable_test
    */
+#ifndef _WIN32
   cmd_str = "./hypertable --test-mode --config hypertable.cfg "
       "< hypertable_test.hql > hypertable_test.output 2>&1";
   if (system(cmd_str.c_str()) != 0)
     return 1;
 
   cmd_str = "diff hypertable_test.output hypertable_test.golden";
+#else
+  cmd_str = "..\\hypertable.exe --test-mode --config hypertable.cfg "
+      "< hypertable_test.hql > hypertable_test.output 2>&1";
   if (system(cmd_str.c_str()) != 0)
     return 1;
 
+  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/g hypertable_test.output > hypertable_test.sed.output";
+  if (system(cmd_str.c_str()) != 0)
+    return 1;
+
+  cmd_str = "fc hypertable_test.sed.output hypertable_test.golden";
+#endif
+  if (system(cmd_str.c_str()) != 0)
+    return 1;
+
+#ifndef _WIN32
   cmd_str = "gunzip -f hypertable_select_gz_test.output.gz";
+#else
+  cmd_str = "gzip -d -f hypertable_select_gz_test.output.gz";
+#endif
   if (system(cmd_str.c_str()) != 0)
     return 1;
 
+#ifndef _WIN32
   cmd_str = "diff hypertable_select_gz_test.output hypertable_select_gz_test.golden";
+#else
+  cmd_str = "fc hypertable_select_gz_test.output hypertable_select_gz_test.golden";
+#endif
   if (system(cmd_str.c_str()) != 0)
     return 1;
 

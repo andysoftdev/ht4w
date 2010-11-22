@@ -25,12 +25,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="commit_log_test.cc" />
+    <ClCompile Include="hypertable_refresh_schema_test.cc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A8370898-59D3-4ff3-89E2-84D98CF43AEA}</ProjectGuid>
+    <ProjectGuid>{69126954-6A79-4911-919A-6A5332B16262}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>commit_log_test</RootNamespace>
+    <RootNamespace>hypertable_refresh_schema_test</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -108,22 +108,31 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;Hypertable.lib;DfsBroker.lib;zlib.lib;sigar.lib;log4cpp.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;zlib.lib;sigar.lib;log4cpp.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost
+      <Command>xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
+xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+xcopy /Y "$(ProjectDir)hypertable_refresh_schema_test_*.golden" "$(TargetDir)"
+cd "$(TargetDir)"
+if exist fs rd /S /Q fs
+if exist hyperspace rd /S /Q hyperspace
+if exist run rd /S /Q run
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+..\hypertable -e "create namespace '/test';quit;" &gt; nul
+"$(TargetPath)"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 8 -w 1000 &gt; nul
-del commit_log_test_localBroker.*
-rd /S /Q hypertable
-</Command>
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) no-thriftbroker  -l error  --config=./hypertable.cfg
+rd /S /Q fs
+rd /S /Q hyperspace
+rd /S /Q run
+del hypertable_refresh_schema_test_*.out
+del hypertable_refresh_schema_test_*.golden
+del hypertable.cfg
+del sed.exe</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -143,22 +152,31 @@ rd /S /Q hypertable
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;Hypertable.lib;DfsBroker.lib;zlib.lib;sigar.lib;log4cpp.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;zlib.lib;sigar.lib;log4cpp.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost
+      <Command>xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
+xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+xcopy /Y "$(ProjectDir)hypertable_refresh_schema_test_*.golden" "$(TargetDir)"
+cd "$(TargetDir)"
+if exist fs rd /S /Q fs
+if exist hyperspace rd /S /Q hyperspace
+if exist run rd /S /Q run
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+..\hypertable -e "create namespace '/test';quit;" &gt; nul
+"$(TargetPath)"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 8 -w 1000 &gt; nul
-del commit_log_test_localBroker.*
-rd /S /Q hypertable
-</Command>
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) no-thriftbroker  -l error  --config=./hypertable.cfg
+rd /S /Q fs
+rd /S /Q hyperspace
+rd /S /Q run
+del hypertable_refresh_schema_test_*.out
+del hypertable_refresh_schema_test_*.golden
+del hypertable.cfg
+del sed.exe</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -183,22 +201,31 @@ rd /S /Q hypertable
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;Hypertable.lib;DfsBroker.lib;zlib.lib;sigar.lib;log4cpp.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;zlib.lib;sigar.lib;log4cpp.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost
+      <Command>xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
+xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+xcopy /Y "$(ProjectDir)hypertable_refresh_schema_test_*.golden" "$(TargetDir)"
+cd "$(TargetDir)"
+if exist fs rd /S /Q fs
+if exist hyperspace rd /S /Q hyperspace
+if exist run rd /S /Q run
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+..\hypertable -e "create namespace '/test';quit;" &gt; nul
+"$(TargetPath)"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 8 -w 1000 &gt; nul
-del commit_log_test_localBroker.*
-rd /S /Q hypertable
-</Command>
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) no-thriftbroker  -l error  --config=./hypertable.cfg
+rd /S /Q fs
+rd /S /Q hyperspace
+rd /S /Q run
+del hypertable_refresh_schema_test_*.out
+del hypertable_refresh_schema_test_*.golden
+del hypertable.cfg
+del sed.exe</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -223,22 +250,31 @@ rd /S /Q hypertable
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;Hypertable.lib;DfsBroker.lib;zlib.lib;sigar.lib;log4cpp.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;zlib.lib;sigar.lib;log4cpp.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost
+      <Command>xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
+xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+xcopy /Y "$(ProjectDir)hypertable_refresh_schema_test_*.golden" "$(TargetDir)"
+cd "$(TargetDir)"
+if exist fs rd /S /Q fs
+if exist hyperspace rd /S /Q hyperspace
+if exist run rd /S /Q run
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+..\hypertable -e "create namespace '/test';quit;" &gt; nul
+"$(TargetPath)"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 8 -w 1000 &gt; nul
-del commit_log_test_localBroker.*
-rd /S /Q hypertable
-</Command>
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) no-thriftbroker  -l error  --config=./hypertable.cfg
+rd /S /Q fs
+rd /S /Q hyperspace
+rd /S /Q run
+del hypertable_refresh_schema_test_*.out
+del hypertable_refresh_schema_test_*.golden
+del hypertable.cfg
+del sed.exe</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

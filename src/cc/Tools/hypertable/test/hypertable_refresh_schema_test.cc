@@ -88,11 +88,15 @@ namespace {
 
   void IssueCommandNoWait(int fd, const char *command) {
     if (write(fd, command, strlen(command)) != (ssize_t)strlen(command)) {
+#ifndef _WIN32
       perror("write");
+#endif
       exit(1);
     }
     if (write(fd, ";\n", 2) != 2) {
+#ifndef _WIN32
       perror("write");
+#endif
       exit(1);
     }
   }
@@ -152,6 +156,7 @@ int main(int argc, char **argv) {
   client_no_refresh_args.push_back((const char *)0);
 
   {
+#ifndef _WIN32
     ServerLauncher client1("./hypertable",
                            (char * const *)&client_refresh_args[0],
                            "hypertable_refresh_schema_test_c1.out");
@@ -161,6 +166,17 @@ int main(int argc, char **argv) {
     ServerLauncher client3("./hypertable",
                            (char * const *)&client_no_refresh_args[0],
                            "hypertable_refresh_schema_test_c3.out");
+#else
+    ServerLauncher client1("../hypertable",
+                           (char * const *)&client_refresh_args[0],
+                           "hypertable_refresh_schema_test_c1.out");
+    ServerLauncher client2("../hypertable",
+                           (char * const *)&client_refresh_args[0],
+                           "hypertable_refresh_schema_test_c2.out");
+    ServerLauncher client3("../hypertable",
+                           (char * const *)&client_no_refresh_args[0],
+                           "hypertable_refresh_schema_test_c3.out");
+#endif
 
     g_fd1 = client1.get_write_descriptor();
     g_fd2 = client2.get_write_descriptor();
@@ -178,6 +194,7 @@ int main(int argc, char **argv) {
     poll(0, 0, 1000);
   }
 
+#ifndef _WIN32
   if (system("diff ./hypertable_refresh_schema_test_c1.out ./hypertable_refresh_schema_test_c1.golden"))
     return 1;
 
@@ -186,6 +203,20 @@ int main(int argc, char **argv) {
 
   if (system("diff ./hypertable_refresh_schema_test_c3.out ./hypertable_refresh_schema_test_c3.golden"))
     return 1;
+
+#else
+  if (system("fc hypertable_refresh_schema_test_c1.out hypertable_refresh_schema_test_c1.golden"))
+    return 1;
+
+  if (system("fc hypertable_refresh_schema_test_c2.out hypertable_refresh_schema_test_c2.golden"))
+    return 1;
+
+  if (system("sed.exe -e s/hypertable.exe/hypertable/g hypertable_refresh_schema_test_c3.out >hypertable_refresh_schema_test_c3.sed.out") != 0)
+    return 1;
+
+  if (system("fc hypertable_refresh_schema_test_c3.sed.out hypertable_refresh_schema_test_c3.golden"))
+    return 1;
+#endif
 
   return 0;
 }
