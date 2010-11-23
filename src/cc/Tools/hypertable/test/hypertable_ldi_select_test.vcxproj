@@ -115,7 +115,6 @@
     </ProjectReference>
     <PostBuildEvent>
       <Command>xcopy /Y "$(SolutionDir)gzip.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
 xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
 xcopy /Y "$(ProjectDir)hypertable_ldi_*.hql" "$(TargetDir)"
 xcopy /Y "$(ProjectDir)hypertable_*.golden" "$(TargetDir)"
@@ -134,11 +133,12 @@ rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
 del hypertable_ldi_*.hql
+del hypertable_*.output
 del hypertable_*.golden
 del hypertable_test.tsv.gz
 del hypertable_escape_test.tsv
 del hypertable.cfg
-del sed.exe
+del dfs_select
 del gzip.exe</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -166,7 +166,6 @@ del gzip.exe</Command>
     </ProjectReference>
     <PostBuildEvent>
       <Command>xcopy /Y "$(SolutionDir)gzip.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
 xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
 xcopy /Y "$(ProjectDir)hypertable_ldi_*.hql" "$(TargetDir)"
 xcopy /Y "$(ProjectDir)hypertable_*.golden" "$(TargetDir)"
@@ -185,11 +184,12 @@ rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
 del hypertable_ldi_*.hql
+del hypertable_*.output
 del hypertable_*.golden
 del hypertable_test.tsv.gz
 del hypertable_escape_test.tsv
 del hypertable.cfg
-del sed.exe
+del dfs_select
 del gzip.exe</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -222,7 +222,6 @@ del gzip.exe</Command>
     </ProjectReference>
     <PostBuildEvent>
       <Command>xcopy /Y "$(SolutionDir)gzip.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
 xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
 xcopy /Y "$(ProjectDir)hypertable_ldi_*.hql" "$(TargetDir)"
 xcopy /Y "$(ProjectDir)hypertable_*.golden" "$(TargetDir)"
@@ -241,11 +240,12 @@ rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
 del hypertable_ldi_*.hql
+del hypertable_*.output
 del hypertable_*.golden
 del hypertable_test.tsv.gz
 del hypertable_escape_test.tsv
 del hypertable.cfg
-del sed.exe
+del dfs_select
 del gzip.exe</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -278,7 +278,6 @@ del gzip.exe</Command>
     </ProjectReference>
     <PostBuildEvent>
       <Command>xcopy /Y "$(SolutionDir)gzip.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
 xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
 xcopy /Y "$(ProjectDir)hypertable_ldi_*.hql" "$(TargetDir)"
 xcopy /Y "$(ProjectDir)hypertable_*.golden" "$(TargetDir)"
@@ -297,11 +296,12 @@ rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
 del hypertable_ldi_*.hql
+del hypertable_*.output
 del hypertable_*.golden
 del hypertable_test.tsv.gz
 del hypertable_escape_test.tsv
 del hypertable.cfg
-del sed.exe
+del dfs_select
 del gzip.exe</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
