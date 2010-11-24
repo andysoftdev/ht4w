@@ -27,7 +27,7 @@
 #include "Common/StringExt.h"
 #include "Common/System.h"
 #include "Common/Filesystem.h"
-#include "Common/Config.h"
+#include "Common/Path.h"
 #include "Common/Config.h"
 #include "MetaLogDfsBase.h"
 #include "MetaLogVersion.h"
