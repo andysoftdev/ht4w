@@ -111,7 +111,9 @@ namespace Hypertable {
     int poll_fd;
 #elif defined (__APPLE__) || defined(__FreeBSD__)
     int kqd;
-#elif !defined(_WIN32)
+#endif
+
+#ifndef _WIN32
 
     int add_poll_interest(int sd, short events, IOHandler *handler);
     int remove_poll_interest(int sd);

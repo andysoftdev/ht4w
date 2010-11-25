@@ -90,8 +90,9 @@ struct OverlappedEx;
     // define default poll() interface for everyone since it is chosen at runtime
     virtual bool handle_event(struct pollfd *event, clock_t arrival_clocks,
 			      time_t arival_time=0) = 0;
+#endif
 
-#elif defined(__APPLE__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
     virtual bool handle_event(struct kevent *event, clock_t arrival_clocks,
 			      time_t arival_time=0) = 0;
 #elif defined(__linux__)

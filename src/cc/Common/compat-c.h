@@ -206,6 +206,7 @@ typedef int32_t ssize_t;
 
 typedef int socket_t;
 #define INVALID_SOCKET -1
+#define off_t size_t
 
 #endif 
 

@@ -71,7 +71,9 @@ namespace Hypertable {
     }
 
     int validate(const char *golden_file) {
+#ifdef _WIN32
       _commit(m_fd);
+#endif
       Logger::logger->removeAllAppenders();
 #ifndef _WIN32
       String command = (String)"diff " + m_output_file + " " + golden_file;
