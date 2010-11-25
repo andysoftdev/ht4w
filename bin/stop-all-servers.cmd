@@ -46,8 +46,8 @@ if "%params%" == "" (
 )
 
 if not exist %bin%\conf md %bin%\conf
-if not exist %bin%\conf\hypertable.cfg xcopy ..\conf\hypertable.cfg %bin%\conf\
-if not exist %bin%\conf\METADATA.xml xcopy ..\conf\METADATA.xml %bin%\conf\
+if not exist %bin%\conf\hypertable.cfg xcopy %~dp0..\conf\hypertable.cfg %bin%\conf\
+if not exist %bin%\conf\METADATA.xml xcopy %~dp0..\conf\METADATA.xml %bin%\conf\
 
 if not exist %bin%\hypertable.exe goto :missing_exe
 if not exist %bin%\dfsclient.exe goto :missing_exe

@@ -6,7 +6,7 @@ set configuration=Release
 set params=
 set no_rangeserver=
 set no_thriftbroker=
-set wait=5
+set wait=6
 
 for %%p in (%*) do (
 	if /i "%%~p" == "x86" (
@@ -51,8 +51,8 @@ if "%params%" == "" (
 )
 
 if not exist %bin%\conf md %bin%\conf
-if not exist %bin%\conf\hypertable.cfg xcopy ..\conf\hypertable.cfg %bin%\conf\
-if not exist %bin%\conf\METADATA.xml xcopy ..\conf\METADATA.xml %bin%\conf\
+if not exist %bin%\conf\hypertable.cfg xcopy %~dp0..\conf\hypertable.cfg %bin%\conf\
+if not exist %bin%\conf\METADATA.xml xcopy %~dp0..\conf\METADATA.xml %bin%\conf\
 
 if not exist %bin%\serverup.exe goto :missing_exe
 
