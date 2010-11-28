@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "Common/PageArenaAllocator.h"
+#include "Common/StringExt.h"
 #include "KeySpec.h"
 
 namespace Hypertable {
@@ -96,6 +97,7 @@ typedef std::vector<CellInterval, CellIntervalAlloc> CellIntervals;
 
 typedef PageArenaAllocator<const char *> CstrAlloc;
 typedef std::vector<const char *, CstrAlloc> CstrColumns;
+typedef std::set<const char *, LtCstr, CstrAlloc> CstrRowSet;
 
 /**
  * Represents a scan predicate.
@@ -110,6 +112,7 @@ public:
   ScanSpec(CharArena &arena)
     : row_limit(0), cell_limit(0), max_versions(0), columns(CstrAlloc(arena)),
       row_intervals(RowIntervalAlloc(arena)),
+      rowset(LtCstr(), CstrAlloc(arena)),
       cell_intervals(CellIntervalAlloc(arena)),
       time_interval(TIMESTAMP_MIN, TIMESTAMP_MAX),
       return_deletes(false), keys_only(false),
@@ -127,6 +130,7 @@ public:
     max_versions = 0;
     columns.clear();
     row_intervals.clear();
+    rowset.clear();
     cell_intervals.clear();
     time_interval.first = TIMESTAMP_MIN;
     time_interval.second = TIMESTAMP_MAX;
@@ -146,21 +150,24 @@ public:
     other.keys_only = keys_only;
     other.return_deletes = return_deletes;
     other.row_intervals.clear();
+    other.rowset.clear();
     other.cell_intervals.clear();
     other.row_regexp = row_regexp;
     other.value_regexp = value_regexp;
   }
 
   bool cacheable() {
+    if (rowset.size())
+      return false;
     if (row_intervals.size() == 1) {
       HT_ASSERT(row_intervals[0].start && row_intervals[0].end);
       if (!strcmp(row_intervals[0].start, row_intervals[0].end))
-	return true;
+        return true;
     }
     else if (cell_intervals.size() == 1) {
       HT_ASSERT(cell_intervals[0].start_row && cell_intervals[0].end_row);
       if (!strcmp(cell_intervals[0].start_row, cell_intervals[0].end_row))
-	return true;
+        return true;
     }
     return false;
   }
@@ -193,6 +200,8 @@ public:
   void add_row(CharArena &arena, const char *str) {
     if (cell_intervals.size())
       HT_THROW(Error::BAD_SCAN_SPEC, "cell spec excludes rows");
+    if (rowset.size())
+      HT_THROW(Error::BAD_SCAN_SPEC, "row set spec excludes rows");
 
     RowInterval ri;
     ri.start = ri.end = arena.dup(str);
@@ -217,6 +226,8 @@ public:
                         const char *end, bool end_inclusive) {
     if (cell_intervals.size())
       HT_THROW(Error::BAD_SCAN_SPEC, "cell spec excludes rows");
+    if (rowset.size())
+      HT_THROW(Error::BAD_SCAN_SPEC, "row set spec excludes rows");
 
     RowInterval ri;
     ri.start = arena.dup(start);
@@ -226,9 +237,20 @@ public:
     row_intervals.push_back(ri);
   }
 
+  void add_to_rowset(CharArena &arena, const char *str) {
+    if (cell_intervals.size())
+      HT_THROW(Error::BAD_SCAN_SPEC, "cell spec excludes row set");
+    if (row_intervals.size())
+      HT_THROW(Error::BAD_SCAN_SPEC, "row set spec excludes row set");
+
+    rowset.insert(arena.dup(str));
+  }
+
   void add_cell(CharArena &arena, const char *row, const char *column) {
     if (row_intervals.size())
       HT_THROW(Error::BAD_SCAN_SPEC, "row spec excludes cells");
+    if (rowset.size())
+      HT_THROW(Error::BAD_SCAN_SPEC, "row set spec excludes cells");
 
     CellInterval ci;
     ci.start_row = ci.end_row = arena.dup(row);
@@ -243,6 +265,8 @@ public:
                          const char *end_column, bool end_inclusive) {
     if (row_intervals.size())
       HT_THROW(Error::BAD_SCAN_SPEC, "row spec excludes cells");
+    if (rowset.size())
+      HT_THROW(Error::BAD_SCAN_SPEC, "row set spec excludes cells");
 
     CellInterval ci;
     ci.start_row = arena.dup(start_row);
@@ -272,6 +296,7 @@ public:
   uint32_t max_versions;
   CstrColumns columns;
   RowIntervals row_intervals;
+  CstrRowSet rowset;
   CellIntervals cell_intervals;
   std::pair<int64_t,int64_t> time_interval;
   bool return_deletes;
@@ -359,6 +384,10 @@ public:
                         const char *end, bool end_inclusive) {
     m_scan_spec.add_row_interval(m_arena, start, start_inclusive,
                                  end, end_inclusive);
+  }
+
+  void add_to_rowset(const char *str) {
+    m_scan_spec.add_to_rowset(m_arena, str);
   }
 
   /**

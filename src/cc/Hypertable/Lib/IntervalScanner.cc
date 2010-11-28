@@ -66,6 +66,10 @@ void IntervalScanner::init(const ScanSpec &scan_spec, Timer &timer) {
     HT_THROW(Error::BAD_SCAN_SPEC,
              "ROW predicates and CELL predicates can't be combined");
 
+  if (!scan_spec.rowset.empty() && !scan_spec.cell_intervals.empty())
+    HT_THROW(Error::BAD_SCAN_SPEC,
+             "row set and CELL predicates can't be combined");
+
   m_range_server.set_default_timeout(m_timeout_ms);
 
   m_scan_spec_builder.clear();
@@ -136,6 +140,18 @@ void IntervalScanner::init(const ScanSpec &scan_spec, Timer &timer) {
     m_end_row = scan_spec.cell_intervals[0].end_row;
     m_end_inclusive = true;
   }
+  else if (!scan_spec.rowset.empty()) {
+    foreach(const char *r, scan_spec.rowset) m_scan_spec_builder.add_to_rowset(r);
+    // setup overall row interval for rowset
+    RowInterval ri;
+    ri.start = *m_scan_spec_builder.get().rowset.begin();
+    ri.end = *m_scan_spec_builder.get().rowset.rbegin();
+    ri.start_inclusive = ri.end_inclusive = true;
+    m_scan_spec_builder.get().row_intervals.push_back(ri); // safe, start/end taken from m_scan_spec_builder arena
+    m_start_row = ri.start;
+    m_end_row = ri.end;
+    m_end_inclusive = ri.end_inclusive;
+  }
   else {
     m_start_row = "";
     m_end_row = Key::END_ROW_MARKER;
@@ -198,7 +214,12 @@ int IntervalScanner::fetch_create_scanner_result(Timer &timer) {
   }
 
   if (m_readahead && m_end_row.compare(m_range_info.end_row) > 0) {
-    m_create_scanner_row = m_range_info.end_row;
+     m_create_scanner_row = m_range_info.end_row;
+     // if rowset scan update start row for next range
+     if (!m_scan_spec_builder.get().rowset.empty())
+       if (m_create_scanner_row.compare(*m_scan_spec_builder.get().rowset.begin()) < 0)
+         m_create_scanner_row = *m_scan_spec_builder.get().rowset.begin();
+
     m_create_scanner_row.append(1,1);  // construct row key in next range
     find_range_and_start_scan(m_create_scanner_row.c_str(), timer);
   }
@@ -228,6 +249,11 @@ bool IntervalScanner::next(Cell &cell) {
       }
       if (!m_create_scanner_outstanding) {
         m_create_scanner_row = m_range_info.end_row;
+        // if rowset scan update start row for next range
+        if (!m_scan_spec_builder.get().rowset.empty())
+          if (m_create_scanner_row.compare(*m_scan_spec_builder.get().rowset.begin()) < 0)
+            m_create_scanner_row = *m_scan_spec_builder.get().rowset.begin();
+
         m_create_scanner_row.append(1,1);  // construct row key in next range
         find_range_and_start_scan(m_create_scanner_row.c_str(), timer);
       }
@@ -321,6 +347,14 @@ bool IntervalScanner::next(Cell &cell) {
     cell.value_len = value.decode_length(&cell.value);
     cell.flag = key.flag;
     m_bytes_scanned += key.length + cell.value_len;
+
+    // if rowset scan remove scanned row
+    CstrRowSet &rowset = m_scan_spec_builder.get().rowset;
+    if (!rowset.empty()) {
+      CstrRowSet::iterator it_rs = rowset.find(cell.row_key);
+      rowset.erase(rowset.begin(), ++it_rs); // includes rows notfound
+    }
+
     return true;
   }
 

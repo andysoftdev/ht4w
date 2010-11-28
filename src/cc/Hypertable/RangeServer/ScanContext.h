@@ -158,6 +158,7 @@ namespace Hypertable {
     vector<CellFilterInfo> family_info;
     RE2 *row_regexp;
     RE2 *value_regexp;
+    CstrRowSet rowset;
 
     /**
      * Constructor.
@@ -233,6 +234,8 @@ namespace Hypertable {
      */
     ScanContext(const ScanContext&);
     ScanContext& operator = (const ScanContext&);
+
+    CharArena arena;
   };
 
   typedef intrusive_ptr<ScanContext> ScanContextPtr;
