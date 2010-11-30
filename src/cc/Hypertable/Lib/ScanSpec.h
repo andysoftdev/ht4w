@@ -386,6 +386,11 @@ public:
                                  end, end_inclusive);
   }
 
+  /**
+   * Adds a row to be returned in the rowset scan
+   *
+   * @param str row key
+   */
   void add_to_rowset(const char *str) {
     m_scan_spec.add_to_rowset(m_arena, str);
   }
