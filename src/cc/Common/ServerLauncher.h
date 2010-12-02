@@ -144,11 +144,12 @@ namespace Hypertable {
                   << std::endl << std::flush;
 
         if (!::TerminateProcess(handle, -1)) {
-            if (::WaitForSingleObject(handle, 0) == WAIT_OBJECT_0) {
-              HT_ERRORF("TerminateProcess pid=%d error: %s", pid, winapi_strerror(::GetLastError()));
+			DWORD dwLastError = ::GetLastError();
+            if (::WaitForSingleObject(handle, 1000) != WAIT_OBJECT_0) {
+              HT_ERRORF("TerminateProcess pid=%d error: %s", pid, winapi_strerror(dwLastError));
             }
         }
-        if (::WaitForSingleObject(handle, 5000) != WAIT_OBJECT_0) {
+        else if (::WaitForSingleObject(handle, 5000) != WAIT_OBJECT_0) {
             HT_ERRORF("TerminateProcess pid=%d time out", pid);
         }
         if (!::CloseHandle(handle)) {
