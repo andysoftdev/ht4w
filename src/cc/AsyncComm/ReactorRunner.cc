@@ -358,7 +358,10 @@ void ReactorRunner::operator()() {
         }
         if (handler && handler->handle_event(pol, arrival_clocks)) {
           handler_map->decomission_handler(handler->get_address());
-          removed_handlers.insert(handler);
+          // cleanup and remove handler
+          handler->close();
+          m_reactor_ptr->cancel_requests(handler);
+          handler_map->purge_handler(handler);
         }
       }
       delete pol; // also deletes commbuf
@@ -420,4 +423,5 @@ ReactorRunner::cleanup_and_remove_handlers(std::set<IOHandler *> &handlers) {
     m_reactor_ptr->cancel_requests(handler);
     handler_map->purge_handler(handler);
   }
+  handlers.clear();
 }
