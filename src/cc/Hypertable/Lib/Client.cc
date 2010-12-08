@@ -88,11 +88,16 @@ Client::Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hypersp
   if (m_install_dir.empty())
     m_install_dir = System::install_dir;
 
-  m_conn_manager = conn_mgr;
-  m_comm = conn_mgr->get_comm();
-  m_hyperspace = session;
   m_props = props;
-
+  if (conn_mgr) {
+    m_comm = conn_mgr->get_comm();
+    m_conn_manager = conn_mgr;
+  }
+  else {
+    m_comm = Comm::instance();
+    m_conn_manager = new ConnectionManager(m_comm);
+  }
+  m_hyperspace = session ? session : new Hyperspace::Session(m_comm, m_props);
   initialize_with_hyperspace();
 }
 
@@ -197,11 +202,11 @@ HqlInterpreter *Client::create_hql_interpreter(bool immutable_namespace) {
 }
 
 // ------------- PRIVATE METHODS -----------------
-void Client::initialize() {  
+void Client::initialize() {
   m_comm = Comm::instance();
-  m_conn_manager = new ConnectionManager(m_comm);    
+  m_conn_manager = new ConnectionManager(m_comm);
   m_hyperspace = new Hyperspace::Session(m_comm, m_props);
-  initialize_with_hyperspace();  
+  initialize_with_hyperspace();
 }
 
 void Client::initialize_with_hyperspace() {
