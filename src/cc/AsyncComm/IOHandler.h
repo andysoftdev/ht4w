@@ -78,6 +78,8 @@ struct OverlappedEx;
 
 #ifndef _WIN32
       m_poll_interest = 0;
+#else
+      m_shutdown = false;
 #endif
 
       socklen_t namelen = sizeof(m_local_addr);
@@ -158,8 +160,12 @@ struct OverlappedEx;
       return true;
     }
 
-    bool isclosed() const {
+    inline bool is_closed() const {
       return m_sd == INVALID_SOCKET;
+    }
+
+    inline bool is_shutdown() const {
+      return m_shutdown;
     }
 
     void close() {
@@ -242,6 +248,9 @@ struct OverlappedEx;
       timer.expire_time.nsec += 200000000LL;
       timer.handler = 0;
       m_reactor_ptr->add_timer(timer);
+#ifdef _WIN32
+      m_shutdown = true;
+#endif
     }
 
 #ifndef _WIN32
@@ -308,6 +317,9 @@ struct OverlappedEx;
 
     int                 m_poll_interest;
 
+#else
+
+    bool                m_shutdown;
 #endif
   };
   typedef boost::intrusive_ptr<IOHandler> IOHandlerPtr;

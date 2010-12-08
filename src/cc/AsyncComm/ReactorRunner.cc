@@ -342,7 +342,7 @@ void ReactorRunner::operator()() {
     if(pol) { // IO completed, not a timeout return
       HT_ASSERT( pol->m_handler == (IOHandler*)completionKey );
       handler = (IOHandler*)completionKey;
-      if (!handler->isclosed() && removed_handlers.count(handler) == 0) {
+      if (!handler->is_closed() && !handler->is_shutdown() && removed_handlers.count(handler) == 0) {
         // dispatch delay for testing
         if (dispatch_delay && !did_delay &&
           (pol->m_type == OverlappedEx::RECV ||
