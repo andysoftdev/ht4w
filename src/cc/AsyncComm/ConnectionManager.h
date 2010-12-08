@@ -220,6 +220,11 @@ namespace Hypertable {
      */
     int remove(const CommAddress &addr);
 
+	/**
+     * Removes all connections from the connection manager
+     */
+    void remove_all();
+
     /**
      * This method blocks until the connection to the given address is
      * established.  The given address must have been previously added with a

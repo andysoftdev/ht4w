@@ -309,6 +309,20 @@ int ConnectionManager::remove(const CommAddress &addr) {
 }
 
 
+void ConnectionManager::remove_all() {
+  std::vector<CommAddress> addrs;
+  {
+    ScopedLock lock(m_impl->mutex);
+    for each (hash_map<String, ConnectionStatePtr>::value_type v in m_impl->conn_map_proxy)
+      addrs.push_back(v.second->addr);
+    foreach (SockAddrMap<ConnectionStatePtr>::value_type& v, m_impl->conn_map )
+      addrs.push_back(v.second->addr);
+  }
+  foreach (const CommAddress& addr, addrs)
+    remove(addr);
+}
+
+
 
 /**
  * This is the AsyncComm dispatch handler method.  It gets called for each
