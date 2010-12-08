@@ -86,14 +86,12 @@ size_t ScanSpec::encoded_length() const {
                encoded_length_vi32(max_versions) +
                encoded_length_vi32(columns.size()) +
                encoded_length_vi32(row_intervals.size()) +
-               encoded_length_vi32(rowset.size()) +
                encoded_length_vi32(cell_intervals.size()) +
                encoded_length_vstr(row_regexp) +
                encoded_length_vstr(value_regexp);
 
   foreach(const char *c, columns) len += encoded_length_vstr(c);
   foreach(const RowInterval &ri, row_intervals) len += ri.encoded_length();
-  foreach(const char *r, rowset) len += encoded_length_vstr(r);
   foreach(const CellInterval &ci, cell_intervals) len += ci.encoded_length();
 
   return len + 8 + 8 + 2;
@@ -107,8 +105,6 @@ void ScanSpec::encode(uint8_t **bufp) const {
   foreach(const char *c, columns) encode_vstr(bufp, c);
   encode_vi32(bufp, row_intervals.size());
   foreach(const RowInterval &ri, row_intervals) ri.encode(bufp);
-  encode_vi32(bufp, rowset.size());
-  foreach(const char *r, rowset) encode_vstr(bufp, r);
   encode_vi32(bufp, cell_intervals.size());
   foreach(const CellInterval &ci, cell_intervals) ci.encode(bufp);
   encode_i64(bufp, time_interval.first);
@@ -132,8 +128,6 @@ void ScanSpec::decode(const uint8_t **bufp, size_t *remainp) {
       ri.decode(bufp, remainp);
       row_intervals.push_back(ri);
     }
-    for (size_t nr = decode_vi32(bufp, remainp); nr--;)
-      rowset.insert(decode_vstr(bufp, remainp));
     for (size_t nci = decode_vi32(bufp, remainp); nci--;) {
       ci.decode(bufp, remainp);
       cell_intervals.push_back(ci);
@@ -206,12 +200,6 @@ ostream &Hypertable::operator<<(ostream &os, const ScanSpec &scan_spec) {
     foreach(const RowInterval &ri, scan_spec.row_intervals)
       os << " " << ri;
   }
-  if (!scan_spec.rowset.empty()) {
-    os << "\n rowset=(";
-    foreach (const char *r, scan_spec.rowset)
-      os <<"'"<< r << "' ";
-    os <<')';
-  }
   if (!scan_spec.cell_intervals.empty()) {
     os << "\n cells=";
     foreach(const CellInterval &ci, scan_spec.cell_intervals)
@@ -246,9 +234,6 @@ ScanSpec::ScanSpec(CharArena &arena, const ScanSpec &ss)
   foreach(const RowInterval &ri, ss.row_intervals)
     add_row_interval(arena, ri.start, ri.start_inclusive,
                      ri.end, ri.end_inclusive);
-
-  foreach(const char *r, ss.rowset)
-    add_to_rowset(arena, r);
 
   foreach(const CellInterval &ci, ss.cell_intervals)
     add_cell_interval(arena, ci.start_row, ci.start_column, ci.start_inclusive,

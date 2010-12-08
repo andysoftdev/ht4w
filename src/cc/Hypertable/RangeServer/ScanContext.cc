@@ -334,7 +334,7 @@ ScanContext::initialize(int64_t rev, const ScanSpec *ss,
     }
   }
 
-  /** Get row, value regexps and row set **/
+  /** Get row and value regexps **/
   if (spec) {
     if (spec->row_regexp && *spec->row_regexp != 0) {
       row_regexp = new RE2(spec->row_regexp);
@@ -349,9 +349,6 @@ ScanContext::initialize(int64_t rev, const ScanSpec *ss,
         HT_THROW(Error::BAD_SCAN_SPEC, (String)"Can't convert value_regexp "
             + spec->value_regexp + " to regexp -" + value_regexp->error_arg());
       }
-    }
-    if (!spec->rowset.empty()) {
-      foreach(const char *r, spec->rowset) rowset.insert(arena.dup(r));
     }
   }
 }
