@@ -461,6 +461,13 @@ void ClientKeepaliveHandler::destroy_session() {
     HT_ERRORF("Unable to send datagram - %s", Error::get_text(error));
 
   m_dead = true;
-  //m_comm->close_socket(m_local_addr);
+  if (m_conn_handler_ptr)
+    m_conn_handler_ptr->close();
+  m_conn_handler_ptr = 0;
+  m_handle_map.clear();
+  m_bad_handle_map.clear();
+  m_session_id = 0;
+  m_last_known_event = 0;
+  m_comm->close_socket(m_local_addr);
 }
 
