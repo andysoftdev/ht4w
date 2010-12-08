@@ -221,7 +221,7 @@ ostream &Hypertable::operator<<(ostream &os, const ScanSpec &scan_spec) {
 ScanSpec::ScanSpec(CharArena &arena, const ScanSpec &ss)
   : row_limit(ss.row_limit), cell_limit(ss.cell_limit), max_versions(ss.max_versions),
     columns(CstrAlloc(arena)), row_intervals(RowIntervalAlloc(arena)),
-    rowset(LtCstr(), CstrAlloc(arena)), cell_intervals(CellIntervalAlloc(arena)),
+    cell_intervals(CellIntervalAlloc(arena)),
     time_interval(ss.time_interval.first, ss.time_interval.second),
     return_deletes(ss.return_deletes), keys_only(ss.keys_only) {
   columns.reserve(ss.columns.size());

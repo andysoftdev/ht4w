@@ -362,11 +362,6 @@ public:
   }
 
   /**
-   * Adds a row to be returned in the rowset scan
-   *
-   * @param str row key
-   */
-  /**
    * Adds a cell to be returned in the scan
    *
    * @param row row key
