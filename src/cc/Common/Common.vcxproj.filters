@@ -312,5 +312,8 @@
     <ClInclude Include="strptime.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="HRTimer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
