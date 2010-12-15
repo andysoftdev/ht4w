@@ -40,7 +40,7 @@ using namespace Serialization;
 
 ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
                                                Session *session)
-  : m_dead(false), m_comm(comm), m_session(session), m_session_id(0),
+  : m_dead(false), m_destoying(false), m_comm(comm), m_session(session), m_session_id(0),
     m_last_known_event(0) {
   int error;
 
@@ -93,6 +93,19 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
 
   if (m_dead)
     return;
+  else if (m_destoying) {
+    if (m_conn_handler_ptr)
+      m_conn_handler_ptr->close();
+    m_conn_handler_ptr = 0;
+    m_handle_map.clear();
+    m_bad_handle_map.clear();
+    m_session_id = 0;
+    m_last_known_event = 0;
+    m_comm->close_socket(m_local_addr);
+    m_dead = true;
+    m_cond_destoyed.notify_all();
+    return;
+  }
 
   /**
   if (m_verbose) {
@@ -460,14 +473,8 @@ void ClientKeepaliveHandler::destroy_session() {
       != Error::OK))
     HT_ERRORF("Unable to send datagram - %s", Error::get_text(error));
 
-  m_dead = true;
-  if (m_conn_handler_ptr)
-    m_conn_handler_ptr->close();
-  m_conn_handler_ptr = 0;
-  m_handle_map.clear();
-  m_bad_handle_map.clear();
-  m_session_id = 0;
-  m_last_known_event = 0;
-  m_comm->close_socket(m_local_addr);
+  ScopedLock lock(m_mutex);
+  m_destoying = true;
+  m_cond_destoyed.wait(lock);
 }
 

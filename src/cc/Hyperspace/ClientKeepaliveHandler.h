@@ -84,6 +84,8 @@ namespace Hyperspace {
     boost::xtime       m_last_keep_alive_send_time;
     boost::xtime       m_jeopardy_time;
     bool m_dead;
+    bool m_destoying;
+    boost::condition m_cond_destoyed;
     Comm *m_comm;
     uint32_t m_lease_interval;
     uint32_t m_keep_alive_interval;
