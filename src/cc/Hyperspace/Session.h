@@ -497,6 +497,16 @@ namespace Hyperspace {
 
     void update_master_addr(const String &host);
 
+    /**
+     * Returns the Hyperspace master address
+     *
+     * @return InetAddr master address
+     */
+    InetAddr get_master_addr() {
+      ScopedLock lock(m_mutex);
+      return m_master_addr;
+    }
+
   private:
 
     typedef hash_map<uint64_t, SessionCallback *> CallbackMap;
