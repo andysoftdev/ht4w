@@ -46,7 +46,8 @@ SELECT
       | DISPLAY_TIMESTAMPS
       | KEYS_ONLY
       | NO_ESCAPE
-      | RETURN_DELETES)*
+      | RETURN_DELETES
+      | SCAN_AND_FILTER_ROWS)*
 
     timestamp:
       'YYYY-MM-DD HH:MM:SS[.nanoseconds]'
@@ -154,6 +155,13 @@ and applied during subsequent scans.  The `RETURN_DELETES` option will return
 the delete keys in addition to the normal cell keys and values.  This option
 can be useful when used in conjuction with the `DISPLAY_TIMESTAMPS` option to
 understand how the delete mechanism works.
+
+<p>
+#### `SCAN_AND_FILTER_ROWS`
+<p>
+The `SCAN_AND_FILTER_ROWS` option can be used for enhanced query processing
+if the 'where_clause' declares many individual row keys.  The rows returned
+will be distinct sorted by row key.
 
 <p>
 #### Examples
