@@ -240,6 +240,9 @@ void MaintenanceScheduler::schedule() {
 
   cout << flush << trace_str << flush;
 
+  if (low_memory_mode())
+    Global::maintenance_queue->wait_for_empty();
+
   m_scheduling_needed = false;
 
   m_stats_gatherer->clear();

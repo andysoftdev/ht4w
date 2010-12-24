@@ -90,6 +90,14 @@ void TimerHandler::complete_maintenance_notify() {
   ScopedLock lock(m_mutex);
   m_maintenance_outstanding = false;
   boost::xtime_get(&m_last_maintenance, TIME_UTC);
+  if (m_app_queue_paused) {
+    int64_t memory_used = Global::memory_tracker->balance();
+    if (memory_used <= Global::memory_limit) {
+      HT_INFO("Restarting application queue");
+      m_app_queue->start();
+      m_app_queue_paused = false;
+    }
+  }
 }
 
 
