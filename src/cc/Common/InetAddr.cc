@@ -29,7 +29,6 @@ extern "C" {
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sigar.h>
 }
 
 #include "Logger.h"
