@@ -22,9 +22,6 @@
     <ClCompile Include="src\sigar_getline.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\sigar_main.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\sigar_ptql.c">
       <Filter>Source Files</Filter>
     </ClCompile>

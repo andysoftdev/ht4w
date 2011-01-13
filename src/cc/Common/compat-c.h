@@ -83,8 +83,10 @@
 #pragma warning( disable : 4996 ) // the POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name
 #pragma warning( disable : 4244 ) // conversion from 'x' to 'y', possible loss of data
 
+#define _WIN32_WINNT 0x0502 // Windows Server 2003 SP1, Windows XP SP2
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
+
 #include <windows.h>
 #include <winsock2.h>
 #include <mswsock.h>

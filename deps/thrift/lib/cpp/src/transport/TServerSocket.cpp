@@ -263,7 +263,7 @@ void TServerSocket::listen() {
   }
   #endif // #ifdef TCP_DEFER_ACCEPT
 
-  #ifdef IPV6_V6ONLY
+  #if defined(IPV6_V6ONLY) && (!defined(_WIN32) || _WIN32_WINNT >= 0x0600)
   if (res->ai_family == AF_INET6) {
     int zero = 0;
     if (-1 == setsockopt(serverSocket_, IPPROTO_IPV6, IPV6_V6ONLY, 

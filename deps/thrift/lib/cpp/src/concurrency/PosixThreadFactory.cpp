@@ -175,7 +175,7 @@ class PthreadThread: public Thread {
 #ifndef _WIN32
     return (Thread::id_t)pthread_;
 #else
-    return (Thread::id_t)::GetThreadId(pthread_getw32threadhandle_np(pthread_));
+    return (Thread::id_t)pthread_getw32threadid_np(pthread_);
 #endif
   }
 
