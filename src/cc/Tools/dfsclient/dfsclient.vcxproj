@@ -126,7 +126,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
@@ -147,7 +147,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
@@ -175,7 +175,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
@@ -203,7 +203,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;sigar.lib;log4cpp.lib;zlib.lib;expat.lib;ws2_32.lib;netapi32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
