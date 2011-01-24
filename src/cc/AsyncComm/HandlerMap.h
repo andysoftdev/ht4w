@@ -302,6 +302,13 @@ namespace Hypertable {
         m_cond.wait(lock);
     }
 
+    template<typename duration_type>
+    void wait_for_empty(const duration_type& wait_duration) {
+      ScopedLock lock(m_mutex);
+      if (!m_decomissioned_handlers.empty())
+        m_cond.timed_wait(lock, wait_duration);
+    }
+
     int propagate_mappings(ProxyMapT &mappings) {
       int last_error = Error::OK;
 
