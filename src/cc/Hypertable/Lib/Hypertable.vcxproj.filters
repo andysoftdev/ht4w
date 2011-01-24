@@ -19,30 +19,6 @@
     <ClCompile Include="ApacheLogParser.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BlockCompressionCodec.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockCompressionCodecBmz.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockCompressionCodecLzo.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockCompressionCodecNone.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockCompressionCodecQuicklz.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockCompressionCodecZlib.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockCompressionHeader.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockCompressionHeaderCommitLog.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Cell.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -56,9 +32,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CommitLogReader.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CompressorFactory.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Config.cc">
@@ -255,30 +228,6 @@
     <ClInclude Include="ApacheLogParser.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="BlockCompressionCodec.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionCodecBmz.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionCodecLzo.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionCodecNone.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionCodecQuicklz.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionCodecZlib.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionHeader.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionHeaderCommitLog.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Cell.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -298,9 +247,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="CommitLogReader.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CompressorFactory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Config.h">

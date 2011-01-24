@@ -21,183 +21,57 @@
   <ItemGroup>
     <ClCompile Include="..\..\stdafx.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="ApacheLogParser.cc" />
+    <ClCompile Include="BlockCompressionCodec.cc" />
+    <ClCompile Include="BlockCompressionCodecBmz.cc" />
+    <ClCompile Include="BlockCompressionCodecLzo.cc" />
+    <ClCompile Include="BlockCompressionCodecNone.cc" />
+    <ClCompile Include="BlockCompressionCodecQuicklz.cc" />
+    <ClCompile Include="BlockCompressionCodecZlib.cc" />
+    <ClCompile Include="BlockCompressionHeader.cc" />
+    <ClCompile Include="BlockCompressionHeaderCommitLog.cc" />
     <ClCompile Include="bmz\bmz.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Cell.cc" />
-    <ClCompile Include="Client.cc" />
-    <ClCompile Include="CommitLog.cc" />
-    <ClCompile Include="CommitLogBlockStream.cc" />
-    <ClCompile Include="CommitLogReader.cc" />
-    <ClCompile Include="Config.cc" />
-    <ClCompile Include="DataGenerator.cc" />
-    <ClCompile Include="EventHandlerMasterChange.cc" />
-    <ClCompile Include="FixedRandomStringGenerator.cc" />
-    <ClCompile Include="HqlCommandInterpreter.cc" />
-    <ClCompile Include="HqlHelpText.cc" />
-    <ClCompile Include="HqlInterpreter.cc" />
-    <ClCompile Include="IntervalScanner.cc" />
-    <ClCompile Include="Key.cc" />
-    <ClCompile Include="KeySpec.cc" />
-    <ClCompile Include="LoadDataEscape.cc" />
-    <ClCompile Include="LoadDataSource.cc" />
-    <ClCompile Include="LoadDataSourceFactory.cc" />
-    <ClCompile Include="LoadDataSourceFileDfs.cc" />
-    <ClCompile Include="LoadDataSourceFileLocal.cc" />
-    <ClCompile Include="LoadDataSourceStdin.cc" />
-    <ClCompile Include="LocationCache.cc" />
+    <ClCompile Include="CompressorFactory.cc" />
     <ClCompile Include="lzo\minilzo.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="MasterClient.cc" />
-    <ClCompile Include="MasterFileHandler.cc" />
-    <ClCompile Include="MasterMetaLog.cc" />
-    <ClCompile Include="MasterMetaLogEntryFactory.cc" />
-    <ClCompile Include="MasterMetaLogReader.cc" />
-    <ClCompile Include="MasterProtocol.cc" />
-    <ClCompile Include="MetaLog.cc" />
-    <ClCompile Include="MetaLogDfsBase.cc" />
-    <ClCompile Include="MetaLogEntryBase.cc" />
-    <ClCompile Include="MetaLogReader.cc" />
-    <ClCompile Include="MetaLogReaderDfsBase.cc" />
-    <ClCompile Include="MetaLogVersion.cc" />
-    <ClCompile Include="NameIdMapper.cc" />
-    <ClCompile Include="Namespace.cc" />
-    <ClCompile Include="NamespaceCache.cc" />
     <ClCompile Include="quicklz\quicklz.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="RangeLocator.cc" />
-    <ClCompile Include="RangeServerClient.cc" />
-    <ClCompile Include="RangeServerMetaLog.cc" />
-    <ClCompile Include="RangeServerMetaLogEntries.cc" />
-    <ClCompile Include="RangeServerMetaLogEntryFactory.cc" />
-    <ClCompile Include="RangeServerMetaLogReader.cc" />
-    <ClCompile Include="RangeServerProtocol.cc" />
-    <ClCompile Include="RangeState.cc" />
-    <ClCompile Include="RootFileHandler.cc" />
-    <ClCompile Include="ScanBlock.cc" />
-    <ClCompile Include="ScanSpec.cc" />
-    <ClCompile Include="Schema.cc" />
-    <ClCompile Include="Stats.cc" />
-    <ClCompile Include="StatsV0.cc" />
-    <ClCompile Include="Table.cc" />
-    <ClCompile Include="TableCache.cc" />
-    <ClCompile Include="TableDumper.cc" />
-    <ClCompile Include="TableMutator.cc" />
-    <ClCompile Include="TableMutatorDispatchHandler.cc" />
-    <ClCompile Include="TableMutatorFlushHandler.cc" />
-    <ClCompile Include="TableMutatorIntervalHandler.cc" />
-    <ClCompile Include="TableMutatorScatterBuffer.cc" />
-    <ClCompile Include="TableMutatorShared.cc" />
-    <ClCompile Include="TableMutatorSyncDispatchHandler.cc" />
-    <ClCompile Include="TableScanner.cc" />
-    <ClCompile Include="TableSplit.cc" />
-    <ClCompile Include="Types.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApacheLogParser.h" />
+    <ClInclude Include="BlockCompressionCodec.h" />
+    <ClInclude Include="BlockCompressionCodecBmz.h" />
+    <ClInclude Include="BlockCompressionCodecLzo.h" />
+    <ClInclude Include="BlockCompressionCodecNone.h" />
+    <ClInclude Include="BlockCompressionCodecQuicklz.h" />
+    <ClInclude Include="BlockCompressionCodecZlib.h" />
+    <ClInclude Include="BlockCompressionHeader.h" />
+    <ClInclude Include="BlockCompressionHeaderCommitLog.h" />
     <ClInclude Include="bmz\bmz-internal.h" />
     <ClInclude Include="bmz\bmz.h" />
-    <ClInclude Include="Cell.h" />
-    <ClInclude Include="Cells.h" />
-    <ClInclude Include="Client.h" />
-    <ClInclude Include="CommitLog.h" />
-    <ClInclude Include="CommitLogBase.h" />
-    <ClInclude Include="CommitLogBlockStream.h" />
-    <ClInclude Include="CommitLogReader.h" />
-    <ClInclude Include="Config.h" />
-    <ClInclude Include="DataGenerator.h" />
-    <ClInclude Include="DataGeneratorColumn.h" />
-    <ClInclude Include="DataGeneratorQualifier.h" />
-    <ClInclude Include="DataGeneratorRowComponent.h" />
-    <ClInclude Include="DataSource.h" />
-    <ClInclude Include="EventHandlerMasterChange.h" />
-    <ClInclude Include="FixedRandomStringGenerator.h" />
-    <ClInclude Include="HqlCommandInterpreter.h" />
-    <ClInclude Include="HqlHelpText.h" />
-    <ClInclude Include="HqlInterpreter.h" />
-    <ClInclude Include="HqlParser.h" />
-    <ClInclude Include="IntervalScanner.h" />
-    <ClInclude Include="Key.h" />
-    <ClInclude Include="KeySpec.h" />
-    <ClInclude Include="LoadDataEscape.h" />
-    <ClInclude Include="LoadDataFlags.h" />
-    <ClInclude Include="LoadDataSource.h" />
-    <ClInclude Include="LoadDataSourceFactory.h" />
-    <ClInclude Include="LoadDataSourceFileDfs.h" />
-    <ClInclude Include="LoadDataSourceFileLocal.h" />
-    <ClInclude Include="LoadDataSourceStdin.h" />
-    <ClInclude Include="LocationCache.h" />
+    <ClInclude Include="CompressorFactory.h" />
     <ClInclude Include="lzo\lzoconf.h" />
     <ClInclude Include="lzo\lzodefs.h" />
     <ClInclude Include="lzo\minilzo.h" />
-    <ClInclude Include="MasterClient.h" />
-    <ClInclude Include="MasterFileHandler.h" />
-    <ClInclude Include="MasterMetaLog.h" />
-    <ClInclude Include="MasterMetaLogEntryFactory.h" />
-    <ClInclude Include="MasterMetaLogReader.h" />
-    <ClInclude Include="MasterProtocol.h" />
-    <ClInclude Include="MetaLog.h" />
-    <ClInclude Include="MetaLogDfsBase.h" />
-    <ClInclude Include="MetaLogEntryBase.h" />
-    <ClInclude Include="MetaLogReader.h" />
-    <ClInclude Include="MetaLogReaderDfsBase.h" />
-    <ClInclude Include="MetaLogVersion.h" />
-    <ClInclude Include="NameIdMapper.h" />
-    <ClInclude Include="Namespace.h" />
-    <ClInclude Include="NamespaceCache.h" />
-    <ClInclude Include="NamespaceListing.h" />
     <ClInclude Include="quicklz\quicklz.h" />
-    <ClInclude Include="RangeLocationInfo.h" />
-    <ClInclude Include="RangeLocator.h" />
-    <ClInclude Include="RangeServerClient.h" />
-    <ClInclude Include="RangeServerMetaLog.h" />
-    <ClInclude Include="RangeServerMetaLogEntries.h" />
-    <ClInclude Include="RangeServerMetaLogEntryFactory.h" />
-    <ClInclude Include="RangeServerMetaLogReader.h" />
-    <ClInclude Include="RangeServerProtocol.h" />
-    <ClInclude Include="RangeState.h" />
-    <ClInclude Include="RootFileHandler.h" />
-    <ClInclude Include="ScanBlock.h" />
-    <ClInclude Include="ScanSpec.h" />
-    <ClInclude Include="Schema.h" />
-    <ClInclude Include="SerializedKey.h" />
-    <ClInclude Include="Stats.h" />
-    <ClInclude Include="StatsV0.h" />
-    <ClInclude Include="Table.h" />
-    <ClInclude Include="TableCache.h" />
-    <ClInclude Include="TableDumper.h" />
-    <ClInclude Include="TableMutator.h" />
-    <ClInclude Include="TableMutatorCompletionCounter.h" />
-    <ClInclude Include="TableMutatorDispatchHandler.h" />
-    <ClInclude Include="TableMutatorFlushHandler.h" />
-    <ClInclude Include="TableMutatorIntervalHandler.h" />
-    <ClInclude Include="TableMutatorScatterBuffer.h" />
-    <ClInclude Include="TableMutatorSendBuffer.h" />
-    <ClInclude Include="TableMutatorShared.h" />
-    <ClInclude Include="TableMutatorSyncDispatchHandler.h" />
-    <ClInclude Include="TableScanner.h" />
-    <ClInclude Include="TableSplit.h" />
-    <ClInclude Include="Timestamp.h" />
-    <ClInclude Include="Types.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{0FB3EC20-0B6E-4E66-8FE2-D99E8E386BFA}</ProjectGuid>
+    <ProjectGuid>{A9BF580D-EF90-4E64-94CB-CC57DF1FB223}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Hypertable</RootNamespace>
   </PropertyGroup>
