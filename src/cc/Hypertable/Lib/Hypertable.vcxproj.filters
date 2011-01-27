@@ -5,15 +5,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Source Files\bmz">
-      <UniqueIdentifier>{33d04587-9501-4061-a611-6185f15d2c10}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\lzo">
-      <UniqueIdentifier>{2d39d0f7-c015-40cc-bda9-e9352a106d4e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\quicklz">
-      <UniqueIdentifier>{1315969e-1f65-411d-8235-e14c9cb365fd}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApacheLogParser.cc">
@@ -210,15 +201,6 @@
     </ClCompile>
     <ClCompile Include="Types.cc">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="bmz\bmz.c">
-      <Filter>Source Files\bmz</Filter>
-    </ClCompile>
-    <ClCompile Include="lzo\minilzo.c">
-      <Filter>Source Files\lzo</Filter>
-    </ClCompile>
-    <ClCompile Include="quicklz\quicklz.cc">
-      <Filter>Source Files\quicklz</Filter>
     </ClCompile>
     <ClCompile Include="..\..\stdafx.cc">
       <Filter>Source Files</Filter>
@@ -461,24 +443,6 @@
     </ClInclude>
     <ClInclude Include="Types.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="bmz\bmz.h">
-      <Filter>Source Files\bmz</Filter>
-    </ClInclude>
-    <ClInclude Include="bmz\bmz-internal.h">
-      <Filter>Source Files\bmz</Filter>
-    </ClInclude>
-    <ClInclude Include="lzo\lzoconf.h">
-      <Filter>Source Files\lzo</Filter>
-    </ClInclude>
-    <ClInclude Include="lzo\lzodefs.h">
-      <Filter>Source Files\lzo</Filter>
-    </ClInclude>
-    <ClInclude Include="lzo\minilzo.h">
-      <Filter>Source Files\lzo</Filter>
-    </ClInclude>
-    <ClInclude Include="quicklz\quicklz.h">
-      <Filter>Source Files\quicklz</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

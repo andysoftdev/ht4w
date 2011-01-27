@@ -26,12 +26,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ApacheLogParser.cc" />
-    <ClCompile Include="bmz\bmz.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="Cell.cc" />
     <ClCompile Include="Client.cc" />
     <ClCompile Include="CommitLog.cc" />
@@ -54,12 +48,6 @@
     <ClCompile Include="LoadDataSourceFileLocal.cc" />
     <ClCompile Include="LoadDataSourceStdin.cc" />
     <ClCompile Include="LocationCache.cc" />
-    <ClCompile Include="lzo\minilzo.c">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="MasterClient.cc" />
     <ClCompile Include="MasterFileHandler.cc" />
     <ClCompile Include="MasterMetaLog.cc" />
@@ -75,12 +63,6 @@
     <ClCompile Include="NameIdMapper.cc" />
     <ClCompile Include="Namespace.cc" />
     <ClCompile Include="NamespaceCache.cc" />
-    <ClCompile Include="quicklz\quicklz.cc">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="RangeLocator.cc" />
     <ClCompile Include="RangeServerClient.cc" />
     <ClCompile Include="RangeServerMetaLog.cc" />
@@ -111,8 +93,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h" />
-    <ClInclude Include="bmz\bmz-internal.h" />
-    <ClInclude Include="bmz\bmz.h" />
     <ClInclude Include="Cell.h" />
     <ClInclude Include="Cells.h" />
     <ClInclude Include="Client.h" />
@@ -143,9 +123,6 @@
     <ClInclude Include="LoadDataSourceFileLocal.h" />
     <ClInclude Include="LoadDataSourceStdin.h" />
     <ClInclude Include="LocationCache.h" />
-    <ClInclude Include="lzo\lzoconf.h" />
-    <ClInclude Include="lzo\lzodefs.h" />
-    <ClInclude Include="lzo\minilzo.h" />
     <ClInclude Include="MasterClient.h" />
     <ClInclude Include="MasterFileHandler.h" />
     <ClInclude Include="MasterMetaLog.h" />
@@ -162,7 +139,6 @@
     <ClInclude Include="Namespace.h" />
     <ClInclude Include="NamespaceCache.h" />
     <ClInclude Include="NamespaceListing.h" />
-    <ClInclude Include="quicklz\quicklz.h" />
     <ClInclude Include="RangeLocationInfo.h" />
     <ClInclude Include="RangeLocator.h" />
     <ClInclude Include="RangeServerClient.h" />
