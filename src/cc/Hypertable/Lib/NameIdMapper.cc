@@ -38,7 +38,6 @@ using namespace Hyperspace;
 
 NameIdMapper::NameIdMapper(Hyperspace::SessionPtr &hyperspace, const String &toplevel_dir)
   : m_hyperspace(hyperspace), m_toplevel_dir(toplevel_dir) {
-  HandleCallbackPtr null_handle_callback;
   uint64_t handle = 0;
 
   HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
@@ -70,8 +69,7 @@ NameIdMapper::NameIdMapper(Hyperspace::SessionPtr &hyperspace, const String &top
   if (!m_hyperspace->exists(m_ids_dir)) {
     m_hyperspace->mkdir(m_ids_dir);
     handle = m_hyperspace->open(m_ids_dir,
-                                OPEN_FLAG_READ|OPEN_FLAG_WRITE,
-                                null_handle_callback);
+                                OPEN_FLAG_READ|OPEN_FLAG_WRITE);
     m_hyperspace->attr_set(handle, "nid", "0", 1);
     m_hyperspace->close(handle);
     handle = 0;
@@ -89,7 +87,6 @@ bool NameIdMapper::id_to_name(const String &id, String &name, bool *is_namespace
 }
 
 void NameIdMapper::add_entry(const String &names_parent, const String &names_entry, std::vector<uint64_t> &ids, bool is_namespace) {
-  HandleCallbackPtr null_handle_callback;
   uint64_t handle_names_file = 0;
   uint64_t handle_ids_file = 0;
   uint64_t id = 0;
@@ -102,7 +99,7 @@ void NameIdMapper::add_entry(const String &names_parent, const String &names_ent
   else {
     int oflags = OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE|OPEN_FLAG_EXCL;
     HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle_names_file);
-    handle_names_file = m_hyperspace->open(names_file, oflags, null_handle_callback);
+    handle_names_file = m_hyperspace->open(names_file, oflags);
   }
 
   /**
@@ -113,8 +110,7 @@ void NameIdMapper::add_entry(const String &names_parent, const String &names_ent
     ids_file += String("/") + ids[i];
   {
     HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle_ids_file);
-    handle_ids_file = m_hyperspace->open(ids_file, OPEN_FLAG_READ|OPEN_FLAG_WRITE,
-        null_handle_callback);
+    handle_ids_file = m_hyperspace->open(ids_file, OPEN_FLAG_READ|OPEN_FLAG_WRITE);
     id = m_hyperspace->attr_incr(handle_ids_file, "nid");
   }
 
@@ -126,13 +122,12 @@ void NameIdMapper::add_entry(const String &names_parent, const String &names_ent
   HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle_ids_file);
   if (is_namespace) {
     m_hyperspace->mkdir(ids_file);
-    handle_ids_file = m_hyperspace->open(ids_file, OPEN_FLAG_READ|OPEN_FLAG_WRITE,
-        null_handle_callback);
+    handle_ids_file = m_hyperspace->open(ids_file, OPEN_FLAG_READ|OPEN_FLAG_WRITE);
     m_hyperspace->attr_set(handle_ids_file, "nid", "0", 1);
   }
   else {
     int oflags = OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE|OPEN_FLAG_EXCL;
-    handle_ids_file = m_hyperspace->open(ids_file, oflags, null_handle_callback);
+    handle_ids_file = m_hyperspace->open(ids_file, oflags);
   }
 
   m_hyperspace->attr_set(handle_ids_file, "name", names_entry.c_str(), names_entry.length());
@@ -142,8 +137,7 @@ void NameIdMapper::add_entry(const String &names_parent, const String &names_ent
    */
   HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle_names_file);
 
-  handle_names_file = m_hyperspace->open(names_file, OPEN_FLAG_READ|OPEN_FLAG_WRITE,
-      null_handle_callback);
+  handle_names_file = m_hyperspace->open(names_file, OPEN_FLAG_READ|OPEN_FLAG_WRITE);
   char buf[16];
   sprintf(buf, "%llu", (Llu)id);
   m_hyperspace->attr_set(handle_names_file, "id", buf, strlen(buf));
@@ -155,7 +149,6 @@ void NameIdMapper::add_entry(const String &names_parent, const String &names_ent
 void NameIdMapper::add_mapping(const String &name, String &id, int flags) {
   ScopedLock lock(m_mutex);
   uint64_t handle = 0;
-  HandleCallbackPtr null_handle_callback;
   typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
   boost::char_separator<char> sep("/");
   std::vector<String> name_components;
@@ -180,7 +173,7 @@ void NameIdMapper::add_mapping(const String &name, String &id, int flags) {
 
     try {
       String names_file = m_names_dir + names_child;
-      handle = m_hyperspace->open(names_file, OPEN_FLAG_READ, null_handle_callback);
+      handle = m_hyperspace->open(names_file, OPEN_FLAG_READ);
       m_hyperspace->attr_get(handle, "id", value_buf);
       m_hyperspace->close(handle);
       handle = 0;
@@ -224,7 +217,6 @@ void NameIdMapper::add_mapping(const String &name, String &id, int flags) {
 
 void NameIdMapper::rename(const String &curr_name, const String &next_name) {
   ScopedLock lock(m_mutex);
-  HandleCallbackPtr null_handle_callback;
   String id;
   int oflags = OPEN_FLAG_WRITE|OPEN_FLAG_EXCL|OPEN_FLAG_READ;
   uint64_t id_handle, name_handle;
@@ -249,7 +241,7 @@ void NameIdMapper::rename(const String &curr_name, const String &next_name) {
     // Set the name attribute of the id file to be the last path component of new_name
     String id_file = m_ids_dir + "/" + id;
     HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &id_handle);
-    id_handle = m_hyperspace->open(id_file, oflags, null_handle_callback);
+    id_handle = m_hyperspace->open(id_file, oflags);
     m_hyperspace->attr_set(id_handle, "name", new_name_last_comp.c_str(),
                            new_name_last_comp.length());
 
@@ -261,8 +253,7 @@ void NameIdMapper::rename(const String &curr_name, const String &next_name) {
       id_last_component = id;
 
     HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &name_handle);
-    name_handle = m_hyperspace->open(m_names_dir + "/" + new_name, oflags|OPEN_FLAG_CREATE,
-                                     null_handle_callback);
+    name_handle = m_hyperspace->open(m_names_dir + "/" + new_name, oflags|OPEN_FLAG_CREATE);
     m_hyperspace->attr_set(name_handle, "id", id_last_component.c_str(),
                            id_last_component.length());
 
@@ -291,7 +282,6 @@ bool NameIdMapper::do_mapping(const String &input, bool id_in, String &output,
   uint32_t oflags = OPEN_FLAG_READ | OPEN_FLAG_WRITE | OPEN_FLAG_LOCK;
   uint64_t handle = 0;
   int num_path_components = 0;
-  HandleCallbackPtr null_handle_callback;
   String hyperspace_file;
   String attr;
   output = (String)"";
@@ -319,7 +309,7 @@ bool NameIdMapper::do_mapping(const String &input, bool id_in, String &output,
   }
 
   try {
-    handle = m_hyperspace->open(hyperspace_file, oflags, null_handle_callback);
+    handle = m_hyperspace->open(hyperspace_file, oflags);
     HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
     m_hyperspace->readpath_attr(handle, attr, listing);
   }
@@ -359,7 +349,6 @@ void NameIdMapper::id_to_sublisting(const String &id, bool include_sub_entries, 
   vector <DirEntryAttr> dir_listing;
   uint32_t oflags = OPEN_FLAG_READ | OPEN_FLAG_WRITE | OPEN_FLAG_LOCK;
   uint64_t handle = 0;
-  HandleCallbackPtr null_handle_callback;
   String hyperspace_dir;
   String attr;
 
@@ -369,7 +358,7 @@ void NameIdMapper::id_to_sublisting(const String &id, bool include_sub_entries, 
   hyperspace_dir += (String)"/" + id;
 
   HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
-  handle = m_hyperspace->open(hyperspace_dir, oflags, null_handle_callback);
+  handle = m_hyperspace->open(hyperspace_dir, oflags);
   m_hyperspace->readdir_attr(handle, attr, include_sub_entries, dir_listing);
 
   get_namespace_listing(dir_listing, listing);

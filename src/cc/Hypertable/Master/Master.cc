@@ -31,7 +31,6 @@
 #include <boost/filesystem.hpp>
 
 #include "Common/FileUtils.h"
-#include "Common/Path.h"
 #include "Common/InetAddr.h"
 #include "Common/ScopeGuard.h"
 #include "Common/StringExt.h"
@@ -62,13 +61,11 @@ using namespace std;
 
 namespace Hypertable {
 
-String Master::ms_monitoring_dir;
-
 
 Master::Master(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
                ApplicationQueuePtr &app_queue)
-  : m_props_ptr(props), m_conn_manager_ptr(conn_mgr),
-    m_app_queue_ptr(app_queue), m_verbose(false), m_dfs_client(0),
+  : m_props(props), m_conn_manager(conn_mgr),
+    m_app_queue(app_queue), m_verbose(false), m_dfs_client(0),
     m_next_server_id(1), m_initialized(false), m_root_server_connected(false), m_get_stats_outstanding(false) {
 
   m_server_map_iter = m_server_map.begin();
@@ -77,31 +74,26 @@ Master::Master(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   boost::trim_if(m_toplevel_dir, boost::is_any_of("/"));
   m_toplevel_dir = String("/") + m_toplevel_dir;
 
-  m_hyperspace_ptr = new Hyperspace::Session(conn_mgr->get_comm(), props);
-  m_hyperspace_ptr->add_callback(&m_hyperspace_session_handler);
+  m_hyperspace = new Hyperspace::Session(conn_mgr->get_comm(), props);
+  m_hyperspace->add_callback(&m_hyperspace_session_handler);
   uint32_t timeout = props->get_i32("Hyperspace.Timeout");
 
-  if (!m_hyperspace_ptr->wait_for_connection(timeout)) {
+  if (!m_hyperspace->wait_for_connection(timeout)) {
     HT_ERROR("Unable to connect to hyperspace, exiting...");
     exit(1);
   }
-  m_namemap = new NameIdMapper(m_hyperspace_ptr, m_toplevel_dir);
+  m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
 
   m_verbose = props->get_bool("Hypertable.Verbose");
   uint16_t port = props->get_i16("Hypertable.Master.Port");
   m_max_range_bytes = props->get_i64("Hypertable.RangeServer.Range.SplitSize");
 
-  // store 10 mins worth of stats and at least last 5 stat buffers
-  int stats_int = props->get_i32("Hypertable.Master.StatsGather.Interval");
-  int stats_buffer_size = 10*60000/stats_int;
-  stats_buffer_size= std::max(stats_buffer_size, 5);
-  m_table_stats_buffer.set_capacity(stats_buffer_size);
-  m_range_server_stats_buffer.set_capacity(stats_buffer_size);
+  m_maintenance_interval = props->get_i32("Hypertable.Monitoring.Interval");
 
   /**
    * Create DFS Client connection
    */
-  DfsBroker::Client *dfs_client = new DfsBroker::Client(conn_mgr, props);
+  m_dfs_client = new DfsBroker::Client(conn_mgr, props);
 
   int dfs_timeout;
   if (props->has("DfsBroker.Timeout"))
@@ -109,27 +101,28 @@ Master::Master(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   else
     dfs_timeout = props->get_i32("Hypertable.Request.Timeout");
 
-  if (!dfs_client->wait_for_connection(dfs_timeout)) {
+  if (!((DfsBroker::Client *)m_dfs_client)->wait_for_connection(dfs_timeout)) {
     HT_ERROR("Unable to connect to DFS Broker, exiting...");
     exit(1);
   }
-  m_dfs_client = dfs_client;
+
+  m_rangeserver_port = props->get_i16("Hypertable.RangeServer.Port");
 
   if (!initialize())
     exit(1);
 
+  m_monitoring = new Monitoring(props);
+
   /* Read Last Table ID */
   {
     DynamicBuffer valbuf(0);
-    HandleCallbackPtr null_handle_callback;
     int ival;
     uint32_t lock_status;
     uint32_t oflags = OPEN_FLAG_READ | OPEN_FLAG_WRITE | OPEN_FLAG_LOCK;
 
-    m_master_file_handle = m_hyperspace_ptr->open(m_toplevel_dir + "/master", oflags,
-                                                  null_handle_callback);
+    m_master_file_handle = m_hyperspace->open(m_toplevel_dir + "/master", oflags);
 
-    m_hyperspace_ptr->try_lock(m_master_file_handle, LOCK_MODE_EXCLUSIVE,
+    m_hyperspace->try_lock(m_master_file_handle, LOCK_MODE_EXCLUSIVE,
                                &lock_status, &m_master_file_sequencer);
 
     if (lock_status != LOCK_STATUS_GRANTED) {
@@ -140,16 +133,16 @@ Master::Master(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     // Write master location in 'address' attribute, format is IP:port
     InetAddr addr(System::net_info().primary_addr, port);
     String addr_s = addr.format();
-    m_hyperspace_ptr->attr_set(m_master_file_handle, "address",
+    m_hyperspace->attr_set(m_master_file_handle, "address",
                                addr_s.c_str(), addr_s.length());
 
     try {
-      m_hyperspace_ptr->attr_get(m_master_file_handle, "next_server_id", valbuf);
+      m_hyperspace->attr_get(m_master_file_handle, "next_server_id", valbuf);
       ival = atoi((const char *)valbuf.base);
     }
     catch (Exception &e) {
       if (e.code() == Error::HYPERSPACE_ATTR_NOT_FOUND) {
-        m_hyperspace_ptr->attr_set(m_master_file_handle, "next_server_id", "1", 2);
+        m_hyperspace->attr_set(m_master_file_handle, "next_server_id", "1", 2);
         ival = 1;
       }
       else
@@ -163,8 +156,9 @@ Master::Master(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
    */
   scan_servers_directory();
 
-  master_gc_start(props, m_threads, m_metadata_table_ptr, m_dfs_client);
+  master_gc_start(props, m_threads, m_metadata_table, m_dfs_client);
 
+  handle_metadata_schema_update();
 
 }
 
@@ -173,6 +167,46 @@ Master::~Master() {
 }
 
 
+void Master::handle_metadata_schema_update() {
+  SchemaPtr schema, new_schema;
+  DynamicBuffer value_buf(0);
+  size_t len;
+  uint64_t handle = 0;
+  String tablefile = m_toplevel_dir + "/tables/0/0";
+
+  if (!m_hyperspace->exists(tablefile))
+    return;
+
+  /**
+   * Read old schema
+   */ 
+  handle = m_hyperspace->open(tablefile, OPEN_FLAG_READ);
+  m_hyperspace->attr_get(handle, "schema", value_buf);
+  schema = Schema::new_instance((char *)value_buf.base,
+                                strlen((char *)value_buf.base), true);
+  m_hyperspace->close(handle);
+  handle = 0;
+
+  /**
+   * Read new schema
+   */
+  String schema_file = System::install_dir + "/conf/METADATA.xml";
+  String schema_str = FileUtils::file_to_buffer(schema_file, &len);
+  new_schema = Schema::new_instance(schema_str.c_str(), schema_str.length(), true);
+
+
+  if (schema->get_generation() < new_schema->get_generation()) {
+    handle = m_hyperspace->open(tablefile,
+                                OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_LOCK_EXCLUSIVE);
+    m_hyperspace->attr_set(handle, "schema", schema_str.c_str(),
+                           schema_str.length());
+    m_hyperspace->close(handle);
+
+    HT_INFOF("Upgraded METADATA from generation %u to %u",
+             schema->get_generation(), new_schema->get_generation());
+  }
+
+}
 
 /**
  *
@@ -232,12 +266,12 @@ void Master::server_left(const String &location) {
   }
 
   if (was_connected)
-    m_conn_manager_ptr->get_comm()->close_socket(connection);
+    m_conn_manager->get_comm()->close_socket(connection);
 
   // delete Hyperspace file
   HT_INFOF("RangeServer lost it's lock on file %s, deleting ...", hsfname.c_str());
   try {
-    m_hyperspace_ptr->unlink(hsfname);
+    m_hyperspace->unlink(hsfname);
   }
   catch (Exception &e) {
     HT_WARN_OUT "Problem closing file '" << hsfname << "' - " << e << HT_END;
@@ -274,10 +308,6 @@ Master::create_table(ResponseCallback *cb, const char *tablename,
 
 bool Master::table_exists(const String &name, String &id) {
   bool is_namespace;
-  uint64_t handle = 0;
-  HandleCallbackPtr null_handle_callback;
-
-  HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace_ptr, &handle);
 
   id = "";
 
@@ -288,9 +318,11 @@ bool Master::table_exists(const String &name, String &id) {
   String tablefile = m_toplevel_dir + "/tables/" + id;
 
   try {
-    if (m_hyperspace_ptr->exists(tablefile)) {
-      handle = m_hyperspace_ptr->open(tablefile, OPEN_FLAG_READ, null_handle_callback);
-      if (m_hyperspace_ptr->attr_exists(handle, "x"))
+    uint64_t handle = 0;
+    HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
+    if (m_hyperspace->exists(tablefile)) {
+      handle = m_hyperspace->open(tablefile, OPEN_FLAG_READ);
+      if (m_hyperspace->attr_exists(handle, "x"))
         return true;
     }
   }
@@ -320,17 +352,17 @@ Master::alter_table(ResponseCallback *cb, const char *tablename,
   SchemaPtr updated_schema;
   SchemaPtr schema;
   DynamicBuffer value_buf(0);
-  uint64_t handle = 0;
   LockSequencer lock_sequencer;
   int saved_error = Error::OK;
 
-  HandleCallbackPtr null_handle_callback;
-
   HT_INFOF("Alter table: %s", tablename);
+
 
   wait_for_root_metadata_server();
 
   try {
+    uint64_t handle = 0;
+    HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
     String tablefile;
 
     if (!table_exists(tablename, table_id))
@@ -349,15 +381,14 @@ Master::alter_table(ResponseCallback *cb, const char *tablename,
     /**
      *  Open & Lock Hyperspace file exclusively
      */
-    handle = m_hyperspace_ptr->open(tablefile,
-        OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_LOCK_EXCLUSIVE,
-        null_handle_callback);
+    handle = m_hyperspace->open(tablefile,
+          OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_LOCK_EXCLUSIVE);
 
     /**
      *  Read existing schema and table id
      */
 
-    m_hyperspace_ptr->attr_get(handle, "schema", value_buf);
+    m_hyperspace->attr_get(handle, "schema", value_buf);
     schema = Schema::new_instance((char *)value_buf.base,
         strlen((char *)value_buf.base), true);
     value_buf.clear();
@@ -404,7 +435,7 @@ Master::alter_table(ResponseCallback *cb, const char *tablename,
       ri.end = end_row;
       scan_spec.row_intervals.push_back(ri);
 
-      scanner_ptr = m_metadata_table_ptr->create_scanner(scan_spec);
+      scanner_ptr = m_metadata_table->create_scanner(scan_spec);
 
       while (scanner_ptr->next(cell)) {
 	location_str = String((const char *)cell.value, cell.value_len);
@@ -425,13 +456,12 @@ Master::alter_table(ResponseCallback *cb, const char *tablename,
 
       if (saved_error != Error::OK) {
 	cb->error(saved_error, err_msg);
-	m_hyperspace_ptr->close(handle);
 	return;
       }
 
       if (!connections.empty()) {
         DispatchHandlerUpdateSchema sync_handler(table,
-            finalschema.c_str(), m_conn_manager_ptr->get_comm(), 5000);
+            finalschema.c_str(), m_conn_manager->get_comm(), 5000);
         RangeServerStatePtr state_ptr;
 
 	// Issue ALTER TABLE commands to RangeServers
@@ -474,25 +504,17 @@ Master::alter_table(ResponseCallback *cb, const char *tablename,
       }
 
       /**
-       * Store updated Schema in Hyperspace, close handle & release lock
+       * Store updated Schema in Hyperspace and release lock
        */
       HT_INFO_OUT <<"schema:\n"<< finalschema << HT_END;
-      m_hyperspace_ptr->attr_set(handle, "schema", finalschema.c_str(),
+      m_hyperspace->attr_set(handle, "schema", finalschema.c_str(),
                                  finalschema.length());
-      /**
-       * Alter succeeded so clean up!
-       */
-      m_hyperspace_ptr->close(handle);
 
       HT_INFOF("ALTER TABLE '%s' id=%s success",
                tablename, table_id.c_str());
     }
   }
   catch (Exception &e) {
-    // clean up
-    if(handle != 0)
-      m_hyperspace_ptr->close(handle);
-
     HT_ERROR_OUT << e << HT_END;
     cb->error(e.code(), e.what());
     return;
@@ -508,14 +530,15 @@ void Master::get_schema(ResponseCallbackGetSchema *cb, const char *tablename) {
   String table_id;
   String errmsg;
   DynamicBuffer schemabuf(0);
-  uint64_t handle;
-  HandleCallbackPtr null_handle_callback;
 
   HT_INFOF("Get schema: %s", tablename);
+
 
   wait_for_root_metadata_server();
 
   try {
+    uint64_t handle = 0;
+    HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
     String tablefile;
 
 
@@ -529,15 +552,12 @@ void Master::get_schema(ResponseCallbackGetSchema *cb, const char *tablename) {
     /**
      * Open table file
      */
-    handle = m_hyperspace_ptr->open(tablefile, OPEN_FLAG_READ,
-                                    null_handle_callback);
+    handle = m_hyperspace->open(tablefile, OPEN_FLAG_READ);
 
     /**
      * Get schema attribute
      */
-    m_hyperspace_ptr->attr_get(handle, "schema", schemabuf);
-
-    m_hyperspace_ptr->close(handle);
+    m_hyperspace->attr_get(handle, "schema", schemabuf);
 
     cb->response((char *)schemabuf.base);
 
@@ -560,13 +580,15 @@ void Master::get_schema(ResponseCallbackGetSchema *cb, const char *tablename) {
  */
 void
 Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
-                        const InetAddr &addr) {
+                        uint16_t listen_port, StatsSystem &system_stats) {
   RangeServerStateMap::iterator iter;
   HandleCallbackPtr lock_file_handler;
   LockSequencer lock_sequencer;
   String hsfname;
   bool exists = false;
   InetAddr connection = cb->get_address();
+  InetAddr addr = InetAddr(system_stats.net_info.primary_addr, listen_port);
+  String addr_str = InetAddr::format(addr);
 
   if (location == "") {
     {
@@ -575,15 +597,16 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
     }
     char buf[16];
     sprintf(buf, "%u", m_next_server_id);
-    m_hyperspace_ptr->attr_set(m_master_file_handle, "next_server_id",
+    m_hyperspace->attr_set(m_master_file_handle, "next_server_id",
                                buf, strlen(buf)+1);
-    String addr_str = InetAddr::format(addr);
-    m_hyperspace_ptr->attr_set(m_servers_dir_handle, location,
+    m_hyperspace->attr_set(m_servers_dir_handle, location,
                                addr_str.c_str(), addr_str.length()+1);
   }
 
   HT_INFOF("Register server %s (%s -> %s)", connection.format().c_str(),
-           location.c_str(), InetAddr::format(addr).c_str());
+           location.c_str(), addr_str.c_str());
+
+  m_monitoring->add_server(location, system_stats);
 
   try {
 
@@ -594,7 +617,7 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
       if((iter = m_server_map.find(location)) != m_server_map.end()) {
         rs_state = (*iter).second;
         HT_ERRORF("Unable to assign %s to location '%s' because already assigned to %s",
-                  InetAddr::format(addr).c_str(), location.c_str(),
+                  addr_str.c_str(), location.c_str(),
                   InetAddr::format(rs_state->connection).c_str());
         cb->error(Error::MASTER_LOCATION_ALREADY_ASSIGNED,
                   format("location '%s' already assigned to %s", location.c_str(),
@@ -607,8 +630,8 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
         rs_state->addr.set_proxy(location);
       }
 
-      m_conn_manager_ptr->get_comm()->set_alias(connection, addr);
-      m_conn_manager_ptr->get_comm()->add_proxy(location, addr);
+      m_conn_manager->get_comm()->set_alias(connection, addr);
+      m_conn_manager->get_comm()->add_proxy(location, addr);
 
       rs_state->connection = connection;
       rs_state->connected = true;
@@ -619,8 +642,7 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
       m_addr_map[rs_state->connection] = location;
     }
 
-    HT_INFOF("Server Registered %s -> %s", location.c_str(),
-             InetAddr::format(addr).c_str());
+    HT_INFOF("Server Registered %s -> %s", location.c_str(), addr_str.c_str());
 
     cb->response(location);
 
@@ -640,12 +662,25 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
     if (!m_initialized) {
       TableIdentifier table;
       RangeSpec range;
-      RangeServerClient rsc(m_conn_manager_ptr->get_comm());
+      RangeServerClient rsc(m_conn_manager->get_comm());
 
       HT_INFO("Initializing METADATA");
 
       /**
-       * Create METADATA table
+       *  Create "sys" namespace
+       */
+      try {
+        create_namespace("sys");
+      }
+      catch (Exception &e) {
+        if (e.code() != Error::NAMESPACE_EXISTS) {
+          HT_ERROR_OUT << e << HT_END;
+          HT_ABORT;
+        }
+      }
+
+      /**
+       * Create sys/METADATA table
        */
       {
         String metadata_schema_file = System::install_dir
@@ -655,17 +690,7 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
           FileUtils::file_to_buffer(metadata_schema_file.c_str(), &schemalen);
 
         try {
-          create_namespace("sys");
-        }
-        catch (Exception &e) {
-          if (e.code() != Error::NAMESPACE_EXISTS) {
-            HT_ERROR_OUT << e << HT_END;
-            HT_ABORT;
-          }
-        }
-
-        try {
-          create_table(TableIdentifier::METADATA_NAME, schemastr);
+          create_table(TableIdentifier::METADATA_NAME, schemastr, true);
         }
         catch (Exception &e) {
           if (e.code() != Error::MASTER_TABLE_EXISTS) {
@@ -679,8 +704,8 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
       /**
        * Open METADATA table
        */
-      m_metadata_table_ptr = new Table(m_props_ptr, m_conn_manager_ptr,
-                                       m_hyperspace_ptr, m_namemap,
+      m_metadata_table = new Table(m_props, m_conn_manager,
+                                       m_hyperspace, m_namemap,
                                        TableIdentifier::METADATA_NAME);
 
       /**
@@ -691,11 +716,10 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
       if (exists) {
         DynamicBuffer dbuf;
         try {
-          HandleCallbackPtr null_callback;
-          uint64_t handle = m_hyperspace_ptr->open(m_toplevel_dir + "/root",
-              OPEN_FLAG_READ, null_callback);
-          m_hyperspace_ptr->attr_get(handle, "Location", dbuf);
-          m_hyperspace_ptr->close(handle);
+          uint64_t handle = m_hyperspace->open(m_toplevel_dir + "/root",
+                                                   OPEN_FLAG_READ);
+          m_hyperspace->attr_get(handle, "Location", dbuf);
+          m_hyperspace->close(handle);
         }
         catch (Exception &e) {
           HT_FATALF("Unable to read '%s/root:Location' in hyperspace "
@@ -713,7 +737,7 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
         return;
       }
 
-      m_metadata_table_ptr->get_identifier(&table);
+      m_metadata_table->get_identifier(&table);
 
       /**
        * Load root METADATA range
@@ -740,7 +764,7 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
       KeySpec key;
       String metadata_key_str;
 
-      mutator_ptr = m_metadata_table_ptr->create_mutator();
+      mutator_ptr = m_metadata_table->create_mutator();
 
       metadata_key_str = (String)TableIdentifier::METADATA_ID +":"+ Key::END_ROW_MARKER;
       key.row = metadata_key_str.c_str();
@@ -779,7 +803,27 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
                   location.c_str(), Error::get_text(e.code()));
       }
 
-      HT_INFO("METADATA table successfully initialized");
+      HT_INFO("sys/METADATA table successfully initialized");
+
+      /**
+       * Create sys/RS_METRICS table
+       */
+      {
+        String rs_stats_schema_file = System::install_dir+"/conf/RS_METRICS.xml";
+        size_t schemalen;
+        const char *schemastr = FileUtils::file_to_buffer(rs_stats_schema_file.c_str(), &schemalen);
+
+        try {
+          create_table("sys/RS_METRICS", schemastr, true);
+          HT_INFO("sys/RS_METRICS table successfully created");
+        }
+        catch (Exception &e) {
+          if (e.code() != Error::MASTER_TABLE_EXISTS) {
+            HT_ERROR_OUT << e << HT_END;
+            HT_ABORT;
+          }
+        }
+      }
 
       m_root_server_location = location;
       m_root_server_addr = addr;
@@ -803,16 +847,16 @@ Master::register_server(ResponseCallbackRegisterServer *cb, String &location,
  * whole system to wedge under certain situations
  */
 void
-Master::report_split(ResponseCallback *cb, const TableIdentifier &table,
-    const RangeSpec &range, const char *transfer_log_dir, uint64_t soft_limit) {
-  RangeServerClient rsc(m_conn_manager_ptr->get_comm());
+Master::move_range(ResponseCallback *cb, const TableIdentifier &table,
+                   const RangeSpec &range, const char *transfer_log_dir,
+                   uint64_t soft_limit, bool split) {
+  RangeServerClient rsc(m_conn_manager->get_comm());
   QualifiedRangeSpec fqr_spec(table, range);
-  bool server_pinned = false;
   String location;
   CommAddress addr;
 
-  HT_INFOF("Entering report_split for %s[%s:%s].", table.id, range.start_row,
-           range.end_row);
+  HT_INFOF("Entering move_range for %s[%s:%s] (split=%d).", table.id, range.start_row,
+           range.end_row, (int)split);
 
   wait_for_root_metadata_server();
 
@@ -829,7 +873,6 @@ Master::report_split(ResponseCallback *cb, const TableIdentifier &table,
       addr = (*smiter).second->addr;
       HT_INFOF("Re-attempting to assign newly reported range %s[%s:%s] to %s",
                table.id, range.start_row, range.end_row, location.c_str());
-      server_pinned = true;
     }
     else {
       if (m_server_map_iter == m_server_map.end())
@@ -840,47 +883,49 @@ Master::report_split(ResponseCallback *cb, const TableIdentifier &table,
       HT_INFOF("Assigning newly reported range %s[%s:%s] to %s",
                table.id, range.start_row, range.end_row, location.c_str());
       ++m_server_map_iter;
+      m_range_to_location_map[fqr_spec] = location;
     }
   }
 
+  cb->response_ok();
 
-  try {
-    RangeState range_state;
-    range_state.soft_limit = soft_limit;
-    rsc.load_range(addr, table, range, transfer_log_dir, range_state);
-    HT_INFOF("report_split for %s[%s:%s] successful.", table.id,
-             range.start_row, range.end_row);
-  }
-  catch (Exception &e) {
-    if (e.code() == Error::RANGESERVER_RANGE_ALREADY_LOADED) {
-      HT_ERROR_OUT << e << HT_END;
-      {
-	ScopedLock lock(m_mutex);
-	m_range_to_location_map.erase(fqr_spec);
+  while (true) {
+    try {
+      RangeState range_state;
+      range_state.soft_limit = soft_limit;
+      rsc.load_range(addr, table, range, transfer_log_dir, range_state);
+      HT_INFOF("move_range for %s[%s:%s] successful.", table.id,
+               range.start_row, range.end_row);
+      break;
+    }
+    catch (Exception &e) {
+      if (e.code() != Error::RANGESERVER_RANGE_ALREADY_LOADED &&
+          e.code() != Error::RANGESERVER_TABLE_DROPPED) {
+        HT_ERRORF("Problem issuing 'load range' command for %s[%s:%s] at server "
+                  "%s - %s, will retry in 3000 ms ...", table.id, range.start_row, range.end_row,
+                  location.c_str(), Error::get_text(e.code()));
+        poll(0, 0, 3000);
       }
-      cb->response_ok();
+      else
+        break;
     }
-    else {
-      HT_ERRORF("Problem issuing 'load range' command for %s[%s:%s] at server "
-                "%s - %s", table.id, range.start_row, range.end_row,
-                location.c_str(), Error::get_text(e.code()));
-      {
-	ScopedLock lock(m_mutex);
-	if (!server_pinned)
-	  m_range_to_location_map[fqr_spec] = location;
-      }
-      cb->error(e.code(), e.what());
-    }
-    return;
   }
 
-  if (server_pinned) {
+  // Successful load - remove range_to_location entry
+  {
     ScopedLock lock(m_mutex);
     m_range_to_location_map.erase(fqr_spec);
   }
 
+}
+
+
+void Master::relinquish_acknowledge(ResponseCallback *cb, const TableIdentifier &table,
+                                    const RangeSpec &range) {
+  // TBD
   cb->response_ok();
 }
+
 
 void
 Master::rename_table(ResponseCallback *cb, const char *old_name, const char *new_name) {
@@ -910,7 +955,6 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
   String err_msg;
   String table_id;
   DynamicBuffer value_buf(0);
-  HandleCallbackPtr null_handle_callback;
   String table_name_str = table_name;
 
   HT_INFOF("Entering drop_table for %s", table_name);
@@ -955,12 +999,12 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
       ri.end = end_row;
       scan_spec.row_intervals.push_back(ri);
 
-      scanner_ptr = m_metadata_table_ptr->create_scanner(scan_spec);
+      scanner_ptr = m_metadata_table->create_scanner(scan_spec);
 
       while (scanner_ptr->next(cell)) {
 	location_str = String((const char *)cell.value, cell.value_len);
 	boost::trim(location_str);
-	if (connections.find(location_str) == connections.end()) {
+	if (location_str != "!" && connections.find(location_str) == connections.end()) {
 	  ScopedLock lock(m_mutex);
 	  if ((smiter = m_server_map.find(location_str)) == m_server_map.end()) {
 	    /** Drop failed clean up & return **/
@@ -980,7 +1024,7 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
       }
 
       if (!connections.empty()) {
-	DispatchHandlerDropTable sync_handler(table, m_conn_manager_ptr->get_comm());
+	DispatchHandlerDropTable sync_handler(table, m_conn_manager->get_comm());
         RangeServerStatePtr state_ptr;
 
 	// Issue DROP TABLE commands to RangeServers
@@ -991,14 +1035,21 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
 	}
 
         if (!sync_handler.wait_for_completion()) {
+          int badi = -1;
           std::vector<DispatchHandlerDropTable::ErrorResult> errors;
           sync_handler.get_errors(errors);
           for (size_t i=0; i<errors.size(); i++) {
-            HT_WARNF("drop table error - %s - %s", errors[i].msg.c_str(),
-                     Error::get_text(errors[i].error));
+            if (errors[i].error != Error::TABLE_NOT_FOUND) {
+              if (badi == -1)
+                badi = i;
+              HT_WARNF("drop table error - %s - %s", errors[i].msg.c_str(),
+                       Error::get_text(errors[i].error));
+            }
           }
-          cb->error(errors[0].error, errors[0].msg);
-          return;
+          if (badi != -1) {
+            cb->error(errors[badi].error, errors[badi].msg);
+            return;
+          }
         }
       }
 
@@ -1007,7 +1058,7 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
     m_namemap->drop_mapping(table_name);
 
     String table_file = m_toplevel_dir + "/tables/" + table_id;
-    m_hyperspace_ptr->unlink(table_file.c_str());
+    m_hyperspace->unlink(table_file.c_str());
 
     HT_INFOF("DROP TABLE '%s' id=%s success",
              table_name_str.c_str(), table_id.c_str());
@@ -1022,7 +1073,7 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
 }
 
   void Master::close(ResponseCallback *cb) {
-    RangeServerClient rsc(m_conn_manager_ptr->get_comm());
+    RangeServerClient rsc(m_conn_manager->get_comm());
     std::vector<CommAddress> addresses;
 
     HT_INFO("CLOSE");
@@ -1043,7 +1094,7 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
 
 
   void Master::shutdown(ResponseCallback *cb) {
-    RangeServerClient rsc(m_conn_manager_ptr->get_comm());
+    RangeServerClient rsc(m_conn_manager->get_comm());
     std::vector<CommAddress> addresses;
 
     HT_INFO("SHUTDOWN");
@@ -1082,7 +1133,7 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
       return;
     }
 
-    m_hyperspace_ptr = 0;
+    m_hyperspace = 0;
 
     cb->response_ok();
 
@@ -1093,22 +1144,21 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
   }
 
   void Master::do_maintenance() {
-    get_statistics(true);
+    do_monitoring();
   }
 
 
 void
-Master::create_table(const char *tablename, const char *schemastr) {
+Master::create_table(const char *tablename, const char *schemastr, bool with_ids) {
   String finalschema = "";
   string table_basedir;
   string agdir;
-  Schema *schema = 0;
-  HandleCallbackPtr null_handle_callback;
+  SchemaPtr schema;
   uint64_t handle = 0;
   String table_name = tablename;
   String table_id;
 
-  HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace_ptr, &handle);
+  HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
 
   /**
    * Strip leading '/'
@@ -1131,12 +1181,14 @@ Master::create_table(const char *tablename, const char *schemastr) {
   /**
    *  Parse Schema and assign Generation number and Column ids
    */
-  schema = Schema::new_instance(schemastr, strlen(schemastr));
+  schema = Schema::new_instance(schemastr, strlen(schemastr), with_ids);
   if (!schema->is_valid())
     HT_THROW(Error::MASTER_BAD_SCHEMA, schema->get_error_string());
 
-  schema->assign_ids();
-  schema->render(finalschema);
+  if (!with_ids)
+    schema->assign_ids();
+
+  schema->render(finalschema, true);
   HT_DEBUG_OUT <<"schema:\n"<< finalschema << HT_END;
 
   /**
@@ -1144,12 +1196,12 @@ Master::create_table(const char *tablename, const char *schemastr) {
    */
   String tablefile = m_toplevel_dir + "/tables/" + table_id;
   int oflags = OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE;
-  handle = m_hyperspace_ptr->open(tablefile, oflags, null_handle_callback);
+  handle = m_hyperspace->open(tablefile, oflags);
 
   /**
    * Write schema attribute
    */
-  m_hyperspace_ptr->attr_set(handle, "schema", finalschema.c_str(),
+  m_hyperspace->attr_set(handle, "schema", finalschema.c_str(),
                              finalschema.length());
 
   // TODO: log the 'COMPLETED CREATE TABLE fully_qual_name' in the Master METALOG here
@@ -1175,7 +1227,7 @@ Master::create_table(const char *tablename, const char *schemastr) {
     CommAddress addr;
     String location;
 
-    mutator_ptr = m_metadata_table_ptr->create_mutator();
+    mutator_ptr = m_metadata_table->create_mutator();
 
     metadata_key_str = table_id + ":" + Key::END_ROW_MARKER;
     key.row = metadata_key_str.c_str();
@@ -1194,7 +1246,7 @@ Master::create_table(const char *tablename, const char *schemastr) {
     TableIdentifierManaged table;
     RangeSpec range;
     uint64_t soft_limit;
-    RangeServerClient rsc(m_conn_manager_ptr->get_comm());
+    RangeServerClient rsc(m_conn_manager->get_comm());
 
     table.set_id(table_id);
     table.generation = schema->get_generation();
@@ -1215,25 +1267,27 @@ Master::create_table(const char *tablename, const char *schemastr) {
       soft_limit = m_max_range_bytes / std::min(64, (int)m_server_map.size()*2);
     }
 
-    try {
-      RangeState range_state;
-      range_state.soft_limit = soft_limit;
-      rsc.load_range(addr, table, range, 0, range_state);
-    }
-    catch (Exception &e) {
-      String err_msg = format("Problem issuing 'load range' command for "
-          "%s[..%s] at server %s - %s", table.id, range.end_row,
-          location.c_str(), Error::get_text(e.code()));
-      if (schema != 0)
-        delete schema;
-      HT_THROW2(e.code(), e, err_msg);
+    while (true) {
+      try {
+        RangeState range_state;
+        range_state.soft_limit = soft_limit;
+        rsc.load_range(addr, table, range, 0, range_state);
+      }
+      catch (Exception &e) {
+        if (e.code() == Error::RANGESERVER_RANGE_ALREADY_LOADED)
+          break;
+        HT_WARNF("Problem issuing 'load range' command for %s[..%s] at "
+                 "server %s - %s, retrying in 3000ms ...", table.id,
+                 range.end_row, location.c_str(), Error::get_text(e.code()));
+        poll(0, 0, 3000);
+        continue;
+      }
+      break;
     }
   }
 
-  m_hyperspace_ptr->attr_set(handle, "x", "", 0);
+  m_hyperspace->attr_set(handle, "x", "", 0);
 
-
-  delete schema;
   if (m_verbose)
     HT_INFOF("Successfully created table '%s' ID=%s", tablename, table_id.c_str());
 
@@ -1244,49 +1298,34 @@ Master::create_table(const char *tablename, const char *schemastr) {
  */
 
 bool Master::initialize() {
-  uint64_t handle;
-  HandleCallbackPtr null_handle_callback;
 
   try {
+    uint64_t handle = 0;
+    HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_hyperspace, &handle);
 
-    if (!m_hyperspace_ptr->exists(m_toplevel_dir))
-      m_hyperspace_ptr->mkdirs(m_toplevel_dir);
+    if (!m_hyperspace->exists(m_toplevel_dir))
+      m_hyperspace->mkdirs(m_toplevel_dir);
 
-    if (!m_hyperspace_ptr->exists(m_toplevel_dir + "/servers")) {
+    if (!m_hyperspace->exists(m_toplevel_dir + "/servers")) {
       if (!create_hyperspace_dir(m_toplevel_dir + "/servers"))
         return false;
     }
 
-    if (!m_hyperspace_ptr->exists(m_toplevel_dir + "/tables")) {
+    if (!m_hyperspace->exists(m_toplevel_dir + "/tables")) {
       if (!create_hyperspace_dir(m_toplevel_dir + "/tables"))
         return false;
     }
 
     // Create /hypertable/master if necessary
-    handle = m_hyperspace_ptr->open( m_toplevel_dir + "/master",
-        OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE, null_handle_callback);
-    m_hyperspace_ptr->close(handle);
+    handle = m_hyperspace->open( m_toplevel_dir + "/master",
+        OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE);
+    m_hyperspace->close(handle);
 
     /**
      *  Create /hypertable/root
      */
-    handle = m_hyperspace_ptr->open(m_toplevel_dir + "/root",
-        OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE, null_handle_callback);
-    m_hyperspace_ptr->close(handle);
-
-    /**
-     * Create dir for storing monitoring stats
-     */
-    Path data_dir = m_props_ptr->get_str("Hypertable.DataDirectory");
-    ms_monitoring_dir = (data_dir /= "/run/monitoring/").string();
-    if (!FileUtils::exists(ms_monitoring_dir)) {
-      if (!FileUtils::mkdirs(ms_monitoring_dir)) {
-        HT_THROW(Error::LOCAL_IO_ERROR, "Unable to create monitoring dir ");
-      }
-      HT_INFO("Created monitoring stats dir");
-    }
-    else
-      HT_INFO("monitoring stats dir exists");
+    handle = m_hyperspace->open(m_toplevel_dir + "/root",
+        OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE);
 
     HT_INFO("Successfully Initialized Hypertable.");
 
@@ -1312,7 +1351,7 @@ void Master::scan_servers_directory() {
   RangeServerStatePtr rs_state;
   uint32_t oflags;
   String hsfname;
-  uint64_t hyperspace_handle;
+  uint64_t handle;
   std::vector<String> names;
 
   try {
@@ -1320,17 +1359,17 @@ void Master::scan_servers_directory() {
     /**
      * Open /hyperspace/servers directory and scan for range servers
      */
-    m_servers_dir_callback_ptr =
-        new ServersDirectoryHandler(this, m_app_queue_ptr);
+    m_servers_dir_callback =
+        new ServersDirectoryHandler(this, m_app_queue);
 
-    m_servers_dir_handle = m_hyperspace_ptr->open(m_toplevel_dir + "/servers",
-        OPEN_FLAG_READ, m_servers_dir_callback_ptr);
+    m_servers_dir_handle = m_hyperspace->open(m_toplevel_dir + "/servers",
+        OPEN_FLAG_READ, m_servers_dir_callback);
 
-    m_hyperspace_ptr->attr_list(m_servers_dir_handle, names);
+    m_hyperspace->attr_list(m_servers_dir_handle, names);
     for (size_t i=0; i<names.size(); i++)
       HT_INFOF("Mapping: %s", names[i].c_str());
 
-    m_hyperspace_ptr->readdir(m_servers_dir_handle, listing);
+    m_hyperspace->readdir(m_servers_dir_handle, listing);
 
     oflags = OPEN_FLAG_READ | OPEN_FLAG_WRITE | OPEN_FLAG_LOCK;
 
@@ -1343,22 +1382,22 @@ void Master::scan_servers_directory() {
       hsfname = m_toplevel_dir + "/servers/" + listing[i].name;
 
       lock_file_handler =
-          new ServerLockFileHandler(rs_state, this, m_app_queue_ptr);
+          new ServerLockFileHandler(rs_state, this, m_app_queue);
 
-      hyperspace_handle =
-          m_hyperspace_ptr->open(hsfname, oflags, lock_file_handler);
+      handle =
+          m_hyperspace->open(hsfname, oflags, lock_file_handler);
 
-      m_hyperspace_ptr->try_lock(hyperspace_handle,
+      m_hyperspace->try_lock(handle,
           LOCK_MODE_EXCLUSIVE, &lock_status, &lock_sequencer);
 
       if (lock_status == LOCK_STATUS_GRANTED) {
         HT_INFOF("Obtained lock on servers file %s, removing...",
                  hsfname.c_str());
-        m_hyperspace_ptr->close(hyperspace_handle);
-        m_hyperspace_ptr->unlink(hsfname);
+        m_hyperspace->close(handle);
+        m_hyperspace->unlink(hsfname);
       }
       else {
-        m_hyperspace_ptr->close(hyperspace_handle);
+        m_hyperspace->close(handle);
         m_server_map[rs_state->location] = rs_state;
       }
     }
@@ -1377,10 +1416,10 @@ bool Master::create_hyperspace_dir(const String &dir) {
 
   try {
 
-    if (m_hyperspace_ptr->exists(dir))
+    if (m_hyperspace->exists(dir))
       return true;
 
-    m_hyperspace_ptr->mkdir(dir);
+    m_hyperspace->mkdir(dir);
 
   }
   catch (Exception &e) {
@@ -1406,7 +1445,7 @@ bool Master::handle_disconnect(struct sockaddr_in addr, String &location) {
 }
 
 void Master::join() {
-  m_app_queue_ptr->join();
+  m_app_queue->join();
   m_threads.join_all();
 }
 
@@ -1454,9 +1493,9 @@ Master::create_namespace(const char *name, int flags) {
   hyperspace_tables_dir = m_toplevel_dir + "/tables/" + id;
 
   if (flags & NameIdMapper::CREATE_INTERMEDIATE)
-    m_hyperspace_ptr->mkdirs(hyperspace_tables_dir);
+    m_hyperspace->mkdirs(hyperspace_tables_dir);
   else
-    m_hyperspace_ptr->mkdir(hyperspace_tables_dir);
+    m_hyperspace->mkdir(hyperspace_tables_dir);
 
   HT_INFO_OUT << "Created namespace mapping " << ns << "<->" << id << HT_END;
 
@@ -1486,7 +1525,7 @@ Master::drop_namespace(ResponseCallback *cb, const char *name, bool if_exists) {
 
     m_namemap->drop_mapping(ns);
     hyperspace_tables_dir = m_toplevel_dir + "/tables/" + id;
-    m_hyperspace_ptr->unlink(hyperspace_tables_dir);
+    m_hyperspace->unlink(hyperspace_tables_dir);
   }
   catch (Exception &e){
     HT_ERROR_OUT << e << HT_END;
@@ -1501,8 +1540,8 @@ Master::drop_namespace(ResponseCallback *cb, const char *name, bool if_exists) {
 /**
  *
  */
-void
-Master::get_statistics(bool snapshot) {
+  void Master::do_monitoring() {
+  std::vector<RangeServerStatistics> results;
 
   {
     ScopedLock lock(m_stats_mutex);
@@ -1513,210 +1552,30 @@ Master::get_statistics(bool snapshot) {
     m_get_stats_outstanding = true;
   }
 
-
   wait_for_root_metadata_server();
-  String stats_str;
 
-  try {
-
-    TableStatsSnapshotPtr table_stats(new TableStatsSnapshot);
-    RangeServerHLStatsSnapshotPtr server_stats(new RangeServerHLStatsSnapshot);
-
-    RangeServerStatsStateMap::iterator state_it;
-    RangeServerStatsMap::iterator stats_it;
-
-    // create proxy map and reverse proxy map
-    ProxyMapT proxy_map;
-    SockAddrMap<String> reverse_proxy_map;
-    SockAddrMap<String>::iterator rpm_it;
-    ProxyMapT::iterator pm_it;
-    {
-      ScopedLock lock(m_mutex);
-      m_conn_manager_ptr->get_comm()->get_proxy_map(proxy_map);
-      RangeServerStateMap::iterator smiter;
-      pm_it = proxy_map.begin();
-      ProxyMapT::iterator del_it;
-
-      while (pm_it != proxy_map.end()) {
-        // This server is not available
-        smiter = m_server_map.find(pm_it->first);
-        if (smiter == m_server_map.end()) {
-          del_it = pm_it;
-          ++pm_it;
-          proxy_map.erase(del_it);
-          continue;
-        }
-        reverse_proxy_map[smiter->second->connection] = pm_it->first;
-        pm_it->second = smiter->second->connection;
-        ++pm_it;
-      }
-    }
-    state_it = m_server_stats_state_map.begin();
-
-    // erase any servers that have become unavailable
-    while(state_it != m_server_stats_state_map.end()) {
-      RangeServerStatsStateMap::iterator del_it;
-      if (proxy_map.find(state_it->first) == proxy_map.end()) {
-        // blow away stats for now, we'll get full stats when server is available again
-        del_it = state_it;
-        stats_it = m_server_stats_map.find(del_it->first);
-        if (stats_it != m_server_stats_map.end()) {
-          delete stats_it->second;
-          m_server_stats_map.erase(stats_it);
-        }
-        ++state_it;
-        m_server_stats_state_map.erase(del_it);
-      }
-      else
-        ++state_it;
-    }
-
-    // Make room for newly available servers
-    pm_it = proxy_map.begin();
-    while (pm_it != proxy_map.end()) {
-      state_it = m_server_stats_state_map.find(pm_it->first);
-      if (state_it == m_server_stats_state_map.end()) {
-        m_server_stats_state_map[pm_it->first] = true;
-        // TODO: in future allocate this based on the version of stats returned
-        m_server_stats_map[pm_it->first] = new RangeServerStatsV0;
-      }
-      ++pm_it;
-    }
-
-    if (!proxy_map.empty()) {
-      DispatchHandlerGetStatistics sync_handler(m_conn_manager_ptr->get_comm(), 5000);
-
-      // Issue get_statistics commands to RangeServers
-      for (pm_it = proxy_map.begin(); pm_it != proxy_map.end(); ++pm_it) {
-        bool all = m_server_stats_state_map[pm_it->first];
-        sync_handler.add(pm_it->second, all, snapshot);
-      }
-
-      if (!sync_handler.wait_for_completion()) {
-        std::vector<DispatchHandlerGetStatistics::ErrorResult> errors;
-        sync_handler.get_errors(errors);
-
-        for (size_t ii=0; ii<errors.size(); ii++) {
-          String proxy_addr;
-          HT_ERROR_OUT << "'get_statistics' call failed on server " << errors[ii].addr.to_str()
-                       << HT_END;
-          // blow away stats for now, we'll get full stats when server is available again
-          if (errors[ii].addr.is_inet()) {
-            rpm_it = reverse_proxy_map.find(errors[ii].addr.inet);
-            HT_ASSERT(rpm_it != reverse_proxy_map.end());
-            proxy_addr = rpm_it->second;
-          }
-          else
-            proxy_addr = errors[ii].addr.proxy;
-          m_server_stats_state_map.erase(proxy_addr);
-          stats_it = m_server_stats_map.find(proxy_addr);
-          if (stats_it != m_server_stats_map.end()) {
-            delete stats_it->second;
-            m_server_stats_map.erase(stats_it);
-          }
-        }
-      }
-
-      CommAddressMap<EventPtr> responses;
-      CommAddressMap<EventPtr>::iterator responses_it;
-      sync_handler.get_responses(responses);
-      responses_it = responses.begin();
-      while (responses_it != responses.end()) {
-        String proxy_addr;
-        const uint8_t *decode_ptr = responses_it->second->payload + 4;
-        size_t decode_remain = responses_it->second->payload_len - 4;
-        uint16_t version = decode_i16(&decode_ptr, &decode_remain);
-        HT_ASSERT(version==0);
-        proxy_addr = decode_vstr(&decode_ptr, &decode_remain);
-        stats_it = m_server_stats_map.find(proxy_addr);
-        HT_ASSERT(stats_it != m_server_stats_map.end());
-        stats_it->second->process_stats(&decode_ptr, &decode_remain, true,
-                                        table_stats->map);
-        //// Uncomment for debugging
-        //String str;
-        //stats_it->second->dump_str(str);
-        //HT_INFO_OUT << "Got statistics " << str << HT_END;
-
-        // insert high level server stats into server_stats
-        // range server stats buffer will be responsible for deleting hl_stats
-        RangeServerHLStats *hl_stats = new RangeServerHLStats;
-        stats_it->second->get_hl_stats(*hl_stats);
-
-        server_stats->map[proxy_addr] = hl_stats;
-
-        // just get stats for changed ranges next time
-        m_server_stats_state_map[proxy_addr] = false;
-        ++responses_it;
-#ifndef _WIN32
-        stats_it->second->dump_rrd(ms_monitoring_dir + stats_it->first);
-#endif
-      }
-
-      table_stats->timestamp = Hypertable::get_ts64();
-
-      m_table_stats_buffer.push_front(table_stats);
-      server_stats->timestamp = table_stats->timestamp;
-      m_range_server_stats_buffer.push_front(server_stats);
-
-      // dump stats to text files
-      String rs_map_file = ms_monitoring_dir + "rs_map.txt.tmp";
-      String table_stats_file = ms_monitoring_dir + "table_stats.txt.tmp";
-      String range_server_stats_file = ms_monitoring_dir + "rs_stats.txt.tmp";
-      filebuf fb_rs_map, fb_table, fb_range_server;
-
-      // print out current ProxyMap
-      if (!fb_rs_map.open(rs_map_file.c_str(), ios::out))
-        HT_ERROR_OUT << "Couldn't open " << rs_map_file << "for output" << HT_END;
-      else {
-        ostream os(&fb_rs_map);
-        pm_it = proxy_map.begin();
-        while (pm_it != proxy_map.end()) {
-          String addr = pm_it->second.format();
-          size_t pos = addr.find(':');
-          addr = addr.substr(0, pos);
-          os << pm_it->first << "=" << addr << "\n";
-          ++pm_it;
-        }
-        fb_rs_map.close();
-        Path from(rs_map_file);
-        Path to(ms_monitoring_dir + "rs_map.txt");
-        // have to remove if exists since boost::filesystem doesnt allow atomic move & unlink
-        boost::filesystem::remove(to);
-        boost::filesystem::rename(from, to);
-      }
-
-      if (!fb_table.open(table_stats_file.c_str(), ios::out))
-        HT_ERROR_OUT << "Couldn't open " << table_stats_file << "for output" << HT_END;
-      else {
-        ostream os(&fb_table);
-        dump_table_snapshot_buffer(m_table_stats_buffer, os);
-        fb_table.close();
-        Path from(ms_monitoring_dir + "table_stats.txt.tmp");
-        Path to(ms_monitoring_dir + "table_stats.txt");
-        // have to remove if exists since boost::filesystem doesnt allow atomic move
-        boost::filesystem::remove(to);
-        boost::filesystem::rename(from, to);
-      }
-      if (!fb_range_server.open(range_server_stats_file.c_str(), ios::out))
-        HT_ERROR_OUT << "Couldn't open " << range_server_stats_file << "for output" << HT_END;
-      else {
-        ostream os(&fb_range_server);
-        dump_range_server_snapshot_buffer(m_range_server_stats_buffer, os);
-        fb_range_server.close();
-        Path from(ms_monitoring_dir + "rs_stats.txt.tmp");
-        Path to(ms_monitoring_dir + "rs_stats.txt");
-        // have to remove if exists since boost::filesystem doesnt allow atomic move
-        boost::filesystem::remove(to);
-        boost::filesystem::rename(from, to);
-      }
+  {
+    ScopedLock lock(m_mutex);
+    results.resize(m_server_map.size());
+    size_t i=0;
+    for (RangeServerStateMap::iterator iter = m_server_map.begin();
+         iter != m_server_map.end(); ++iter) {
+      results[i].location = (*iter).second->location;
+      results[i].addr = (*iter).second->connection;
+      i++;
     }
   }
-  catch (Exception &e) {
-    HT_ERROR_OUT << e << HT_END;
-  }
-  catch (std::exception &e) {
-    HT_ERRORF("caught std::exception: %s", e.what());
-  }
+
+  time_t timeout = m_maintenance_interval;
+  if (timeout > 1000)
+    timeout -= 1000;
+  DispatchHandlerGetStatistics sync_handler(m_conn_manager->get_comm(), timeout);
+
+  sync_handler.add(results);
+
+  sync_handler.wait_for_completion();
+
+  m_monitoring->add(results);
 
   {
     ScopedLock lock(m_stats_mutex);

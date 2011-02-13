@@ -64,9 +64,6 @@
     <ClCompile Include="Random.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ServerStats.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="String.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -95,6 +92,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="winapi_strerror.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StatsSerializable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StatsSystem.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -249,9 +252,6 @@
     <ClInclude Include="ServerLauncher.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ServerStats.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="SockAddrMap.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -313,6 +313,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="HRTimer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StatsSerializable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StatsSystem.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerLaunchEvent.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

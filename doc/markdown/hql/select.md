@@ -2,7 +2,7 @@ SELECT
 ------
 #### EBNF
 
-    SELECT ('*' | (column_predicate [',' column_predicate]*))
+    SELECT [CELLS] ('*' | (column_predicate [',' column_predicate]*))
       FROM table_name
       [where_clause]
       [options_spec]
@@ -59,7 +59,8 @@ SELECT
 <p>
 The parser only accepts a single timestamp predicate.  The '=^' operator is the
 "starts with" operator.  It will return all rows that have the same prefix as
-the operand.
+the operand. Use of the value_predicate without the "CELLS" modifier to the
+"SELECT" command is deprecated.
 
 #### Options
 <p>
@@ -164,6 +165,17 @@ if the 'where_clause' declares many individual row keys.  The rows returned
 will be distinct sorted by row key.
 
 <p>
+#### `SCAN_AND_FILTER_ROWS`
+<p>
+The `SCAN_AND_FILTER_ROWS` option can be used to improve query performance
+for queries that select a very large number of individual rows.  The default
+algorithm for fetching a set of rows is to fetch each row individually, which
+involves a network roundtrip to a range server for each row.  Supplying the
+`SCAN_AND_FILTER_ROWS` option tells the system to scan over the data and
+filter the requested rows at the range server, which will reduce the number of
+network roundtrips required when the number of rows requested is very large.
+
+<p>
 #### Examples
 
     SELECT * FROM test WHERE ('a' <= ROW <= 'e') and
@@ -188,3 +200,6 @@ will be distinct sorted by row key.
     SELECT * FROM test INTO FILE "dfs:///tmp/foo";
     SELECT col2:"bird" from RegexpTest WHERE ROW REGEXP "http://.*"; 
     SELECT col1:/^w[^a-zA-Z]*$/ from RegexpTest WHERE ROW REGEXP "m.*\s\S";
+    SELECT CELLS col1:/^w[^a-zA-Z]*$/ from RegexpTest WHERE VALUE REGEXP \"l.*e\";
+    SELECT CELLS col1:/^w[^a-zA-Z]*$/ from RegexpTest WHERE ROW REGEXP \"^\\D+\" 
+        AND VALUE REGEXP \"l.*e\";",

@@ -253,6 +253,24 @@
     <ClCompile Include="RequestHandlerGroupCommit.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LoadMetricsRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerRelinquishRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MaintenanceTaskRelinquish.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogDefinitionRangeServer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogEntityRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerWaitForMaintenance.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -522,9 +540,6 @@
     <ClInclude Include="ScannerMap.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="SplitPredicate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="TableIdCache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -550,6 +565,27 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RequestHandlerGroupCommit.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadMetricsRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerRelinquishRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MaintenanceTaskRelinquish.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogDefinitionRangeServer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogEntityRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeTransferInfo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerWaitForMaintenance.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -33,8 +33,8 @@
 #include "AsyncComm/Comm.h"
 #include "Hyperspace/Session.h"
 #include "Hypertable/Lib/CommitLog.h"
+#include "Hypertable/Lib/MetaLogWriter.h"
 #include "Hypertable/Lib/RangeServerClient.h"
-#include "Hypertable/Lib/RangeServerMetaLog.h"
 #include "Hypertable/Lib/RangeServerProtocol.h"
 #include "Hypertable/Lib/Schema.h"
 #include "Hypertable/Lib/Client.h"
@@ -53,15 +53,16 @@ namespace Hypertable {
   class Global {
   public:
     static Hyperspace::SessionPtr hyperspace;
-    static Hypertable::Filesystem *dfs;
-    static Hypertable::Filesystem *log_dfs;
+    static Hypertable::FilesystemPtr dfs;
+    static Hypertable::FilesystemPtr log_dfs;
     static Hypertable::MaintenanceQueuePtr maintenance_queue;
     static Hypertable::RangeServerProtocol *protocol;
     static bool           verbose;
     static CommitLog     *user_log;
+    static CommitLog     *system_log;
     static CommitLog     *metadata_log;
     static CommitLog     *root_log;
-    static Hypertable::RangeServerMetaLog *range_log;
+    static MetaLog::WriterPtr rsml_writer;
     static std::string    log_dir;
     static int64_t        range_split_size;
     static int64_t        range_maximum_size;
@@ -73,6 +74,7 @@ namespace Hypertable {
     static ScannerMap     scanner_map;
     static Hypertable::FileBlockCache *block_cache;
     static TablePtr       metadata_table;
+    static TablePtr       rs_metrics_table;
     static int64_t        range_metadata_split_size;
     static Hypertable::MemoryTracker *memory_tracker;
     static int64_t        log_prune_threshold_min;
@@ -81,6 +83,7 @@ namespace Hypertable {
     static uint64_t       access_counter;
     static bool           enable_shadow_cache;
     static std::string    toplevel_dir;
+    static int32_t        metrics_interval;
   };
 
 } // namespace Hypertable

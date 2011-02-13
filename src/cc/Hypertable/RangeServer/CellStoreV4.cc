@@ -100,6 +100,10 @@ KeyDecompressor *CellStoreV4::create_key_decompressor() {
 const char *CellStoreV4::get_split_row() {
   if (m_split_row != "")
     return m_split_row.c_str();
+  if (m_index_stats.block_index_memory == 0)
+    load_block_index();
+  if (m_split_row != "")
+    return m_split_row.c_str();
   return 0;
 }
 
@@ -601,10 +605,12 @@ void CellStoreV4::finalize(TableIdentifier *table_identifier) {
   /** Re-open file for reading **/
   m_fd = m_filesys->open(m_filename, Filesystem::OPEN_FLAG_DIRECTIO);
 
-  m_disk_usage = m_file_length;
-  if (m_disk_usage < 0)
-    HT_WARN_OUT << "[Issue 339] Disk usage for " << m_filename << "=" << m_disk_usage
-                << HT_END;
+  // If compacting due to a split, estimate the disk usage at 1/2
+  if (m_trailer.flags & CellStoreTrailerV4::SPLIT)
+    m_disk_usage = m_file_length / 2;
+  else
+    m_disk_usage = m_file_length;
+
   m_index_stats.block_index_memory = sizeof(CellStoreV4) + index_memory;
 
   if (m_bloom_filter)
@@ -688,6 +694,12 @@ CellStoreV4::open(const String &fname, const String &start_row,
 
   m_trailer = *static_cast<CellStoreTrailerV4 *>(trailer);
 
+  // If compacting due to a split, estimate the disk usage at 1/2
+  if (m_trailer.flags & CellStoreTrailerV4::SPLIT)
+    m_disk_usage = m_file_length / 2;
+  else
+    m_disk_usage = m_file_length;
+
   m_bloom_filter_mode = (BloomFilterMode)m_trailer.bloom_filter_mode;
 
   /** Sanity check trailer **/
@@ -699,8 +711,8 @@ CellStoreV4::open(const String &fname, const String &start_row,
   if (!(m_trailer.fix_index_offset < m_trailer.var_index_offset &&
         m_trailer.var_index_offset < m_file_length))
     HT_THROWF(Error::RANGESERVER_CORRUPT_CELLSTORE,
-              "Bad index offsets in CellStore trailer fix=%lld, var=%lld, "
-              "length=%llu, file='%s'", (Lld)m_trailer.fix_index_offset,
+              "Bad index offsets in CellStore trailer fd=%u fix=%lld, var=%lld, "
+              "length=%llu, file='%s'", (unsigned)m_fd, (Lld)m_trailer.fix_index_offset,
            (Lld)m_trailer.var_index_offset, (Llu)m_file_length, fname.c_str());
 
 }
@@ -789,11 +801,6 @@ void CellStoreV4::load_block_index() {
                        m_trailer.fix_index_offset, m_start_row, m_end_row);
     record_split_row( m_index_map32.middle_key() );
   }
-
-  m_disk_usage = m_index_map32.disk_used();
-  if (m_disk_usage < 0)
-    HT_WARN_OUT << "[Issue 339] Disk usage for " << m_filename << "=" << m_disk_usage
-                << HT_END;
 
   m_index_stats.block_index_memory = sizeof(CellStoreV4) + m_index_map32.memory_used();
   Global::memory_tracker->add( m_index_stats.block_index_memory );

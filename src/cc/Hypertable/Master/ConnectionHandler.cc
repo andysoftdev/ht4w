@@ -40,7 +40,8 @@
 #include "RequestHandlerGetSchema.h"
 #include "RequestHandlerStatus.h"
 #include "RequestHandlerRegisterServer.h"
-#include "RequestHandlerReportSplit.h"
+#include "RequestHandlerRelinquishAcknowledge.h"
+#include "RequestHandlerMoveRange.h"
 #include "RequestHandlerShutdown.h"
 #include "RequestHandlerCreateNamespace.h"
 #include "RequestHandlerDropNamespace.h"
@@ -57,7 +58,9 @@ using namespace Error;
 ConnectionHandler::ConnectionHandler(Comm *comm, ApplicationQueuePtr &app_queue,
                                      MasterPtr &master) : m_comm(comm), m_app_queue(app_queue),
                                      m_master(master) {
-  m_timer_interval = Config::properties->get_i32("Hypertable.Master.StatsGather.Interval");
+  int error;
+  if ((error = m_comm->set_timer(m_master->get_maintenance_interval(), this)) != Error::OK)
+    HT_FATALF("Problem setting timer - %s", Error::get_text(error));
 }
 
 
@@ -102,8 +105,11 @@ void ConnectionHandler::handle(EventPtr &event) {
         hp = new RequestHandlerRegisterServer(m_comm, m_master.get(),
                                               event);
         break;
-      case MasterProtocol::COMMAND_REPORT_SPLIT:
-        hp = new RequestHandlerReportSplit(m_comm, m_master.get(), event);
+      case MasterProtocol::COMMAND_MOVE_RANGE:
+        hp = new RequestHandlerMoveRange(m_comm, m_master.get(), event);
+        break;
+      case MasterProtocol::COMMAND_RELINQUISH_ACKNOWLEDGE:
+        hp = new RequestHandlerRelinquishAcknowledge(m_comm, m_master.get(), event);
         break;
       case MasterProtocol::COMMAND_CLOSE:
         hp = new RequestHandlerClose(m_comm, m_master.get(), event);
@@ -144,7 +150,7 @@ void ConnectionHandler::handle(EventPtr &event) {
 
     m_app_queue->add( new RequestHandlerDoMaintenance(m_comm, m_master.get(), event) );
 
-    if ((error = m_comm->set_timer(m_timer_interval, this)) != Error::OK)
+    if ((error = m_comm->set_timer(m_master->get_maintenance_interval(), this)) != Error::OK)
       HT_FATALF("Problem setting timer - %s", Error::get_text(error));
 
   }

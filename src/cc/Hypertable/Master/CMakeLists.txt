@@ -25,6 +25,7 @@ DispatchHandlerGetStatistics.cc
 EventHandlerServerJoined.cc
 EventHandlerServerLeft.cc
 Master.cc
+Monitoring.cc
 RequestHandlerCreateNamespace.cc
 RequestHandlerDropNamespace.cc
 RequestHandlerCreateTable.cc
@@ -33,9 +34,10 @@ RequestHandlerDropTable.cc
 RequestHandlerRenameTable.cc
 RequestHandlerDoMaintenance.cc
 RequestHandlerGetSchema.cc
+RequestHandlerMoveRange.cc
 RequestHandlerStatus.cc
 RequestHandlerRegisterServer.cc
-RequestHandlerReportSplit.cc
+RequestHandlerRelinquishAcknowledge.cc
 RequestHandlerClose.cc
 RequestHandlerShutdown.cc
 ResponseCallbackGetSchema.cc

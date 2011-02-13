@@ -241,6 +241,16 @@ uint64_t FileUtils::size(const String &fname) {
   return length==-1 ? 0 : length;
 }
 
+bool FileUtils::rename(const String &oldpath, const String &newpath) {
+    if (!::MoveFile(oldpath.c_str(), newpath.c_str())) {
+        DWORD err = ::GetLastError();
+        HT_ERRORF("MoveFile(\"%s\", \"%s\") failed - %s", oldpath.c_str(), newpath.c_str(), winapi_strerror(err));
+        ::SetLastError(err);
+        return false;
+    }
+    return true;
+}
+
 int64_t FileUtils::length(const String &fname) {
     WIN32_FIND_DATA wfd;
     HANDLE fh = ::FindFirstFile(fname.c_str(), &wfd);
@@ -601,6 +611,17 @@ bool FileUtils::unlink(const String &fname) {
   if (::unlink(fname.c_str()) == -1) {
     int saved_errno = errno;
     HT_ERRORF("unlink(\"%s\") failed - %s", fname.c_str(), strerror(saved_errno));
+    errno = saved_errno;
+    return false;
+  }
+  return true;
+}
+
+bool FileUtils::rename(const String &oldpath, const String &newpath) {
+  if (::rename(oldpath.c_str(), newpath.c_str()) == -1) {
+    int saved_errno = errno;
+    HT_ERRORF("rename(\"%s\", \"%s\") failed - %s",
+              oldpath.c_str(), newpath.c_str(), strerror(saved_errno));
     errno = saved_errno;
     return false;
   }

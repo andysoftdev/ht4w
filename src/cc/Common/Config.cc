@@ -200,6 +200,8 @@ void DefaultPolicy::init_options() {
         "Number of client worker threads created")
     ("Hypertable.Client.RefreshSchema", boo()->default_value(true),
         "Refresh client version of schema automatically")
+    ("Hypertable.LoadMetrics.Interval", i32()->default_value(3600), "Period of "
+        "time, in seconds, between writing metrics to sys/RS_METRICS")
     ("Hypertable.Request.Timeout", i32()->default_value(600000), "Length of "
         "time, in milliseconds, before timing out requests (system wide)")
     ("Hypertable.MetaLog.SkipErrors", boo()->default_value(false), "Skipping "
@@ -208,7 +210,7 @@ void DefaultPolicy::init_options() {
      "Use this interface for network communication")
     ("CephBroker.Port", i16(),
      "Port number on which to listen (read by CephBroker only)")
-    ("CephBroker.Workers", i32(),
+    ("CephBroker.Workers", i32()->default_value(20),
      "Number of Ceph broker worker threads created, maybe")
     ("CephBroker.MonAddr", str(),
      "Ceph monitor address to connect to")
@@ -226,7 +228,7 @@ void DefaultPolicy::init_options() {
     ("Kfs.Broker.Reactors", i32(), "Number of Kfs broker reactor threads")
     ("Kfs.MetaServer.Name", str(), "Hostname of Kosmos meta server")
     ("Kfs.MetaServer.Port", i16(), "Port number for Kosmos meta server")
-    ("DfsBroker.Local.DirectIO", boo()->default_value(true),
+    ("DfsBroker.Local.DirectIO", boo()->default_value(false),
         "Read and write files using direct i/o")
     ("DfsBroker.Local.Port", i16()->default_value(38030),
         "Port number on which to listen (read by LocalBroker only)")
@@ -237,7 +239,7 @@ void DefaultPolicy::init_options() {
         "Number of local broker worker threads created")
     ("DfsBroker.Local.Reactors", i32(),
         "Number of local broker communication reactor threads created")
-    ("DfsBroker.Host", str(),
+    ("DfsBroker.Host", str()->default_value("localhost"),
         "Host on which the DFS broker is running (read by clients only)")
     ("DfsBroker.Port", i16()->default_value(38030),
         "Port number on which DFS broker is listening (read by clients only)")
@@ -279,6 +281,8 @@ void DefaultPolicy::init_options() {
         "Reconnect to Hyperspace on session expiry")
     ("Hypertable.Directory", str()->default_value("hypertable"),
         "Top-level hypertable directory name")
+    ("Hypertable.Monitoring.Interval", i32()->default_value(30000),
+        "Monitoring statistics gathering interval (in milliseconds)")
     ("Hypertable.HqlInterpreter.Mutator.NoLogSync", boo()->default_value(false),
         "Suspends CommitLog sync operation on updates until command completion")
     ("Hypertable.Mutator.FlushDelay", i32()->default_value(0), "Number of "
@@ -301,14 +305,11 @@ void DefaultPolicy::init_options() {
         "Number of Hypertable Master communication reactor threads created")
     ("Hypertable.Master.Gc.Interval", i32()->default_value(300000),
         "Garbage collection interval in milliseconds by Master")
-    ("Hypertable.Master.StatsGather.Interval", i32()->default_value(30000),
-        "Master stats gathering time interval in milliseconds")
-
     ("Hypertable.RangeServer.AccessGroup.GarbageThreshold.Percentage",
      i32()->default_value(20), "Perform major compaction when garbage accounts "
      "for this percentage of the data")
     ("Hypertable.RangeServer.MemoryLimit", i64(), "RangeServer memory limit")
-    ("Hypertable.RangeServer.MemoryLimit.Percentage", i32()->default_value(60),
+    ("Hypertable.RangeServer.MemoryLimit.Percentage", i32()->default_value(50),
      "RangeServer memory limit specified as percentage of physical RAM")
     ("Hypertable.RangeServer.LowMemoryLimit.Percentage", i32()->default_value(10),
      "Amount of memory to free in low memory condition as percentage of RangeServer memory limit")
@@ -336,6 +337,8 @@ void DefaultPolicy::init_options() {
         str()->default_value("lzo"), "Default compressor for cell stores")
     ("Hypertable.RangeServer.CellStore.DefaultBloomFilter",
         str()->default_value("rows"), "Default bloom filter for cell stores")
+    ("Hypertable.RangeServer.CellStore.SkipNotFound",
+        boo()->default_value(false), "Skip over cell stores that are non-existent")
     ("Hypertable.RangeServer.CommitInterval", i32()->default_value(50),
      "Default minimum group commit interval in milliseconds")
     ("Hypertable.RangeServer.BlockCache.MinMemory", i64()->default_value(150*M),
@@ -384,8 +387,8 @@ void DefaultPolicy::init_options() {
         "Timer interval in milliseconds (reaping scanners, purging commit logs, etc.)")
     ("Hypertable.RangeServer.Maintenance.Interval", i32()->default_value(30000),
         "Maintenance scheduling interval in milliseconds")
-    ("Hypertable.RangeServer.Monitoring.Interval", i32()->default_value(30000),
-        "Monitoring stats are not updated within this interval (in milliseconds)")
+    ("Hypertable.RangeServer.Monitoring.DataDirectories", str()->default_value("/"),
+        "Comma-separated list of directory mount points of disk volumes to monitor")
     ("Hypertable.RangeServer.Workers", i32()->default_value(50),
         "Number of Range Server worker threads created")
     ("Hypertable.RangeServer.Reactors", i32(),

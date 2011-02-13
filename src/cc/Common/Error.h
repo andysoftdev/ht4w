@@ -81,6 +81,8 @@ namespace Hypertable {
       NAMESPACE_DOES_NOT_EXIST           = 40,
       BAD_NAMESPACE                      = 41,
       NAMESPACE_EXISTS                   = 42,
+      NO_RESPONSE                        = 43,
+      NOT_ALLOWED                        = 44,
 
       CONFIG_BAD_ARGUMENT               = 1001,
       CONFIG_BAD_CFG_FILE               = 1002,
@@ -199,7 +201,7 @@ namespace Hypertable {
 
       METALOG_VERSION_MISMATCH  = 0x00070001,
       METALOG_BAD_RS_HEADER     = 0x00070002,
-      METALOG_BAD_M_HEADER      = 0x00070003,
+      METALOG_BAD_HEADER        = 0x00070003,
       METALOG_ENTRY_TRUNCATED   = 0x00070004,
       METALOG_CHECKSUM_MISMATCH = 0x00070005,
       METALOG_ENTRY_BAD_TYPE    = 0x00070006,

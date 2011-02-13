@@ -50,33 +50,109 @@
     <ClCompile Include="LocationCache.cc" />
     <ClCompile Include="MasterClient.cc" />
     <ClCompile Include="MasterFileHandler.cc" />
-    <ClCompile Include="MasterMetaLog.cc" />
-    <ClCompile Include="MasterMetaLogEntryFactory.cc" />
-    <ClCompile Include="MasterMetaLogReader.cc" />
     <ClCompile Include="MasterProtocol.cc" />
     <ClCompile Include="MetaLog.cc" />
-    <ClCompile Include="MetaLogDfsBase.cc" />
-    <ClCompile Include="MetaLogEntryBase.cc" />
+    <ClCompile Include="MetaLogEntity.cc" />
+    <ClCompile Include="MetaLogEntityHeader.cc" />
     <ClCompile Include="MetaLogReader.cc" />
-    <ClCompile Include="MetaLogReaderDfsBase.cc" />
-    <ClCompile Include="MetaLogVersion.cc" />
+    <ClCompile Include="MetaLogWriter.cc" />
     <ClCompile Include="NameIdMapper.cc" />
     <ClCompile Include="Namespace.cc" />
     <ClCompile Include="NamespaceCache.cc" />
+    <ClCompile Include="old\MasterMetaLog.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MasterMetaLogEntries.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MasterMetaLogEntryFactory.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MasterMetaLogReader.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MetaLog.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MetaLogDfsBase.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MetaLogEntryBase.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MetaLogReader.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MetaLogReaderDfsBase.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\MetaLogVersion.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\RangeServerMetaLog.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\RangeServerMetaLogEntries.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\RangeServerMetaLogEntryFactory.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="old\RangeServerMetaLogReader.cc">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="RangeLocator.cc" />
     <ClCompile Include="RangeServerClient.cc" />
-    <ClCompile Include="RangeServerMetaLog.cc" />
-    <ClCompile Include="RangeServerMetaLogEntries.cc" />
-    <ClCompile Include="RangeServerMetaLogEntryFactory.cc" />
-    <ClCompile Include="RangeServerMetaLogReader.cc" />
     <ClCompile Include="RangeServerProtocol.cc" />
     <ClCompile Include="RangeState.cc" />
     <ClCompile Include="RootFileHandler.cc" />
     <ClCompile Include="ScanBlock.cc" />
     <ClCompile Include="ScanSpec.cc" />
     <ClCompile Include="Schema.cc" />
-    <ClCompile Include="Stats.cc" />
-    <ClCompile Include="StatsV0.cc" />
+    <ClCompile Include="StatsRangeServer.cc" />
+    <ClCompile Include="StatsTable.cc" />
     <ClCompile Include="Table.cc" />
     <ClCompile Include="TableCache.cc" />
     <ClCompile Include="TableDumper.cc" />
@@ -125,27 +201,34 @@
     <ClInclude Include="LocationCache.h" />
     <ClInclude Include="MasterClient.h" />
     <ClInclude Include="MasterFileHandler.h" />
-    <ClInclude Include="MasterMetaLog.h" />
-    <ClInclude Include="MasterMetaLogEntryFactory.h" />
-    <ClInclude Include="MasterMetaLogReader.h" />
     <ClInclude Include="MasterProtocol.h" />
     <ClInclude Include="MetaLog.h" />
-    <ClInclude Include="MetaLogDfsBase.h" />
-    <ClInclude Include="MetaLogEntryBase.h" />
+    <ClInclude Include="MetaLogDefinition.h" />
+    <ClInclude Include="MetaLogEntity.h" />
+    <ClInclude Include="MetaLogEntityHeader.h" />
     <ClInclude Include="MetaLogReader.h" />
-    <ClInclude Include="MetaLogReaderDfsBase.h" />
-    <ClInclude Include="MetaLogVersion.h" />
+    <ClInclude Include="MetaLogWriter.h" />
     <ClInclude Include="NameIdMapper.h" />
     <ClInclude Include="Namespace.h" />
     <ClInclude Include="NamespaceCache.h" />
     <ClInclude Include="NamespaceListing.h" />
+    <ClInclude Include="old\MasterMetaLog.h" />
+    <ClInclude Include="old\MasterMetaLogEntries.h" />
+    <ClInclude Include="old\MasterMetaLogEntryFactory.h" />
+    <ClInclude Include="old\MasterMetaLogReader.h" />
+    <ClInclude Include="old\MetaLog.h" />
+    <ClInclude Include="old\MetaLogDfsBase.h" />
+    <ClInclude Include="old\MetaLogEntryBase.h" />
+    <ClInclude Include="old\MetaLogReader.h" />
+    <ClInclude Include="old\MetaLogReaderDfsBase.h" />
+    <ClInclude Include="old\MetaLogVersion.h" />
+    <ClInclude Include="old\RangeServerMetaLog.h" />
+    <ClInclude Include="old\RangeServerMetaLogEntries.h" />
+    <ClInclude Include="old\RangeServerMetaLogEntryFactory.h" />
+    <ClInclude Include="old\RangeServerMetaLogReader.h" />
     <ClInclude Include="RangeLocationInfo.h" />
     <ClInclude Include="RangeLocator.h" />
     <ClInclude Include="RangeServerClient.h" />
-    <ClInclude Include="RangeServerMetaLog.h" />
-    <ClInclude Include="RangeServerMetaLogEntries.h" />
-    <ClInclude Include="RangeServerMetaLogEntryFactory.h" />
-    <ClInclude Include="RangeServerMetaLogReader.h" />
     <ClInclude Include="RangeServerProtocol.h" />
     <ClInclude Include="RangeState.h" />
     <ClInclude Include="RootFileHandler.h" />
@@ -153,8 +236,8 @@
     <ClInclude Include="ScanSpec.h" />
     <ClInclude Include="Schema.h" />
     <ClInclude Include="SerializedKey.h" />
-    <ClInclude Include="Stats.h" />
-    <ClInclude Include="StatsV0.h" />
+    <ClInclude Include="StatsRangeServer.h" />
+    <ClInclude Include="StatsTable.h" />
     <ClInclude Include="Table.h" />
     <ClInclude Include="TableCache.h" />
     <ClInclude Include="TableDumper.h" />

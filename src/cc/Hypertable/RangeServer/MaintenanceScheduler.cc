@@ -31,6 +31,7 @@
 #include "MaintenanceScheduler.h"
 #include "MaintenanceTaskCompaction.h"
 #include "MaintenanceTaskMemoryPurge.h"
+#include "MaintenanceTaskRelinquish.h"
 #include "MaintenanceTaskSplit.h"
 
 using namespace Hypertable;
@@ -112,6 +113,7 @@ void MaintenanceScheduler::schedule() {
   {
     int64_t revision_user = Global::user_log ? Global::user_log->get_latest_revision() : TIMESTAMP_MIN;
     int64_t revision_metadata = Global::metadata_log ? Global::metadata_log->get_latest_revision() : TIMESTAMP_MIN;
+    int64_t revision_system = Global::system_log ? Global::system_log->get_latest_revision() : TIMESTAMP_MIN;
     int64_t revision_root = Global::root_log ? Global::root_log->get_latest_revision() : TIMESTAMP_MIN;
     AccessGroup::CellStoreMaintenanceData *cs_data;
 
@@ -128,14 +130,23 @@ void MaintenanceScheduler::schedule() {
 
         if (ag_data->earliest_cached_revision != TIMESTAMP_MAX) {
           if (range_data[i]->range->is_root()) {
-            revision_root = ag_data->earliest_cached_revision;
+            if (revision_root == TIMESTAMP_MIN || 
+                ag_data->earliest_cached_revision < revision_root)
+              revision_root = ag_data->earliest_cached_revision;
           }
           else if (range_data[i]->is_metadata) {
-            if (ag_data->earliest_cached_revision < revision_metadata)
+            if (revision_metadata == TIMESTAMP_MIN ||
+                ag_data->earliest_cached_revision < revision_metadata)
               revision_metadata = ag_data->earliest_cached_revision;
           }
+          else if (range_data[i]->is_system) {
+            if (revision_system == TIMESTAMP_MIN ||
+                ag_data->earliest_cached_revision < revision_system)
+              revision_system = ag_data->earliest_cached_revision;
+          }
           else {
-            if (ag_data->earliest_cached_revision < revision_user)
+            if (revision_user == TIMESTAMP_MIN ||
+                ag_data->earliest_cached_revision < revision_user)
               revision_user = ag_data->earliest_cached_revision;
           }
         }
@@ -144,6 +155,7 @@ void MaintenanceScheduler::schedule() {
 
     trace_str += String("STAT revision_root\t") + revision_root + "\n";
     trace_str += String("STAT revision_metadata\t") + revision_metadata + "\n";
+    trace_str += String("STAT revision_system\t") + revision_system + "\n";
     trace_str += String("STAT revision_user\t") + revision_user + "\n";
 
     if (Global::root_log)
@@ -151,6 +163,9 @@ void MaintenanceScheduler::schedule() {
 
     if (Global::metadata_log)
       Global::metadata_log->purge(revision_metadata);
+
+    if (Global::system_log)
+      Global::system_log->purge(revision_system);
 
     if (Global::user_log)
       Global::user_log->purge(revision_user);
@@ -191,6 +206,10 @@ void MaintenanceScheduler::schedule() {
         RangePtr range(range_data[i]->range);
         Global::maintenance_queue->add(new MaintenanceTaskSplit(schedule_time, range));
       }
+      else if (range_data[i]->state == RangeState::RELINQUISH_LOG_INSTALLED) {
+        RangePtr range(range_data[i]->range);
+        Global::maintenance_queue->add(new MaintenanceTaskRelinquish(schedule_time, range));
+      }
     }
     m_initialized = true;
   }
@@ -209,6 +228,10 @@ void MaintenanceScheduler::schedule() {
       if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::SPLIT) {
         RangePtr range(range_data_prioritized[i]->range);
         Global::maintenance_queue->add(new MaintenanceTaskSplit(schedule_time, range));
+      }
+      else if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::RELINQUISH) {
+        RangePtr range(range_data_prioritized[i]->range);
+        Global::maintenance_queue->add(new MaintenanceTaskRelinquish(schedule_time, range));
       }
       else if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::COMPACT) {
 	MaintenanceTaskCompaction *task;
@@ -238,10 +261,10 @@ void MaintenanceScheduler::schedule() {
     }
   }
 
-  cout << flush << trace_str << flush;
+  //cout << flush << trace_str << flush;
 
-  if (low_memory_mode())
-    Global::maintenance_queue->wait_for_empty();
+  //if (low_memory_mode())
+  //  Global::maintenance_queue->wait_for_empty();
 
   m_scheduling_needed = false;
 

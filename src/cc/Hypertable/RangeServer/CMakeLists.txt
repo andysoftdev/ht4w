@@ -60,6 +60,7 @@ KeyCompressorPrefix.cc
 KeyDecompressorNone.cc
 KeyDecompressorPrefix.cc
 LiveFileTracker.cc
+LoadMetricsRange.cc
 Location.cc
 MaintenancePrioritizer.cc
 MaintenancePrioritizerLogCleanup.cc
@@ -68,8 +69,11 @@ MaintenanceQueue.cc
 MaintenanceScheduler.cc
 MaintenanceTaskCompaction.cc
 MaintenanceTaskMemoryPurge.cc
+MaintenanceTaskRelinquish.cc
 MaintenanceTaskSplit.cc
 MergeScanner.cc
+MetaLogEntityRange.cc
+MetaLogDefinitionRangeServer.cc
 MetadataNormal.cc
 MetadataRoot.cc
 QueryCache.cc
@@ -88,12 +92,14 @@ RequestHandlerFetchScanblock.cc
 RequestHandlerDropTable.cc
 RequestHandlerLoadRange.cc
 RequestHandlerUpdateSchema.cc
+RequestHandlerRelinquishRange.cc
 RequestHandlerReplayBegin.cc
 RequestHandlerReplayLoadRange.cc
 RequestHandlerReplayUpdate.cc
 RequestHandlerReplayCommit.cc
 RequestHandlerStatus.cc
 RequestHandlerUpdate.cc
+RequestHandlerWaitForMaintenance.cc
 RequestHandlerClose.cc
 RequestHandlerCommitLogSync.cc
 ResponseCallbackCreateScanner.cc

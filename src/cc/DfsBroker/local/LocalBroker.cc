@@ -42,10 +42,10 @@ extern "C" {
 
 #include "AsyncComm/ReactorFactory.h"
 
-#include "Common/String.h"
-#include "Common/Filesystem.h"
 #include "Common/FileUtils.h"
+#include "Common/Filesystem.h"
 #include "Common/Path.h"
+#include "Common/String.h"
 #include "Common/System.h"
 #include "Common/SystemInfo.h"
 
@@ -77,6 +77,7 @@ inline int fsync( int fd ) {
 #endif
 
 using namespace Hypertable;
+using namespace std;
 
 atomic_t LocalBroker::ms_next_fd = ATOMIC_INIT(0);
 
@@ -133,7 +134,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
 
   int oflags = O_RDONLY;
 
-  if (flags & Filesystem::OPEN_FLAG_DIRECTIO) {
+  if (m_directio && flags & Filesystem::OPEN_FLAG_DIRECTIO) {
 #ifdef O_DIRECT
     oflags |= O_DIRECT;
 #endif
@@ -153,10 +154,11 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
   //fcntl(local_fd, F_NOCACHE, 1);
 #endif  
 #elif defined(__sun__)
-  directio(local_fd, DIRECTIO_ON);
+  if (m_directio)
+    directio(local_fd, DIRECTIO_ON);
 #endif
 
-  HT_INFOF("open( %s ) = %d", fname, local_fd);
+  HT_INFOF("open( %s ) = %d (local=%d)", fname, (int)fd, local_fd);
 
   {
     struct sockaddr_in addr;
@@ -193,7 +195,7 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
   else
     oflags |= O_APPEND;
 
-  if (flags & Filesystem::OPEN_FLAG_DIRECTIO) {
+  if (m_directio && flags & Filesystem::OPEN_FLAG_DIRECTIO) {
 #ifdef O_DIRECT
     oflags |= O_DIRECT;
 #endif
@@ -213,12 +215,13 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
     fcntl(local_fd, F_NOCACHE, 1);
 #endif  
 #elif defined(__sun__)
-    directio(local_fd, DIRECTIO_ON);
+    if (m_directio)
+      directio(local_fd, DIRECTIO_ON);
 #endif
 
   //HT_DEBUGF("created file='%s' fd=%d local_fd=%d", fname, fd, local_fd);
 
-  HT_INFOF("create( %s ) = %d", fname, local_fd);
+  HT_INFOF("create( %s ) = %d (local=%d)", fname, (int)fd, local_fd);
 
   {
     struct sockaddr_in addr;
@@ -234,9 +237,11 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
 
 
 void LocalBroker::close(ResponseCallback *cb, uint32_t fd) {
+  int error;
   HT_DEBUGF("close fd=%d", fd);
   m_open_file_map.remove(fd);
-  cb->response_ok();
+  if ((error = cb->response_ok()) != Error::OK)
+    HT_ERRORF("Problem sending response for close(%u) - %s", (unsigned)fd, Error::get_text(error));
 }
 
 
@@ -245,6 +250,8 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
   ssize_t nread;
   uint64_t offset;
   uint8_t *readbuf;
+  int error;
+
 #if defined(__linux__)
   void *vptr = 0;
   HT_ASSERT(posix_memalign(&vptr, HT_DIRECT_IO_ALIGNMENT, amount) == 0);
@@ -252,7 +259,7 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
 #else
   readbuf = new uint8_t [amount];
 #endif
-  
+
   StaticBuffer buf(readbuf, amount);
 
   HT_DEBUGF("read fd=%d amount=%d", fd, amount);
@@ -284,7 +291,10 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
 
   buf.size = nread;
 
-  cb->response(offset, buf);
+  if ((error = cb->response(offset, buf)) != Error::OK)
+    HT_ERRORF("Problem sending response for read(%u, %u) - %s",
+              (unsigned)fd, (unsigned)amount, Error::get_text(error));
+
 }
 
 
@@ -293,6 +303,7 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
   OpenFileDataLocalPtr fdata;
   ssize_t nwritten;
   uint64_t offset;
+  int error;
 
   HT_DEBUG_OUT <<"append fd="<< fd <<" amount="<< amount <<" data='"
       << format_bytes(20, data, amount) <<" sync="<< sync << HT_END;
@@ -327,12 +338,16 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
     return;
   }
 
-  cb->response(offset, nwritten);
+  if ((error = cb->response(offset, nwritten)) != Error::OK)
+    HT_ERRORF("Problem sending response for append(%u, localfd=%u, %u) - %s",
+              (unsigned)fd, (unsigned)fdata->fd, (unsigned)amount, Error::get_text(error));
+
 }
 
 
 void LocalBroker::seek(ResponseCallback *cb, uint32_t fd, uint64_t offset) {
   OpenFileDataLocalPtr fdata;
+  int error;
 
   HT_DEBUGF("seek fd=%lu offset=%llu", (Lu)fd, (Llu)offset);
 
@@ -353,12 +368,16 @@ void LocalBroker::seek(ResponseCallback *cb, uint32_t fd, uint64_t offset) {
     return;
   }
 
-  cb->response_ok();
+  if ((error = cb->response_ok()) != Error::OK)
+    HT_ERRORF("Problem sending response for seek(%u, %llu) - %s",
+              (unsigned)fd, (Llu)offset, Error::get_text(error));
+
 }
 
 
 void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
   String abspath;
+  int error;
 
   HT_DEBUGF("remove file='%s'", fname);
 
@@ -377,13 +396,16 @@ void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
     return;
   }
 
-  cb->response_ok();
+  if ((error = cb->response_ok()) != Error::OK)
+    HT_ERRORF("Problem sending response for remove(%s) - %s",
+              fname, Error::get_text(error));
 }
 
 
 void LocalBroker::length(ResponseCallbackLength *cb, const char *fname) {
   String abspath;
   uint64_t length;
+  int error;
 
   HT_DEBUGF("length file='%s'", fname);
 
@@ -397,8 +419,10 @@ void LocalBroker::length(ResponseCallbackLength *cb, const char *fname) {
     HT_ERRORF("length (stat) failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
     return;
   }
-
-  cb->response(length);
+  
+  if ((error = cb->response(length)) != Error::OK)
+    HT_ERRORF("Problem sending response (%llu) for length(%s) - %s",
+              (Llu)length, fname, Error::get_text(error));
 }
 
 
@@ -408,6 +432,10 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
   OpenFileDataLocalPtr fdata;
   ssize_t nread;
   uint8_t *readbuf;
+  int error;
+
+  HT_DEBUGF("pread fd=%d offset=%llu amount=%d", fd, (Llu)offset, amount);
+
 #if defined(__linux__)
   void *vptr = 0;
   HT_ASSERT(posix_memalign(&vptr, HT_DIRECT_IO_ALIGNMENT, amount) == 0);
@@ -415,10 +443,8 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
 #else
   readbuf = new uint8_t [amount];
 #endif
-  
-  StaticBuffer buf(readbuf, amount);
 
-  HT_DEBUGF("pread fd=%d offset=%llu amount=%d", fd, (Llu)offset, amount);
+  StaticBuffer buf(readbuf, amount);
 
   if (!m_open_file_map.get(fd, fdata)) {
     char errbuf[32];
@@ -427,7 +453,7 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
     return;
   }
 
-  if ((nread = FileUtils::pread(fdata->fd, buf.base, amount, (off_t)offset)) == -1) {
+  if ((nread = FileUtils::pread(fdata->fd, buf.base, amount, (off_t)offset)) != amount) {
     report_error(cb);
     HT_ERRORF("pread failed: fd=%d amount=%d offset=%llu - %s", fdata->fd,
               amount, (Llu)offset, IO_ERROR);
@@ -436,12 +462,16 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
 
   buf.size = nread;
 
-  cb->response(offset, buf);
+  if ((error = cb->response(offset, buf)) != Error::OK)
+    HT_ERRORF("Problem sending response for pread(%u, %llu, %u) - %s",
+              (unsigned)fd, (Llu)offset, (unsigned)amount, Error::get_text(error));
+
 }
 
 
 void LocalBroker::mkdirs(ResponseCallback *cb, const char *dname) {
   String absdir;
+  int error;
 
   HT_DEBUGF("mkdirs dir='%s'", dname);
 
@@ -456,13 +486,16 @@ void LocalBroker::mkdirs(ResponseCallback *cb, const char *dname) {
     return;
   }
 
-  cb->response_ok();
+  if ((error = cb->response_ok()) != Error::OK)
+    HT_ERRORF("Problem sending response for mkdirs(%s) - %s",
+              dname, Error::get_text(error));
 }
 
 
 void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
   String absdir;
   String cmd_str;
+  int error;
 
   if (m_verbose) {
     HT_DEBUGF("rmdir dir='%s'", dname);
@@ -494,7 +527,10 @@ void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
   }
 #endif
 
-  cb->response_ok();
+  if ((error = cb->response_ok()) != Error::OK)
+    HT_ERRORF("Problem sending response for mkdirs(%s) - %s",
+              dname, Error::get_text(error));
+
 }
 
 void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {

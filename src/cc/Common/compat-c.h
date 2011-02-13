@@ -149,6 +149,12 @@
 #include <utility>
 #include <vector>
 
+template <size_t size> inline
+char* ctime_r( const time_t *time, char (&buffer)[size] ) {
+  ctime_s( buffer, size, time );
+  return buffer;
+}
+
 #endif
 
 #define HT_USE_ABORT
@@ -170,15 +176,11 @@ extern struct tm * gmtime_r(const time_t *timer, struct tm *result);
 
 #define HAVE_STRUCT_TIMESPEC
 typedef struct timespec {
-    time_t tv_sec;	// Seconds since 00:00:00 GMT, 1 January 1970
-    long tv_nsec;	// Additional nanoseconds since tv_sec
+    time_t tv_sec; // Seconds since 00:00:00 GMT, 1 January 1970
+    long tv_nsec;  // Additional nanoseconds since tv_sec
 } timespec_t;
 
 const char* winapi_strerror( DWORD err );
-
-#pragma deprecated(_errno)
-#pragma deprecated(perror)
-#pragma deprecated(strerror)
 
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
@@ -197,6 +199,10 @@ typedef int64_t ssize_t;
 #else
 typedef int32_t ssize_t;
 #endif
+
+#pragma deprecated(_errno)
+#pragma deprecated(perror)
+#pragma deprecated(strerror)
 
 #else
 

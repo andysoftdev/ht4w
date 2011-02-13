@@ -43,6 +43,7 @@
 #include "AccessGroupGarbageTracker.h"
 #include "CellCache.h"
 #include "CellStore.h"
+#include "CellStoreTrailerV4.h"
 #include "LiveFileTracker.h"
 #include "MaintenanceFlag.h"
 
@@ -76,8 +77,10 @@ namespace Hypertable {
       int64_t mem_used;
       int64_t mem_allocated;
       int64_t cached_items;
+      uint64_t cell_count;
       int64_t immutable_items;
       int64_t disk_used;
+      int64_t disk_estimate;
       int64_t log_space_pinned;
       int32_t deletes;
       int32_t outstanding_scanners;
@@ -110,15 +113,20 @@ namespace Hypertable {
  bloom_filter_accesses(0), bloom_filter_maybes(0), bloom_filter_fps(0)  {
         init_from_trailer();
       }
-      CellStoreInfo() : shadow_cache_ecr(TIMESTAMP_MAX), shadow_cache_hits(0),
+      CellStoreInfo() : cell_count(0), shadow_cache_ecr(TIMESTAMP_MAX), shadow_cache_hits(0),
       bloom_filter_accesses(0), bloom_filter_maybes(0), bloom_filter_fps(0) { }
       void init_from_trailer() {
         try {
+           int divisor = (boost::any_cast<uint32_t>(cs->get_trailer()->get("flags")) & CellStoreTrailerV4::SPLIT) ? 2 : 1;
+          cell_count = boost::any_cast<int64_t>(cs->get_trailer()->get("total_entries"))
+                       / divisor;
           timestamp_min = boost::any_cast<int64_t>(cs->get_trailer()->get("timestamp_min"));
           timestamp_max = boost::any_cast<int64_t>(cs->get_trailer()->get("timestamp_max"));
-          expirable_data = boost::any_cast<int64_t>(cs->get_trailer()->get("expirable_data"));
+          expirable_data = boost::any_cast<int64_t>(cs->get_trailer()->get("expirable_data"))
+                           / divisor ;
         }
         catch (std::exception &) {
+          cell_count = 0;
           timestamp_min = TIMESTAMP_MAX;
           timestamp_max = TIMESTAMP_MIN;
           expirable_data = 0;
@@ -126,6 +134,7 @@ namespace Hypertable {
       }
       CellStorePtr cs;
       CellCachePtr shadow_cache;
+      uint64_t cell_count;
       int64_t shadow_cache_ecr;
       uint32_t shadow_cache_hits;
       uint32_t bloom_filter_accesses;
@@ -139,7 +148,7 @@ namespace Hypertable {
 
     AccessGroup(const TableIdentifier *identifier, SchemaPtr &schema,
                 Schema::AccessGroup *ag, const RangeSpec *range);
-    virtual ~AccessGroup();
+
     virtual void add(const Key &key, const ByteString value);
 
     virtual const char *get_split_row();
@@ -170,9 +179,9 @@ namespace Hypertable {
     uint64_t disk_usage();
     uint64_t memory_usage();
     void space_usage(int64_t *memp, int64_t *diskp);
-    void add_cell_store(CellStorePtr &cellstore, uint32_t id);
+    void add_cell_store(CellStorePtr &cellstore);
 
-    void compute_garbage_stats(int64_t *input_bytesp, int64_t *output_bytesp);
+    void compute_garbage_stats(uint64_t *input_bytesp, uint64_t *output_bytesp);
 
     void run_compaction(int maintenance_flags);
 
@@ -200,8 +209,6 @@ namespace Hypertable {
       return m_cell_cache->size();
     }
 
-    void drop() { m_drop = true; }
-
     void get_file_list(String &file_list, bool include_blocked) {
       m_file_tracker.get_file_list(file_list, include_blocked);
     }
@@ -213,9 +220,18 @@ namespace Hypertable {
 
     void dump_keys(std::ofstream &out);
 
+    void set_next_csid(uint32_t nid) { 
+      if (nid > m_next_cs_id) {
+        m_next_cs_id = nid;
+        m_file_tracker.set_next_csid(nid);
+      }
+    }
+
   private:
-    String strip_file_basename(const String &fname);
+
     void merge_caches();
+
+    void range_dir_initialize();
 
     Mutex                m_mutex;
     Mutex                m_outstanding_scanner_mutex;
@@ -226,6 +242,7 @@ namespace Hypertable {
     String               m_name;
     String               m_full_name;
     String               m_table_name;
+    String               m_range_dir;
     String               m_start_row;
     String               m_end_row;
     String               m_range_name;
@@ -243,10 +260,8 @@ namespace Hypertable {
     uint64_t             m_collisions;
     LiveFileTracker      m_file_tracker;
     AccessGroupGarbageTracker m_garbage_tracker;
-    String               m_file_basename;
     bool                 m_is_root;
     bool                 m_in_memory;
-    bool                 m_drop;
     bool                 m_recovering;
     bool                 m_bloom_filter_disabled;
 

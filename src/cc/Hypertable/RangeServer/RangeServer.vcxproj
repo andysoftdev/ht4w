@@ -60,6 +60,7 @@
     <ClCompile Include="KeyDecompressorNone.cc" />
     <ClCompile Include="KeyDecompressorPrefix.cc" />
     <ClCompile Include="LiveFileTracker.cc" />
+    <ClCompile Include="LoadMetricsRange.cc" />
     <ClCompile Include="Location.cc" />
     <ClCompile Include="MaintenancePrioritizer.cc" />
     <ClCompile Include="MaintenancePrioritizerLogCleanup.cc" />
@@ -68,10 +69,13 @@
     <ClCompile Include="MaintenanceScheduler.cc" />
     <ClCompile Include="MaintenanceTaskCompaction.cc" />
     <ClCompile Include="MaintenanceTaskMemoryPurge.cc" />
+    <ClCompile Include="MaintenanceTaskRelinquish.cc" />
     <ClCompile Include="MaintenanceTaskSplit.cc" />
     <ClCompile Include="MergeScanner.cc" />
     <ClCompile Include="MetadataNormal.cc" />
     <ClCompile Include="MetadataRoot.cc" />
+    <ClCompile Include="MetaLogDefinitionRangeServer.cc" />
+    <ClCompile Include="MetaLogEntityRange.cc" />
     <ClCompile Include="QueryCache.cc" />
     <ClCompile Include="Range.cc" />
     <ClCompile Include="RangeServer.cc" />
@@ -89,6 +93,7 @@
     <ClCompile Include="RequestHandlerGetStatistics.cc" />
     <ClCompile Include="RequestHandlerGroupCommit.cc" />
     <ClCompile Include="RequestHandlerLoadRange.cc" />
+    <ClCompile Include="RequestHandlerRelinquishRange.cc" />
     <ClCompile Include="RequestHandlerReplayBegin.cc" />
     <ClCompile Include="RequestHandlerReplayCommit.cc" />
     <ClCompile Include="RequestHandlerReplayLoadRange.cc" />
@@ -96,6 +101,7 @@
     <ClCompile Include="RequestHandlerStatus.cc" />
     <ClCompile Include="RequestHandlerUpdate.cc" />
     <ClCompile Include="RequestHandlerUpdateSchema.cc" />
+    <ClCompile Include="RequestHandlerWaitForMaintenance.cc" />
     <ClCompile Include="ResponseCallbackCreateScanner.cc" />
     <ClCompile Include="ResponseCallbackFetchScanblock.cc" />
     <ClCompile Include="ResponseCallbackGetStatistics.cc" />
@@ -152,6 +158,7 @@
     <ClInclude Include="KeyDecompressorNone.h" />
     <ClInclude Include="KeyDecompressorPrefix.h" />
     <ClInclude Include="LiveFileTracker.h" />
+    <ClInclude Include="LoadMetricsRange.h" />
     <ClInclude Include="Location.h" />
     <ClInclude Include="MaintenanceFlag.h" />
     <ClInclude Include="MaintenancePrioritizer.h" />
@@ -162,18 +169,22 @@
     <ClInclude Include="MaintenanceTask.h" />
     <ClInclude Include="MaintenanceTaskCompaction.h" />
     <ClInclude Include="MaintenanceTaskMemoryPurge.h" />
+    <ClInclude Include="MaintenanceTaskRelinquish.h" />
     <ClInclude Include="MaintenanceTaskSplit.h" />
     <ClInclude Include="MemoryTracker.h" />
     <ClInclude Include="MergeScanner.h" />
     <ClInclude Include="Metadata.h" />
     <ClInclude Include="MetadataNormal.h" />
     <ClInclude Include="MetadataRoot.h" />
+    <ClInclude Include="MetaLogDefinitionRangeServer.h" />
+    <ClInclude Include="MetaLogEntityRange.h" />
     <ClInclude Include="QueryCache.h" />
     <ClInclude Include="Range.h" />
     <ClInclude Include="RangeMaintenanceGuard.h" />
     <ClInclude Include="RangeServer.h" />
     <ClInclude Include="RangeSet.h" />
     <ClInclude Include="RangeStatsGatherer.h" />
+    <ClInclude Include="RangeTransferInfo.h" />
     <ClInclude Include="RequestHandlerClose.h" />
     <ClInclude Include="RequestHandlerCommitLogSync.h" />
     <ClInclude Include="RequestHandlerCompact.h" />
@@ -187,6 +198,7 @@
     <ClInclude Include="RequestHandlerGetStatistics.h" />
     <ClInclude Include="RequestHandlerGroupCommit.h" />
     <ClInclude Include="RequestHandlerLoadRange.h" />
+    <ClInclude Include="RequestHandlerRelinquishRange.h" />
     <ClInclude Include="RequestHandlerReplayBegin.h" />
     <ClInclude Include="RequestHandlerReplayCommit.h" />
     <ClInclude Include="RequestHandlerReplayLoadRange.h" />
@@ -194,6 +206,7 @@
     <ClInclude Include="RequestHandlerStatus.h" />
     <ClInclude Include="RequestHandlerUpdate.h" />
     <ClInclude Include="RequestHandlerUpdateSchema.h" />
+    <ClInclude Include="RequestHandlerWaitForMaintenance.h" />
     <ClInclude Include="ResponseCallbackCreateScanner.h" />
     <ClInclude Include="ResponseCallbackFetchScanblock.h" />
     <ClInclude Include="ResponseCallbackGetStatistics.h" />
@@ -201,7 +214,6 @@
     <ClInclude Include="RSStats.h" />
     <ClInclude Include="ScanContext.h" />
     <ClInclude Include="ScannerMap.h" />
-    <ClInclude Include="SplitPredicate.h" />
     <ClInclude Include="TableIdCache.h" />
     <ClInclude Include="TableInfo.h" />
     <ClInclude Include="TableInfoMap.h" />

@@ -45,6 +45,10 @@ extern "C" {
 
 #include "LocalBroker.h"
 
+#ifdef _WIN32
+#include "Common/ServerLaunchEvent.h"
+#endif
+
 using namespace Hypertable;
 using namespace Config;
 using namespace std;
@@ -70,10 +74,17 @@ typedef Meta::list<AppPolicy, DfsBrokerPolicy, DefaultCommPolicy> Policies;
 
 
 int main(int argc, char **argv) {
+  #ifdef _WIN32
+  ServerLaunchEvent server_launch_event;
+  #endif
+
   try {
     init_with_policies<Policies>(argc, argv);
-    int port = get_i16("port");
+    int port = get_i16("DfsBroker.Port");
     int worker_count = get_i32("workers");
+
+    if (has("port"))
+      port = get_i16("port");
 
     Comm *comm = Comm::instance();
     ApplicationQueuePtr app_queue = new ApplicationQueue(worker_count);
@@ -83,6 +94,11 @@ int main(int argc, char **argv) {
     InetAddr listen_addr(INADDR_ANY, port);
 
     comm->listen(listen_addr, chfp);
+
+    #ifdef _WIN32
+    server_launch_event.set_event();
+    #endif
+
     app_queue->join();
   }
   catch (Exception &e) {

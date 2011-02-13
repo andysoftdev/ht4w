@@ -67,9 +67,6 @@
     <ClCompile Include="RequestHandlerRenameTable.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RequestHandlerReportSplit.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RequestHandlerShutdown.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -86,6 +83,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ServersDirectoryHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Monitoring.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerMoveRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerRelinquishAcknowledge.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -150,9 +156,6 @@
     <ClInclude Include="RequestHandlerRenameTable.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerReportSplit.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="RequestHandlerShutdown.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -169,6 +172,18 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ServersDirectoryHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Monitoring.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerStatistics.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerMoveRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerRelinquishAcknowledge.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

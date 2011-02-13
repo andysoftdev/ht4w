@@ -22,6 +22,8 @@
 #ifndef MASTER_PROTOCOL_H
 #define MASTER_PROTOCOL_H
 
+#include "Common/StatsSystem.h"
+
 #include "AsyncComm/CommBuf.h"
 #include "AsyncComm/Event.h"
 #include "AsyncComm/Protocol.h"
@@ -39,7 +41,7 @@ namespace Hypertable {
     static const uint64_t COMMAND_GET_SCHEMA            = 1;
     static const uint64_t COMMAND_STATUS                = 2;
     static const uint64_t COMMAND_REGISTER_SERVER       = 3;
-    static const uint64_t COMMAND_REPORT_SPLIT          = 4;
+    static const uint64_t COMMAND_MOVE_RANGE            = 4;
     static const uint64_t COMMAND_DROP_TABLE            = 5;
     static const uint64_t COMMAND_ALTER_TABLE           = 6;
     static const uint64_t COMMAND_SHUTDOWN              = 7;
@@ -47,7 +49,8 @@ namespace Hypertable {
     static const uint64_t COMMAND_CREATE_NAMESPACE      = 9;
     static const uint64_t COMMAND_DROP_NAMESPACE        = 10;
     static const uint64_t COMMAND_RENAME_TABLE          = 11;
-    static const uint64_t COMMAND_MAX                   = 12;
+    static const uint64_t COMMAND_RELINQUISH_ACKNOWLEDGE= 12;
+    static const uint64_t COMMAND_MAX                   = 13;
 
     static const char *m_command_strings[];
 
@@ -65,11 +68,15 @@ namespace Hypertable {
     static CommBuf *create_status_request();
 
     static CommBuf *create_register_server_request(const String &location,
-                                                   const InetAddr &addr);
+                                                   uint16_t listen_port,
+                                                   StatsSystem &system_stats);
 
     static CommBuf *
-    create_report_split_request(const TableIdentifier *, const RangeSpec &,
-        const String &transfer_log_dir, uint64_t soft_limit);
+    create_move_range_request(const TableIdentifier *, const RangeSpec &,
+                              const String &transfer_log_dir,
+                              uint64_t soft_limit, bool split);
+    static CommBuf *
+    create_relinquish_acknowledge_request(const TableIdentifier *, const RangeSpec &);
     static CommBuf *create_rename_table_request(const String &old_name, const String &new_name);
     static CommBuf *create_drop_table_request(const String &table_name,
                                               bool if_exists);

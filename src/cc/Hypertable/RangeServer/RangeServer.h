@@ -29,7 +29,6 @@
 #include "Common/Logger.h"
 #include "Common/Properties.h"
 #include "Common/HashMap.h"
-#include "Common/ServerStats.h"
 
 #include "AsyncComm/ApplicationQueue.h"
 #include "AsyncComm/Comm.h"
@@ -38,15 +37,18 @@
 
 #include "Hyperspace/Session.h"
 
+#include "Hypertable/Lib/Cells.h"
 #include "Hypertable/Lib/MasterClient.h"
 #include "Hypertable/Lib/RangeState.h"
 #include "Hypertable/Lib/Types.h"
 #include "Hypertable/Lib/NameIdMapper.h"
+#include "Hypertable/Lib/StatsRangeServer.h"
 
 #include "Global.h"
 #include "GroupCommitInterface.h"
 #include "GroupCommitTimerHandler.h"
 #include "MaintenanceScheduler.h"
+#include "MetaLogEntityRange.h"
 #include "QueryCache.h"
 #include "RSStats.h"
 #include "ResponseCallbackCreateScanner.h"
@@ -91,19 +93,28 @@ namespace Hypertable {
     void commit_log_sync(ResponseCallback *);
     void drop_table(ResponseCallback *, const TableIdentifier *);
     void dump(ResponseCallback *, const char *, bool);
-    void get_statistics(ResponseCallbackGetStatistics *, bool full_stats,
-                        bool reset_last);
+    void get_statistics(ResponseCallbackGetStatistics *);
 
     void replay_begin(ResponseCallback *, uint16_t group);
-    void replay_load_range(ResponseCallback *, const TableIdentifier *,
-                           const RangeSpec *, const RangeState *, bool write_rsml=true);
+    void replay_load_range(ResponseCallback *, MetaLog::EntityRange *,
+                           bool write_rsml=true);
     void replay_update(ResponseCallback *, const uint8_t *data, size_t len);
     void replay_commit(ResponseCallback *);
 
     void drop_range(ResponseCallback *, const TableIdentifier *,
                     const RangeSpec *);
 
+    void relinquish_range(ResponseCallback *, const TableIdentifier *,
+                          const RangeSpec *);
+
     void close(ResponseCallback *cb);
+
+    /**
+     * Blocks while the maintenance queue is non-empty
+     *
+     * @param cb Response callback
+     */
+    void wait_for_maintenance(ResponseCallback *cb);
 
     // Other methods
     void group_commit();
@@ -118,6 +129,7 @@ namespace Hypertable {
     void wait_for_recovery_finish();
     void wait_for_root_recovery_finish();
     void wait_for_metadata_recovery_finish();
+    void wait_for_system_recovery_finish();
     void wait_for_recovery_finish(const TableIdentifier *table,
                                   const RangeSpec *range);
 
@@ -141,9 +153,11 @@ namespace Hypertable {
     Mutex                  m_drop_table_mutex;
     boost::condition       m_root_replay_finished_cond;
     boost::condition       m_metadata_replay_finished_cond;
+    boost::condition       m_system_replay_finished_cond;
     boost::condition       m_replay_finished_cond;
     bool                   m_root_replay_finished;
     bool                   m_metadata_replay_finished;
+    bool                   m_system_replay_finished;
     bool                   m_replay_finished;
     Mutex                  m_update_mutex_a;
     Mutex                  m_update_mutex_b;
@@ -167,9 +181,12 @@ namespace Hypertable {
     uint64_t               m_log_roll_limit;
     int                    m_replay_group;
     TableIdCachePtr        m_dropped_table_id_cache;
+
+    StatsRangeServerPtr    m_stats;
     RSStatsPtr             m_server_stats;
+    int64_t                m_server_stats_timestamp;
+
     RangeStatsGathererPtr  m_maintenance_stats_gatherer;
-    ServerStatsPtr         m_system_stats;
     NameIdMapperPtr        m_namemap;
 
     MaintenanceSchedulerPtr m_maintenance_scheduler;
@@ -180,27 +197,12 @@ namespace Hypertable {
     QueryCache            *m_query_cache;
     int64_t                m_last_revision;
     int64_t                m_scanner_buffer_size;
-
-    typedef map<RangeIdentifier, Range::MaintenanceData *> RangeStatsMap;
-
-    class StatsSnapshot {
-    public:
-      StatsSnapshot(): stats_len(100000), query_cache_lookups(0),
-          query_cache_hits(0), block_cache_lookups(0), block_cache_hits(0) {
-        timestamp = Hypertable::get_ts64();
-      }
-      int64_t                timestamp;
-      int64_t                stats_len;
-      uint64_t               query_cache_lookups;
-      uint64_t               query_cache_hits;
-      uint64_t               block_cache_lookups;
-      uint64_t               block_cache_hits;
-      RangeStatsMap          range_stats_map;
-      RangeStatsGathererPtr  stats_gatherer;
-      ServerStatsBundle      system_stats;
-    };
-
-    StatsSnapshot m_stats_snapshot;
+    time_t                 m_next_metrics_update;
+    double                 m_loadavg_accum;
+    uint64_t               m_page_in_accum;
+    uint64_t               m_page_out_accum;
+    size_t                 m_metric_samples;
+    CellsBuilder          *m_pending_metrics_updates;
   };
 
   typedef intrusive_ptr<RangeServer> RangeServerPtr;

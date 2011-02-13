@@ -45,6 +45,10 @@
 #include "RangeServer.h"
 #include "TimerHandler.h"
 
+#ifdef _WIN32
+#include "Common/ServerLaunchEvent.h"
+#endif
+
 using namespace Hypertable;
 using namespace Config;
 using namespace std;
@@ -53,6 +57,9 @@ typedef Meta::list<RangeServerPolicy, DfsClientPolicy, HyperspaceClientPolicy,
         MasterClientPolicy, DefaultServerPolicy> Policies;
 
 int main(int argc, char **argv) {
+  #ifdef _WIN32
+  ServerLaunchEvent server_launch_event;
+  #endif
 
   ReactorRunner::record_arrival_clocks = true;
 
@@ -92,6 +99,10 @@ int main(int argc, char **argv) {
 
     // install maintenance timer
     TimerHandlerPtr timer_handler = new TimerHandler(comm, range_server.get());
+
+    #ifdef _WIN32
+    server_launch_event.set_event();
+    #endif
 
     app_queue->join();
 

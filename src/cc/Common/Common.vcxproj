@@ -192,7 +192,8 @@
     <ClCompile Include="MurmurHash.cc" />
     <ClCompile Include="Properties.cc" />
     <ClCompile Include="Random.cc" />
-    <ClCompile Include="ServerStats.cc" />
+    <ClCompile Include="StatsSerializable.cc" />
+    <ClCompile Include="StatsSystem.cc" />
     <ClCompile Include="String.cc" />
     <ClCompile Include="strptime.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -260,9 +261,11 @@
     <ClInclude Include="serialization-c.h" />
     <ClInclude Include="Serialization.h" />
     <ClInclude Include="ServerLauncher.h" />
-    <ClInclude Include="ServerStats.h" />
+    <ClInclude Include="ServerLaunchEvent.h" />
     <ClInclude Include="SockAddrMap.h" />
     <ClInclude Include="StaticBuffer.h" />
+    <ClInclude Include="StatsSerializable.h" />
+    <ClInclude Include="StatsSystem.h" />
     <ClInclude Include="StlHash.h" />
     <ClInclude Include="Stopwatch.h" />
     <ClInclude Include="String.h" />

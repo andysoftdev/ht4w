@@ -87,7 +87,8 @@ namespace {
     { Error::NAMESPACE_DOES_NOT_EXIST,      "HYPERTABLE namespace does not exist" },
     { Error::BAD_NAMESPACE,                 "HYPERTABLE bad namespace" },
     { Error::NAMESPACE_EXISTS,              "HYPERTABLE namespace exists" },
-
+    { Error::NO_RESPONSE,                   "HYPERTABLE no response" },
+    { Error::NOT_ALLOWED,                   "HYPERTABLE not allowed" },
     { Error::CONFIG_BAD_ARGUMENT,         "CONFIG bad argument(s)"},
     { Error::CONFIG_BAD_CFG_FILE,         "CONFIG bad cfg file"},
     { Error::CONFIG_GET_ERROR,            "CONFIG failed to get config value"},
@@ -237,7 +238,7 @@ namespace {
     { Error::RANGESERVER_SHORT_CELLSTORE_READ, "RANGE SERVER short cellstore read" },
     { Error::HQL_BAD_LOAD_FILE_FORMAT,         "HQL bad load file format" },
     { Error::METALOG_BAD_RS_HEADER, "METALOG bad range server metalog header" },
-    { Error::METALOG_BAD_M_HEADER,  "METALOG bad master metalog header" },
+    { Error::METALOG_BAD_HEADER,  "METALOG bad metalog header" },
     { Error::METALOG_ENTRY_TRUNCATED,   "METALOG entry truncated" },
     { Error::METALOG_CHECKSUM_MISMATCH, "METALOG checksum mismatch" },
     { Error::METALOG_ENTRY_BAD_TYPE, "METALOG bad entry type" },

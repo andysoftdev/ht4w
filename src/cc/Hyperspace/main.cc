@@ -45,6 +45,10 @@ extern "C" {
 #include "ServerKeepaliveHandler.h"
 #include "Master.h"
 
+#ifdef _WIN32
+#include "Common/ServerLaunchEvent.h"
+#endif
+
 using namespace Hyperspace;
 using namespace Hypertable;
 using namespace Config;
@@ -72,6 +76,10 @@ private:
 
 
 int main(int argc, char **argv) {
+  #ifdef _WIN32
+  ServerLaunchEvent server_launch_event;
+  #endif
+
   typedef Cons<HyperspaceMasterPolicy, DefaultServerPolicy> AppPolicy;
 
   try {
@@ -101,6 +109,10 @@ int main(int argc, char **argv) {
     hf->get_instance(maintenance_dhp);
     if ((error = comm->set_timer(maintenance_interval, maintenance_dhp.get())) != Error::OK)
       HT_FATALF("Problem setting timer - %s", Error::get_text(error));
+
+    #ifdef _WIN32
+    server_launch_event.set_event();
+    #endif
 
     app_queue_ptr->join();
   }

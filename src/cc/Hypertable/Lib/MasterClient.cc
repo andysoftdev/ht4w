@@ -245,17 +245,19 @@ void MasterClient::status(Timer *timer) {
 
 
 void
-MasterClient::register_server(std::string &location, const InetAddr &addr,
+MasterClient::register_server(std::string &location, uint16_t listen_port,
+                              StatsSystem &system_stats,
                               DispatchHandler *handler, Timer *timer) {
-  CommBufPtr cbp(MasterProtocol::create_register_server_request(location, addr));
+  CommBufPtr cbp(MasterProtocol::create_register_server_request(location, listen_port, system_stats));
   send_message(cbp, handler, timer);
 }
 
 
-void MasterClient::register_server(std::string &location, const InetAddr &addr, Timer *timer) {
+void MasterClient::register_server(std::string &location, uint16_t listen_port,
+                                   StatsSystem &system_stats, Timer *timer) {
   DispatchHandlerSynchronizer sync_handler;
   EventPtr event_ptr;
-  CommBufPtr cbp(MasterProtocol::create_register_server_request(location, addr));
+  CommBufPtr cbp(MasterProtocol::create_register_server_request(location, listen_port, system_stats));
 
   send_message(cbp, &sync_handler, timer);
 
@@ -273,26 +275,53 @@ void MasterClient::register_server(std::string &location, const InetAddr &addr, 
 
 
 void
-MasterClient::report_split(TableIdentifier *table, RangeSpec &range,
-                           const String &log_dir, uint64_t soft_limit,
-                           DispatchHandler *handler, Timer *timer) {
-  CommBufPtr cbp(MasterProtocol::create_report_split_request(table, range, log_dir, soft_limit));
+MasterClient::move_range(TableIdentifier *table, RangeSpec &range,
+                         const String &log_dir, uint64_t soft_limit,
+                         bool split, DispatchHandler *handler, Timer *timer) {
+  CommBufPtr cbp(MasterProtocol::create_move_range_request(table, range, log_dir,
+                                                           soft_limit, split));
   send_message(cbp, handler, timer);
 }
 
 
 void
-MasterClient::report_split(TableIdentifier *table, RangeSpec &range,
-    const String &log_dir, uint64_t soft_limit, Timer *timer) {
+MasterClient::move_range(TableIdentifier *table, RangeSpec &range,
+                         const String &log_dir, uint64_t soft_limit,
+                         bool split, Timer *timer) {
   DispatchHandlerSynchronizer sync_handler;
   EventPtr event_ptr;
-  CommBufPtr cbp(MasterProtocol::create_report_split_request(table, range, log_dir, soft_limit));
+  CommBufPtr cbp(MasterProtocol::create_move_range_request(table, range, log_dir,
+                                                           soft_limit, split));
 
   send_message(cbp, &sync_handler, timer);
 
   if (!sync_handler.wait_for_reply(event_ptr))
     HT_THROWF(MasterProtocol::response_code(event_ptr),
-              "Master 'report split' error %s[%s..%s]",
+              "Master 'move_range' error %s[%s..%s]",
+              table->id, range.start_row, range.end_row);
+
+}
+
+void
+MasterClient::relinquish_acknowledge(TableIdentifier *table, RangeSpec &range,
+                                     DispatchHandler *handler, Timer *timer) {
+  CommBufPtr cbp(MasterProtocol::create_relinquish_acknowledge_request(table, range));
+  send_message(cbp, handler, timer);
+}
+
+
+void
+MasterClient::relinquish_acknowledge(TableIdentifier *table, RangeSpec &range,
+                                     Timer *timer) {
+  DispatchHandlerSynchronizer sync_handler;
+  EventPtr event_ptr;
+  CommBufPtr cbp(MasterProtocol::create_relinquish_acknowledge_request(table, range));
+
+  send_message(cbp, &sync_handler, timer);
+
+  if (!sync_handler.wait_for_reply(event_ptr))
+    HT_THROWF(MasterProtocol::response_code(event_ptr),
+              "Master 'relinquish_acknowledge' error %s[%s..%s]",
               table->id, range.start_row, range.end_row);
 
 }

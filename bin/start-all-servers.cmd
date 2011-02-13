@@ -50,9 +50,10 @@ if "%params%" == "" (
 	set params=-l error
 )
 
-if not exist %bin%\conf md %bin%\conf
-if not exist %bin%\conf\hypertable.cfg xcopy %~dp0..\conf\hypertable.cfg %bin%\conf\
-if not exist %bin%\conf\METADATA.xml xcopy %~dp0..\conf\METADATA.xml %bin%\conf\
+if not exist %bin%\conf md %bin%\conf > nul
+if not exist %bin%\conf\hypertable.cfg xcopy %~dp0..\conf\hypertable.cfg %bin%\conf\ /Q /R /Y /D > nul
+xcopy %~dp0..\conf\METADATA.xml %bin%\conf\ /Q /R /Y /D > nul
+xcopy %~dp0..\conf\RS_METRICS.xml %bin%\conf\ /Q /R /Y /D > nul
 
 if not exist %bin%\serverup.exe goto :missing_exe
 

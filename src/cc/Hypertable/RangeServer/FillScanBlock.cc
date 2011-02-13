@@ -25,8 +25,7 @@
 namespace Hypertable {
 
   bool
-  FillScanBlock(CellListScannerPtr &scanner, DynamicBuffer &dbuf,
-                int64_t buffer_size, size_t *countp) {
+  FillScanBlock(CellListScannerPtr &scanner, DynamicBuffer &dbuf, int64_t buffer_size) {
     Key key, last_key;
     ByteString value;
     size_t value_len;
@@ -43,8 +42,6 @@ namespace Hypertable {
     assert(dbuf.base == 0);
 
     memset(&last_key, 0, sizeof(last_key));
-
-    *countp = 0;
 
     while ((more = scanner->get(key, value))) {
 
@@ -95,7 +92,12 @@ namespace Hypertable {
         dbuf.ptr = dbuf.base + 4;
       }
       if (key.length + value_len <= remaining) {
+        uint8_t *base = dbuf.ptr;
+
         dbuf.add_unchecked(key.serial.ptr, key.length);
+
+        last_key.row = (const char *)base + (key.row - (const char *)key.serial.ptr);
+        last_key.column_qualifier = (const char *)base + (key.column_qualifier - (const char *)key.serial.ptr);
 
         if (counter) {
           dbuf.add_unchecked(counter_value.base, value_len);
@@ -104,7 +106,6 @@ namespace Hypertable {
           dbuf.add_unchecked(value.ptr, value_len);
         remaining -= (key.length + value_len);
         scanner->forward();
-        (*countp)++;
       }
       else
         break;

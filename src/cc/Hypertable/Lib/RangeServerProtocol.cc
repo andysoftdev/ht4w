@@ -49,6 +49,7 @@ namespace Hypertable {
     "update schema",
     "commit log sync",
     "close",
+    "wait for maintenance",
     (const char *)0
   };
 
@@ -78,7 +79,7 @@ namespace Hypertable {
   RangeServerProtocol::create_request_update(const TableIdentifier &table,
       uint32_t count, StaticBuffer &buffer, uint32_t flags) {
     CommHeader header(COMMAND_UPDATE);
-    if (table.is_metadata()) // If METADATA table, set the urgent bit
+    if (table.is_system()) // If system table, set the urgent bit
       header.flags |= CommHeader::FLAGS_BIT_URGENT;
     CommBuf *cbuf = new CommBuf(header, 8 + table.encoded_length(), buffer);
     table.encode(cbuf->get_data_ptr_address());
@@ -91,7 +92,7 @@ namespace Hypertable {
   RangeServerProtocol::create_request_update_schema(
       const TableIdentifier &table, const char *schema) {
     CommHeader header(COMMAND_UPDATE_SCHEMA);
-    if (table.is_metadata()) // If METADATA table, set the urgent bit
+    if (table.is_system()) // If system table, set the urgent bit
       header.flags |= CommHeader::FLAGS_BIT_URGENT;
     CommBuf *cbuf = new CommBuf(header, table.encoded_length()
         + encoded_length_vstr(schema));
@@ -110,7 +111,7 @@ namespace Hypertable {
   create_request_create_scanner(const TableIdentifier &table,
       const RangeSpec &range, const ScanSpec &scan_spec) {
     CommHeader header(COMMAND_CREATE_SCANNER);
-    if (table.is_metadata()) // If METADATA table, set the urgent bit
+    if (table.is_system()) // If system table, set the urgent bit
       header.flags |= CommHeader::FLAGS_BIT_URGENT;
     CommBuf *cbuf = new CommBuf(header, table.encoded_length()
         + range.encoded_length() + scan_spec.encoded_length());
@@ -153,6 +154,13 @@ namespace Hypertable {
 
   CommBuf *RangeServerProtocol::create_request_close() {
     CommHeader header(COMMAND_CLOSE);
+    header.flags |= CommHeader::FLAGS_BIT_URGENT;
+    CommBuf *cbuf = new CommBuf(header);
+    return cbuf;
+  }
+
+  CommBuf *RangeServerProtocol::create_request_wait_for_maintenance() {
+    CommHeader header(COMMAND_WAIT_FOR_MAINTENANCE);
     header.flags |= CommHeader::FLAGS_BIT_URGENT;
     CommBuf *cbuf = new CommBuf(header);
     return cbuf;
@@ -220,12 +228,10 @@ namespace Hypertable {
     return cbuf;
   }
 
-  CommBuf *RangeServerProtocol::create_request_get_statistics(bool all, bool snapshot) {
+  CommBuf *RangeServerProtocol::create_request_get_statistics() {
     CommHeader header(COMMAND_GET_STATISTICS);
     header.flags |= CommHeader::FLAGS_BIT_URGENT;
-    CommBuf *cbuf = new CommBuf(header, 2);
-    cbuf->append_bool(all);
-    cbuf->append_bool(snapshot);
+    CommBuf *cbuf = new CommBuf(header);
     return cbuf;
   }
 

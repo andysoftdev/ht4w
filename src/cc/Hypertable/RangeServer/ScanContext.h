@@ -45,20 +45,21 @@ namespace Hypertable {
   class CellFilterInfo {
   public:
     CellFilterInfo(): cutoff_time(0), max_versions(0), counter(false),
-        filter_by_qualifier(false) {}
+        filter_by_exact_qualifier(false), filter_by_regexp_qualifier(false) {}
 
     CellFilterInfo(const CellFilterInfo& other) {
       cutoff_time = other.cutoff_time;
       max_versions = other.max_versions;
       counter = other.counter;
       for (size_t ii=0; ii<other.regexp_qualifiers.size(); ++ii) {
-        regexp_qualifiers[ii] = new RE2(other.regexp_qualifiers[ii]->pattern());
+        regexp_qualifiers.push_back(new RE2(other.regexp_qualifiers[ii]->pattern()));
       }
       exact_qualifiers = other.exact_qualifiers;
       for (size_t ii=0; ii<exact_qualifiers.size(); ++ii) {
         exact_qualifiers_set.insert(exact_qualifiers[ii].c_str());
       }
-      filter_by_qualifier = other.filter_by_qualifier;
+      filter_by_exact_qualifier = other.filter_by_exact_qualifier;
+      filter_by_regexp_qualifier = other.filter_by_regexp_qualifier;
     }
 
 #ifdef _WIN32
@@ -66,18 +67,20 @@ namespace Hypertable {
     CellFilterInfo& operator = (const CellFilterInfo& other) {
       for (size_t ii=0; ii<regexp_qualifiers.size(); ++ii)
         delete regexp_qualifiers[ii];
+      regexp_qualifiers.clear();
 
       cutoff_time = other.cutoff_time;
       max_versions = other.max_versions;
       counter = other.counter;
       for (size_t ii=0; ii<other.regexp_qualifiers.size(); ++ii) {
-        regexp_qualifiers[ii] = new RE2(other.regexp_qualifiers[ii]->pattern());
+        regexp_qualifiers.push_back(new RE2(other.regexp_qualifiers[ii]->pattern()));
       }
       exact_qualifiers = other.exact_qualifiers;
       for (size_t ii=0; ii<exact_qualifiers.size(); ++ii) {
         exact_qualifiers_set.insert(exact_qualifiers[ii].c_str());
       }
-      filter_by_qualifier = other.filter_by_qualifier;
+      filter_by_exact_qualifier = other.filter_by_exact_qualifier;
+      filter_by_regexp_qualifier = other.filter_by_regexp_qualifier;
       return *this;
     }
 
@@ -89,7 +92,7 @@ namespace Hypertable {
     }
 
     bool qualifier_matches(const char *qualifier) {
-      if (!filter_by_qualifier)
+      if (!filter_by_exact_qualifier && !filter_by_regexp_qualifier)
         return true;
       // check exact match first
       if (exact_qualifiers_set.find(qualifier) != exact_qualifiers_set.end())
@@ -108,15 +111,19 @@ namespace Hypertable {
           HT_THROW(Error::BAD_SCAN_SPEC, (String)"Can't convert qualifier " + qualifier +
                    " to regexp -" + regexp->error_arg());
         regexp_qualifiers.push_back(regexp);
+        filter_by_regexp_qualifier = true;
       }
       else {
         exact_qualifiers.push_back(qualifier);
         exact_qualifiers_set.insert(exact_qualifiers.back().c_str());
+        filter_by_exact_qualifier = true;
       }
-      filter_by_qualifier = true;
     }
 
-    bool has_qualifier_filter() const { return filter_by_qualifier; }
+    bool has_qualifier_filter() const {
+      return filter_by_exact_qualifier||filter_by_regexp_qualifier;
+    }
+    bool has_qualifier_regexp_filter() const { return regexp_qualifiers.size()>0;}
 
     int64_t  cutoff_time;
     uint32_t max_versions;
@@ -131,7 +138,8 @@ namespace Hypertable {
     vector<String> exact_qualifiers;
     typedef set<const char *, LtCstr> QualifierSet;
     QualifierSet exact_qualifiers_set;
-    bool filter_by_qualifier;
+    bool filter_by_exact_qualifier;
+    bool filter_by_regexp_qualifier;
   };
 
   /**

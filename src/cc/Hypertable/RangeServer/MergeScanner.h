@@ -43,6 +43,46 @@ namespace Hypertable {
       ByteString value;
     };
 
+    class RegexpInfo {
+    public:
+      RegexpInfo(): last_family(-1), last_rowkey_match(false), last_column_match(false) {}
+
+      void check_rowkey(const char *rowkey, bool *cached, bool *match) {
+        *match = last_rowkey_match;
+        if (!strcmp(rowkey, last_rowkey.c_str()))
+          *cached = true;
+        else
+          *cached = false;
+      }
+
+      void check_column(int family, const char *qualifier, bool *cached,
+          bool *match) {
+          *match = last_column_match;
+          if (last_family == family && !strcmp(qualifier, last_qualifier.c_str()))
+            *cached = true;
+          else
+            *cached = false;
+      }
+
+      void set_rowkey(const char *rowkey, bool match) {
+        last_rowkey = rowkey;
+        last_rowkey_match = match;
+      }
+
+      void set_column(int family, const char *qualifier, bool match) {
+        last_family = family;
+        last_qualifier = qualifier;
+        last_column_match = match;
+      }
+
+    private:
+      String last_rowkey;
+      String last_qualifier;
+      int last_family;
+      bool last_rowkey_match;
+      bool last_column_match;
+    };
+
     struct LtScannerState {
       bool operator()(const ScannerState &ss1, const ScannerState &ss2) const {
         return ss1.key.serial > ss2.key.serial;
@@ -59,11 +99,14 @@ namespace Hypertable {
       m_release_callback = cb;
     }
 
-    void enable_io_accounting() { m_track_io = true; }
-
-    void get_io_accounting_data(int64_t *inp, int64_t *outp) {
-      *inp = m_bytes_input;
-      *outp = m_bytes_output;
+    void get_io_accounting_data(uint64_t *inbytesp, uint64_t *outbytesp,
+                                uint64_t *incellsp=0, uint64_t *outcellsp=0) {
+      *inbytesp = m_bytes_input;
+      *outbytesp = m_bytes_output;
+      if (incellsp)
+        *incellsp = m_cells_input;
+      if (outcellsp)
+        *outcellsp = m_cells_output;
     }
 
   private:
@@ -124,7 +167,7 @@ namespace Hypertable {
       if (remain == 1) {
         if ((char)*decode != '=')
           HT_FATAL_OUT << "Bad counter reset flag, expected '=' but got " << (int)*decode << HT_END;
-        m_skip_remaining_counter = true;        
+        m_skip_remaining_counter = true;
       }
     }
     void finish_count();
@@ -164,12 +207,15 @@ namespace Hypertable {
     int64_t       m_cell_cutoff;
     int64_t       m_start_timestamp;
     int64_t       m_end_timestamp;
-    int64_t       m_bytes_input;
-    int64_t       m_bytes_output;
-    int64_t       m_cur_bytes;
+    uint64_t       m_bytes_input;
+    uint64_t       m_bytes_output;
+    uint64_t       m_cells_input;
+    uint64_t       m_cells_output;
+    uint64_t       m_cur_bytes;
     int64_t       m_revision;
     DynamicBuffer m_prev_key;
     int32_t       m_prev_cf;
+    RegexpInfo    m_regexp_cache;
     CellStoreReleaseCallback m_release_callback;
   };
 

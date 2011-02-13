@@ -31,6 +31,10 @@ extern "C" {
 #include <poll.h>
 }
 
+#ifdef _WIN32
+#include "Common/ServerLaunchEvent.h"
+#endif
+
 namespace Hypertable {
 
 #ifdef _WIN32
@@ -73,7 +77,7 @@ namespace Hypertable {
         if (append_output) {
           m_outfd = ::CreateFile(outfile, GENERIC_READ|GENERIC_WRITE, 0, &sa, OPEN_ALWAYS, 0, 0);
           if (m_outfd != INVALID_HANDLE_VALUE) {
-              ::SetFilePointer(m_outfd, 0, 0, FILE_END);
+            ::SetFilePointer(m_outfd, 0, 0, FILE_END);
           }
         }
         else
@@ -111,25 +115,29 @@ namespace Hypertable {
         ::CloseHandle(hWritePipe);
         exit(1);
       }
+
+      ServerLaunchEvent server_launch_event(pi.dwProcessId);
+      server_launch_event.wait(10000);
+
       if (!::CloseHandle(pi.hProcess)) {
-         HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
+        HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
       }
       if (!::CloseHandle(pi.hThread)) {
-         HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
-      }     
-      ::Sleep(5000);
+        HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
+      }
+      ::Sleep(200);
     }
 
     ~ServerLauncher() {
       if( m_outfd != INVALID_HANDLE_VALUE ) {
         if (!::CloseHandle(m_outfd)) {
-           HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
+          HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
         }
-      }      
+      }
       _close(m_write_fd);
       if (!::CloseHandle(m_hReadPipe)) {
-           HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
-        }
+        HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));
+      }
       kill(pi.dwProcessId);
     }
 
@@ -144,13 +152,13 @@ namespace Hypertable {
                   << std::endl << std::flush;
 
         if (!::TerminateProcess(handle, -1)) {
-			DWORD dwLastError = ::GetLastError();
-            if (::WaitForSingleObject(handle, 1000) != WAIT_OBJECT_0) {
-              HT_ERRORF("TerminateProcess pid=%d error: %s", pid, winapi_strerror(dwLastError));
-            }
+          DWORD dwLastError = ::GetLastError();
+          if (::WaitForSingleObject(handle, 1000) != WAIT_OBJECT_0) {
+            HT_ERRORF("TerminateProcess pid=%d error: %s", pid, winapi_strerror(dwLastError));
+          }
         }
         else if (::WaitForSingleObject(handle, 5000) != WAIT_OBJECT_0) {
-            HT_ERRORF("TerminateProcess pid=%d time out", pid);
+          HT_ERRORF("TerminateProcess pid=%d time out", pid);
         }
         if (!::CloseHandle(handle)) {
           HT_ERRORF("CloseHandle error: %s", winapi_strerror(::GetLastError()));

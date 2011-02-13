@@ -87,23 +87,37 @@ namespace {
 
 
 bool
-MaintenancePrioritizer::schedule_inprogress_splits(RangeStatsVector &range_data,
+MaintenancePrioritizer::schedule_inprogress_operations(RangeStatsVector &range_data,
             MemoryState &memory_state, int32_t &priority, String &trace_str) {
   AccessGroup::MaintenanceData *ag_data;
   AccessGroup::CellStoreMaintenanceData *cs_data;
+  bool in_progress;
 
   for (size_t i=0; i<range_data.size(); i++) {
 
     if (range_data[i]->busy)
       continue;
 
-    if (range_data[i]->state == RangeState::SPLIT_LOG_INSTALLED ||
+    in_progress = false;
+    if (range_data[i]->state == RangeState::RELINQUISH_LOG_INSTALLED ||
+        range_data[i]->relinquish) {
+      HT_INFOF("Adding maintenance for range %s because mid-relinquish(%d)",
+               range_data[i]->range->get_name().c_str(), range_data[i]->state);
+      range_data[i]->maintenance_flags |= MaintenanceFlag::RELINQUISH;
+      in_progress = true;
+    }
+    else if (range_data[i]->state == RangeState::SPLIT_LOG_INSTALLED ||
         range_data[i]->state == RangeState::SPLIT_SHRUNK) {
       HT_INFOF("Adding maintenance for range %s because mid-split(%d)",
                range_data[i]->range->get_name().c_str(), range_data[i]->state);
       range_data[i]->maintenance_flags |= MaintenanceFlag::SPLIT;
+      in_progress = true;
+    }
+
+    if (in_progress) {
       range_data[i]->priority = priority++;
-      if (range_data[i]->state == RangeState::SPLIT_LOG_INSTALLED) {
+      if (range_data[i]->state == RangeState::RELINQUISH_LOG_INSTALLED ||
+          range_data[i]->state == RangeState::SPLIT_LOG_INSTALLED) {
 	for (ag_data = range_data[i]->agdata; ag_data; ag_data = ag_data->next) {
           memory_state.decrement_needed( ag_data->mem_allocated );
 	  for (cs_data=ag_data->csdata; cs_data; cs_data=cs_data->next)
@@ -134,7 +148,7 @@ MaintenancePrioritizer::schedule_splits(RangeStatsVector &range_data,
 
     // compute disk and memory totals
     for (ag_data = range_data[i]->agdata; ag_data; ag_data = ag_data->next) {
-      disk_total += ag_data->disk_used;
+      disk_total += ag_data->disk_estimate;
       mem_total += ag_data->mem_allocated;
       for (cs_data=ag_data->csdata; cs_data; cs_data=cs_data->next)
 	mem_total +=
@@ -214,7 +228,7 @@ MaintenancePrioritizer::schedule_necessary_compactions(RangeStatsVector &range_d
         continue;
       }
 
-      disk_total += ag_data->disk_used;
+      disk_total += ag_data->disk_estimate;
 
       if (ag_data->earliest_cached_revision == TIMESTAMP_MAX ||
           cumulative_size_map.empty())

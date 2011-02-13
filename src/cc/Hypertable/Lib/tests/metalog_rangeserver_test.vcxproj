@@ -116,7 +116,7 @@
     <PostBuildEvent>
       <Command>xcopy /Y "$(ProjectDir)rsmltest*.golden" "$(TargetDir)"
 cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
+start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; metalog_rangeserver_test_localBroker.stdout 2&gt; metalog_rangeserver_test_localBroker.stderr"
 ping 127.0.0.1 -n 2 -w 1000 &gt; nul
 "$(TargetPath)" --DfsBroker.Host=localhost --Hypertable.DataDirectory=$(TargetDir) &gt; nul
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
@@ -124,6 +124,7 @@ if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
 ping 127.0.0.1 -n 5 -w 1000 &gt; nul
 del rsmltest*.out
 del rsmltest*.golden
+del metalog_rangeserver*.std*
 rd /S /Q run
 </Command>
     </PostBuildEvent>
@@ -153,7 +154,7 @@ rd /S /Q run
     <PostBuildEvent>
       <Command>xcopy /Y "$(ProjectDir)rsmltest*.golden" "$(TargetDir)"
 cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
+start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; metalog_rangeserver_test_localBroker.stdout 2&gt; metalog_rangeserver_test_localBroker.stderr"
 ping 127.0.0.1 -n 2 -w 1000 &gt; nul
 "$(TargetPath)" --DfsBroker.Host=localhost --Hypertable.DataDirectory=$(TargetDir) &gt; nul
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
@@ -161,6 +162,7 @@ if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
 ping 127.0.0.1 -n 5 -w 1000 &gt; nul
 del rsmltest*.out
 del rsmltest*.golden
+del metalog_rangeserver*.std*
 rd /S /Q run
 </Command>
     </PostBuildEvent>
@@ -195,7 +197,7 @@ rd /S /Q run
     <PostBuildEvent>
       <Command>xcopy /Y "$(ProjectDir)rsmltest*.golden" "$(TargetDir)"
 cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
+start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; metalog_rangeserver_test_localBroker.stdout 2&gt; metalog_rangeserver_test_localBroker.stderr"
 ping 127.0.0.1 -n 2 -w 1000 &gt; nul
 "$(TargetPath)" --DfsBroker.Host=localhost --Hypertable.DataDirectory=$(TargetDir) &gt; nul
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
@@ -203,6 +205,7 @@ if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
 ping 127.0.0.1 -n 5 -w 1000 &gt; nul
 del rsmltest*.out
 del rsmltest*.golden
+del metalog_rangeserver*.std*
 rd /S /Q run
 </Command>
     </PostBuildEvent>
@@ -237,7 +240,7 @@ rd /S /Q run
     <PostBuildEvent>
       <Command>xcopy /Y "$(ProjectDir)rsmltest*.golden" "$(TargetDir)"
 cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
+start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; metalog_rangeserver_test_localBroker.stdout 2&gt; metalog_rangeserver_test_localBroker.stderr"
 ping 127.0.0.1 -n 2 -w 1000 &gt; nul
 "$(TargetPath)" --DfsBroker.Host=localhost --Hypertable.DataDirectory=$(TargetDir) &gt; nul
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
@@ -245,6 +248,7 @@ if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
 ping 127.0.0.1 -n 5 -w 1000 &gt; nul
 del rsmltest*.out
 del rsmltest*.golden
+del metalog_rangeserver*.std*
 rd /S /Q run
 </Command>
     </PostBuildEvent>

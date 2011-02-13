@@ -36,6 +36,18 @@ const char *TableIdentifier::METADATA_ID = "0/0";
 const char *TableIdentifier::METADATA_NAME= "sys/METADATA";
 const int TableIdentifier::METADATA_ID_LENGTH = 3;
 
+bool TableIdentifier::operator==(const TableIdentifier &other) const {
+  if (strcmp(id, other.id) ||
+      generation != other.generation)
+    return false;
+  return true;
+}
+
+bool TableIdentifier::operator!=(const TableIdentifier &other) const {
+  return !(*this == other);
+}
+
+
 size_t TableIdentifier::encoded_length() const {
   return 4 + encoded_length_vstr(id);
 }
@@ -49,6 +61,35 @@ void TableIdentifier::decode(const uint8_t **bufp, size_t *remainp) {
   HT_TRY("decoding table identitier",
     id = decode_vstr(bufp, remainp);
     generation = decode_i32(bufp, remainp));
+}
+
+void TableIdentifierManaged::decode(const uint8_t **bufp, size_t *remainp) {
+  TableIdentifier::decode(bufp, remainp);
+  *this = *this;
+}
+
+bool RangeSpec::operator==(const RangeSpec &other) const {
+  if (start_row == 0 || other.start_row == 0) {
+    if (start_row != other.start_row)
+      return false;
+  }
+  else {
+    if (strcmp(start_row, other.start_row))
+      return false;
+  }
+  if (end_row == 0 || other.end_row == 0) {
+    if (end_row != other.end_row)
+      return false;
+  }
+  else {
+    if (strcmp(end_row, other.end_row))
+      return false;
+  }
+  return true;
+}
+
+bool RangeSpec::operator!=(const RangeSpec &other) const {
+  return !(*this == other);
 }
 
 size_t RangeSpec::encoded_length() const {
@@ -66,51 +107,9 @@ void RangeSpec::decode(const uint8_t **bufp, size_t *remainp) {
     end_row = decode_vstr(bufp, remainp));
 }
 
-RangeIdentifier::RangeIdentifier(const char *start_row, const char *end_row) {
-  set(start_row, end_row);
-}
-
-bool RangeIdentifier::operator==(const RangeIdentifier &other) const {
-  return (0==memcmp((const void *)id, (const void *)other.id, length));
-}
-
-bool RangeIdentifier::operator<(const RangeIdentifier &other) const {
-  return (0 > memcmp((const void *)id, (const void *)other.id, length));
-}
-
-void RangeIdentifier::set(const char* start_row, const char *end_row) {
-  md5_context ctx;
-  memset(&ctx, 0, sizeof(ctx));
-  md5_starts(&ctx);
-  md5_update(&ctx, (const unsigned char *)start_row, strlen(start_row));
-  md5_update(&ctx, (const unsigned char *)end_row, strlen(end_row));
-  md5_finish(&ctx, id);
-}
-
-void RangeIdentifier::encode(uint8_t **bufp) const {
-  memcpy((void*)*bufp, (void*)id, length);
-  *bufp += length;
-}
-
-void RangeIdentifier::decode(const uint8_t **bufp, size_t *remainp) {
-  memcpy((void *)id, (void*)*bufp, length);
-  *bufp += length;
-  *remainp -= length;
-}
-
-void RangeIdentifier::to_str(String &out) const {
-  static const char hex[] = {'0', '1', '2', '3', '4', '5', '6', '7','8', '9', 'A',
-                             'B', 'C', 'D', 'E', 'F'};
-  char str[33];
-  int hex_digit;
-  for (uint32_t ii=0; ii<length; ++ii) {
-    hex_digit = id[ii] >> 4; // top 4 bits
-    str[ii*2] = hex[hex_digit];
-    hex_digit = id[ii] & 0x0f; // bottom 4 bits
-    str[ii*2+1]= hex[hex_digit];
-  }
-  str[32] = '\0';
-  out = str;
+void RangeSpecManaged::decode(const uint8_t **bufp, size_t *remainp) {
+  RangeSpec::decode(bufp, remainp);
+  *this = *this;
 }
 
 ostream &Hypertable::operator<<(ostream &os, const TableIdentifier &tid) {
@@ -126,13 +125,6 @@ ostream &Hypertable::operator<<(ostream &os, const RangeSpec &range) {
   HT_DUMP_CSTR(os, end, range.end_row);
 
   os <<'}';
-  return os;
-}
-
-ostream &Hypertable::operator<<(ostream &os, const RangeIdentifier &range_id) {
-  String str;
-  range_id.to_str(str);
-  os <<"{RangeId:" << str << "}";
   return os;
 }
 

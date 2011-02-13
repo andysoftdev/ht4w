@@ -45,6 +45,7 @@
 #ifdef _WIN32
 
 #include "pthread.h"
+#include "Common/ServerLaunchEvent.h"
 
 #endif
 
@@ -1375,6 +1376,7 @@ int main(int argc, char **argv) {
 #ifdef _WIN32
 
   pthread_win32_process_attach_np();
+  ServerLaunchEvent server_launch_event;
 
 #endif
 
@@ -1393,6 +1395,11 @@ int main(int argc, char **argv) {
     TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
 
     HT_INFO("Starting the server...");
+
+    #ifdef _WIN32
+    server_launch_event.set_event();
+    #endif
+
     server.serve();
     HT_INFO("Exiting.\n");
   }

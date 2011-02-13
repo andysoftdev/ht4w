@@ -31,6 +31,7 @@
 #include "AsyncComm/DispatchHandler.h"
 
 #include "Common/ReferenceCount.h"
+#include "Common/StatsSystem.h"
 #include "Common/Timer.h"
 
 #include "Hyperspace/HandleCallback.h"
@@ -97,16 +98,23 @@ namespace Hypertable {
 
     void status(Timer *timer=0);
 
-    void register_server(std::string &location, const InetAddr &addr,
+    void register_server(std::string &location, uint16_t listen_port,
+                         StatsSystem &system_stats,
                          DispatchHandler *handler, Timer *timer = 0);
-    void register_server(std::string &location, const InetAddr &addr,
-                         Timer *timer=0);
+    void register_server(std::string &location, uint16_t listen_port,
+                         StatsSystem &system_stats, Timer *timer=0);
 
-    void report_split(TableIdentifier *table, RangeSpec &range,
-                      const String &log_dir, uint64_t soft_limit,
-                      DispatchHandler *handler, Timer *timer = 0);
-    void report_split(TableIdentifier *table, RangeSpec &range,
-                      const String &log_dir, uint64_t soft_limit, Timer *timer=0);
+    void move_range(TableIdentifier *table, RangeSpec &range,
+                    const String &log_dir, uint64_t soft_limit,
+                    bool split, DispatchHandler *handler, Timer *timer = 0);
+    void move_range(TableIdentifier *table, RangeSpec &range,
+                    const String &log_dir, uint64_t soft_limit,
+                    bool split, Timer *timer=0);
+
+    void relinquish_acknowledge(TableIdentifier *table, RangeSpec &range,
+                                DispatchHandler *handler, Timer *timer = 0);
+    void relinquish_acknowledge(TableIdentifier *table, RangeSpec &range,
+                                Timer *timer=0);
 
     void drop_table(const String &table_name, bool if_exists,
                     DispatchHandler *handler, Timer *timer=0);
