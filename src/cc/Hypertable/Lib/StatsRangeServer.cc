@@ -23,6 +23,10 @@
 
 #include "KeySpec.h"
 #include "StatsRangeServer.h"
+#ifdef _WIN32
+#include "Common/Config.h"
+#include "Common/Path.h"
+#endif
 
 using namespace Hypertable;
 
@@ -40,6 +44,19 @@ StatsRangeServer::StatsRangeServer() : StatsSerializable(RANGE_SERVER, 1), times
 StatsRangeServer::StatsRangeServer(PropertiesPtr &props) : StatsSerializable(RANGE_SERVER, 1), timestamp(TIMESTAMP_MIN) {
   const char *base, *ptr;
   String datadirs = props->get_str("Hypertable.RangeServer.Monitoring.DataDirectories");
+
+#ifdef _WIN32
+  boost::trim(datadirs);
+  boost::trim_right_if(datadirs, boost::is_any_of("/"));
+  if (datadirs.empty()) {
+    Path data_dir = Config::properties->get_str("Hypertable.DataDirectory");
+    if (data_dir.is_complete() && data_dir.has_root_path()) {
+      datadirs = data_dir.root_path().string();
+      boost::trim_right_if(datadirs, boost::is_any_of("/"));
+    }
+  }
+#endif
+
   String dir;
   std::vector<String> dirs;
 

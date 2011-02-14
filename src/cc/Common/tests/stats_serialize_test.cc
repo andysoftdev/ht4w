@@ -18,8 +18,7 @@ int main(int argc, char *argv[]) {
   dirs.push_back("/");
   dirs.push_back("/tmp");
 #else
-  dirs.push_back("./test/");
-  dirs.push_back("./test/tmp");
+  dirs.push_back("/");
 #endif
 
   StatsSystem *stats = new StatsSystem(StatsSystem::CPUINFO |

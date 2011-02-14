@@ -28,9 +28,6 @@
     <ClCompile Include="ApacheLogParser.cc" />
     <ClCompile Include="Cell.cc" />
     <ClCompile Include="Client.cc" />
-    <ClCompile Include="CommitLog.cc" />
-    <ClCompile Include="CommitLogBlockStream.cc" />
-    <ClCompile Include="CommitLogReader.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="DataGenerator.cc" />
     <ClCompile Include="EventHandlerMasterChange.cc" />
@@ -172,10 +169,6 @@
     <ClInclude Include="Cell.h" />
     <ClInclude Include="Cells.h" />
     <ClInclude Include="Client.h" />
-    <ClInclude Include="CommitLog.h" />
-    <ClInclude Include="CommitLogBase.h" />
-    <ClInclude Include="CommitLogBlockStream.h" />
-    <ClInclude Include="CommitLogReader.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="DataGenerator.h" />
     <ClInclude Include="DataGeneratorColumn.h" />

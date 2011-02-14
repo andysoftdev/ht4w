@@ -271,6 +271,15 @@
     <ClCompile Include="RequestHandlerWaitForMaintenance.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\Lib\CommitLog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Lib\CommitLogBlockStream.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Lib\CommitLogReader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -586,6 +595,18 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RequestHandlerWaitForMaintenance.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\CommitLog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\CommitLogBase.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\CommitLogBlockStream.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\CommitLogReader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

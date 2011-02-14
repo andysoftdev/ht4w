@@ -108,7 +108,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -146,7 +146,7 @@ rd /S /Q CellStoreScanner_delete_test
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -189,7 +189,7 @@ rd /S /Q CellStoreScanner_delete_test
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -232,7 +232,7 @@ rd /S /Q CellStoreScanner_delete_test
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>

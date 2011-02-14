@@ -73,9 +73,6 @@
     <ClCompile Include="System.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SystemInfo.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Time.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -277,9 +274,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="System.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SystemInfo.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TclHash.h">

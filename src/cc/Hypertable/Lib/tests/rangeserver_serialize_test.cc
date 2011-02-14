@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 #ifndef _WIN32
   String dirs = "/,/tmp";
 #else
-  String dirs = "./,./tmp";
+  String dirs = "/";
 #endif
   StatsRangeServerPtr stats1, stats2;
   char idbuf[32];

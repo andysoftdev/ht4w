@@ -203,7 +203,6 @@
     </ClCompile>
     <ClCompile Include="SuperFastHash.cc" />
     <ClCompile Include="System.cc" />
-    <ClCompile Include="SystemInfo.cc" />
     <ClCompile Include="Time.cc" />
     <ClCompile Include="Usage.cc" />
     <ClCompile Include="Version.cc" />
@@ -274,7 +273,6 @@
     <ClInclude Include="SuperFastHash.h" />
     <ClInclude Include="Sweetener.h" />
     <ClInclude Include="System.h" />
-    <ClInclude Include="SystemInfo.h" />
     <ClInclude Include="TclHash.h" />
     <ClInclude Include="TestHarness.h" />
     <ClInclude Include="TestUtils.h" />
