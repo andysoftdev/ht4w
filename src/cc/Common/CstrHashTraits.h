@@ -40,13 +40,6 @@ struct CstrHashTraits {
     size_t operator()(const char *s) const { return hasher(s); }
   };
 
-  struct key_equal {
-    bool
-    operator()(const char *a, const char *b) const {
-      return std::strcmp(a, b) == 0;
-    }
-  };
-
 #else
 
   struct hash_compare {

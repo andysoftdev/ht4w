@@ -313,9 +313,9 @@ void ConnectionManager::remove_all() {
   std::vector<CommAddress> addrs;
   {
     ScopedLock lock(m_impl->mutex);
-    for each (hash_map<String, ConnectionStatePtr>::value_type v in m_impl->conn_map_proxy)
-      addrs.push_back(v.second->addr);
-    foreach (SockAddrMap<ConnectionStatePtr>::value_type& v, m_impl->conn_map )
+    for(hash_map<String, ConnectionStatePtr>::iterator it = m_impl->conn_map_proxy.begin(); it != m_impl->conn_map_proxy.end(); ++it)
+      addrs.push_back((*it).second->addr);
+    foreach (SockAddrMap<ConnectionStatePtr>::value_type& v, m_impl->conn_map)
       addrs.push_back(v.second->addr);
   }
   foreach (const CommAddress& addr, addrs)
