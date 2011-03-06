@@ -68,6 +68,26 @@ namespace {
   };
 
   /**
+   * DateTimeLayout
+   **/
+  class DateTimeLayout : public Logging::Layout {
+  public:
+    DateTimeLayout() { }
+    virtual ~DateTimeLayout() { }
+    virtual String format(const Logging::LoggingEvent& event) {
+      struct tm lt;
+      time_t t = event.timeStamp.getSeconds();
+      localtime_s(&lt, &t);
+      char dateTime[64];
+      strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", &lt);
+      return Hypertable::format("%s.%03d %-5s %s\n",
+          dateTime, event.timeStamp.getMilliSeconds(),
+          event.priority != Logging::Priority::NOTICE ? Logging::Priority::getPriorityName(event.priority).c_str() : "",
+          event.message.c_str());
+    }
+  };
+
+  /**
    * FlushableAppender appender with flush method
    */
   class FlushableAppender : public Logging::LayoutAppender {
@@ -116,7 +136,7 @@ namespace {
     std::ostream &m_stream;
   };
 
-  FlushableAppender *appender = 0;
+  static FlushableAppender *appender = 0;
 
 } // local namespace
 
@@ -126,42 +146,60 @@ bool Logger::show_line_numbers = true;
 void
 Logger::initialize(const String &name, int priority, bool flush_per_log,
                    std::ostream &out) {
-  appender = new FlushableOstreamAppender("default", out, flush_per_log);
-  Logging::Layout* layout = new Logging::BasicLayout();
-  //Logging::Layout* layout = new MicrosecondLayout();
-  appender->setLayout(layout);
   logger = &(Logging::Category::getInstance(name));
+  logger->removeAllAppenders();
+  appender = new FlushableOstreamAppender("default", out, flush_per_log);
+  //Logging::Layout *layout = new Logging::BasicLayout();
+  //Logging::Layout *layout = new MicrosecondLayout();
+  Logging::Layout *layout = new DateTimeLayout();
+  appender->setLayout(layout);
   logger->addAppender(appender);
   logger->setAdditivity(false);
   logger->setPriority(priority);
 }
 
 void
+Logger::redirect(std::ostream &out, bool flush_per_log) {
+  HT_EXPECT(logger, Error::FAILED_EXPECTATION);
+  logger->removeAppender(appender);
+  appender = new FlushableOstreamAppender("default", out, flush_per_log);
+  //Logging::Layout *layout = new Logging::BasicLayout();
+  //Logging::Layout *layout = new MicrosecondLayout();
+  Logging::Layout *layout = new DateTimeLayout();
+  appender->setLayout(layout);
+  logger->addAppender(appender);
+}
+
+void
 Logger::set_level(int priority) {
+  HT_EXPECT(logger, Error::FAILED_EXPECTATION);
   logger->setPriority(priority);
 }
 
 void
 Logger::suppress_line_numbers() {
+  HT_EXPECT(logger, Error::FAILED_EXPECTATION);
   Logger::show_line_numbers = false;
 }
 
 void
 Logger::set_test_mode(const String &name, int fd) {
-  Logging::FileAppender *appender;
+  HT_EXPECT(logger, Error::FAILED_EXPECTATION);
+  logger->removeAppender(appender);
+  appender = 0;
   Logger::show_line_numbers = false;
-  logger->removeAllAppenders();
-  appender = new Logging::FileAppender(name, fd);
-  appender->setLayout(new NoTimeLayout());
-  logger->setAppender(appender);
+  Logging::FileAppender* fileAppender = new Logging::FileAppender(name, fd);
+  fileAppender->setLayout(new NoTimeLayout());
+  logger->addAppender(fileAppender);
 }
 
 bool
 Logger::set_flush_per_log(bool choice) {
-  return appender->set_flush_per_log(choice);
+  return appender ? appender->set_flush_per_log(choice) : false;
 }
 
 void
 Logger::flush() {
-  appender->flush();
+  if (appender)
+    appender->flush();
 }

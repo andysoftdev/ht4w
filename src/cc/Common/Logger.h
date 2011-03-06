@@ -32,6 +32,7 @@ namespace Hypertable { namespace Logger {
 
   void initialize(const String &name, int level = Priority::DEBUG,
                   bool flush_per_log = true, std::ostream &out = std::cout);
+  void redirect(std::ostream &out, bool flush_per_log = true);
   void set_level(int level);
   void set_test_mode(const String &name, int fd=1);
   void suppress_line_numbers();
@@ -56,7 +57,7 @@ namespace Hypertable { namespace Logger {
 // printf interface macro helper
 #define HT_LOG(_enabled_, _cat_, msg) do { \
   if (Logger::logger->_enabled_()) { \
-    if (Logger::show_line_numbers) \
+    if (log4cpp::Priority::_cat_ != log4cpp::Priority::NOTICE && Logger::show_line_numbers) \
       Logger::logger->log(log4cpp::Priority::_cat_, Hypertable::format( \
           "(%s:%d) %s", __FILE__, __LINE__, msg)); \
     else \
@@ -66,7 +67,7 @@ namespace Hypertable { namespace Logger {
 
 #define HT_LOGF(_enabled_, _cat_, fmt, ...) do { \
   if (Logger::logger->_enabled_()) { \
-    if (Logger::show_line_numbers) \
+    if (log4cpp::Priority::_cat_ != log4cpp::Priority::NOTICE && Logger::show_line_numbers) \
       Logger::logger->log(log4cpp::Priority::_cat_, Hypertable::format( \
           "(%s:%d) " fmt, __FILE__, __LINE__, __VA_ARGS__)); \
     else \
@@ -82,7 +83,7 @@ namespace Hypertable { namespace Logger {
   char logbuf[HT_LOG_BUF_SIZE]; \
   log4cpp::Priority::PriorityLevel _level_ = log4cpp::Priority::_l_; \
   FixedOstream _out_(logbuf, sizeof(logbuf)); \
-  if (Logger::show_line_numbers) \
+  if (log4cpp::Priority::_l_ != log4cpp::Priority::NOTICE && Logger::show_line_numbers) \
     _out_ <<"("<< __FILE__ <<':'<< __LINE__ <<") "; \
   _out_
 
@@ -91,7 +92,7 @@ namespace Hypertable { namespace Logger {
   log4cpp::Priority::PriorityLevel _level_ = log4cpp::Priority::_l_; \
   FixedOstream _out_(logbuf, sizeof(logbuf)); \
   _out_ << __func__; \
-  if (Logger::show_line_numbers) \
+  if (log4cpp::Priority::_l_ != log4cpp::Priority::NOTICE && Logger::show_line_numbers) \
     _out_ << " ("<< __FILE__ <<':'<< __LINE__ <<")"; \
   _out_ <<": "
 
