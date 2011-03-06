@@ -1,26 +1,25 @@
 /**
- * Copyright (C) 2008 Doug Judd (Zvents, Inc.)
- *
- * This file is part of Hypertable.
- *
- * Hypertable is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or any later version.
- *
- * Hypertable is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
- */
+* Copyright (C) 2008 Doug Judd (Zvents, Inc.)
+*
+* This file is part of Hypertable.
+*
+* Hypertable is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 2
+* of the License, or any later version.
+*
+* Hypertable is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+* 02110-1301, USA.
+*/
 
 #include "Common/Compat.h"
-
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -49,6 +48,9 @@ extern "C" {
 
 #include "FileUtils.h"
 #include "Logger.h"
+#ifdef _WIN32
+#include "SecurityUtils.h"
+#endif
 
 using namespace Hypertable;
 using namespace std;
@@ -66,174 +68,179 @@ ssize_t FileUtils::read(const String &fname, String &contents) {
 
 #ifdef _WIN32
 
-String &replace_all (String &str, char find, char replace)
-{
-    for (int i = str.find (find); i != String::npos; i = str.find (find, i + 1))
-      str[i] = replace;
-    return str;
-}
-
-
 #define HT_WIN32_LASTERROR( msg ) \
-    DWORD err = ::GetLastError(); \
+  { \
+    DWORD err = GetLastError(); \
     HT_ERRORF( msg" %s", winapi_strerror(err)); \
-    ::SetLastError(err);
+    SetLastError(err); \
+  }
 
 ssize_t FileUtils::read(HANDLE fd, void *vptr, size_t n) {
-    DWORD nread;
-    if( !::ReadFile(fd, vptr, n, &nread, 0) ) {
-        HT_WIN32_LASTERROR("read");
-        return -1;
-    }
-    return nread;
+  DWORD nread;
+  if( !::ReadFile(fd, vptr, n, &nread, 0) ) {
+    HT_WIN32_LASTERROR("read");
+    return -1;
+  }
+  return nread;
 }
 
 ssize_t FileUtils::read(int fd, void *vptr, size_t n) {
-    return read((HANDLE) _get_osfhandle(fd), vptr, n);
+  return read((HANDLE) _get_osfhandle(fd), vptr, n);
 }
 
 ssize_t FileUtils::pread(HANDLE fd, void *vptr, size_t n, uint64_t offset) {
-    OVERLAPPED ov = { 0 };
-    ov.Offset = (DWORD)offset;
-    ov.OffsetHigh = offset >> 32;
-    DWORD nread;
-    if(!::ReadFile(fd, vptr, n, &nread, &ov)) {
-        if( GetLastError() != ERROR_IO_PENDING ) {
-            HT_WIN32_LASTERROR("pread");
-            return -1;
-        }
-        if(!::GetOverlappedResult(fd, &ov, &nread, TRUE)) {
-            HT_WIN32_LASTERROR("pread");
-            return -1;
-        }
+  OVERLAPPED ov = { 0 };
+  ov.Offset = (DWORD)offset;
+  ov.OffsetHigh = offset >> 32;
+  DWORD nread;
+  if(!::ReadFile(fd, vptr, n, &nread, &ov)) {
+    if( GetLastError() != ERROR_IO_PENDING ) {
+      HT_WIN32_LASTERROR("pread");
+      return -1;
     }
-    return nread;
+    if(!::GetOverlappedResult(fd, &ov, &nread, TRUE)) {
+      HT_WIN32_LASTERROR("pread");
+      return -1;
+    }
+  }
+  return nread;
 }
 
 ssize_t FileUtils::pread(int fd, void *vptr, size_t n, uint64_t offset) {
-    return pread((HANDLE) _get_osfhandle(fd), vptr, n, offset);
+  return pread((HANDLE) _get_osfhandle(fd), vptr, n, offset);
 }
 
 ssize_t FileUtils::write(const String &fname, String &contents) {
-    HANDLE fd = ::CreateFile(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, NULL);
-    if (fd == INVALID_HANDLE_VALUE) {
-        DWORD err = GetLastError();
-        HT_ERRORF("Unable to open file \"%s\" for writing - %s", fname.c_str(), winapi_strerror(err));
-        SetLastError(err);
-    }
-    ssize_t rval = write(fd, contents.c_str(), contents.length());
-    ::CloseHandle(fd);
-    return rval;
+  HANDLE fd = ::CreateFile(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, NULL);
+  if (fd == INVALID_HANDLE_VALUE) {
+    DWORD err = GetLastError();
+    HT_ERRORF("Unable to open file \"%s\" for writing - %s", fname.c_str(), winapi_strerror(err));
+    SetLastError(err);
+  }
+  ssize_t rval = write(fd, contents.c_str(), contents.length());
+  ::CloseHandle(fd);
+  return rval;
 }
 
 ssize_t FileUtils::write(HANDLE fd, const void *vptr, size_t n) {
-    DWORD nwritten;
-    if (!::WriteFile(fd, vptr, n, &nwritten, 0)) {
-        HT_WIN32_LASTERROR("write");
-        return -1; /* error */
-    }
-    return nwritten;
+  DWORD nwritten;
+  if (!::WriteFile(fd, vptr, n, &nwritten, 0)) {
+    HT_WIN32_LASTERROR("write");
+    return -1; /* error */
+  }
+  return nwritten;
 }
 
 ssize_t FileUtils::write(int fd, const void *vptr, size_t n) {
-    return write((HANDLE) _get_osfhandle(fd), vptr, n);
+  return write((HANDLE) _get_osfhandle(fd), vptr, n);
 }
 
 char *FileUtils::file_to_buffer(const String &fname, size_t *lenp) {
-    *lenp = 0;
+  *lenp = 0;
 
-    HANDLE fd = ::CreateFile(fname.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, NULL);
-    if (fd == INVALID_HANDLE_VALUE) {
-        DWORD err = ::GetLastError();
-        HT_ERRORF("CreateFile(\"%s\") failure - %s", fname.c_str(), winapi_strerror(err));
-        ::SetLastError(err);
-        return 0;
-    }
+  HANDLE fd = ::CreateFile(fname.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, NULL);
+  if (fd == INVALID_HANDLE_VALUE) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("CreateFile(\"%s\") failure - %s", fname.c_str(), winapi_strerror(err));
+    ::SetLastError(err);
+    return 0;
+  }
 
-    LARGE_INTEGER fs;
-    if (!::GetFileSizeEx(fd, &fs)) {
-        DWORD err = ::GetLastError();
-        HT_ERRORF("GetFileSizeEx(\"%s\") failure - %s", fname.c_str(), winapi_strerror(err));
-        ::CloseHandle(fd);
-        ::SetLastError(err);
-        return 0;
-    }
-
-    *lenp = (size_t)fs.QuadPart;
-    char *rbuf = new char [*lenp + 1];
-    ssize_t nread = FileUtils::read(fd, rbuf, *lenp);
+  LARGE_INTEGER fs;
+  if (!::GetFileSizeEx(fd, &fs)) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("GetFileSizeEx(\"%s\") failure - %s", fname.c_str(), winapi_strerror(err));
     ::CloseHandle(fd);
+    ::SetLastError(err);
+    return 0;
+  }
 
-    if (nread == (ssize_t)-1) {
-        delete [] rbuf;
-        *lenp = 0;
-        return 0;
-    }
+  *lenp = (size_t)fs.QuadPart;
+  char *rbuf = new char [*lenp + 1];
+  ssize_t nread = FileUtils::read(fd, rbuf, *lenp);
+  ::CloseHandle(fd);
 
-    if (nread < (ssize_t)*lenp) {
-        HT_WARNF("short read (%d of %d bytes)", (int)nread, (int)*lenp);
-        *lenp = nread;
-    }
+  if (nread == (ssize_t)-1) {
+    delete [] rbuf;
+    *lenp = 0;
+    return 0;
+  }
 
-    rbuf[nread] = 0;
-    return rbuf;
+  if (nread < (ssize_t)*lenp) {
+    HT_WARNF("short read (%d of %d bytes)", (int)nread, (int)*lenp);
+    *lenp = nread;
+  }
+
+  rbuf[nread] = 0;
+  return rbuf;
 }
 
-bool FileUtils::mkdirs(const String &dirname) {	 
-    boost::shared_array<char> tmp_dir(new char [dirname.length() + 1]);
-    char *tmpdir = tmp_dir.get();
-    char *ptr = tmpdir+1;
+bool FileUtils::mkdirs(const String &dirname) {
+  boost::shared_array<char> tmp_dir(new char [dirname.length() + 1]);
+  char *tmpdir = tmp_dir.get();
+  char *ptr = tmpdir+1;
 
-    strcpy(tmpdir, dirname.c_str());
-    while ((ptr = strchr(ptr, '\\')) != 0) {
-        *ptr = '/';
-    }
-    ptr = tmpdir+1;
+  strcpy(tmpdir, dirname.c_str());
+  while ((ptr = strchr(ptr, '\\')) != 0) {
+    *ptr = '/';
+  }
+  ptr = tmpdir+1;
 
-    while ((ptr = strchr(ptr, '/')) != 0) {
-        *ptr = 0;
-        if (!FileUtils::exists(tmpdir) ) {
-            if (!::CreateDirectory(tmpdir, 0)) {
-                DWORD err = GetLastError();
-                HT_ERRORF("Problem creating directory '%s' - %s", tmpdir, winapi_strerror(err));
-                SetLastError(err);
-                return false;
-            }
-        }
-        *ptr++ = '/';
+  //bool ace_added = false;
+  while ((ptr = strchr(ptr, '/')) != 0) {
+    *ptr = 0;
+    if (!FileUtils::exists(tmpdir)) {
+      if (!::CreateDirectory(tmpdir, 0)) {
+        DWORD err = GetLastError();
+        HT_ERRORF("Problem creating directory '%s' - %s", tmpdir, winapi_strerror(err));
+        SetLastError(err);
+        return false;
+      }
+      /*else if (!ace_added) {
+        if (!SecurityUtils::set_file_security_info(tmpdir, WinBuiltinUsersSid, GENERIC_ALL))
+          HT_ERROR("set_file_security_info failed");
+        ace_added = true;
+      }*/
     }
+    *ptr++ = '/';
+  }
 
-    if (!FileUtils::exists(tmpdir) ) {
-        if (!::CreateDirectory(tmpdir, 0)) {
-            DWORD err = GetLastError();
-            HT_ERRORF("Problem creating directory '%s' - %s", tmpdir, winapi_strerror(err));
-            SetLastError(err);
-            return false;
-        }
+  if (!FileUtils::exists(tmpdir) ) {
+    if (!::CreateDirectory(tmpdir, 0)) {
+      DWORD err = GetLastError();
+      HT_ERRORF("Problem creating directory '%s' - %s", tmpdir, winapi_strerror(err));
+      SetLastError(err);
+      return false;
     }
-    return true;
+    /*else if (!ace_added) {
+      if (!SecurityUtils::set_file_security_info(tmpdir, WinBuiltinUsersSid, GENERIC_ALL))
+        HT_ERROR("set_file_security_info failed");
+      ace_added = true;
+    }*/
+  }
+  return true;
 }
 
 bool FileUtils::exists(const String &fname) {
-    if( ::GetFileAttributes(fname.c_str()) != INVALID_FILE_ATTRIBUTES )
-        return true;
-    DWORD err = ::GetLastError();
-    if (err != ERROR_FILE_NOT_FOUND &&
-        err != ERROR_PATH_NOT_FOUND) {
-        HT_ERRORF("GetFileAttributes '%s' - %s", fname.c_str(), winapi_strerror(err));
-        ::SetLastError(err);
-    }
-    return false;
+  if( ::GetFileAttributes(fname.c_str()) != INVALID_FILE_ATTRIBUTES )
+    return true;
+  DWORD err = ::GetLastError();
+  if (err != ERROR_FILE_NOT_FOUND &&
+    err != ERROR_PATH_NOT_FOUND) {
+      HT_ERRORF("GetFileAttributes '%s' - %s", fname.c_str(), winapi_strerror(err));
+      ::SetLastError(err);
+  }
+  return false;
 }
 
 bool FileUtils::unlink(const String &fname) {
-    if (!::DeleteFile(fname.c_str())) {
-        DWORD err = ::GetLastError();
-        HT_ERRORF("DeleteFile(\"%s\") failed - %s", fname.c_str(), winapi_strerror(err));
-        ::SetLastError(err);
-        return false;
-    }
-    return true;
+  if (!::DeleteFile(fname.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("DeleteFile(\"%s\") failed - %s", fname.c_str(), winapi_strerror(err));
+    ::SetLastError(err);
+    return false;
+  }
+  return true;
 }
 
 uint64_t FileUtils::size(const String &fname) {
@@ -242,41 +249,41 @@ uint64_t FileUtils::size(const String &fname) {
 }
 
 bool FileUtils::rename(const String &oldpath, const String &newpath) {
-    if (!::MoveFile(oldpath.c_str(), newpath.c_str())) {
-        DWORD err = ::GetLastError();
-        HT_ERRORF("MoveFile(\"%s\", \"%s\") failed - %s", oldpath.c_str(), newpath.c_str(), winapi_strerror(err));
-        ::SetLastError(err);
-        return false;
-    }
-    return true;
+  if (!::MoveFile(oldpath.c_str(), newpath.c_str())) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("MoveFile(\"%s\", \"%s\") failed - %s", oldpath.c_str(), newpath.c_str(), winapi_strerror(err));
+    ::SetLastError(err);
+    return false;
+  }
+  return true;
 }
 
 int64_t FileUtils::length(const String &fname) {
-    WIN32_FIND_DATA wfd;
-    HANDLE fh = ::FindFirstFile(fname.c_str(), &wfd);
-    if (fh == INVALID_HANDLE_VALUE) {
-        DWORD err = ::GetLastError();
-        HT_ERRORF("length (FindFirstFile) failed: file='%s' - %s", fname.c_str(), winapi_strerror(err));
-        ::SetLastError(err);
-        return (int64_t)-1;
-    }
-    ::FindClose(fh);
-    return ((int64_t)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
+  WIN32_FIND_DATA wfd;
+  HANDLE fh = ::FindFirstFile(fname.c_str(), &wfd);
+  if (fh == INVALID_HANDLE_VALUE) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("length (FindFirstFile) failed: file='%s' - %s", fname.c_str(), winapi_strerror(err));
+    ::SetLastError(err);
+    return (int64_t)-1;
+  }
+  ::FindClose(fh);
+  return ((int64_t)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
 }
 
 void FileUtils::add_trailing_slash(String &path) {
-    if (path.find('/', path.length()-1) == string::npos)
-        path += "/";
+  if (path.find('/', path.length()-1) == string::npos)
+    path += "/";
 }
 
 bool  FileUtils::expand_tilde(String&) {
-    return false;
+  return false;
 }
 
 #else
 
 /**
- */
+*/
 ssize_t FileUtils::read(int fd, void *vptr, size_t n) {
   size_t nleft;
   ssize_t nread;
@@ -303,7 +310,7 @@ ssize_t FileUtils::read(int fd, void *vptr, size_t n) {
 }
 
 /**
- */
+*/
 ssize_t FileUtils::pread(int fd, void *vptr, size_t n, off_t offset) {
   size_t nleft;
   ssize_t nread;
@@ -336,7 +343,7 @@ ssize_t FileUtils::write(const String &fname, String &contents) {
   if (fd < 0) {
     int saved_errno = errno;
     HT_ERRORF("Unable to open file \"%s\" for writing - %s", fname.c_str(),
-              strerror(saved_errno));
+      strerror(saved_errno));
     errno = saved_errno;
     return -1;
   }
@@ -348,7 +355,7 @@ ssize_t FileUtils::write(const String &fname, String &contents) {
 
 
 /**
- */
+*/
 ssize_t FileUtils::write(int fd, const void *vptr, size_t n) {
   size_t nleft;
   ssize_t nwritten;
@@ -391,29 +398,29 @@ ssize_t FileUtils::writev(int fd, const struct iovec *vector, int count) {
 
 
 ssize_t
-FileUtils::sendto(int fd, const void *vptr, size_t n, const sockaddr *to,
-                  socklen_t tolen) {
-  size_t nleft;
-  ssize_t nsent;
-  const char *ptr;
+  FileUtils::sendto(int fd, const void *vptr, size_t n, const sockaddr *to,
+  socklen_t tolen) {
+    size_t nleft;
+    ssize_t nsent;
+    const char *ptr;
 
-  ptr = (const char *)vptr;
-  nleft = n;
-  while (nleft > 0) {
-    if ((nsent = ::sendto(fd, ptr, nleft, 0, to, tolen)) <= 0) {
-      if (errno == EINTR)
-        nsent = 0; /* and call sendto() again */
-      else if (errno == EAGAIN || errno == ENOBUFS)
-        break;
-      else {
-        return -1; /* error */
+    ptr = (const char *)vptr;
+    nleft = n;
+    while (nleft > 0) {
+      if ((nsent = ::sendto(fd, ptr, nleft, 0, to, tolen)) <= 0) {
+        if (errno == EINTR)
+          nsent = 0; /* and call sendto() again */
+        else if (errno == EAGAIN || errno == ENOBUFS)
+          break;
+        else {
+          return -1; /* error */
+        }
       }
-    }
 
-    nleft -= nsent;
-    ptr   += nsent;
-  }
-  return n - nleft;
+      nleft -= nsent;
+      ptr   += nsent;
+    }
+    return n - nleft;
 }
 
 
@@ -445,18 +452,18 @@ ssize_t FileUtils::send(int fd, const void *vptr, size_t n) {
 
 
 ssize_t
-FileUtils::recvfrom(int fd, void *vptr, size_t n, sockaddr *from,
-                    socklen_t *fromlen) {
-  ssize_t nread;
-  while (true) {
-    if ((nread = ::recvfrom(fd, vptr, n, 0, from, fromlen)) < 0) {
-      if (errno != EINTR)
+  FileUtils::recvfrom(int fd, void *vptr, size_t n, sockaddr *from,
+  socklen_t *fromlen) {
+    ssize_t nread;
+    while (true) {
+      if ((nread = ::recvfrom(fd, vptr, n, 0, from, fromlen)) < 0) {
+        if (errno != EINTR)
+          break;
+      }
+      else
         break;
     }
-    else
-      break;
-  }
-  return nread;
+    return nread;
 }
 
 
@@ -496,7 +503,7 @@ void FileUtils::set_flags(int fd, int flags) {
 
 
 /**
- */
+*/
 char *FileUtils::file_to_buffer(const String &fname, off_t *lenp) {
   struct stat statbuf;
   int fd;
@@ -561,7 +568,7 @@ bool FileUtils::mkdirs(const String &dirname) {
         if (mkdir(tmpdir, 0755) != 0) {
           int saved_errno = errno;
           HT_ERRORF("Problem creating directory '%s' - %s",
-                    tmpdir, strerror(saved_errno));
+            tmpdir, strerror(saved_errno));
           errno = saved_errno;
           return false;
         }
@@ -569,7 +576,7 @@ bool FileUtils::mkdirs(const String &dirname) {
       else {
         int saved_errno = errno;
         HT_ERRORF("Problem stat'ing directory '%s' - %s",
-                  tmpdir, strerror(saved_errno));
+          tmpdir, strerror(saved_errno));
         errno = saved_errno;
         return false;
       }
@@ -582,7 +589,7 @@ bool FileUtils::mkdirs(const String &dirname) {
       if (mkdir(tmpdir, 0755) != 0) {
         int saved_errno = errno;
         HT_ERRORF("Problem creating directory '%s' - %s",
-                  tmpdir, strerror(saved_errno));
+          tmpdir, strerror(saved_errno));
         errno = saved_errno;
         return false;
       }
@@ -590,7 +597,7 @@ bool FileUtils::mkdirs(const String &dirname) {
     else {
       int saved_errno = errno;
       HT_ERRORF("Problem stat'ing directory '%s' - %s",
-                tmpdir, strerror(saved_errno));
+        tmpdir, strerror(saved_errno));
       errno = saved_errno;
       return false;
     }
@@ -621,7 +628,7 @@ bool FileUtils::rename(const String &oldpath, const String &newpath) {
   if (::rename(oldpath.c_str(), newpath.c_str()) == -1) {
     int saved_errno = errno;
     HT_ERRORF("rename(\"%s\", \"%s\") failed - %s",
-              oldpath.c_str(), newpath.c_str(), strerror(saved_errno));
+      oldpath.c_str(), newpath.c_str(), strerror(saved_errno));
     errno = saved_errno;
     return false;
   }
@@ -690,33 +697,33 @@ bool FileUtils::expand_tilde(String &fname) {
 #ifdef HT_XATTR_ENABLED
 
 int
-FileUtils::getxattr(const String &path, const String &name, void *value,
-                    size_t size) {
-  String canonic = (String)"user." + name;
+  FileUtils::getxattr(const String &path, const String &name, void *value,
+  size_t size) {
+    String canonic = (String)"user." + name;
 #if defined(__linux__)
-  return ::getxattr(path.c_str(), canonic.c_str(), value, size);
+    return ::getxattr(path.c_str(), canonic.c_str(), value, size);
 #elif defined(__APPLE__)
-  return ::getxattr(path.c_str(), canonic.c_str(), value, size, 0, 0);
+    return ::getxattr(path.c_str(), canonic.c_str(), value, size, 0, 0);
 #elif defined(__FreeBSD__)
-  return ::extattr_get_file(path.c_str(), EXTATTR_NAMESPACE_USER, canonic.c_str(), value, size);
+    return ::extattr_get_file(path.c_str(), EXTATTR_NAMESPACE_USER, canonic.c_str(), value, size);
 #else
-  ImplementMe;
+    ImplementMe;
 #endif
 }
 
 
 int
-FileUtils::setxattr(const String &path, const String &name, const void *value,
-                    size_t size, int flags) {
-  String canonic = (String)"user." + name;
+  FileUtils::setxattr(const String &path, const String &name, const void *value,
+  size_t size, int flags) {
+    String canonic = (String)"user." + name;
 #if defined(__linux__)
-  return ::setxattr(path.c_str(), canonic.c_str(), value, size, flags);
+    return ::setxattr(path.c_str(), canonic.c_str(), value, size, flags);
 #elif defined(__APPLE__)
-  return ::setxattr(path.c_str(), canonic.c_str(), value, size, 0, flags);
+    return ::setxattr(path.c_str(), canonic.c_str(), value, size, 0, flags);
 #elif defined(__FreeBSD__)
-  return ::extattr_set_file(path.c_str(), EXTATTR_NAMESPACE_USER, canonic.c_str(), value, size);
+    return ::extattr_set_file(path.c_str(), EXTATTR_NAMESPACE_USER, canonic.c_str(), value, size);
 #else
-  ImplementMe;
+    ImplementMe;
 #endif
 }
 
@@ -736,17 +743,17 @@ int FileUtils::fgetxattr(int fd, const String &name, void *value, size_t size) {
 
 
 int
-FileUtils::fsetxattr(int fd, const String &name, const void *value,
-                     size_t size, int flags) {
-  String canonic = (String)"user." + name;
+  FileUtils::fsetxattr(int fd, const String &name, const void *value,
+  size_t size, int flags) {
+    String canonic = (String)"user." + name;
 #if defined(__linux__)
-  return ::fsetxattr(fd, canonic.c_str(), value, size, flags);
+    return ::fsetxattr(fd, canonic.c_str(), value, size, flags);
 #elif defined(__APPLE__)
-  return ::fsetxattr(fd, canonic.c_str(), value, size, 0, flags);
+    return ::fsetxattr(fd, canonic.c_str(), value, size, 0, flags);
 #elif defined(__FreeBSD__)
-  return ::extattr_set_fd(fd, EXTATTR_NAMESPACE_USER, canonic.c_str(), value, size);
+    return ::extattr_set_fd(fd, EXTATTR_NAMESPACE_USER, canonic.c_str(), value, size);
 #else
-  ImplementMe;
+    ImplementMe;
 #endif
 }
 

@@ -97,6 +97,15 @@
     <ClCompile Include="StatsSystem.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ServerLaunchEvent.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessUtils.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SecurityUtils.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Abi.h">
@@ -316,6 +325,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ServerLaunchEvent.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessUtils.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SecurityUtils.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

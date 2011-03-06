@@ -482,7 +482,7 @@ namespace {
 
 #else
 
-    ServerLauncher::kill(g_pid2);
+    ProcessUtils::kill(g_pid2, 5000);
 
 #endif
 

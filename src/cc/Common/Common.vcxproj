@@ -190,8 +190,11 @@
     <ClCompile Include="Math.cc" />
     <ClCompile Include="md5.cc" />
     <ClCompile Include="MurmurHash.cc" />
+    <ClCompile Include="ProcessUtils.cc" />
     <ClCompile Include="Properties.cc" />
     <ClCompile Include="Random.cc" />
+    <ClCompile Include="SecurityUtils.cc" />
+    <ClCompile Include="ServerLaunchEvent.cc" />
     <ClCompile Include="StatsSerializable.cc" />
     <ClCompile Include="StatsSystem.cc" />
     <ClCompile Include="String.cc" />
@@ -252,11 +255,13 @@
     <ClInclude Include="PageArena.h" />
     <ClInclude Include="PageArenaAllocator.h" />
     <ClInclude Include="Path.h" />
+    <ClInclude Include="ProcessUtils.h" />
     <ClInclude Include="Properties.h" />
     <ClInclude Include="Random.h" />
     <ClInclude Include="ReferenceCount.h" />
     <ClInclude Include="Runnable.h" />
     <ClInclude Include="ScopeGuard.h" />
+    <ClInclude Include="SecurityUtils.h" />
     <ClInclude Include="serialization-c.h" />
     <ClInclude Include="Serialization.h" />
     <ClInclude Include="ServerLauncher.h" />

@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_SERVERLAUNCHEVENT_H
-#define HYPERTABLE_SERVERLAUNCHEVENT_H
+#ifndef HYPERTABLE_PROCESSUTILS_H
+#define HYPERTABLE_PROCESSUTILS_H
 
 #ifndef _WIN32
 #error Platform isn't supported
@@ -28,30 +28,17 @@
 
 namespace Hypertable {
 
-  class ServerLaunchEvent {
+  class ProcessUtils {
   public:
-    ServerLaunchEvent();
-    ServerLaunchEvent(const char* preffix);
-    ServerLaunchEvent(DWORD pid);
-    ServerLaunchEvent(const char* preffix, DWORD pid);
-    virtual ~ServerLaunchEvent();
 
-    void set_event();
-    bool wait(int timeout_ms);
-    inline bool is_existing_event() const { 
-      return already_exists;
-    }
-    inline HANDLE handle() const { 
-      return evt;
-    }
-
-  private:
-    HANDLE evt;
-    bool already_exists;
-
-    static HANDLE create_event(const char* preffix, DWORD pid, bool& already_exists);
+    static bool create(const char* cmd_line, DWORD flags, STARTUPINFO& si, const char* outfile, bool append_output, PROCESS_INFORMATION& pi, HANDLE& houtfile);
+    static bool create(const char* cmd_line, DWORD flags, const STARTUPINFO& si, PROCESS_INFORMATION& pi);
+    static void find(const char* exe_name, std::vector<DWORD>& pids);
+    static bool join(DWORD pid, DWORD timeout_ms);
+    static bool join(const std::vector<DWORD>& pids, bool joinAll, DWORD timeout_ms);
+    static void kill(DWORD pid, DWORD timeout_ms);
   };
 
 }
 
-#endif // HYPERTABLE_SERVERLAUNCHEVENT_H
+#endif // HYPERTABLE_PROCESSUTILS_H
