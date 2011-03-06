@@ -234,7 +234,7 @@ void DefaultPolicy::init_options() {
         "Port number on which to listen (read by LocalBroker only)")
     ("DfsBroker.Local.Root", str(), "Root of file and directory "
         "hierarchy for local broker (if relative path, then is relative to "
-        "the installation directory)")
+        "the Hypertable data directory root)")
     ("DfsBroker.Local.Workers", i32()->default_value(20),
         "Number of local broker worker threads created")
     ("DfsBroker.Local.Reactors", i32(),
@@ -270,7 +270,7 @@ void DefaultPolicy::init_options() {
         "Number of Hyperspace Master communication reactor threads created")
     ("Hyperspace.Replica.Dir", str(), "Root of hyperspace file and directory "
         "heirarchy in local filesystem (if relative path, then is relative to "
-        "the installation directory)")
+        "the Hypertable data directory root)")
     ("Hyperspace.KeepAlive.Interval", i32()->default_value(10000),
         "Hyperspace Keepalive interval (see Chubby paper)")
     ("Hyperspace.Lease.Interval", i32()->default_value(60000),
