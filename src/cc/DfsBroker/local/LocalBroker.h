@@ -107,6 +107,10 @@ namespace Hypertable {
 
     virtual void report_error(ResponseCallback *cb);
 
+#ifdef _WIN32
+    static bool rmdir(const String& absdir);
+#endif
+
     bool         m_verbose;
     String       m_rootdir;
     bool         m_directio;

@@ -26,6 +26,9 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#ifdef _WIN32
+#include <boost/algorithm/string.hpp>
+#endif
 
 extern "C" {
 #include <dirent.h>
@@ -105,6 +108,10 @@ LocalBroker::LocalBroker(PropertiesPtr &cfg) {
   }
 
   m_rootdir = root.directory_string();
+#ifdef _WIN32
+  boost::trim_right_if(m_rootdir, boost::is_any_of("/\\"));
+#endif
+
 
   // ensure that root directory exists
   if (!FileUtils::mkdirs(m_rootdir))
@@ -389,7 +396,7 @@ void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
 #ifndef _WIN32
   if (unlink(abspath.c_str()) == -1) {
 #else
-  if (!::DeleteFileA(abspath.c_str())) {
+  if (!DeleteFile(abspath.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) {
 #endif
     report_error(cb);
     HT_ERRORF("unlink failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
@@ -509,12 +516,14 @@ void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
   if (FileUtils::exists(absdir)) {
 #ifndef _WIN32
     cmd_str = (String)"/bin/rm -rf " + absdir;
-#else
-    cmd_str = format("rd /S /Q \"%s\"", absdir.c_str());
-#endif
     if (system(cmd_str.c_str()) != 0) {
       HT_ERRORF("%s failed.", cmd_str.c_str());
       cb->error(Error::DFSBROKER_IO_ERROR, cmd_str);
+#else
+    if (!rmdir(absdir)) {
+      HT_ERRORF("rmdir %s failed.", absdir.c_str());
+      cb->error(Error::DFSBROKER_IO_ERROR, format("rmdir %s failed.", absdir.c_str()));
+#endif
       return;
     }
   }
@@ -528,7 +537,7 @@ void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
 #endif
 
   if ((error = cb->response_ok()) != Error::OK)
-    HT_ERRORF("Problem sending response for mkdirs(%s) - %s",
+    HT_ERRORF("Problem sending response for rmdir(%s) - %s",
               dname, Error::get_text(error));
 
 }
@@ -548,16 +557,19 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
 
   WIN32_FIND_DATA ffd;
   HANDLE hFind = FindFirstFile( (absdir + "\\*").c_str(), &ffd);
-  if( hFind == INVALID_HANDLE_VALUE ) {
+  if (hFind == INVALID_HANDLE_VALUE) {
     report_error(cb);
     return;
   }
   do {
-    if (ffd.cFileName[0] != '.' && ffd.cFileName[0] != 0) {
-      listing.push_back((String)ffd.cFileName);
+    if (*ffd.cFileName) {
+      if (ffd.cFileName[0] != '.' ||
+          (ffd.cFileName[1] != 0 && (ffd.cFileName[1] != '.' || ffd.cFileName[2] != 0)))
+        listing.push_back((String)ffd.cFileName);
     }
-  } while( FindNextFile( hFind, &ffd ) != 0 );
-  FindClose(hFind);
+  } while (FindNextFile(hFind, &ffd) != 0);
+  if (!FindClose(hFind))
+    HT_ERRORF("FindClose failed: %s", IO_ERROR);
 
 #else
 
@@ -730,6 +742,46 @@ void LocalBroker::report_error(ResponseCallback *cb) {
     }
     ::SetLastError(err);
   }
+}
+
+bool LocalBroker::rmdir(const String& absdir) {
+  if (!absdir.empty()) {
+    WIN32_FIND_DATA ffd;
+    HANDLE hFind = FindFirstFile( (absdir + "\\*").c_str(), &ffd);
+    if (hFind == INVALID_HANDLE_VALUE) {
+      HT_ERRORF("FindFirstFile %s\\* failed: %s", absdir.c_str(), IO_ERROR);
+      return false;
+    }
+    do {
+      String _absdir = absdir + "\\";
+      if (*ffd.cFileName) {
+        if (ffd.cFileName[0] != '.' ||
+            (ffd.cFileName[1] != 0 && (ffd.cFileName[1] != '.' || ffd.cFileName[2] != 0))) {
+          String item = _absdir + ffd.cFileName;
+          if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            if (!rmdir(item)) {
+              HT_ERRORF("rmdir %s failed", item.c_str());
+              if (!FindClose(hFind))
+                HT_ERRORF("FindClose failed: %s", IO_ERROR);
+              return false;
+            }
+          }
+          else if (!DeleteFile(item.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) {
+            HT_ERRORF("DeleteFile %s failed: %s", item.c_str(), IO_ERROR);
+            if (!FindClose(hFind))
+              HT_ERRORF("FindClose failed: %s", IO_ERROR);
+            return false;
+          }
+        }
+      }
+    } while (FindNextFile(hFind, &ffd) != 0);
+    if (!FindClose(hFind))
+      HT_ERRORF("FindClose failed: %s", IO_ERROR);
+    if (!RemoveDirectory(absdir.c_str())) {
+      HT_ERRORF("RemoveDirectory %s failed: %s", absdir.c_str(), IO_ERROR);
+    }
+  }
+  return true;
 }
 
 #else
