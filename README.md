@@ -6,8 +6,7 @@ in order to build and run all regression tests the option maximum number of para
 project builds should be set to one (the option is available under Tools/Options/Project
 and Solutions/Build and Run).
 
-Browse or get the source
-------------------------
+###Browse or get the source###
 
 * Browse or download the source at [github](http://github.com/andysoftdev/hypertable).
   Download the latest sources by pressing the Downloads button and choosing
@@ -19,8 +18,7 @@ Browse or get the source
   git clone git://github.com/andysoftdev/hypertable.git
 
 
-Download and install boost
---------------------------
+###Download and install boost###
 
 * Download the latest boost version from [boost](http://www.boost.org/users/download/)
   or [sourceforge](http://sourceforge.net/projects/boost/files/boost/).
@@ -30,8 +28,7 @@ Download and install boost
 * Go to ...\hypertable\deps\boost\ and run build-win32.bat or build-x64.bat (Be patient with the build). After successful build the intermediate files located in ...\hypertable\build\deps\boost could be deleted.
 
 
-Download and install berkeley db
---------------------------------
+###Download and install berkeley db###
 
 * Download the latest berkeley db from [Oracle](http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html).
 
@@ -40,8 +37,7 @@ Download and install berkeley db
 * Run ...\hypertable\deps\db\libdb.js. (Note: libdb will be built within the regular hypertable solution.)
 
 
-Build hypertable servers, clients and tools
--------------------------------------------
+###Build hypertable servers, clients and tools###
 
 * Open solution ...\hypertable\hypertable.sln with Microsoft Visual Studio 2010 and build the required configuration(s).
 
@@ -56,8 +52,7 @@ Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_ME
 Using the default configuration the database data root directory (Hypertable.DataDirectory configuration paramter) will be ...\ProgrammData\Hypertable or ...\All Users\Application Data\Hypertable
 
 
-Run hypertable servers as Windows service
------------------------------------------
+###Run hypertable servers as Windows service###
 
 Hypertable.Service.exe will ask for elevation if running on Windows Vista or Windows 7 with UAC enabled:
 
@@ -78,8 +73,7 @@ Hypertable.Service.exe will ask for elevation if running on Windows Vista or Win
   Hypertable.Service --uninstall-service [--service-name]
 
 
-Run hypertable servers in foreground
-------------------------------------
+###Run hypertable servers in foreground###
 
 The servers will run under the logged on windows account.
 
@@ -100,8 +94,7 @@ The servers will run under the logged on windows account.
   Hypertable.Service --kill-servers
 
 
-Run hypertable servers in the build environment
------------------------------------------------
+###Run hypertable servers in the build environment###
 
 * Start servers:
 
