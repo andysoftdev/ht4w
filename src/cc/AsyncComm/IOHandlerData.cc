@@ -554,7 +554,10 @@ bool IOHandlerData::async_recv(void* buf, size_t len)
   if (WSARecv(m_sd, &wsabuf, 1, 0, &flags, pol, NULL) == SOCKET_ERROR) {
     int err = WSAGetLastError();
     if (err != WSA_IO_PENDING) {
-      HT_ERRORF("WSARecv error: %s\n", winapi_strerror(err));
+      if (err != WSAENOTSOCK)
+        HT_ERRORF("WSARecv error: %s\n", winapi_strerror(err));
+      else
+        HT_DEBUGF("WSARecv error: %s\n", winapi_strerror(err));
       delete pol;
       return false;
     }

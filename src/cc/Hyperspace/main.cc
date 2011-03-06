@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
 
   try {
     init_with_policy<AppPolicy>(argc, argv);
+    HT_NOTICE("Starting hyperspace");
 
     Comm *comm = Comm::instance();
     ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
@@ -115,6 +116,8 @@ int main(int argc, char **argv) {
     #endif
 
     app_queue_ptr->join();
+
+    HT_NOTICE("Exiting hyperspace");
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

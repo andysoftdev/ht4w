@@ -1,5 +1,5 @@
 /** -*- C++ -*-
- * Copyright (C) 2007 Doug Judd (Zvents, Inc.)
+ * Copyright (C) 2011 Andy Thalmann
  *
  * This file is part of Hypertable.
  *
@@ -48,7 +48,7 @@ class HRTimer {
       if (!::QueryPerformanceCounter(&stop))
         HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
       double delta = (stop.QuadPart - start.QuadPart) / (freq / 1000.0);
-      HT_NOTICE_OUT << std::flush << std::setw(6) << ::GetCurrentThreadId() << " " << msg << " " << std::setprecision(3) << delta << "ms" << std::endl << HT_END;
+      HT_INFO_OUT << std::flush << std::setw(6) << ::GetCurrentThreadId() << " " << msg << " " << std::setprecision(3) << delta << "ms" << std::endl << HT_END;
     }
 
 private:

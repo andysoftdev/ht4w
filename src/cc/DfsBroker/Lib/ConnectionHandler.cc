@@ -130,6 +130,7 @@ void ConnectionHandler::handle(EventPtr &event) {
           if ((flags & Protocol::SHUTDOWN_FLAG_IMMEDIATE) != 0)
             m_app_queue_ptr->shutdown();
           m_broker_ptr->shutdown(&cb);
+          HT_NOTICE("Exiting local broker");
           exit(0);
         }
         break;

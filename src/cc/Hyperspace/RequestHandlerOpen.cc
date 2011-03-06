@@ -58,8 +58,8 @@ void RequestHandlerOpen::run() {
   }
   catch (Exception &e) {
     if (   e.code() == Error::HYPERSPACE_BAD_PATHNAME
-        || e.code() == Error::HYPERSPACE_FILE_NOT_FOUND) // warning should be sufficient
-      HT_WARN_OUT << e << HT_END;
+        || e.code() == Error::HYPERSPACE_FILE_NOT_FOUND) // info should be sufficient
+      HT_INFO_OUT << e << HT_END;
     else
       HT_ERROR_OUT << e << HT_END;
     cb.error(e.code(), "Error handling Hyperspace open");

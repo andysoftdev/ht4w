@@ -22,7 +22,7 @@
 #ifndef HYPERSPACE_SESSIONHANDLER_H
 #define HYPERSPACE_SESSIONHANDLER_H
 
-#include <iostream>
+#include "Common/Logger.h"
 
 #include "Hyperspace/Session.h"
 
@@ -31,19 +31,19 @@ namespace Hypertable {
   class HyperspaceSessionHandler : public Hyperspace::SessionCallback {
   public:
     virtual void safe() {
-      std::cout << "Hyperspace session state = SAFE" << std::endl;
+      HT_NOTICE("Hyperspace session state = SAFE");
     }
     virtual void expired() {
-      std::cout << "Hyperspace session state = EXPIRED" << std::endl;
+      HT_NOTICE("Hyperspace session state = EXPIRED");
     }
     virtual void jeopardy() {
-      std::cout << "Hyperspace session state = JEOPARDY" << std::endl;
+      HT_NOTICE("Hyperspace session state = JEOPARDY");
     }
     virtual void disconnected() {
-      std::cout << "Hyperspace session state = RECONNECTING" << std::endl;
+      HT_NOTICE("Hyperspace session state = RECONNECTING");
     }
     virtual void reconnected() {
-      std::cout << "Hyperspace session state = RECONNECTED" << std::endl;
+      HT_NOTICE("Hyperspace session state = RECONNECTED");
     }
 
   };

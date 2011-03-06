@@ -63,9 +63,9 @@ int main(int argc, char **argv) {
 
   ReactorRunner::record_arrival_clocks = true;
 
-  init_with_policies<Policies>(argc, argv);
-
   try {
+    init_with_policies<Policies>(argc, argv);
+    HT_NOTICE("Starting range server");
 
     Global::verbose = get_bool("verbose");
 
@@ -106,8 +106,7 @@ int main(int argc, char **argv) {
 
     app_queue->join();
 
-    HT_ERROR("Exiting RangeServer.");
-
+    HT_NOTICE("Exiting range server");
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

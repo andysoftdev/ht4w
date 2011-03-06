@@ -771,8 +771,8 @@ public:
       return id;
     } catch (Hypertable::Exception &e) {
       std::ostringstream oss;  oss << HT_FUNC <<": "<< e;
-      if( e.code() == Error::NAMESPACE_DOES_NOT_EXIST) // warning should be sufficient
-          HT_WARN_OUT << oss.str() << HT_END;
+      if( e.code() == Error::NAMESPACE_DOES_NOT_EXIST) // info should be sufficient
+          HT_INFO_OUT << oss.str() << HT_END;
       else
           HT_ERROR_OUT << oss.str() << HT_END;
       THROW_TE(e.code(), oss.str());
@@ -1382,6 +1382,7 @@ int main(int argc, char **argv) {
 
   try {
     init_with_policies<Policies>(argc, argv);
+    HT_NOTICE("Starting thrift broker");
 
     ::uint16_t port = get_i16("port");
     int timeout_ms = get_i32("thrift-timeout");
@@ -1394,14 +1395,13 @@ int main(int argc, char **argv) {
 
     TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
 
-    HT_INFO("Starting the server...");
-
     #ifdef _WIN32
     server_launch_event.set_event();
     #endif
 
     server.serve();
-    HT_INFO("Exiting.\n");
+
+    HT_NOTICE("Exiting thrift broker");
   }
   catch (Hypertable::Exception &e) {
     HT_ERROR_OUT << e << HT_END;

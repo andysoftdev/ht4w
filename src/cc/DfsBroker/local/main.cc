@@ -59,7 +59,7 @@ struct AppPolicy : Policy {
   static void init_options() {
     cmdline_desc().add_options()
       ("root", str()->default_value("fs/local"), "root directory for local "
-          "broker (if relative, it's relative to the installation directory")
+          "broker (if relative, it's relative to the Hypertable data directory root)")
       ;
     alias("port", "DfsBroker.Local.Port");
     alias("root", "DfsBroker.Local.Root");
@@ -80,6 +80,8 @@ int main(int argc, char **argv) {
 
   try {
     init_with_policies<Policies>(argc, argv);
+    HT_NOTICE("Starting local broker");
+
     int port = get_i16("DfsBroker.Port");
     int worker_count = get_i32("workers");
 
@@ -100,6 +102,8 @@ int main(int argc, char **argv) {
     #endif
 
     app_queue->join();
+
+    HT_NOTICE("Exiting local broker");
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

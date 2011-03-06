@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
 
   try {
     init_with_policies<Policies>(argc, argv);
+    HT_NOTICE("Starting master");
 
     uint16_t port = get_i16("port");
     int worker_count  = get_i32("workers");
@@ -117,6 +118,8 @@ int main(int argc, char **argv) {
 
     master->join();
     comm->close_socket(listen_addr);
+
+    HT_NOTICE("Exiting master");
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

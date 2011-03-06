@@ -98,7 +98,7 @@ void TimerHandler::complete_maintenance_notify() {
   if (m_app_queue_paused) {
     int64_t memory_used = Global::memory_tracker->balance();
     if (memory_used <= Global::memory_limit) {
-      HT_INFO("Restarting application queue");
+      HT_NOTICE("Restarting application queue");
       m_app_queue->start();
       m_app_queue_paused = false;
     }
@@ -126,7 +126,7 @@ void TimerHandler::handle(Hypertable::EventPtr &event_ptr) {
 
   if (memory_used > Global::memory_limit) {
     if (!m_app_queue_paused) {
-      HT_INFO("Pausing application queue due to low memory condition");
+      HT_NOTICE("Pausing application queue due to low memory condition");
       m_app_queue_paused = true;
       m_app_queue->stop();
       m_current_interval = 500;
@@ -134,7 +134,7 @@ void TimerHandler::handle(Hypertable::EventPtr &event_ptr) {
   }
   else {
     if (m_app_queue_paused) {
-      HT_INFO("Restarting application queue");
+      HT_NOTICE("Restarting application queue");
       m_app_queue->start();
       m_app_queue_paused = false;
       m_last_low_memory_maintenance = TIMESTAMP_NULL;
