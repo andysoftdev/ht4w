@@ -1108,29 +1108,31 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
     }
 
     // issue shutdown commands
-    for (size_t i=0; i<addresses.size(); i++)
-      rsc.shutdown(addresses[i]);
+    if (!addresses.empty()) {
+      for (size_t i=0; i<addresses.size(); i++)
+        rsc.shutdown(addresses[i]);
 
-    {
-      ScopedLock lock(m_mutex);
-      boost::xtime expire_time;
-      boost::xtime_get(&expire_time, boost::TIME_UTC);
-      expire_time.sec += (int64_t)30;
-      m_no_servers_cond.timed_wait(lock, expire_time);
-    }
+      {
+        ScopedLock lock(m_mutex);
+        boost::xtime expire_time;
+        boost::xtime_get(&expire_time, boost::TIME_UTC);
+        expire_time.sec += (int64_t)30;
+        m_no_servers_cond.timed_wait(lock, expire_time);
+      }
 
-    int server_map_size;
+      int server_map_size;
 
-    {
-      ScopedLock lock(m_mutex);
-      server_map_size = m_server_map.size();
-    }
+      {
+        ScopedLock lock(m_mutex);
+        server_map_size = m_server_map.size();
+      }
 
-    if (server_map_size != 0) {
-      String err_msg = format("%d RangeServers failed to shutdown",
-			      server_map_size);
-      cb->error(Error::REQUEST_TIMEOUT, err_msg);
-      return;
+      if (server_map_size != 0) {
+        String err_msg = format("%d RangeServers failed to shutdown",
+              server_map_size);
+        cb->error(Error::REQUEST_TIMEOUT, err_msg);
+        return;
+      }
     }
 
     m_hyperspace = 0;
@@ -1139,6 +1141,7 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
 
     poll(0, 0, 1000);
 
+    HT_NOTICE("Exiting master");
     _exit(0);
 
   }
