@@ -157,6 +157,10 @@ char* ctime_r( const time_t *time, char (&buffer)[size] ) {
   return buffer;
 }
 
+inline void localtime_r(const ::time_t* time, ::tm* t) {
+  localtime_s(t, time);
+}
+
 #endif
 
 #define HT_USE_ABORT

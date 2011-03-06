@@ -77,7 +77,7 @@ namespace {
     virtual String format(const Logging::LoggingEvent& event) {
       struct tm lt;
       time_t t = event.timeStamp.getSeconds();
-      localtime_s(&lt, &t);
+      localtime_r(&t, &lt);
       char dateTime[64];
       strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", &lt);
       return Hypertable::format("%s.%03d %-5s %s\n",
