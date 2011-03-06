@@ -120,15 +120,16 @@ cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) no-thriftbroker no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker --no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
 "$(TargetPath)" "$(TargetDir)..\"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
 del *.out
 del MutatorNoLogSyncTest.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
+rd /S /Q logs
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -160,15 +161,16 @@ cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) no-thriftbroker no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker --no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
 "$(TargetPath)" "$(TargetDir)..\"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
 del *.out
 del MutatorNoLogSyncTest.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
+rd /S /Q logs
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -205,15 +207,16 @@ cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) no-thriftbroker no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker --no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
 "$(TargetPath)" "$(TargetDir)..\"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
 del *.out
 del MutatorNoLogSyncTest.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
+rd /S /Q logs
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -250,15 +253,16 @@ cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) no-thriftbroker no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker --no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
 "$(TargetPath)" "$(TargetDir)..\"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
 del *.out
 del MutatorNoLogSyncTest.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
+rd /S /Q logs
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

@@ -125,7 +125,6 @@ del CellStoreScanner_delete_test_localBroker.stdout
 del CellStoreScanner_delete_test_localBroker.stderr
 del CellStoreScanner_delete_test.output
 del CellStoreScanner_delete_test.golden
-rd /S /Q CellStoreScanner_delete_test
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -163,7 +162,6 @@ del CellStoreScanner_delete_test_localBroker.stdout
 del CellStoreScanner_delete_test_localBroker.stderr
 del CellStoreScanner_delete_test.output
 del CellStoreScanner_delete_test.golden
-rd /S /Q CellStoreScanner_delete_test
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -206,7 +204,6 @@ del CellStoreScanner_delete_test_localBroker.stdout
 del CellStoreScanner_delete_test_localBroker.stderr
 del CellStoreScanner_delete_test.output
 del CellStoreScanner_delete_test.golden
-rd /S /Q CellStoreScanner_delete_test
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -249,7 +246,6 @@ del CellStoreScanner_delete_test_localBroker.stdout
 del CellStoreScanner_delete_test_localBroker.stderr
 del CellStoreScanner_delete_test.output
 del CellStoreScanner_delete_test.golden
-rd /S /Q CellStoreScanner_delete_test
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
