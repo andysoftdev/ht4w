@@ -20,6 +20,9 @@
  */
 
 #include "Common/Compat.h"
+#ifdef _WIN32
+#include <boost/algorithm/string.hpp>
+#endif
 #include <algorithm>
 #include <cstring>
 
@@ -150,6 +153,9 @@ Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
   }
 
   m_base_dir = base_dir.directory_string();
+#ifdef _WIN32
+  boost::trim_right_if(m_base_dir, boost::is_any_of("/\\"));
+#endif
 
   HT_INFOF("BerkeleyDB base directory = '%s'", m_base_dir.c_str());
   m_lock_file = m_base_dir + "/lock";
@@ -599,8 +605,8 @@ Master::mkdir(ResponseCallback *cb, uint64_t session_id, const char *name) {
   // check for errors
   if (aborted) {
     cb->error(error, error_msg);
-    if( error == Error::HYPERSPACE_FILE_EXISTS ) { // warning should be sufficient
-        HT_WARN_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
+    if( error == Error::HYPERSPACE_FILE_EXISTS ) { // info should be sufficient
+        HT_INFO_OUT << Error::get_text(error) << " - " << error_msg << HT_END;
     }
     else {
         HT_ERROR_OUT << Error::get_text(error) << " - " << error_msg << HT_END;

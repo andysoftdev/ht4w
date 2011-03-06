@@ -48,7 +48,11 @@ Reader::Reader(FilesystemPtr &fs, DefinitionPtr &definition, const String &path)
 
   // Setup DFS path name
   m_path = path;
+#ifndef _WIN32
   boost::trim_right_if(m_path, boost::is_any_of("/"));
+#else
+  boost::trim_right_if(m_path, boost::is_any_of("/\\"));
+#endif
 
   reload();
 }

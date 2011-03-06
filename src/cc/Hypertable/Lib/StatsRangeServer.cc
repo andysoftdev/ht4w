@@ -47,12 +47,12 @@ StatsRangeServer::StatsRangeServer(PropertiesPtr &props) : StatsSerializable(RAN
 
 #ifdef _WIN32
   boost::trim(datadirs);
-  boost::trim_right_if(datadirs, boost::is_any_of("/"));
+  boost::trim_right_if(datadirs, boost::is_any_of("/\\"));
   if (datadirs.empty()) {
     Path data_dir = Config::properties->get_str("Hypertable.DataDirectory");
     if (data_dir.is_complete() && data_dir.has_root_path()) {
       datadirs = data_dir.root_path().string();
-      boost::trim_right_if(datadirs, boost::is_any_of("/"));
+      boost::trim_right_if(datadirs, boost::is_any_of("/\\"));
     }
   }
 #endif

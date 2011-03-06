@@ -55,11 +55,16 @@ String System::_locate_install_dir(const char *argv0) {
   Path exepath(proc_info().exe);
 
   // Detect install_dir/bin/exe_name: assumed install layout
+#ifndef _WIN32
   if (exepath.parent_path().filename() == "bin")
     install_dir = exepath.parent_path().parent_path().directory_string();
   else
+#endif
     install_dir = exepath.parent_path().directory_string();
 
+#ifdef _WIN32
+  boost::trim_right_if(install_dir, boost::is_any_of("/\\"));
+#endif
   return install_dir;
 }
 
