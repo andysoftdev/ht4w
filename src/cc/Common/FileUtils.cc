@@ -249,9 +249,9 @@ uint64_t FileUtils::size(const String &fname) {
 }
 
 bool FileUtils::rename(const String &oldpath, const String &newpath) {
-  if (!::MoveFile(oldpath.c_str(), newpath.c_str())) {
+  if (!::MoveFileEx(oldpath.c_str(), newpath.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING)) {
     DWORD err = ::GetLastError();
-    HT_ERRORF("MoveFile(\"%s\", \"%s\") failed - %s", oldpath.c_str(), newpath.c_str(), winapi_strerror(err));
+    HT_ERRORF("MoveFileEx(\"%s\", \"%s\") failed - %s", oldpath.c_str(), newpath.c_str(), winapi_strerror(err));
     ::SetLastError(err);
     return false;
   }

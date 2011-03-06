@@ -122,7 +122,6 @@ void Monitoring::add_server(const String &location, StatsSystem &system_info) {
     String real_filename = m_monitoring_dir + "/rs_map.txt";
     if (FileUtils::write(tmp_filename, str) == -1)
       return;
-    FileUtils::unlink(real_filename);
     FileUtils::rename(tmp_filename, real_filename);
   }
   
@@ -710,7 +709,6 @@ void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics
   if (FileUtils::write(tmp_filename, str) == -1)
     return;
 
-  FileUtils::unlink(json_filename);
   FileUtils::rename(tmp_filename, json_filename);
 
 }
@@ -747,7 +745,6 @@ void Monitoring::dump_table_summary_json() {
   if (FileUtils::write(tmp_filename, str) == -1)
     return;
 
-  FileUtils::unlink(json_filename);
   FileUtils::rename(tmp_filename, json_filename);
 }
 

@@ -676,7 +676,7 @@ LocalBroker::rename(ResponseCallback *cb, const char *src, const char *dst) {
 #ifndef _WIN32
   if (std::rename(asrc.c_str(), adst.c_str()) != 0) {
 #else
-  if (!::MoveFile(asrc.c_str(), adst.c_str())) {
+  if (!::MoveFileEx(asrc.c_str(), adst.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING)) {
 #endif
     report_error(cb);
     HT_ERRORF("rename failed: %s -> %s - %s", asrc.c_str(), adst.c_str(), IO_ERROR);
