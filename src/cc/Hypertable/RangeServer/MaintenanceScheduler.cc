@@ -1,23 +1,23 @@
 /**
- * Copyright (C) 2009 Doug Judd (Zvents, Inc.)
- *
- * This file is part of Hypertable.
- *
- * Hypertable is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; version 2 of the
- * License, or any later version.
- *
- * Hypertable is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
- */
+* Copyright (C) 2009 Doug Judd (Zvents, Inc.)
+*
+* This file is part of Hypertable.
+*
+* Hypertable is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; version 2 of the
+* License, or any later version.
+*
+* Hypertable is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+* 02110-1301, USA.
+*/
 #include "Common/Compat.h"
 #include "Common/Config.h"
 #include "Common/SystemInfo.h"
@@ -48,18 +48,18 @@ namespace {
 
 
 MaintenanceScheduler::MaintenanceScheduler(MaintenanceQueuePtr &queue, RSStatsPtr &server_stats,
-                                           RangeStatsGathererPtr &gatherer)
+  RangeStatsGathererPtr &gatherer)
   : m_initialized(false), m_scheduling_needed(false), m_queue(queue),
-    m_server_stats(server_stats), m_stats_gatherer(gatherer),
-    m_prioritizer_log_cleanup(server_stats),
-    m_prioritizer_low_memory(server_stats) {
-  m_prioritizer = &m_prioritizer_log_cleanup;
-  m_maintenance_interval = get_i32("Hypertable.RangeServer.Maintenance.Interval");
-  m_query_cache_memory = get_i64("Hypertable.RangeServer.QueryCache.MaxMemory");
-  // Setup to immediately schedule maintenance
-  boost::xtime_get(&m_last_maintenance, TIME_UTC);
-  m_last_maintenance.sec -= m_maintenance_interval / 1000;
-  m_low_memory_limit_percentage = get_i32("Hypertable.RangeServer.LowMemoryLimit.Percentage");
+  m_server_stats(server_stats), m_stats_gatherer(gatherer),
+  m_prioritizer_log_cleanup(server_stats),
+  m_prioritizer_low_memory(server_stats) {
+    m_prioritizer = &m_prioritizer_log_cleanup;
+    m_maintenance_interval = get_i32("Hypertable.RangeServer.Maintenance.Interval");
+    m_query_cache_memory = get_i64("Hypertable.RangeServer.QueryCache.MaxMemory");
+    // Setup to immediately schedule maintenance
+    boost::xtime_get(&m_last_maintenance, TIME_UTC);
+    m_last_maintenance.sec -= m_maintenance_interval / 1000;
+    m_low_memory_limit_percentage = get_i32("Hypertable.RangeServer.LowMemoryLimit.Percentage");
 }
 
 
@@ -88,7 +88,7 @@ void MaintenanceScheduler::schedule() {
     xtime_diff_millis(m_last_maintenance, now);
 
   if (!m_scheduling_needed &&
-      millis_since_last_maintenance < m_maintenance_interval)
+    millis_since_last_maintenance < m_maintenance_interval)
     return;
 
   Global::maintenance_queue->clear();
@@ -108,8 +108,8 @@ void MaintenanceScheduler::schedule() {
   int64_t shadow_cache_memory = 0;
 
   /**
-   * Purge commit log fragments
-   */
+  * Purge commit log fragments
+  */
   {
     int64_t revision_user = Global::user_log ? Global::user_log->get_latest_revision() : TIMESTAMP_MIN;
     int64_t revision_metadata = Global::metadata_log ? Global::metadata_log->get_latest_revision() : TIMESTAMP_MIN;
@@ -120,33 +120,33 @@ void MaintenanceScheduler::schedule() {
     for (size_t i=0; i<range_data.size(); i++) {
       for (ag_data = range_data[i]->agdata; ag_data; ag_data = ag_data->next) {
 
-	// compute memory stats
-	cell_cache_memory += ag_data->mem_allocated;
-	for (cs_data = ag_data->csdata; cs_data; cs_data = cs_data->next) {
-	  shadow_cache_memory += cs_data->shadow_cache_size;
-	  block_index_memory += cs_data->index_stats.block_index_memory;
-	  bloom_filter_memory += cs_data->index_stats.bloom_filter_memory;
-	}
+        // compute memory stats
+        cell_cache_memory += ag_data->mem_allocated;
+        for (cs_data = ag_data->csdata; cs_data; cs_data = cs_data->next) {
+          shadow_cache_memory += cs_data->shadow_cache_size;
+          block_index_memory += cs_data->index_stats.block_index_memory;
+          bloom_filter_memory += cs_data->index_stats.bloom_filter_memory;
+        }
 
         if (ag_data->earliest_cached_revision != TIMESTAMP_MAX) {
           if (range_data[i]->range->is_root()) {
             if (revision_root == TIMESTAMP_MIN || 
-                ag_data->earliest_cached_revision < revision_root)
+              ag_data->earliest_cached_revision < revision_root)
               revision_root = ag_data->earliest_cached_revision;
           }
           else if (range_data[i]->is_metadata) {
             if (revision_metadata == TIMESTAMP_MIN ||
-                ag_data->earliest_cached_revision < revision_metadata)
+              ag_data->earliest_cached_revision < revision_metadata)
               revision_metadata = ag_data->earliest_cached_revision;
           }
           else if (range_data[i]->is_system) {
             if (revision_system == TIMESTAMP_MIN ||
-                ag_data->earliest_cached_revision < revision_system)
+              ag_data->earliest_cached_revision < revision_system)
               revision_system = ag_data->earliest_cached_revision;
           }
           else {
             if (revision_user == TIMESTAMP_MIN ||
-                ag_data->earliest_cached_revision < revision_user)
+              ag_data->earliest_cached_revision < revision_user)
               revision_user = ag_data->earliest_cached_revision;
           }
         }
@@ -182,14 +182,14 @@ void MaintenanceScheduler::schedule() {
     double query_cache_pct = ((double)m_query_cache_memory / (double)total_memory) * 100.0;
 
     HT_INFOF("Memory Statistics (MB): VM=%.2f, RSS=%.2f, tracked=%.2f, computed=%.2f limit=%.2f",
-	     System::proc_stat().vm_size, System::proc_stat().vm_resident,
-	     (double)memory_state.balance/1000000.0, (double)total_memory/1000000.0,
-             (double)Global::memory_limit/1000000.0);
+      System::proc_stat().vm_size, System::proc_stat().vm_resident,
+      (double)memory_state.balance/1000000.0, (double)total_memory/1000000.0,
+      (double)Global::memory_limit/1000000.0);
     HT_INFOF("Memory Allocation: BlockCache=%.2f%% BlockIndex=%.2f%% "
-	     "BloomFilter=%.2f%% CellCache=%.2f%% ShadowCache=%.2f%% "
-	     "QueryCache=%.2f%%",
-	     block_cache_pct, block_index_pct, bloom_filter_pct,
-	     cell_cache_pct, shadow_cache_pct, query_cache_pct);
+      "BloomFilter=%.2f%% CellCache=%.2f%% ShadowCache=%.2f%% "
+      "QueryCache=%.2f%%",
+      block_cache_pct, block_index_pct, bloom_filter_pct,
+      cell_cache_pct, shadow_cache_pct, query_cache_pct);
   }
 
   m_prioritizer->prioritize(range_data, memory_state, trace_str);
@@ -202,9 +202,9 @@ void MaintenanceScheduler::schedule() {
   if (!m_initialized) {
     for (size_t i=0; i<range_data.size(); i++) {
       if (range_data[i]->state == RangeState::SPLIT_LOG_INSTALLED ||
-          range_data[i]->state == RangeState::SPLIT_SHRUNK) {
-        RangePtr range(range_data[i]->range);
-        Global::maintenance_queue->add(new MaintenanceTaskSplit(schedule_time, range));
+        range_data[i]->state == RangeState::SPLIT_SHRUNK) {
+          RangePtr range(range_data[i]->range);
+          Global::maintenance_queue->add(new MaintenanceTaskSplit(schedule_time, range));
       }
       else if (range_data[i]->state == RangeState::RELINQUISH_LOG_INSTALLED) {
         RangePtr range(range_data[i]->range);
@@ -219,7 +219,7 @@ void MaintenanceScheduler::schedule() {
     range_data_prioritized.reserve( range_data.size() );
     for (size_t i=0; i<range_data.size(); i++) {
       if (range_data[i]->priority > 0)
-	range_data_prioritized.push_back(range_data[i]);
+        range_data_prioritized.push_back(range_data[i]);
     }
     struct RangeStatsAscending ordering;
     sort(range_data_prioritized.begin(), range_data_prioritized.end(), ordering);
@@ -234,28 +234,28 @@ void MaintenanceScheduler::schedule() {
         Global::maintenance_queue->add(new MaintenanceTaskRelinquish(schedule_time, range));
       }
       else if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::COMPACT) {
-	MaintenanceTaskCompaction *task;
+        MaintenanceTaskCompaction *task;
         RangePtr range(range_data_prioritized[i]->range);
-	task = new MaintenanceTaskCompaction(schedule_time, range);
-	for (AccessGroup::MaintenanceData *ag_data=range_data_prioritized[i]->agdata; ag_data; ag_data=ag_data->next) {
-	  if (ag_data->maintenance_flags & MaintenanceFlag::COMPACT)
-	    task->add_subtask(ag_data->ag, ag_data->maintenance_flags);
-	}
+        task = new MaintenanceTaskCompaction(schedule_time, range);
+        for (AccessGroup::MaintenanceData *ag_data=range_data_prioritized[i]->agdata; ag_data; ag_data=ag_data->next) {
+          if (ag_data->maintenance_flags & MaintenanceFlag::COMPACT)
+            task->add_subtask(ag_data->ag, ag_data->maintenance_flags);
+        }
         Global::maintenance_queue->add(task);
       }
       else if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::MEMORY_PURGE) {
-	MaintenanceTaskMemoryPurge *task;
+        MaintenanceTaskMemoryPurge *task;
         RangePtr range(range_data_prioritized[i]->range);
-	task = new MaintenanceTaskMemoryPurge(schedule_time, range);
-	for (AccessGroup::MaintenanceData *ag_data=range_data_prioritized[i]->agdata; ag_data; ag_data=ag_data->next) {
-	  if (ag_data->maintenance_flags & MaintenanceFlag::MEMORY_PURGE) {
-	    task->add_subtask(ag_data->ag, ag_data->maintenance_flags);
-	    for (AccessGroup::CellStoreMaintenanceData *cs_data=ag_data->csdata; cs_data; cs_data=cs_data->next) {
-	      if (cs_data->maintenance_flags & MaintenanceFlag::MEMORY_PURGE)
-		task->add_subtask(cs_data->cs, cs_data->maintenance_flags);
-	    }
-	  }
-	}
+        task = new MaintenanceTaskMemoryPurge(schedule_time, range);
+        for (AccessGroup::MaintenanceData *ag_data=range_data_prioritized[i]->agdata; ag_data; ag_data=ag_data->next) {
+          if (ag_data->maintenance_flags & MaintenanceFlag::MEMORY_PURGE) {
+            task->add_subtask(ag_data->ag, ag_data->maintenance_flags);
+            for (AccessGroup::CellStoreMaintenanceData *cs_data=ag_data->csdata; cs_data; cs_data=cs_data->next) {
+              if (cs_data->maintenance_flags & MaintenanceFlag::MEMORY_PURGE)
+                task->add_subtask(cs_data->cs, cs_data->maintenance_flags);
+            }
+          }
+        }
         Global::maintenance_queue->add(task);
       }
     }
