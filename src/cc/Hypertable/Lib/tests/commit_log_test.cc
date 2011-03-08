@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     srandom(1);
 
     test1(dfs);
-    test_link(dfs);
+    test_link(dfs.get());
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

@@ -1371,13 +1371,17 @@ RangeServer::update_schema(ResponseCallback *cb,
     /**
      * Create new schema object and test for validity
      */
-    schema = Schema::new_instance(schema_str, strlen(schema_str), true);
+    schema = Schema::new_instance(schema_str, strlen(schema_str));
 
     if (!schema->is_valid()) {
       HT_THROW(Error::RANGESERVER_SCHEMA_PARSE_ERROR,
         (String) "Update schema Parse Error for table '"
         + table->id + "' : " + schema->get_error_string());
     }
+    if (schema->need_id_assignment())
+      HT_THROW(Error::RANGESERVER_SCHEMA_PARSE_ERROR,
+               (String) "Update schema Parse Error for table '"
+               + table->id + "' : needs ID assignment");
 
     m_live_map->get(table, table_info);
 
@@ -2417,7 +2421,10 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
     if (table_stat.table_id == "")
       table_stat.table_id = range_data[ii]->table_id;
     else if (strcmp(table_stat.table_id.c_str(), range_data[ii]->table_id)) {
-      table_stat.compression_ratio /= (double)table_stat.range_count;
+      if (table_stat.disk_used > 0)
+	table_stat.compression_ratio = (double)table_stat.disk_used / table_stat.compression_ratio;
+      else
+	table_stat.compression_ratio = 1.0;
       m_stats->tables.push_back(table_stat);
       table_stat.clear();
       table_stat.table_id = range_data[ii]->table_id;
@@ -2432,7 +2439,9 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
     table_stat.cells_written += range_data[ii]->cells_written;
     table_stat.bytes_written += range_data[ii]->bytes_written;
     table_stat.disk_used += range_data[ii]->disk_used;
-    table_stat.compression_ratio += range_data[ii]->compression_ratio;
+    table_stat.key_bytes += range_data[ii]->key_bytes;
+    table_stat.value_bytes += range_data[ii]->value_bytes;
+    table_stat.compression_ratio += (double)range_data[ii]->disk_used / range_data[ii]->compression_ratio;
     table_stat.memory_used += range_data[ii]->memory_used;
     table_stat.memory_allocated += range_data[ii]->memory_allocated;
     table_stat.shadow_cache_memory += range_data[ii]->shadow_cache_memory;
@@ -2441,12 +2450,16 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
     table_stat.bloom_filter_accesses += range_data[ii]->bloom_filter_accesses;
     table_stat.bloom_filter_maybes += range_data[ii]->bloom_filter_maybes;
     table_stat.cell_count += range_data[ii]->cell_count;
+    table_stat.file_count += range_data[ii]->file_count;
     table_stat.range_count++;
   }
 
   m_stats->range_count = range_data.size();
   if (table_stat.table_id != "") {
-    table_stat.compression_ratio /= (double)table_stat.range_count;
+    if (table_stat.disk_used > 0)
+      table_stat.compression_ratio = (double)table_stat.disk_used / table_stat.compression_ratio;
+    else
+      table_stat.compression_ratio = 1.0;
     m_stats->tables.push_back(table_stat);
   }
 
@@ -2935,12 +2948,17 @@ void RangeServer::verify_schema(TableInfoPtr &table_info, uint32_t generation) {
 
     m_hyperspace->close(handle);
 
-    schema = Schema::new_instance((char *)valbuf.base, valbuf.fill(), true);
+    schema = Schema::new_instance((char *)valbuf.base, valbuf.fill());
 
     if (!schema->is_valid())
       HT_THROW(Error::RANGESERVER_SCHEMA_PARSE_ERROR,
                (String)"Schema Parse Error for table '"
                + table_info->identifier().id + "' : " + schema->get_error_string());
+
+    if (schema->need_id_assignment())
+      HT_THROW(Error::RANGESERVER_SCHEMA_PARSE_ERROR,
+               (String)"Schema Parse Error for table '"
+               + table_info->identifier().id + "' : needs ID assignment");
 
     table_info->update_schema(schema);
 

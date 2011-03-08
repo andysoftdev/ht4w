@@ -111,7 +111,7 @@ Master::Master(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   if (!initialize())
     exit(1);
 
-  m_monitoring = new Monitoring(props);
+  m_monitoring = new Monitoring(props,m_namemap);
 
   /* Read Last Table ID */
   {
@@ -183,7 +183,7 @@ void Master::handle_metadata_schema_update() {
   handle = m_hyperspace->open(tablefile, OPEN_FLAG_READ);
   m_hyperspace->attr_get(handle, "schema", value_buf);
   schema = Schema::new_instance((char *)value_buf.base,
-                                strlen((char *)value_buf.base), true);
+                                strlen((char *)value_buf.base));
   m_hyperspace->close(handle);
   handle = 0;
 
@@ -192,8 +192,10 @@ void Master::handle_metadata_schema_update() {
    */
   String schema_file = System::install_dir + "/conf/METADATA.xml";
   String schema_str = FileUtils::file_to_buffer(schema_file, &len);
-  new_schema = Schema::new_instance(schema_str.c_str(), schema_str.length(), true);
+  new_schema = Schema::new_instance(schema_str.c_str(), schema_str.length());
 
+  if (new_schema->need_id_assignment())
+    HT_THROW(Error::SCHEMA_PARSE_ERROR, "conf/METADATA.xml missing ID assignment");
 
   if (schema->get_generation() < new_schema->get_generation()) {
     handle = m_hyperspace->open(tablefile,
@@ -373,10 +375,11 @@ Master::alter_table(ResponseCallback *cb, const char *tablename,
     /**
      *  Parse new schema & check validity
      */
-    updated_schema = Schema::new_instance(schemastr, strlen(schemastr),
-        true);
+    updated_schema = Schema::new_instance(schemastr, strlen(schemastr));
     if (!updated_schema->is_valid())
       HT_THROW(Error::MASTER_BAD_SCHEMA, updated_schema->get_error_string());
+    if (updated_schema->need_id_assignment())
+      HT_THROW(Error::MASTER_BAD_SCHEMA, "Updated schema needs ID assignment");
 
     /**
      *  Open & Lock Hyperspace file exclusively
@@ -390,7 +393,7 @@ Master::alter_table(ResponseCallback *cb, const char *tablename,
 
     m_hyperspace->attr_get(handle, "schema", value_buf);
     schema = Schema::new_instance((char *)value_buf.base,
-        strlen((char *)value_buf.base), true);
+                                  strlen((char *)value_buf.base));
     value_buf.clear();
 
     /**
@@ -940,6 +943,7 @@ Master::rename_table(ResponseCallback *cb, const char *old_name, const char *new
     // TODO: log the 'STARTED RENAME TABLE fully_qual_name' in the Master METALOG here
     m_namemap->rename(old_name, new_name);
     HT_INFOF("RENAME TABLE '%s' -> '%s' success", old_name, new_name);
+    m_monitoring->change_id_mapping(table_id,new_name);
     cb->response_ok();
   }
   catch (Exception &e) {
@@ -1063,6 +1067,7 @@ Master::drop_table(ResponseCallback *cb, const char *table_name,
     HT_INFOF("DROP TABLE '%s' id=%s success",
              table_name_str.c_str(), table_id.c_str());
 
+    m_monitoring->invalidate_id_mapping(table_id);
     cb->response_ok();
 
   }
@@ -1184,11 +1189,11 @@ Master::create_table(const char *tablename, const char *schemastr, bool with_ids
   /**
    *  Parse Schema and assign Generation number and Column ids
    */
-  schema = Schema::new_instance(schemastr, strlen(schemastr), with_ids);
+  schema = Schema::new_instance(schemastr, strlen(schemastr));
   if (!schema->is_valid())
     HT_THROW(Error::MASTER_BAD_SCHEMA, schema->get_error_string());
 
-  if (!with_ids)
+  if (schema->need_id_assignment())
     schema->assign_ids();
 
   schema->render(finalschema, true);

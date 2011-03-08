@@ -280,6 +280,12 @@
     <ClCompile Include="..\Lib\CommitLogReader.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CellStoreTrailerV5.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CellStoreV5.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -607,6 +613,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\Lib\CommitLogReader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellStoreTrailerV5.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellStoreV5.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

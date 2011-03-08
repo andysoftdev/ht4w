@@ -51,6 +51,7 @@ namespace Hypertable {
       cutoff_time = other.cutoff_time;
       max_versions = other.max_versions;
       counter = other.counter;
+      regexp_qualifiers.clear();
       for (size_t ii=0; ii<other.regexp_qualifiers.size(); ++ii) {
         regexp_qualifiers.push_back(new RE2(other.regexp_qualifiers[ii]->pattern()));
       }

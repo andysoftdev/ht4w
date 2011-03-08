@@ -38,7 +38,7 @@
 #include "Hypertable/Lib/Schema.h"
 #include "Hypertable/Lib/SerializedKey.h"
 
-#include "../CellStoreV4.h"
+#include "../CellStoreV5.h"
 #include "../FileBlockCache.h"
 #include "../Global.h"
 
@@ -528,8 +528,7 @@ int main(int argc, char **argv) {
     String testdir = "/CellStoreScanner_delete_test";
     client->mkdirs(testdir);
 
-    SchemaPtr schema = Schema::new_instance(schema_str, strlen(schema_str),
-                                            true);
+    SchemaPtr schema = Schema::new_instance(schema_str, strlen(schema_str));
     if (!schema->is_valid()) {
       HT_ERRORF("Schema Parse Error: %s", schema->get_error_string());
       exit(1);
@@ -539,7 +538,7 @@ int main(int argc, char **argv) {
     PropertiesPtr cs_props = new Properties();
     // make sure blocks are small so only one key value pair fits in a block
     cs_props->set("blocksize", uint32_t(32));
-    cs = new CellStoreV4(Global::dfs.get(), schema.get());
+    cs = new CellStoreV5(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 24000, cs_props));
 
     DynamicBuffer dbuf(512000);

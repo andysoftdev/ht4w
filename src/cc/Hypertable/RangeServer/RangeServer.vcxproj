@@ -44,11 +44,13 @@
     <ClCompile Include="CellStoreTrailerV2.cc" />
     <ClCompile Include="CellStoreTrailerV3.cc" />
     <ClCompile Include="CellStoreTrailerV4.cc" />
+    <ClCompile Include="CellStoreTrailerV5.cc" />
     <ClCompile Include="CellStoreV0.cc" />
     <ClCompile Include="CellStoreV1.cc" />
     <ClCompile Include="CellStoreV2.cc" />
     <ClCompile Include="CellStoreV3.cc" />
     <ClCompile Include="CellStoreV4.cc" />
+    <ClCompile Include="CellStoreV5.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="ConnectionHandler.cc" />
     <ClCompile Include="EventHandlerMasterConnection.cc" />
@@ -142,11 +144,13 @@
     <ClInclude Include="CellStoreTrailerV2.h" />
     <ClInclude Include="CellStoreTrailerV3.h" />
     <ClInclude Include="CellStoreTrailerV4.h" />
+    <ClInclude Include="CellStoreTrailerV5.h" />
     <ClInclude Include="CellStoreV0.h" />
     <ClInclude Include="CellStoreV1.h" />
     <ClInclude Include="CellStoreV2.h" />
     <ClInclude Include="CellStoreV3.h" />
     <ClInclude Include="CellStoreV4.h" />
+    <ClInclude Include="CellStoreV5.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionHandler.h" />
     <ClInclude Include="EventHandlerMasterConnection.h" />

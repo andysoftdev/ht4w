@@ -39,7 +39,7 @@
 #include "Hypertable/Lib/SerializedKey.h"
 
 #include "../CellStoreFactory.h"
-#include "../CellStoreV4.h"
+#include "../CellStoreV5.h"
 #include "../FileBlockCache.h"
 #include "../Global.h"
 
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
       exit(1);
     }
 
-    cs = new CellStoreV4(Global::dfs.get(), schema.get());
+    cs = new CellStoreV5(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 4096, Config::properties));
 
     // setup value

@@ -35,16 +35,12 @@ extern "C" {
 #include <time.h>
 }
 
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/replace.hpp>
-
-
 #include "Monitoring.h"
 
 using namespace Hypertable;
 using namespace std;
 
-Monitoring::Monitoring(PropertiesPtr &props) {
+Monitoring::Monitoring(PropertiesPtr &props,NameIdMapperPtr &m_namemap) {
 
   /**
    * Create dir for storing monitoring stats
@@ -55,38 +51,23 @@ Monitoring::Monitoring(PropertiesPtr &props) {
   m_monitoring_table_dir = m_monitoring_dir + "/tables";
   m_monitoring_rs_dir = m_monitoring_dir + "/rangeservers";
 
-  if (!FileUtils::exists(m_monitoring_dir)) {
-    if (!FileUtils::mkdirs(m_monitoring_dir)) {
-      HT_THROW(Error::LOCAL_IO_ERROR, "Unable to create monitoring dir ");
-    }
-    HT_INFO("Created monitoring stats dir");
-  }
-  else
-    HT_INFO("monitoring stats dir exists");
-
-  if (!FileUtils::exists(m_monitoring_table_dir)) {
-    if (!FileUtils::mkdirs(m_monitoring_table_dir)) {
-      HT_THROW(Error::LOCAL_IO_ERROR, "Unable to create monitoring tables dir ");
-    }
-    HT_INFO("Created monitoring stats dir");
-  }
-  else
-    HT_INFO("table monitoring stats dir exists");
-  
-  if (!FileUtils::exists(m_monitoring_rs_dir)) {
-    if (!FileUtils::mkdirs(m_monitoring_rs_dir)) {
-      HT_THROW(Error::LOCAL_IO_ERROR, "Unable to create monitoring rangeservers dir ");
-    }
-    HT_INFO("Created monitoring stats rangeservers dir");
-  }
-  else
-    HT_INFO("rangeservers monitoring stats dir exists");
-
-
+  create_dir(m_monitoring_dir);
+  create_dir(m_monitoring_table_dir);
+  create_dir(m_monitoring_rs_dir);
   m_allowable_skew = props->get_i32("Hypertable.RangeServer.ClockSkew.Max");
-  //this.m_namemap = m_namemap;
+  this->m_namemap_ptr = m_namemap;
 }
 
+void Monitoring::create_dir(const String &dir) {
+    if (!FileUtils::exists(dir)) {
+        if (!FileUtils::mkdirs(dir)) {
+            HT_THROW(Error::LOCAL_IO_ERROR, "Unable to create monitoring dir "+dir);
+        }
+        HT_INFOF("Created monitoring dir %s",dir.c_str());
+    }
+    else
+        HT_INFOF("rangeservers monitoring stats dir %s exists ",dir.c_str());
+}
 
 void Monitoring::add_server(const String &location, StatsSystem &system_info) {
   ScopedLock lock(m_mutex);
@@ -109,22 +90,6 @@ void Monitoring::add_server(const String &location, StatsSystem &system_info) {
   m_server_map[location]->location = location;
   m_server_map[location]->id = id;
   m_server_map[location]->system_info = new StatsSystem(system_info);
-
-  /**
-   *  Remove Me!  This file is no longer needed since the data now
-   *  exists in the rangeserver_summary.json file.
-   */
-  {
-    String str;
-    for (RangeServerMap::iterator iter = m_server_map.begin(); iter != m_server_map.end(); ++iter)
-      str += (*iter).first + "=" + (*iter).second->system_info->net_info.primary_addr + "\n";
-    String tmp_filename = m_monitoring_dir + "/rs_map.tmp";
-    String real_filename = m_monitoring_dir + "/rs_map.txt";
-    if (FileUtils::write(tmp_filename, str) == -1)
-      return;
-    FileUtils::rename(tmp_filename, real_filename);
-  }
-  
 }
 
 
@@ -237,7 +202,7 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
     rrd_data.net_tx_rate = (int64_t)stats[i].stats->system.net_stat.tx_rate;
     rrd_data.load_average = stats[i].stats->system.loadavg_stat.loadavg[0];
 
-    compute_clock_skew(stats[i].stats->timestamp, (*iter).second);
+    compute_clock_skew(stats[i].stats->timestamp, &stats[i]);
 
     String rrd_file = m_monitoring_rs_dir + "/" + stats[i].location + "_stats_v0.rrd";
 
@@ -260,6 +225,24 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
 #endif
 
   // calcualte read rates from previous table stats map
+
+  // finish compression ratio aggregation
+  for (TableStatMap::iterator iter = m_table_stat_map.begin();
+       iter != m_table_stat_map.end(); ++iter) {
+    if (iter->second.disk_used != 0)
+      iter->second.compression_ratio = 
+	(double)iter->second.disk_used / iter->second.compression_ratio;
+    else
+      iter->second.compression_ratio = 1.0;
+    if (iter->second.cell_count != 0) {
+      iter->second.average_key_size /= iter->second.cell_count;
+      iter->second.average_value_size /= iter->second.cell_count;
+    }
+    else {
+      iter->second.average_key_size = 0.0;
+      iter->second.average_value_size = 0.0;
+    }
+  }
 
   // Dump RangeServer summary data
   std::vector<RangeServerStatistics> stats_vec;
@@ -286,9 +269,7 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
       HT_INFOF("cell_write_rate %.2f",ts_iter->second.cell_write_rate);
     }
 
-    //String table_file_name = boost::algorithm::replace_all_copy(ts_iter->first,"/","_");
     String table_file_name = ts_iter->first;
-
     String rrd_file = m_monitoring_table_dir + "/" + table_file_name + "_table_stats_v0.rrd";
     if (!FileUtils::exists(rrd_file)) {
         String dir;
@@ -309,15 +290,14 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
   }
   dump_table_summary_json();
 
-  //create table id , name map file
-  dump_table_id_name_map();
-
 }
 
 void Monitoring::add_table_stats(std::vector<StatsTable> &table_stats,int64_t fetch_timestamp) {
 
+  TableStatMap::iterator iter;
+
   for (size_t i=0; i<table_stats.size(); i++) {
-    TableStatMap::iterator iter = m_table_stat_map.find(table_stats[i].table_id);
+    iter = m_table_stat_map.find(table_stats[i].table_id);
     struct table_rrd_data table_data;
     if (iter != m_table_stat_map.end()) {
       table_data = iter->second;
@@ -326,6 +306,9 @@ void Monitoring::add_table_stats(std::vector<StatsTable> &table_stats,int64_t fe
     }
     table_data.fetch_timestamp = fetch_timestamp;
     table_data.range_count += table_stats[i].range_count;
+
+    table_data.cell_count += table_stats[i].cell_count;
+    table_data.file_count += table_stats[i].file_count;
     table_data.scans += table_stats[i].scans;
     table_data.cells_read += table_stats[i].cells_scanned;
     table_data.bytes_read += table_stats[i].bytes_scanned;
@@ -333,7 +316,9 @@ void Monitoring::add_table_stats(std::vector<StatsTable> &table_stats,int64_t fe
     table_data.cells_written += table_stats[i].cells_written;
     table_data.bytes_written += table_stats[i].bytes_written;
     table_data.disk_used += table_stats[i].disk_used;
-    table_data.compression_ratio += (table_stats[i].compression_ratio * table_stats[i].disk_used) / table_stats[i].disk_used;
+    table_data.average_key_size += table_stats[i].key_bytes;
+    table_data.average_value_size += table_stats[i].value_bytes;
+    table_data.compression_ratio += (double)table_stats[i].disk_used / table_stats[i].compression_ratio;
     table_data.memory_used += table_stats[i].memory_used;
     table_data.memory_allocated += table_stats[i].memory_allocated;
     table_data.shadow_cache_memory += table_stats[i].shadow_cache_memory;
@@ -508,6 +493,7 @@ void Monitoring::create_table_rrd(const String &filename) {
 #endif
 
 }
+
 void Monitoring::update_table_rrd(const String &filename, struct table_rrd_data &rrd_data) {
 
 #ifndef _WIN32
@@ -635,8 +621,8 @@ namespace {
   const char *table_json_header = "{\"TableSummary\": {\n  \"tables\": [\n";
   const char *table_json_footer= "\n  ]\n}}\n";
   const char *table_entry_format = 
-    "{\"id\": \"%s\", \"rangecount\": \"%d\", \"cellcount\": \"%d\", \"disk\": \"%d\","
-    " \"memory\": \"%d\", \"compression_ratio\": \"%.2f\"}";
+    "{\"id\": \"%s\",\"name\": \"%s\",\"rangecount\": \"%u\", \"cellcount\": \"%llu\", \"filecount\": \"%llu\", \"disk\": \"%llu\","
+    " \"memory\": \"%llu\", \"average_key_size\": \"%.1f\", \"average_value_size\": \"%.1f\", \"compression_ratio\": \"%.3f\"}";
 }
 
 void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics> &stats) {
@@ -658,7 +644,7 @@ void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics
         denominator += stats[i].stats->system.fs_stat[j].total;
         disk += stats[i].stats->system.fs_stat[j].total;
       }
-      disk /= 1000000000;
+      disk /= 1000000000.0;
       disk_use_pct = (unsigned)((numerator/denominator)*100.0);
       time_t contact = (time_t)(stats[i].fetch_timestamp / 1000000000LL);
       char buf[64];
@@ -718,17 +704,29 @@ void Monitoring::dump_table_summary_json() {
   String entry;
   struct table_rrd_data table_data;
   String table_id;
+  String table_name;
   TableStatMap::iterator ts_iter;
   int i = 0;
   for(ts_iter = m_table_stat_map.begin();ts_iter != m_table_stat_map.end(); ++ts_iter) {
     table_id = ts_iter->first;
     table_data = ts_iter->second;
+    TableNameMap::iterator tn_iter = m_table_name_map.find(table_id);
+    if (tn_iter != m_table_name_map.end()) {
+      table_name = tn_iter->second;
+    } else {
+      m_namemap_ptr->id_to_name(table_id,table_name);
+      m_table_name_map[table_id] = table_name;
+    }
     entry = format(table_entry_format,
                    table_id.c_str(),
-                   table_data.range_count,
-                   table_data.cells_written,
-                   table_data.disk_used,
-                   table_data.memory_used,
+                   table_name.c_str(),
+                   (unsigned)table_data.range_count,
+                   (Llu)table_data.cell_count,
+                   (Llu)table_data.file_count,
+                   (Llu)table_data.disk_used,
+                   (Llu)table_data.memory_used,
+                   table_data.average_key_size,
+                   table_data.average_value_size,
                    table_data.compression_ratio);
     if (i != 0)
       str += String(",\n    ") + entry;
@@ -748,13 +746,12 @@ void Monitoring::dump_table_summary_json() {
   FileUtils::rename(tmp_filename, json_filename);
 }
 
-void Monitoring::dump_table_id_name_map() {
-  /*  if (m_namemap) {
-    std::vector<NamespaceListing> listing;
-    ns->get_listing(true, listing);
-    foreach (const NamespaceListing &entry, listing) {
-      
-    }
-    }*/
+void Monitoring::change_id_mapping(const String &table_id, const String &table_name) {
+  String s_table_id(table_id);
+  String s_table_name(table_name);
+  m_table_name_map[s_table_id] = s_table_name;
 }
 
+void Monitoring::invalidate_id_mapping(const String &table_id) {
+  m_table_name_map.erase(table_id);
+}
