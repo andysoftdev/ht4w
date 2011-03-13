@@ -185,6 +185,11 @@ IntervalScanner::~IntervalScanner() {
   // if there is an outstanding create_scanner, wait for it to come back or timeout
   if (m_create_scanner_outstanding)
     m_create_scanner_handler.wait_for_reply(m_event);
+
+  // destroy scanner
+  if (!m_eos && !m_scanblock.eos() && m_scanblock.get_scanner_id() >= 0)
+    m_range_server.destroy_scanner(m_range_info.addr,
+                                   m_scanblock.get_scanner_id(), 0);
 }
 
 
