@@ -24,12 +24,12 @@
 namespace Hypertable {
 
 void *CellCachePageAllocator::allocate(size_t sz) {
-  Global::memory_tracker->add(sz);
+  Global::memory_tracker->add(MemoryTracker::cell_cache, sz);
   return std::malloc(sz);
 }
 
 void CellCachePageAllocator::freed(size_t sz) {
-  Global::memory_tracker->subtract(sz);
+  Global::memory_tracker->subtract(MemoryTracker::cell_cache, sz);
 }
 
 } // namespace Hypertable

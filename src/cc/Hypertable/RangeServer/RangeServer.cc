@@ -168,7 +168,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     m_query_cache = new QueryCache(query_cache_memory);
 
   Global::memory_tracker = new MemoryTracker(Global::block_cache);
-  Global::memory_tracker->add(query_cache_memory);
+  Global::memory_tracker->add(MemoryTracker::query_cache, query_cache_memory);
 
   Global::protocol = new Hypertable::RangeServerProtocol();
 
