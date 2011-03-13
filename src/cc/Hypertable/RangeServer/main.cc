@@ -94,15 +94,15 @@ int main(int argc, char **argv) {
       exit(1);
     }
 
+    #ifdef _WIN32
+    server_launch_event.set_event();
+    #endif
+
     RangeServerPtr range_server= new RangeServer(properties,
         conn_manager, app_queue, Global::hyperspace);
 
     // install maintenance timer
     TimerHandlerPtr timer_handler = new TimerHandler(comm, range_server.get());
-
-    #ifdef _WIN32
-    server_launch_event.set_event();
-    #endif
 
     app_queue->join();
 
