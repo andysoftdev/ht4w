@@ -65,6 +65,7 @@ namespace Hypertable {
     MasterClient(ConnectionManagerPtr &, Hyperspace::SessionPtr &,
                  const String &toplevel_dir, uint32_t timeout_ms,
                  ApplicationQueuePtr &);
+    MasterClient(Comm *comm, InetAddr &addr, uint32_t timeout_ms);
     ~MasterClient();
 
     void initiate_connection(DispatchHandlerPtr dhp);
@@ -120,8 +121,6 @@ namespace Hypertable {
                     DispatchHandler *handler, Timer *timer=0);
     void drop_table(const String &table_name, bool if_exists, Timer *timer=0);
 
-    void close(Timer *timer=0);
-
     void shutdown(Timer *timer=0);
 
     void reload_master();
@@ -134,6 +133,7 @@ namespace Hypertable {
     void hyperspace_disconnected();
     void hyperspace_reconnected();
     void send_message(CommBufPtr &cbp, DispatchHandler *handler, Timer *timer);
+    int64_t initiate_operation(CommBufPtr &cbp, Timer *timer);
     void initialize_hyperspace();
 
     Mutex                  m_mutex;

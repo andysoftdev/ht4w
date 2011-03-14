@@ -22,6 +22,7 @@
 #include "Common/Compat.h"
 
 #include "Context.h"
+#include "Operation.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -31,6 +32,12 @@ Context::~Context() {
     hyperspace->close(master_file_handle);
     master_file_handle = 0;
   }
+}
+
+void Context::add_server(RangeServerConnectionPtr &rsc) {
+  ScopedLock lock(mutex);
+  pair<Sequence::iterator, bool> insert_result = m_server_list.push_back( RangeServerConnectionEntry(rsc) );
+  HT_ASSERT(insert_result.second);
 }
 
 bool Context::connect_server(RangeServerConnectionPtr &rsc, const String &hostname,
@@ -52,6 +59,10 @@ bool Context::connect_server(RangeServerConnectionPtr &rsc, const String &hostna
     retval = true;
   }
 
+  if (m_server_list_iter != m_server_list.end() && 
+      m_server_list_iter->location() == rsc->location())
+    ++m_server_list_iter;
+  
   // Remove this connection if already exists
   iter = hash_index.find(rsc->location());
   if (iter != hash_index.end())
@@ -60,7 +71,7 @@ bool Context::connect_server(RangeServerConnectionPtr &rsc, const String &hostna
   // Add it (or re-add it)
   pair<Sequence::iterator, bool> insert_result = m_server_list.push_back( RangeServerConnectionEntry(rsc) );
   HT_ASSERT(insert_result.second);
-  if (m_server_list.size() == 1)
+  if (m_server_list.size() == 1 || m_server_list_iter == m_server_list.end())
     m_server_list_iter = m_server_list.begin();
 
   if (notify)
@@ -147,20 +158,22 @@ bool Context::find_server_by_local_addr(InetAddr addr, RangeServerConnectionPtr 
 
 bool Context::next_available_server(RangeServerConnectionPtr &rsc) {
   ScopedLock lock(mutex);
+
+  if (m_server_list.empty())
+    return false;
+
   ServerList::iterator saved_iter = m_server_list_iter;
 
-  while (!m_server_list.empty()) {
+  do {
+    ++m_server_list_iter;
     if (m_server_list_iter == m_server_list.end())
       m_server_list_iter = m_server_list.begin();
     if (m_server_list_iter->rsc->connected()) {
       rsc = m_server_list_iter->rsc;
-      ++m_server_list_iter;
       return true;
     }
-    ++m_server_list_iter;
-    if (m_server_list_iter == saved_iter)
-      return false;
-  }
+  } while (m_server_list_iter != saved_iter);
+
   return false;
 }
 
@@ -184,4 +197,29 @@ void Context::get_servers(std::vector<RangeServerConnectionPtr> &servers) {
     if (!iter->removed())
       servers.push_back(iter->rsc);
   }
+}
+
+bool Context::in_progress(Operation *operation) {
+  ScopedLock lock(mutex);
+  return in_progress_ops.count(operation->hash_code()) > 0;
+}
+
+bool Context::add_in_progress(Operation *operation) {
+  ScopedLock lock(mutex);
+  if (in_progress_ops.count(operation->hash_code()) > 0)
+    return false;
+  in_progress_ops.insert(operation->hash_code());
+  return true;
+}
+
+
+void Context::remove_in_progress(Operation *operation) {
+  ScopedLock lock(mutex);
+  if (in_progress_ops.count(operation->hash_code()) > 0)
+    in_progress_ops.erase(operation->hash_code());
+}
+
+void Context::clear_in_progress() {
+  ScopedLock lock(mutex);
+  in_progress_ops.clear();
 }

@@ -50,7 +50,8 @@ namespace Hypertable {
     static const uint64_t COMMAND_DROP_NAMESPACE        = 10;
     static const uint64_t COMMAND_RENAME_TABLE          = 11;
     static const uint64_t COMMAND_RELINQUISH_ACKNOWLEDGE= 12;
-    static const uint64_t COMMAND_MAX                   = 13;
+    static const uint64_t COMMAND_FETCH_RESULT          = 13;
+    static const uint64_t COMMAND_MAX                   = 14;
 
     static const char *m_command_strings[];
 
@@ -81,7 +82,7 @@ namespace Hypertable {
     static CommBuf *create_drop_table_request(const String &table_name,
                                               bool if_exists);
 
-    static CommBuf *create_close_request();
+    static CommBuf *create_fetch_result_request(int64_t id);
 
     static CommBuf *create_shutdown_request();
 
