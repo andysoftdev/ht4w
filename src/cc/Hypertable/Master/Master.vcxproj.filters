@@ -1,0 +1,202 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\stdafx.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ConnectionHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Monitoring.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Context.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DispatchHandlerOperation.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DispatchHandlerOperationGetStatistics.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GcWorker.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogDefinitionMaster.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogEntityOperation.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Operation.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationAlterTable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationCollectGarbage.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationCreateNamespace.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationCreateTable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationDropNamespace.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationDropTable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationGatherStatistics.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationGetSchema.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationInitialize.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationMoveRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationProcessor.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationRecoverServer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationRegisterServer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationRelinquishAcknowledge.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationRenameTable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationStatus.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationSystemUpgrade.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationWaitForServers.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerConnection.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ConnectionHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Monitoring.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerStatistics.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Context.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DispatchHandlerOperation.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DispatchHandlerOperationAlterTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DispatchHandlerOperationDropTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DispatchHandlerOperationGetStatistics.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GcWorker.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogDefinitionMaster.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogEntityOperation.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Operation.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationAlterTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationCollectGarbage.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationCreateNamespace.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationCreateTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationDropNamespace.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationDropTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationGatherStatistics.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationGetSchema.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationInitialize.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationMoveRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationProcessor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRecoverServer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRegisterServer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRelinquishAcknowledge.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRenameTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationStatus.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationSystemUpgrade.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationWaitForServers.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerConnection.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

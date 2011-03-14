@@ -1,4 +1,4 @@
-#
+ #
 # Copyright (C) 2008 Doug Judd (Zvents, Inc.)
 #
 # This program is free software; you can redistribute it and/or
@@ -37,10 +37,12 @@ Config.cc
 DataGenerator.cc
 EventHandlerMasterChange.cc
 FixedRandomStringGenerator.cc
+Future.cc
 HqlCommandInterpreter.cc
 HqlHelpText.cc
 HqlInterpreter.cc
 IntervalScanner.cc
+IntervalScannerAsync.cc
 Key.cc
 KeySpec.cc
 LoadDataEscape.cc
@@ -65,9 +67,11 @@ RangeLocator.cc
 RangeServerClient.cc
 RangeServerProtocol.cc
 RangeState.cc
+Result.cc
 RootFileHandler.cc
 ScanBlock.cc
 ScanSpec.cc
+ScanCells.cc
 Schema.cc
 StatsRangeServer.cc
 StatsTable.cc
@@ -76,12 +80,16 @@ TableCache.cc
 TableDumper.cc
 TableMutator.cc
 TableMutatorDispatchHandler.cc
+TableScannerDispatchHandler.cc
 TableMutatorFlushHandler.cc
 TableMutatorIntervalHandler.cc
 TableMutatorScatterBuffer.cc
 TableMutatorShared.cc
 TableMutatorSyncDispatchHandler.cc
 TableScanner.cc
+TableScannerAsync.cc
+TableScannerCallback.cc
+TableScannerHandler.cc
 TableSplit.cc
 TestSource.cc
 Types.cc
@@ -159,6 +167,14 @@ target_link_libraries(escape_test Hypertable)
 add_executable(large_insert_test tests/large_insert_test.cc)
 target_link_libraries(large_insert_test Hypertable)
 
+# scanner_async_test 
+add_executable(scanner_async_test tests/scanner_async_test.cc)
+target_link_libraries(scanner_async_test Hypertable)
+
+# future_cancel_test 
+add_executable(future_cancel_test tests/future_cancel_test.cc)
+target_link_libraries(future_cancel_test Hypertable)
+
 # row_delete_test
 add_executable(row_delete_test tests/row_delete_test.cc)
 target_link_libraries(row_delete_test Hypertable)
@@ -206,6 +222,8 @@ configure_file(${HYPERTABLE_SOURCE_DIR}/tests/data/random.dat
 configure_file(${SRC_DIR}/schemaTest.golden ${DST_DIR}/schemaTest.golden)
 configure_file(${SRC_DIR}/locationCacheTest.golden
                ${DST_DIR}/locationCacheTest.golden)
+configure_file(${SRC_DIR}/scannerAsyncTest.golden
+               ${DST_DIR}/scannerAsyncTest.golden)
 configure_file(${SRC_DIR}/loadDataSourceTest.golden
                ${DST_DIR}/loadDataSourceTest.golden)
 configure_file(${SRC_DIR}/loadDataSourceTest.dat
@@ -220,11 +238,14 @@ configure_file(${SRC_DIR}/loadDataSourceTest-qualified-header.dat
                ${DST_DIR}/loadDataSourceTest-qualified-header.dat)
 configure_file(${HYPERTABLE_SOURCE_DIR}/conf/hypertable.cfg
                ${DST_DIR}/hypertable.cfg)
+configure_file(${SRC_DIR}/future_cancel_test.cfg ${DST_DIR}/future_cancel_test.cfg)
 configure_file (${SRC_DIR}/MutatorNoLogSyncTest.cfg ${DST_DIR}/MutatorNoLogSyncTest.cfg)
 configure_file(${SRC_DIR}/name_id_mapper_test.cfg ${DST_DIR}/name_id_mapper_test.cfg)
 configure_file(${SRC_DIR}/metalog_test.golden ${DST_DIR}/metalog_test.golden)
 configure_file(${SRC_DIR}/metalog_test2.golden ${DST_DIR}/metalog_test2.golden)
 
+add_test(Hypertable-Lib-TestSetup env INSTALL_DIR=${INSTALL_DIR}
+         ${SRC_DIR}/test_setup.sh)
 add_test(Schema schemaTest)
 add_test(LocationCache locationCacheTest)
 add_test(LoadDataSource loadDataSourceTest)
@@ -237,6 +258,8 @@ add_test(BlockCompressor-ZLIB compressor_test zlib)
 add_test(CommitLog commit_log_test)
 add_test(MetaLog metalog_test)
 add_test(Client-large-block large_insert_test)
+add_test(Client-scanner-async scanner_async_test)
+add_test(Client-future-cancel future_cancel_test)
 add_test(Client-row-delete row_delete_test)
 add_test(Client-periodic-flush periodic_flush_test)
 add_test(NameIdMapper name_id_mapper_test --config=${DST_DIR}/name_id_mapper_test.cfg)

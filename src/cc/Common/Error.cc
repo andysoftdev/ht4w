@@ -89,6 +89,7 @@ namespace {
     { Error::NAMESPACE_EXISTS,              "HYPERTABLE namespace exists" },
     { Error::NO_RESPONSE,                   "HYPERTABLE no response" },
     { Error::NOT_ALLOWED,                   "HYPERTABLE not allowed" },
+    { Error::INDUCED_FAILURE,               "HYPERTABLE induced failure" },
     { Error::CONFIG_BAD_ARGUMENT,         "CONFIG bad argument(s)"},
     { Error::CONFIG_BAD_CFG_FILE,         "CONFIG bad cfg file"},
     { Error::CONFIG_GET_ERROR,            "CONFIG failed to get config value"},
@@ -193,6 +194,7 @@ namespace {
         "Master schema generation mismatch" },
     { Error::MASTER_LOCATION_ALREADY_ASSIGNED,
       "MASTER location already assigned" },
+    { Error::MASTER_LOCATION_INVALID, "MASTER location invalid" },
 
     { Error::RANGESERVER_GENERATION_MISMATCH,
         "RANGE SERVER generation mismatch" },
@@ -250,6 +252,7 @@ namespace {
     { Error::THRIFTBROKER_BAD_SCANNER_ID, "THRIFT BROKER bad scanner id" },
     { Error::THRIFTBROKER_BAD_MUTATOR_ID, "THRIFT BROKER bad mutator id" },
     { Error::THRIFTBROKER_BAD_NAMESPACE_ID , "THRIFT BROKER bad namespace id" },
+    { Error::THRIFTBROKER_BAD_FUTURE_ID ,    "THRIFT BROKER bad future id" },
     { 0, 0 }
   };
 

@@ -32,10 +32,12 @@
     <ClCompile Include="DataGenerator.cc" />
     <ClCompile Include="EventHandlerMasterChange.cc" />
     <ClCompile Include="FixedRandomStringGenerator.cc" />
+    <ClCompile Include="Future.cc" />
     <ClCompile Include="HqlCommandInterpreter.cc" />
     <ClCompile Include="HqlHelpText.cc" />
     <ClCompile Include="HqlInterpreter.cc" />
     <ClCompile Include="IntervalScanner.cc" />
+    <ClCompile Include="IntervalScannerAsync.cc" />
     <ClCompile Include="Key.cc" />
     <ClCompile Include="KeySpec.cc" />
     <ClCompile Include="LoadDataEscape.cc" />
@@ -144,8 +146,10 @@
     <ClCompile Include="RangeServerClient.cc" />
     <ClCompile Include="RangeServerProtocol.cc" />
     <ClCompile Include="RangeState.cc" />
+    <ClCompile Include="Result.cc" />
     <ClCompile Include="RootFileHandler.cc" />
     <ClCompile Include="ScanBlock.cc" />
+    <ClCompile Include="ScanCells.cc" />
     <ClCompile Include="ScanSpec.cc" />
     <ClCompile Include="Schema.cc" />
     <ClCompile Include="StatsRangeServer.cc" />
@@ -161,6 +165,10 @@
     <ClCompile Include="TableMutatorShared.cc" />
     <ClCompile Include="TableMutatorSyncDispatchHandler.cc" />
     <ClCompile Include="TableScanner.cc" />
+    <ClCompile Include="TableScannerAsync.cc" />
+    <ClCompile Include="TableScannerCallback.cc" />
+    <ClCompile Include="TableScannerDispatchHandler.cc" />
+    <ClCompile Include="TableScannerHandler.cc" />
     <ClCompile Include="TableSplit.cc" />
     <ClCompile Include="Types.cc" />
   </ItemGroup>
@@ -177,11 +185,13 @@
     <ClInclude Include="DataSource.h" />
     <ClInclude Include="EventHandlerMasterChange.h" />
     <ClInclude Include="FixedRandomStringGenerator.h" />
+    <ClInclude Include="Future.h" />
     <ClInclude Include="HqlCommandInterpreter.h" />
     <ClInclude Include="HqlHelpText.h" />
     <ClInclude Include="HqlInterpreter.h" />
     <ClInclude Include="HqlParser.h" />
     <ClInclude Include="IntervalScanner.h" />
+    <ClInclude Include="IntervalScannerAsync.h" />
     <ClInclude Include="Key.h" />
     <ClInclude Include="KeySpec.h" />
     <ClInclude Include="LoadDataEscape.h" />
@@ -224,8 +234,11 @@
     <ClInclude Include="RangeServerClient.h" />
     <ClInclude Include="RangeServerProtocol.h" />
     <ClInclude Include="RangeState.h" />
+    <ClInclude Include="Result.h" />
+    <ClInclude Include="ResultCallback.h" />
     <ClInclude Include="RootFileHandler.h" />
     <ClInclude Include="ScanBlock.h" />
+    <ClInclude Include="ScanCells.h" />
     <ClInclude Include="ScanSpec.h" />
     <ClInclude Include="Schema.h" />
     <ClInclude Include="SerializedKey.h" />
@@ -244,6 +257,11 @@
     <ClInclude Include="TableMutatorShared.h" />
     <ClInclude Include="TableMutatorSyncDispatchHandler.h" />
     <ClInclude Include="TableScanner.h" />
+    <ClInclude Include="TableScannerAsync.h" />
+    <ClInclude Include="TableScannerCallback.h" />
+    <ClInclude Include="TableScannerDispatchHandler.h" />
+    <ClInclude Include="TableScannerHandler.h" />
+    <ClInclude Include="TableScannerQueue.h" />
     <ClInclude Include="TableSplit.h" />
     <ClInclude Include="Timestamp.h" />
     <ClInclude Include="Types.h" />

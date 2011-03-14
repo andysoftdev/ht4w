@@ -35,3 +35,11 @@ const char CellStore::INDEX_VARIABLE_BLOCK_MAGIC[10] =
 KeyDecompressor *CellStore::create_key_decompressor() {
   return new KeyDecompressorNone();
 }
+
+void CellStore::set_replaced_files(const std::vector<String> &old_files) {
+  m_replaced_files = old_files;
+}
+
+const std::vector<String> &CellStore::get_replaced_files() {
+  return m_replaced_files;
+}

@@ -28,6 +28,7 @@
 #include <cassert>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/shared_array.hpp>
 
 #include "MetaLog.h"
 #include "MetaLogWriter.h"
@@ -62,7 +63,8 @@ Writer::Writer(FilesystemPtr &fs, DefinitionPtr &definition, const String &path,
 
   // Setup local backup path name
   Path data_dir = Config::properties->get_str("Hypertable.DataDirectory");
-  m_backup_path = (data_dir /= String("/run/log_backup/") + String(m_definition->name())).string();
+  m_backup_path = (data_dir /= String("/run/log_backup/") + String(m_definition->name()) +
+                   String(m_definition->instance_name())).string();
   if (!FileUtils::exists(m_backup_path))
     FileUtils::mkdirs(m_backup_path);
 
@@ -113,7 +115,7 @@ void Writer::close() {
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error closing metalog: %s (fd=%d)", m_filename.c_str(), m_fd);
   }
-  
+
 }
 
 
@@ -182,6 +184,28 @@ void Writer::record_state(Entity *entity) {
   m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
 }
 
+void Writer::record_state(std::vector<Entity *> &entities) {
+  ScopedLock lock(m_mutex);
+  size_t length = 0;
+
+  for (size_t i=0; i<entities.size(); i++)
+    length += EntityHeader::LENGTH + entities[i]->encoded_length();
+
+  {
+    StaticBuffer buf(length);
+    uint8_t *ptr = buf.base;
+
+    for (size_t i=0; i<entities.size(); i++)
+      entities[i]->encode_entry( &ptr );
+
+    HT_ASSERT((ptr-buf.base) == buf.size);
+
+    FileUtils::write(m_backup_fd, buf.base, buf.size);
+    m_offset += buf.size;
+    m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
+  }
+}
+
 
 void Writer::record_removal(Entity *entity) {
   ScopedLock lock(m_mutex);
@@ -199,4 +223,29 @@ void Writer::record_removal(Entity *entity) {
   FileUtils::write(m_backup_fd, buf.base, buf.size);
   m_offset += buf.size;
   m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
+}
+
+
+void Writer::record_removal(std::vector<Entity *> &entities) {
+  ScopedLock lock(m_mutex);
+  size_t length = entities.size() * EntityHeader::LENGTH;
+
+  {
+    StaticBuffer buf(length);
+    uint8_t *ptr = buf.base;
+
+    for (size_t i=0; i<entities.size(); i++) {
+      entities[i]->header.flags |= EntityHeader::FLAG_REMOVE;
+      entities[i]->header.length = 0;
+      entities[i]->header.checksum = 0;
+      entities[i]->header.encode( &ptr );
+    }
+
+    HT_ASSERT((ptr-buf.base) == buf.size);
+
+    FileUtils::write(m_backup_fd, buf.base, buf.size);
+    m_offset += buf.size;
+    m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
+  }
+
 }

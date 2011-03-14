@@ -88,7 +88,9 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 {
 
   uint16_t port;
-  uint32_t maintenance_threads = std::min(2, System::cpu_info().total_cores);
+  m_cores = System::cpu_info().total_cores;
+  HT_ASSERT(m_cores != 0);
+  uint32_t maintenance_threads = std::min(2, (int) m_cores);
   SubProperties cfg(props, "Hypertable.RangeServer.");
 
   m_verbose = props->get_bool("verbose");
@@ -247,7 +249,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   local_recover();
 
   Global::log_prune_threshold_min = cfg.get_i64("CommitLog.PruneThreshold.Min",
-      2 * Global::user_log->get_max_fragment_size());
+      5 * Global::user_log->get_max_fragment_size());
 
   uint32_t max_memory_percentage =
     cfg.get_i32("CommitLog.PruneThreshold.Max.MemoryPercentage");
@@ -380,7 +382,7 @@ namespace {
 
     try {
 
-      if (Global::log_dfs->exists(meta_log_dir)) { 
+      if (Global::log_dfs->exists(meta_log_dir)) {
         bool found_recover_entry;
         rsml_reader = new OldMetaLog::RangeServerMetaLogReader(Global::log_dfs.get(), meta_log_dir);
         if (!rsml_reader->empty()) {
@@ -398,12 +400,13 @@ namespace {
       HT_ABORT;
     }
   }
-  
+
 }
 
 
 void RangeServer::local_recover() {
-  MetaLog::DefinitionPtr rsml_definition = new MetaLog::DefinitionRangeServer();
+  MetaLog::DefinitionPtr rsml_definition =
+      new MetaLog::DefinitionRangeServer(Location::get().c_str());
   MetaLog::ReaderPtr rsml_reader;
   CommitLogReaderPtr root_log_reader;
   CommitLogReaderPtr system_log_reader;
@@ -1132,7 +1135,19 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
 
       // Verify schema, this will create the Schema object and add it to
       // table_info if it doesn't exist
-      verify_schema(table_info, table->generation);
+      try {
+        verify_schema(table_info, table->generation);
+      }
+      catch (Hypertable::Exception &e) {
+        if (e.code() == Error::HYPERSPACE_BAD_PATHNAME || e.code() == Error::HYPERSPACE_FILE_NOT_FOUND) {
+          HT_WARNF("Table %s file error in hyperspace '%s'", table->id, e.what());
+          cb->error(e.code(), table->id);
+          return;
+        }
+        else {
+          HT_THROW(e.code(), e.what());
+        }
+      }
 
       if (register_table)
         m_live_map->set(table->id, table_info);
@@ -1348,9 +1363,9 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
 
   }
   catch (Hypertable::Exception &e) {
+    HT_ERROR_OUT << e << HT_END;
     if (table_info)
       table_info->unstage_range(range_spec);
-    HT_ERROR_OUT << e << HT_END;
     if (cb && (error = cb->error(e.code(), e.what())) != Error::OK)
       HT_ERRORF("Problem sending error response - %s", Error::get_text(error));
   }
@@ -1438,37 +1453,60 @@ RangeServer::transform_key(ByteString &bskey, DynamicBuffer *dest_bufp,
 }
 
 void
-RangeServer::commit_log_sync(ResponseCallback *cb) {
+RangeServer::commit_log_sync(ResponseCallback *cb, const TableIdentifier *table) {
   String errmsg;
   int error = Error::OK;
-  CommitLog* commit_log = 0;
+  TableUpdate table_update;
+  StaticBuffer buffer(0);
+  SchemaPtr schema;
+  std::vector<TableUpdate *> table_update_vector;
+  UpdateRequest request;
 
-  HT_DEBUG_OUT <<"received commit_log_sync request"<< HT_END;
+  HT_DEBUG_OUT <<"received commit_log_sync request for table "<< table->id<< HT_END;
 
   if (!m_replay_finished)
     wait_for_recovery_finish();
 
-  // Global commit log is only available after local recovery
-  commit_log = Global::user_log;
+  m_live_map->get(table, table_update.table_info);
 
+  // verify schema
+  schema = table_update.table_info->get_schema();
+  if (schema.get()->get_generation() != table->generation) {
+    if ((error = cb->error(Error::RANGESERVER_GENERATION_MISMATCH,
+        format("Commit log sync schema generation mismatch for table %s (received %u != %u)",
+               table->id, table->generation,
+               table_update.table_info->get_schema()->get_generation()))) != Error::OK)
+      HT_ERRORF("Problem sending error response - %s", Error::get_text(error));
+    return;
+  }
+
+  // Check for group commit
+  if (schema->get_group_commit_interval() > 0) {
+    m_group_commit->add(cb->get_event(), schema, table, 0, buffer, 0, true);
+    return;
+  }
+
+  // normal sync...
   try {
-    commit_log->sync();
-    HT_DEBUG_OUT << "commit log synced" << HT_END;
+    memcpy(&table_update.id, table, sizeof(TableIdentifier));
+    table_update.commit_interval = 0;
+    table_update.total_count = 0;
+    table_update.total_buffer_size = 0;;
+    table_update.flags = 0;
+    table_update.do_sync = true;
+    request.buffer = buffer;
+    request.count = 0;
+    request.event = cb->get_event();
+    table_update.requests.push_back(&request);
+
+    table_update_vector.push_back(&table_update);
+
+    batch_update(table_update_vector);
   }
   catch (Exception &e) {
     HT_ERROR_OUT << "Exception caught: " << e << HT_END;
     error = e.code();
     errmsg = e.what();
-  }
-
-  /**
-   * Send back response
-   */
-  if (error == Error::OK) {
-    if ((error = cb->response_ok()) != Error::OK)
-      HT_ERRORF("Problem sending OK response - %s", Error::get_text(error));
-  }
-  else {
     if ((error = cb->error(error, errmsg)) != Error::OK)
       HT_ERRORF("Problem sending error response - %s", Error::get_text(error));
   }
@@ -1521,7 +1559,7 @@ RangeServer::update(ResponseCallbackUpdate *cb, const TableIdentifier *table,
 
   // Check for group commit
   if (schema->get_group_commit_interval() > 0) {
-    m_group_commit->add(cb->get_event(), schema, table, count, buffer, flags);
+    m_group_commit->add(cb->get_event(), schema, table, count, buffer, flags, false);
     return;
   }
 
@@ -1982,7 +2020,7 @@ RangeServer::batch_update(std::vector<TableUpdate *> &updates) {
         HT_ASSERT(!table_update->id.is_metadata());
       }
       else if ((table_update->flags & RangeServerProtocol::UPDATE_FLAG_NO_LOG_SYNC) ==
-               RangeServerProtocol::UPDATE_FLAG_NO_LOG_SYNC)
+               RangeServerProtocol::UPDATE_FLAG_NO_LOG_SYNC && !table_update->do_sync)
         sync = false;
 
       if (table_update->id.is_metadata()) {
@@ -2007,6 +2045,10 @@ RangeServer::batch_update(std::vector<TableUpdate *> &updates) {
         table_update->error = error;
         continue;
       }
+    }
+    else {
+      if (table_update->do_sync == true)
+        user_log_needs_syncing = true;
     }
 
     // Iterate through all of the ranges, inserting updates
@@ -2417,7 +2459,7 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
       HT_ERROR_OUT << "Range statistics object found without table ID" << HT_END;
       continue;
     }
-    
+
     if (table_stat.table_id == "")
       table_stat.table_id = range_data[ii]->table_id;
     else if (strcmp(table_stat.table_id.c_str(), range_data[ii]->table_id)) {
@@ -2495,7 +2537,7 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
   if (mutator) {
     time_t rounded_time = (now+(Global::metrics_interval/2)) - ((now+(Global::metrics_interval/2))%Global::metrics_interval);
     String value = format("1:%ld,%.6f,%.2f,%.2f", rounded_time,
-                          m_loadavg_accum / (double)m_metric_samples,
+                          m_loadavg_accum / (double)(m_metric_samples * m_cores),
                           (double)m_page_in_accum / (double)m_metric_samples,
                           (double)m_page_out_accum / (double)m_metric_samples);
     String location = Location::get();

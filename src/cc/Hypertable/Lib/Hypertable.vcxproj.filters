@@ -217,6 +217,30 @@
     <ClCompile Include="StatsTable.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Result.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScanCells.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableScannerAsync.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableScannerCallback.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableScannerDispatchHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableScannerHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IntervalScannerAsync.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Future.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">
@@ -464,6 +488,36 @@
     </ClInclude>
     <ClInclude Include="old\RangeServerMetaLogReader.h">
       <Filter>Source Files\old</Filter>
+    </ClInclude>
+    <ClInclude Include="Result.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResultCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScanCells.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableScannerAsync.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableScannerCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableScannerDispatchHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableScannerHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableScannerQueue.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IntervalScannerAsync.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Future.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

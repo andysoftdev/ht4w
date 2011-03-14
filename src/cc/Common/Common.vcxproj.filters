@@ -106,6 +106,12 @@
     <ClCompile Include="SecurityUtils.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="StringCompressorPrefix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StringDecompressorPrefix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Abi.h">
@@ -331,6 +337,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="SecurityUtils.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StringCompressorPrefix.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StringDecompressorPrefix.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

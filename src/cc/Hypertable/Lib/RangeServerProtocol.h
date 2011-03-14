@@ -108,14 +108,14 @@ namespace Hypertable {
      * @return protocol message
      */
     static CommBuf *create_request_update_schema(
-        const TableIdentifier &table, const char *schema);
+        const TableIdentifier &table, const String &schema);
 
     /** Creates an "commit_log_sync" message. Used to make previous range server updates
      * are syncd to the commit log
-     *
+     * @param table table identifier
      * @return protocol message
      */
-    static CommBuf *create_request_commit_log_sync();
+    static CommBuf *create_request_commit_log_sync(const TableIdentifier &table);
 
     /** Creates a "create scanner" request message.
      *

@@ -198,6 +198,8 @@
     <ClCompile Include="StatsSerializable.cc" />
     <ClCompile Include="StatsSystem.cc" />
     <ClCompile Include="String.cc" />
+    <ClCompile Include="StringCompressorPrefix.cc" />
+    <ClCompile Include="StringDecompressorPrefix.cc" />
     <ClCompile Include="strptime.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -273,6 +275,8 @@
     <ClInclude Include="StlHash.h" />
     <ClInclude Include="Stopwatch.h" />
     <ClInclude Include="String.h" />
+    <ClInclude Include="StringCompressorPrefix.h" />
+    <ClInclude Include="StringDecompressorPrefix.h" />
     <ClInclude Include="StringExt.h" />
     <ClInclude Include="strptime.h" />
     <ClInclude Include="SuperFastHash.h" />

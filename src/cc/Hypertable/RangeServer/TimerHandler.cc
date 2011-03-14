@@ -101,6 +101,8 @@ void TimerHandler::complete_maintenance_notify() {
       HT_NOTICE("Restarting application queue");
       m_app_queue->start();
       m_app_queue_paused = false;
+      m_last_low_memory_maintenance = TIMESTAMP_NULL;
+      m_current_interval = m_timer_interval;
     }
   }
 }

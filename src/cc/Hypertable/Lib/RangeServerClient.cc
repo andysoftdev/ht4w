@@ -338,7 +338,7 @@ RangeServerClient::do_drop_table(const CommAddress &addr,
 
 void
 RangeServerClient::update_schema(const CommAddress &addr,
-    const TableIdentifier &table, const char *schema,
+    const TableIdentifier &table, const String &schema,
     DispatchHandler *handler) {
   CommBufPtr cbp(RangeServerProtocol::create_request_update_schema(table,
       schema));
@@ -347,7 +347,7 @@ RangeServerClient::update_schema(const CommAddress &addr,
 
 void
 RangeServerClient::update_schema(const CommAddress &addr,
-    const TableIdentifier &table, const char *schema,
+    const TableIdentifier &table, const String &schema,
     DispatchHandler *handler, Timer &timer) {
   CommBufPtr cbp(RangeServerProtocol::create_request_update_schema(table,
       schema));
@@ -355,15 +355,16 @@ RangeServerClient::update_schema(const CommAddress &addr,
 }
 
 void
-RangeServerClient::commit_log_sync(const CommAddress &addr, DispatchHandler *handler) {
-  CommBufPtr cbp(RangeServerProtocol::create_request_commit_log_sync());
+RangeServerClient::commit_log_sync(const CommAddress &addr, const TableIdentifier &table_id,
+                                   DispatchHandler *handler) {
+  CommBufPtr cbp(RangeServerProtocol::create_request_commit_log_sync(table_id));
   send_message(addr, cbp, handler, m_default_timeout_ms);
 }
 
 void
-RangeServerClient::commit_log_sync(const CommAddress &addr, DispatchHandler *handler,
-                                   Timer &timer) {
-  CommBufPtr cbp(RangeServerProtocol::create_request_commit_log_sync());
+RangeServerClient::commit_log_sync(const CommAddress &addr, const TableIdentifier &table_id,
+                                   DispatchHandler *handler, Timer &timer) {
+  CommBufPtr cbp(RangeServerProtocol::create_request_commit_log_sync(table_id));
   send_message(addr, cbp, handler, timer.remaining());
 }
 

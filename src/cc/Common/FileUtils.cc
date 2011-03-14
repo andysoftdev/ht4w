@@ -66,6 +66,12 @@ ssize_t FileUtils::read(const String &fname, String &contents) {
   return (ssize_t)len;
 }
 
+String FileUtils::file_to_string(const String &fname) {
+  String str;
+  read(fname, str);
+  return str;
+}
+
 #ifdef _WIN32
 
 #define HT_WIN32_LASTERROR( msg ) \
@@ -549,6 +555,15 @@ char *FileUtils::file_to_buffer(const String &fname, off_t *lenp) {
   rbuf[nread] = 0;
 
   return rbuf;
+}
+
+String FileUtils::file_to_string(const String &fname) {
+  String str;
+  off_t len;
+  char *contents = file_to_buffer(fname, &len);
+  str = (contents == 0) ? "" : contents;
+  delete [] contents;
+  return str;
 }
 
 

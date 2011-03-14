@@ -337,12 +337,7 @@ void generate_update_load(PropertiesPtr &props, String &tablename, bool flush,
     load_client_ptr->create_mutator(tablename, mutator_flags);
 
     for (DataGenerator::iterator iter = dg.begin(); iter != dg.end(); total_bytes+=iter.last_data_size(),++iter) {
-
-#ifdef _WIN32
-	  if (delete_pct != 0 && (::rand() % 100) < delete_pct) {
-#else
       if (delete_pct != 0 && (::random() % 100) < delete_pct) {
-#endif
         KeySpec key;
         key.row = (*iter).row_key;
         key.row_len = strlen((const char *)key.row);

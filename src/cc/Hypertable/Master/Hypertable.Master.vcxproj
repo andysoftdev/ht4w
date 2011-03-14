@@ -21,70 +21,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\stdafx.cc">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="ConnectionHandler.cc" />
-    <ClCompile Include="DispatchHandlerDropTable.cc" />
-    <ClCompile Include="DispatchHandlerGetStatistics.cc" />
-    <ClCompile Include="DispatchHandlerUpdateSchema.cc" />
-    <ClCompile Include="EventHandlerServerJoined.cc" />
-    <ClCompile Include="EventHandlerServerLeft.cc" />
     <ClCompile Include="main.cc" />
-    <ClCompile Include="Master.cc" />
-    <ClCompile Include="MasterGc.cc" />
-    <ClCompile Include="Monitoring.cc" />
-    <ClCompile Include="RequestHandlerAlterTable.cc" />
-    <ClCompile Include="RequestHandlerClose.cc" />
-    <ClCompile Include="RequestHandlerCreateNamespace.cc" />
-    <ClCompile Include="RequestHandlerCreateTable.cc" />
-    <ClCompile Include="RequestHandlerDoMaintenance.cc" />
-    <ClCompile Include="RequestHandlerDropNamespace.cc" />
-    <ClCompile Include="RequestHandlerDropTable.cc" />
-    <ClCompile Include="RequestHandlerGetSchema.cc" />
-    <ClCompile Include="RequestHandlerMoveRange.cc" />
-    <ClCompile Include="RequestHandlerRegisterServer.cc" />
-    <ClCompile Include="RequestHandlerRelinquishAcknowledge.cc" />
-    <ClCompile Include="RequestHandlerRenameTable.cc" />
-    <ClCompile Include="RequestHandlerShutdown.cc" />
-    <ClCompile Include="RequestHandlerStatus.cc" />
-    <ClCompile Include="ResponseCallbackGetSchema.cc" />
-    <ClCompile Include="ResponseCallbackRegisterServer.cc" />
-    <ClCompile Include="ServerLockFileHandler.cc" />
-    <ClCompile Include="ServersDirectoryHandler.cc" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="ConnectionHandler.h" />
-    <ClInclude Include="DispatchHandlerDropTable.h" />
-    <ClInclude Include="DispatchHandlerGetStatistics.h" />
-    <ClInclude Include="DispatchHandlerUpdateSchema.h" />
-    <ClInclude Include="EventHandlerServerJoined.h" />
-    <ClInclude Include="EventHandlerServerLeft.h" />
-    <ClInclude Include="HyperspaceSessionHandler.h" />
-    <ClInclude Include="Master.h" />
-    <ClInclude Include="MasterGc.h" />
-    <ClInclude Include="Monitoring.h" />
-    <ClInclude Include="RangeServerState.h" />
-    <ClInclude Include="RangeServerStatistics.h" />
-    <ClInclude Include="RequestHandlerAlterTable.h" />
-    <ClInclude Include="RequestHandlerClose.h" />
-    <ClInclude Include="RequestHandlerCreateNamespace.h" />
-    <ClInclude Include="RequestHandlerCreateTable.h" />
-    <ClInclude Include="RequestHandlerDoMaintenance.h" />
-    <ClInclude Include="RequestHandlerDropNamespace.h" />
-    <ClInclude Include="RequestHandlerDropTable.h" />
-    <ClInclude Include="RequestHandlerGetSchema.h" />
-    <ClInclude Include="RequestHandlerMoveRange.h" />
-    <ClInclude Include="RequestHandlerRegisterServer.h" />
-    <ClInclude Include="RequestHandlerRelinquishAcknowledge.h" />
-    <ClInclude Include="RequestHandlerRenameTable.h" />
-    <ClInclude Include="RequestHandlerShutdown.h" />
-    <ClInclude Include="RequestHandlerStatus.h" />
-    <ClInclude Include="ResponseCallbackGetSchema.h" />
-    <ClInclude Include="ResponseCallbackRegisterServer.h" />
-    <ClInclude Include="ServerLockFileHandler.h" />
-    <ClInclude Include="ServersDirectoryHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\hypertable.rc">
@@ -173,7 +114,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;Master.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -194,7 +135,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;Master.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -221,7 +162,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;Master.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -248,7 +189,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;Master.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>

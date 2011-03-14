@@ -90,7 +90,7 @@ namespace Hypertable {
                 uint32_t count, StaticBuffer &, uint32_t flags);
     void batch_update(std::vector<TableUpdate *> &updates);
 
-    void commit_log_sync(ResponseCallback *);
+    void commit_log_sync(ResponseCallback *, const TableIdentifier *);
     void drop_table(ResponseCallback *, const TableIdentifier *);
     void dump(ResponseCallback *, const char *, bool);
     void get_statistics(ResponseCallbackGetStatistics *);
@@ -202,6 +202,7 @@ namespace Hypertable {
     uint64_t               m_page_in_accum;
     uint64_t               m_page_out_accum;
     size_t                 m_metric_samples;
+    size_t                 m_cores;
     CellsBuilder          *m_pending_metrics_updates;
   };
 

@@ -49,7 +49,7 @@ namespace Hypertable { namespace Logger {
 
 // This should generate a core dump
 #ifdef HT_USE_ABORT
-#define HT_ABORT abort()
+#define HT_ABORT ::abort()
 #else
 #define HT_ABORT *((int *)0) = 1
 #endif
