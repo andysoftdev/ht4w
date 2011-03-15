@@ -222,7 +222,7 @@ void ServiceUtils::uninstall_service() {
         ShutdownEvent* shutdownEvent = create_shutdown_event(status.dwProcessId);
         if (shutdownEvent->is_existing_event()) {
           shutdownEvent->set_event();
-          if (!ProcessUtils::join(status.dwProcessId, Config::wait() << 1)) // give enough time to stop
+          if (!ProcessUtils::join(status.dwProcessId, Config::wait() << 2)) // give enough time to stop
             HT_WARNF("Stop service '%s' has been timed out", service_name.c_str());
         }
         delete shutdownEvent;
@@ -254,7 +254,7 @@ void ServiceUtils::start_service() {
         Sleep(250);
         if (service_status(service_name, status)) {
           ServerLaunchEvent service_launch_event(status.dwProcessId);
-          if (!service_launch_event.wait(Config::wait() << 1)) // give enough time to start
+          if (!service_launch_event.wait(Config::wait()))
             HT_ERRORF("Launching service '%s' has been timed out", service_name.c_str());
         }
         else
@@ -281,7 +281,7 @@ void ServiceUtils::stop_service() {
         if (!manage_service(service_name, stop, access_denied) && access_denied)
           self_elevate();
         Sleep(250);
-        if (!ProcessUtils::join(status.dwProcessId, Config::wait() << 1)) // give enough time to stop
+        if (!ProcessUtils::join(status.dwProcessId, Config::wait() << 2)) // give enough time to stop
           HT_WARNF("Stop service '%s' has been timed out", service_name.c_str());
       }
       else

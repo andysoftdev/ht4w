@@ -226,7 +226,7 @@ bool ServerUtils::start(server_t server, const char* args, DWORD timeout_ms, lau
   if (ProcessUtils::create(cmd.c_str(), Config::create_console() ? CREATE_NEW_CONSOLE : CREATE_NEW_PROCESS_GROUP,
                            si, logfile.c_str(), true, launched_server.pi, launched_server.logfile)) {
     ServerLaunchEvent server_launch_event(launched_server.pi.dwProcessId);
-    if (!(launched = server_launch_event.wait(timeout_ms << 1))) { // give enough time to start
+    if (!(launched = server_launch_event.wait(timeout_ms))) {
       HT_ERRORF("Launching %s has been timed out", exe_name.c_str());
       HT_NOTICEF("Killing %s (%d)", server_exe_name(server).c_str(), launched_server.pi.dwProcessId);
       ProcessUtils::kill(launched_server.pi.dwProcessId, timeout_ms);
@@ -241,53 +241,18 @@ bool ServerUtils::start(server_t server, const char* args, DWORD timeout_ms, lau
 }
 
 void ServerUtils::stop(servers_t servers, DWORD timeout_ms, Notify* notify) {
-  // hypertable master will shutdown the range servers as well,
-  // let's skip range server shutdown if the master is available
-  bool kill_rangeservers_on_failure = false;
-  if (servers.count(hypertableMaster) && servers.count(rangeServer)) {
-    if (has_master(timeout_ms)) {
-      servers.erase(rangeServer);
-      kill_rangeservers_on_failure = true;
-    }
-  }
   bool killed;
   for (servers_t::const_reverse_iterator it = servers.rbegin(); it != servers.rend(); ++it ) {
     stop(*it, 0, timeout_ms, killed, notify);
-    // usually hypertable master will shutdown the range servers,
-    // on failure let's kill all range servers on this node
-    if (kill_rangeservers_on_failure && killed && *it == hypertableMaster)
-      kill(rangeServer, timeout_ms);
   }
 }
 
 void ServerUtils::stop(launched_servers_t& launched_servers, DWORD timeout_ms, Notify* notify) {
-  // hypertable master will shutdown the range servers as well,
-  // let's skip range server shutdown if the master is available
-  bool kill_rangeservers_on_failure = false;
-  int range_server = launched_servers.size() - 1;
-  for (; range_server >= 0; --range_server)
-    if (launched_servers[range_server].server == rangeServer)
-      break;
-  if (range_server >= 0) {
-    for (launched_servers_t::reverse_iterator it = launched_servers.rbegin(); it != launched_servers.rend(); ++it) {
-      if ((*it).server == hypertableMaster) {
-        if (has_master(timeout_ms)) {
-          close_handles(launched_servers[range_server]);
-          kill_rangeservers_on_failure = true;
-          break;
-        }
-      }
-    }
-  }
   bool killed;
   for (launched_servers_t::reverse_iterator it = launched_servers.rbegin(); it != launched_servers.rend(); ++it) {
     if ((*it).pi.hProcess != INVALID_HANDLE_VALUE) {
       stop((*it).server, (*it).pi.dwProcessId, timeout_ms, killed, notify);
       close_handles(*it);
-      // usually hypertable master will shutdown the range servers,
-      // on failure let's kill all range servers on this node
-      if (kill_rangeservers_on_failure && killed && (*it).server == hypertableMaster)
-        kill(rangeServer, timeout_ms);
     }
   }
 }
@@ -380,11 +345,11 @@ bool ServerUtils::shutdown_dfsbroker(DWORD pid, DWORD timeout_ms) {
     }
     if (pid) {
       if (!ProcessUtils::join(pid, timeout_ms))
-        Sleep(500);
+        return false;
     }
     else {
       if (!ProcessUtils::join(pids, false, timeout_ms))
-        Sleep(500);
+        return false;
     }
     return true;
   }
@@ -428,50 +393,16 @@ bool ServerUtils::shutdown_master(DWORD pid, DWORD timeout_ms) {
     }
     if (pid) {
       if (!ProcessUtils::join(pid, timeout_ms))
-        Sleep(500);
+        return false;
     }
     else {
       if (!ProcessUtils::join(pids, false, timeout_ms))
-        Sleep(500);
+        return false;
     }
     return true;
   }
   catch (Exception& e) {
     HT_ERROR_OUT << e << HT_END;
-  }
-  return false;
-}
-
-bool ServerUtils::has_master(DWORD timeout_ms) {
-  HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
-  try {
-    Comm* comm = Comm::instance();
-    ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
-    Hyperspace::SessionPtr hyperspace = new Hyperspace::Session(comm, Config::properties);
-
-    if (!hyperspace->wait_for_connection(timeout_ms)) {
-      conn_mgr->remove_all();
-      return false;
-    }
-    ApplicationQueuePtr app_queue = new ApplicationQueue(1);
-    String toplevel_dir = Config::properties->get_str("Hypertable.Directory");
-    boost::trim_if(toplevel_dir, boost::is_any_of("/"));
-    toplevel_dir = String("/") + toplevel_dir;
-
-    MasterClientPtr master = new MasterClient(conn_mgr, hyperspace, toplevel_dir, timeout_ms, app_queue);
-    master->set_verbose_flag(Config::properties->get_bool("verbose"));
-    master->initiate_connection(0);
-    if (!master->wait_for_connection(timeout_ms)) {
-      conn_mgr->remove_all();
-      return false;
-    }
-    Timer timer(timeout_ms, true);
-    master->status(&timer);
-    conn_mgr->remove_all();
-    HT_INFOF("Hypertable master found at %s", hyperspace->get_master_addr().format().c_str());
-    return true;
-  }
-  catch (Exception&) {
   }
   return false;
 }
@@ -497,12 +428,12 @@ bool ServerUtils::shutdown_rangeserver(DWORD pid, DWORD timeout_ms) {
       conn_mgr->remove_all();
     }
     if (pid) {
-      if (!ProcessUtils::join(pid, timeout_ms))
-        Sleep(500);
+      if (!ProcessUtils::join(pid, timeout_ms << 2)) // give enough time to stop
+        return false;
     }
     else {
-      if (!ProcessUtils::join(pids, false, timeout_ms))
-        Sleep(500);
+      if (!ProcessUtils::join(pids, false, timeout_ms << 2)) // give enough time to stop
+        return false;
     }
     return true;
   }
