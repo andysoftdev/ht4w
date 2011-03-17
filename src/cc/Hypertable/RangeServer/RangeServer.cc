@@ -71,6 +71,8 @@ extern "C" {
 #include "RangeStatsGatherer.h"
 #include "ScanContext.h"
 
+#define CLEAN_SHUTDOWN
+
 using namespace std;
 using namespace Hypertable;
 using namespace Serialization;
@@ -274,7 +276,7 @@ void RangeServer::shutdown() {
     // stop maintenance timer
     m_timer_handler->shutdown();
 #if defined(CLEAN_SHUTDOWN)
-    m_timer_handler->wait_for_shutdown();
+    //FIXME m_timer_handler->wait_for_shutdown();
 #endif
 
     m_group_commit_timer_handler->shutdown();
@@ -300,7 +302,7 @@ void RangeServer::shutdown() {
       delete Global::metadata_log;
     }
     if (Global::system_log) {
-      Global::metadata_log->close();
+      Global::system_log->close();
       delete Global::system_log;
     }
     if (Global::user_log) {
@@ -2968,7 +2970,7 @@ void RangeServer::close(ResponseCallback *cb) {
       Global::metadata_log->close();
 
     if (Global::system_log)
-      Global::metadata_log->close();
+      Global::system_log->close();
 
     if (Global::user_log)
       Global::user_log->close();
