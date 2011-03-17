@@ -218,8 +218,6 @@ int main(int argc, char **argv) {
     context = 0;
 
     HT_NOTICE("Exiting master");
-
-    HT_NOTICE("Exiting master");
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

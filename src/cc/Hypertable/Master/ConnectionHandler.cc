@@ -125,6 +125,7 @@ void ConnectionHandler::handle(EventPtr &event) {
         m_context->op->timed_wait_for_idle(expire_time);
         m_context->op->shutdown();
         m_context->mml_writer->close();
+        HT_NOTICE("Exiting master");
         _exit(0);
       case MasterProtocol::COMMAND_CREATE_NAMESPACE:
         operation = new OperationCreateNamespace(m_context, event);

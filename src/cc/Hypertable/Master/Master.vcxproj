@@ -53,6 +53,7 @@
     <ClCompile Include="OperationSystemUpgrade.cc" />
     <ClCompile Include="OperationWaitForServers.cc" />
     <ClCompile Include="RangeServerConnection.cc" />
+    <ClCompile Include="ResponseManager.cc" />
     <ClCompile Include="Utility.cc" />
   </ItemGroup>
   <ItemGroup>
@@ -88,6 +89,7 @@
     <ClInclude Include="RangeServerConnection.h" />
     <ClInclude Include="RangeServerState.h" />
     <ClInclude Include="RangeServerStatistics.h" />
+    <ClInclude Include="ResponseManager.h" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

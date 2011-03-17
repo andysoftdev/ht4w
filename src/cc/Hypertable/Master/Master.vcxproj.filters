@@ -97,6 +97,9 @@
     <ClCompile Include="Utility.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ResponseManager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -196,6 +199,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Utility.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

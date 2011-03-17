@@ -52,6 +52,7 @@ namespace Hypertable {
     void initialize_dependencies();
     String m_name;
     String m_schema;
+    String m_location;
   };
 
 
