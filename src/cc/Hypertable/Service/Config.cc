@@ -61,7 +61,6 @@ const char* cmdline_no_rangeserver       = "no-rangeserver";
 const char* cmdline_no_thriftbroker      = "no-thriftbroker";
 const char* cmdline_create_console       = "create-console";
 const char* cmdline_logging_dir          = "logging-dir";
-const char* cmdline_wait                 = "wait";
 const char* cmdline_rangeserver          = "range-server";
 
 const char* cfg_service_name             = "Hypertable.Service.Name";
@@ -72,6 +71,12 @@ const char* cfg_hypertable               = "Hypertable.Service.HypertableMaster"
 const char* cfg_rangeserver              = "Hypertable.Service.RangeServer";
 const char* cfg_thriftbroker             = "Hypertable.Service.ThriftBroker";
 const char* cfg_logging_dir              = "Hypertable.Service.Logging.Directory";
+const char* cfg_start_service_timeout    = "Hypertable.Service.Timeout.StartService";
+const char* cfg_stop_service_timeout     = "Hypertable.Service.Timeout.StopService";
+const char* cfg_start_server_timeout     = "Hypertable.Service.Timeout.StartServer";
+const char* cfg_stop_server_timeout      = "Hypertable.Service.Timeout.StopServer";
+const char* cfg_kill_server_timeout      = "Hypertable.Service.Timeout.KillServer";
+const char* cfg_connection_timeout       = "Hypertable.Service.Timeout.Connection";
 
 void init(int argc, char **argv) {
   typedef Meta::list<ServicePolicy, DefaultServerPolicy > Policies;
@@ -80,65 +85,46 @@ void init(int argc, char **argv) {
 }
 
 void init_service_options() {
+  // command line options
   cmdline_desc(usage).add_options()
-    (cmdline_install_service, boo()->zero_tokens()->default_value(false), "install hypertable service");
-  cmdline_desc().add_options()
-    (cmdline_uninstall_service, boo()->zero_tokens()->default_value(false), "uninstall hypertable service");
-  cmdline_desc().add_options()
-    (cmdline_start_service, boo()->zero_tokens()->default_value(false), "start hypertable service");
-  cmdline_desc().add_options()
-    (cmdline_stop_service, boo()->zero_tokens()->default_value(false), "stop hypertable service");
-  cmdline_desc().add_options()
-    (cmdline_stop_all_services, boo()->zero_tokens()->default_value(false), "stop all hypertable services");
-  cmdline_desc().add_options()
-    (cmdline_service_name, str()->default_value("Hypertable"), "service name");
-  cmdline_desc().add_options()
-    (cmdline_service_display_name, str()->default_value("Hypertable Database Service"), "service display name");
-  cmdline_desc().add_options()
-    (cmdline_start_servers, boo()->zero_tokens()->default_value(false), "start servers");
-  cmdline_desc().add_options()
-    (cmdline_join_servers, boo()->zero_tokens()->default_value(false), "start servers and join");
-  cmdline_desc().add_options()
-    (cmdline_stop_servers, boo()->zero_tokens()->default_value(false), "stop servers");
-  cmdline_desc().add_options()
-    (cmdline_kill_servers, boo()->zero_tokens()->default_value(false), "kill servers");
-  cmdline_desc().add_options()
-    (cmdline_no_dfsbroker, boo()->zero_tokens()->default_value(false), "exclude DFS broker");
-  cmdline_desc().add_options()
-    (cmdline_no_hyperspace, boo()->zero_tokens()->default_value(false), "exclude hyperspace master");
-  cmdline_desc().add_options()
-    (cmdline_no_hypertable, boo()->zero_tokens()->default_value(false), "exclude hypertable master");
-  cmdline_desc().add_options()
-    (cmdline_no_rangeserver, boo()->zero_tokens()->default_value(false), "exclude range server");
-  cmdline_desc().add_options()
-    (cmdline_no_thriftbroker, boo()->zero_tokens()->default_value(false), "exclude thrift broker");
-  cmdline_desc().add_options()
-    (cmdline_create_console, boo()->zero_tokens()->default_value(false), "create a console for each server");
-  cmdline_desc().add_options()
-      (cmdline_logging_dir, str()->default_value("logs"), "logging directory (if relative, it's relative to the Hypertable data directory root)");
-  cmdline_desc().add_options()
-    (cmdline_wait, i32()->default_value(5000), "response wait time in ms");
-  cmdline_desc().add_options()
-    (cmdline_rangeserver, str()->default_value("localhost:38060"), "range server to connect in <host:port> format");
+    (cmdline_install_service, boo()->zero_tokens()->default_value(false), "Install hypertable service")
+    (cmdline_uninstall_service, boo()->zero_tokens()->default_value(false), "Uninstall hypertable service")
+    (cmdline_start_service, boo()->zero_tokens()->default_value(false), "Start hypertable service")
+    (cmdline_stop_service, boo()->zero_tokens()->default_value(false), "Stop hypertable service")
+    (cmdline_stop_all_services, boo()->zero_tokens()->default_value(false), "Stop all hypertable services")
+    (cmdline_service_name, str()->default_value("Hypertable"), "Service name")
+    (cmdline_service_display_name, str()->default_value("Hypertable Database Service"), "Service display name")
+    (cmdline_start_servers, boo()->zero_tokens()->default_value(false), "Start servers")
+    (cmdline_join_servers, boo()->zero_tokens()->default_value(false), "Start servers and join")
+    (cmdline_stop_servers, boo()->zero_tokens()->default_value(false), "Stop servers")
+    (cmdline_kill_servers, boo()->zero_tokens()->default_value(false), "Kill servers")
+    (cmdline_no_dfsbroker, boo()->zero_tokens()->default_value(false), "Exclude DFS broker")
+    (cmdline_no_hyperspace, boo()->zero_tokens()->default_value(false), "Exclude hyperspace master")
+    (cmdline_no_hypertable, boo()->zero_tokens()->default_value(false), "Exclude hypertable master")
+    (cmdline_no_rangeserver, boo()->zero_tokens()->default_value(false), "Exclude range server")
+    (cmdline_no_thriftbroker, boo()->zero_tokens()->default_value(false), "Exclude thrift broker")
+    (cmdline_create_console, boo()->zero_tokens()->default_value(false), "Create a console for each server")
+    (cmdline_logging_dir, str()->default_value("log"), "Logging directory (if relative, it's relative to the Hypertable data directory root)")
+    (cmdline_rangeserver, str()->default_value("localhost:38060"), "Range server to connect in <host:port> format");
 
+  // config file options
   file_desc().add_options()
-    (cfg_service_name, str()->default_value("Hypertable"), "service name");
-  file_desc().add_options()
-    (cfg_service_display_name, str()->default_value("Hypertable Database Service"), "service display name");
-  file_desc().add_options()
-    (cfg_dfsbroker, boo()->default_value(true), "include DFS broker");
-  file_desc().add_options()
-    (cfg_hyperspace, boo()->default_value(true), "include hyperspace master");
-  file_desc().add_options()
-    (cfg_hypertable, boo()->default_value(true), "include hypertable master");
-  file_desc().add_options()
-    (cfg_rangeserver, boo()->default_value(true), "include range server");
-  file_desc().add_options()
-    (cfg_thriftbroker, boo()->default_value(true), "include thrift broker");
+    (cfg_service_name, str()->default_value("Hypertable"), "Service name")
+    (cfg_service_display_name, str()->default_value("Hypertable Database Service"), "Service display name")
+    (cfg_dfsbroker, boo()->default_value(true), "Include DFS broker")
+    (cfg_hyperspace, boo()->default_value(true), "Include hyperspace master")
+    (cfg_hypertable, boo()->default_value(true), "Include hypertable master")
+    (cfg_rangeserver, boo()->default_value(true), "Include range server")
+    (cfg_thriftbroker, boo()->default_value(true), "Include thrift broker")
+    (cfg_logging_dir, str()->default_value("log"), "Logging directory (if relative, it's relative to the Hypertable data directory root)")
+    (cfg_start_service_timeout, i32()->default_value(15000), "Start service timeout in ms")
+    (cfg_stop_service_timeout, i32()->default_value(15000), "Stop service timeout in ms")
+    (cfg_start_server_timeout, i32()->default_value(7500), "Start server timeout in ms")
+    (cfg_stop_server_timeout, i32()->default_value(7500), "Stop server timeout in ms")
+    (cfg_kill_server_timeout, i32()->default_value(5000), "Kill server timeout in ms")
+    (cfg_connection_timeout, i32()->default_value(5000), "Connection timeout in ms");
 
-  cmdline_hidden_desc().add(file_desc());
-
-  // hidden aliases
+  // aliases
   alias(cmdline_service_name, cfg_service_name);
   alias(cmdline_service_display_name, cfg_service_display_name);
   alias(cmdline_logging_dir, cfg_logging_dir);
@@ -159,6 +145,9 @@ void init_service() {
   EXCLUDE_SERVER(cmdline_no_hypertable  , cfg_hypertable)
   EXCLUDE_SERVER(cmdline_no_rangeserver , cfg_rangeserver)
   EXCLUDE_SERVER(cmdline_no_thriftbroker, cfg_thriftbroker)
+
+  if (!properties->get_bool(cfg_rangeserver))
+    properties->set(cfg_thriftbroker, false, true);
 
   Endpoint e = InetAddr::parse_endpoint(get_str(cmdline_rangeserver));
   bool defaulted = properties->defaulted(cmdline_rangeserver);
@@ -226,8 +215,28 @@ bool create_console() {
   return get_bool(cmdline_create_console);
 }
 
-int32_t wait() {
-  return get_i32(cmdline_wait);
+int32_t start_service_timeout() {
+  return get_i32(cfg_start_service_timeout);
+}
+
+int32_t stop_service_timeout() {
+  return get_i32(cfg_stop_service_timeout);
+}
+
+int32_t start_server_timeout() {
+  return get_i32(cfg_start_server_timeout);
+}
+
+int32_t stop_server_timeout() {
+  return get_i32(cfg_stop_server_timeout);
+}
+
+int32_t kill_server_timeout() {
+  return get_i32(cfg_kill_server_timeout);
+}
+
+int32_t connection_timeout() {
+  return get_i32(cfg_connection_timeout);
 }
 
 bool silent() {
@@ -273,7 +282,6 @@ String server_args() {
     cmdline_no_thriftbroker,
     cmdline_create_console,
     cmdline_logging_dir,
-    cmdline_wait,
     cmdline_rangeserver,
 
     cfg_service_name,
@@ -284,6 +292,12 @@ String server_args() {
     cfg_rangeserver,
     cfg_thriftbroker,
     cfg_logging_dir,
+    cfg_start_service_timeout,
+    cfg_stop_service_timeout,
+    cfg_start_server_timeout,
+    cfg_stop_server_timeout,
+    cfg_kill_server_timeout,
+    cfg_connection_timeout,
     0
   };
 

@@ -64,7 +64,14 @@ namespace Hypertable { namespace Config {
   bool create_console();
 
   String logging_directory();
-  int32_t wait();
+
+  int32_t start_service_timeout();
+  int32_t stop_service_timeout();
+  int32_t start_server_timeout();
+  int32_t stop_server_timeout();
+  int32_t kill_server_timeout();
+  int32_t connection_timeout();
+
   bool silent();
 
   // server arguments, returns the arguments which will be passed to the servers

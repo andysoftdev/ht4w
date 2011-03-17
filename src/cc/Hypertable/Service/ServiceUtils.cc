@@ -67,10 +67,10 @@ namespace {
       ssh = _ssh;
       shutdown_event = ServiceUtils::create_shutdown_event();
       service_launch_event = new ServerLaunchEvent();
-      waitHint = Config::wait() << 1;
+      waitHint = Config::start_service_timeout();
       set_status(SERVICE_START_PENDING, waitHint);
       HT_INFO("Service start pending");
-      ServerUtils::join_servers(shutdown_event->handle(), Config::wait(), static_cast<ServerUtils::Notify*>(this));
+      ServerUtils::join_servers(shutdown_event->handle(), static_cast<ServerUtils::Notify*>(this));
       set_status(SERVICE_STOPPED);
       HT_INFO("Service stopped");
       delete shutdown_event;
@@ -222,7 +222,7 @@ void ServiceUtils::uninstall_service() {
         ShutdownEvent* shutdownEvent = create_shutdown_event(status.dwProcessId);
         if (shutdownEvent->is_existing_event()) {
           shutdownEvent->set_event();
-          if (!ProcessUtils::join(status.dwProcessId, Config::wait() << 2)) // give enough time to stop
+          if (!ProcessUtils::join(status.dwProcessId, Config::stop_service_timeout()))
             HT_WARNF("Stop service '%s' has been timed out", service_name.c_str());
         }
         delete shutdownEvent;
@@ -254,7 +254,7 @@ void ServiceUtils::start_service() {
         Sleep(250);
         if (service_status(service_name, status)) {
           ServerLaunchEvent service_launch_event(status.dwProcessId);
-          if (!service_launch_event.wait(Config::wait()))
+          if (!service_launch_event.wait(Config::start_service_timeout()))
             HT_ERRORF("Launching service '%s' has been timed out", service_name.c_str());
         }
         else
@@ -281,7 +281,7 @@ void ServiceUtils::stop_service() {
         if (!manage_service(service_name, stop, access_denied) && access_denied)
           self_elevate();
         Sleep(250);
-        if (!ProcessUtils::join(status.dwProcessId, Config::wait() << 2)) // give enough time to stop
+        if (!ProcessUtils::join(status.dwProcessId, Config::stop_service_timeout()))
           HT_WARNF("Stop service '%s' has been timed out", service_name.c_str());
       }
       else
@@ -311,7 +311,7 @@ void ServiceUtils::stop_all_services() {
     }
   }
   if (pids.size()) {
-    if (!ProcessUtils::join(pids, true, Config::wait() * pids.size()))
+    if (!ProcessUtils::join(pids, true, Config::stop_service_timeout() * pids.size()))
       HT_WARN("Stop all services has been timed out");
   }
 }

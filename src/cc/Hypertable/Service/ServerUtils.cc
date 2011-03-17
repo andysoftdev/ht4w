@@ -64,7 +64,7 @@ void ServerUtils::start_servers() {
   servers_t servers;
   get_servers(servers);
   launched_servers_t launched_servers;
-  if (start(servers, Config::server_args().c_str(), Config::wait(), launched_servers, 0))
+  if (start(servers, Config::server_args().c_str(), launched_servers, 0))
     close_handles(launched_servers);
 }
 
@@ -74,7 +74,7 @@ void ServerUtils::join_servers() {
   shutdown_event = ServiceUtils::create_shutdown_event();
   if (shutdown_event) {
     if (SetConsoleCtrlHandler((PHANDLER_ROUTINE) console_ctrl_handler, TRUE)) {
-      join_servers(shutdown_event->handle(), Config::wait());
+      join_servers(shutdown_event->handle());
       HT_NOTICE("Servers stopped");
     }
     else
@@ -84,7 +84,7 @@ void ServerUtils::join_servers() {
   }
 }
 
-bool ServerUtils::join_servers(HANDLE shutdown_event, DWORD timeout_ms, Notify* notify) {
+bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
   bool joined = false;
   servers_t servers;
   get_servers(servers);
@@ -93,7 +93,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, DWORD timeout_ms, Notify* 
 
     while (!shutdown) {
       launched_servers_t launched_servers;
-      if (start(servers, Config::server_args().c_str(), timeout_ms, launched_servers, notify)) {
+      if (start(servers, Config::server_args().c_str(), launched_servers, notify)) {
         HT_NOTICE("Servers started");
         joined = true;
         if (notify)
@@ -114,7 +114,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, DWORD timeout_ms, Notify* 
             HT_NOTICE("Shutdown servers");
             if (notify)
               notify->servers_shutdown_pending();
-            stop(launched_servers, timeout_ms, notify);
+            stop(launched_servers, notify);
             shutdown = true;
           }
           else {
@@ -122,11 +122,11 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, DWORD timeout_ms, Notify* 
             launched_server_t& launched_server = launched_servers[signaled - WAIT_OBJECT_0];
             close_handles(launched_server);
             HT_NOTICEF("Restart %s", server_exe_name(launched_server.server).c_str());
-            if (start(launched_server.server, launched_server.args.c_str(), timeout_ms, launched_server, notify))
+            if (start(launched_server.server, launched_server.args.c_str(), launched_server, notify))
               wait_handles[signaled - WAIT_OBJECT_0] = launched_server.pi.hProcess;
             else {
               // shutdown and restart all servers
-              stop(launched_servers, timeout_ms, notify);
+              stop(launched_servers, notify);
               HT_NOTICE("Restart all servers");
               break;
             }
@@ -145,14 +145,14 @@ void ServerUtils::stop_servers() {
   HT_NOTICE("Shutdown servers");
   servers_t servers;
   get_servers(servers);
-  stop(servers, Config::wait(), 0);
+  stop(servers, 0);
 }
 
 void ServerUtils::kill_servers() {
   HT_NOTICE("Kill servers");
   servers_t servers;
   get_servers(servers);
-  kill(servers, Config::wait());
+  kill(servers);
 }
 
 void ServerUtils::get_servers(servers_t& servers) {
@@ -172,13 +172,13 @@ void ServerUtils::get_servers(servers_t& servers) {
   #undef INSERT_SERVER
 }
 
-bool ServerUtils::start(const servers_t& servers, const char* args, DWORD timeout_ms, launched_servers_t& launched_servers, Notify* notify) {
+bool ServerUtils::start(const servers_t& servers, const char* args, launched_servers_t& launched_servers, Notify* notify) {
   launched_servers.clear();
   for (servers_t::const_iterator it = servers.begin(); it != servers.end(); ++it ) {
     launched_server_t launched_server;
-    if (!start(*it, args, timeout_ms, launched_server, notify)) {
+    if (!start(*it, args, launched_server, notify)) {
       // shutdown already launched servers
-      stop(launched_servers, timeout_ms, notify);
+      stop(launched_servers, notify);
       return false;
     }
     launched_servers.push_back(launched_server);
@@ -187,7 +187,7 @@ bool ServerUtils::start(const servers_t& servers, const char* args, DWORD timeou
   return true;
 }
 
-bool ServerUtils::start(server_t server, const char* args, DWORD timeout_ms, launched_server_t& launched_server, Notify* notify) {
+bool ServerUtils::start(server_t server, const char* args, launched_server_t& launched_server, Notify* notify) {
   HT_EXPECT(!System::install_dir.empty(), Error::FAILED_EXPECTATION);
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
   launched_server.server = server;
@@ -223,13 +223,13 @@ bool ServerUtils::start(server_t server, const char* args, DWORD timeout_ms, lau
   else
     HT_INFO("Creating new console");
 
-  if (ProcessUtils::create(cmd.c_str(), Config::create_console() ? CREATE_NEW_CONSOLE : CREATE_NEW_PROCESS_GROUP,
+  if (ProcessUtils::create(cmd.c_str(), Config::create_console() ? CREATE_NEW_CONSOLE : CREATE_NEW_PROCESS_GROUP|DETACHED_PROCESS,
                            si, logfile.c_str(), true, launched_server.pi, launched_server.logfile)) {
     ServerLaunchEvent server_launch_event(launched_server.pi.dwProcessId);
-    if (!(launched = server_launch_event.wait(timeout_ms))) {
+    if (!(launched = server_launch_event.wait(Config::start_server_timeout()))) {
       HT_ERRORF("Launching %s has been timed out", exe_name.c_str());
       HT_NOTICEF("Killing %s (%d)", server_exe_name(server).c_str(), launched_server.pi.dwProcessId);
-      ProcessUtils::kill(launched_server.pi.dwProcessId, timeout_ms);
+      ProcessUtils::kill(launched_server.pi.dwProcessId, Config::kill_server_timeout());
     }
     else if (notify)
       notify->server_started(server);
@@ -240,37 +240,37 @@ bool ServerUtils::start(server_t server, const char* args, DWORD timeout_ms, lau
   return launched;
 }
 
-void ServerUtils::stop(servers_t servers, DWORD timeout_ms, Notify* notify) {
+void ServerUtils::stop(servers_t servers, Notify* notify) {
   bool killed;
   for (servers_t::const_reverse_iterator it = servers.rbegin(); it != servers.rend(); ++it ) {
-    stop(*it, 0, timeout_ms, killed, notify);
+    stop(*it, 0, killed, notify);
   }
 }
 
-void ServerUtils::stop(launched_servers_t& launched_servers, DWORD timeout_ms, Notify* notify) {
+void ServerUtils::stop(launched_servers_t& launched_servers, Notify* notify) {
   bool killed;
   for (launched_servers_t::reverse_iterator it = launched_servers.rbegin(); it != launched_servers.rend(); ++it) {
     if ((*it).pi.hProcess != INVALID_HANDLE_VALUE) {
-      stop((*it).server, (*it).pi.dwProcessId, timeout_ms, killed, notify);
+      stop((*it).server, (*it).pi.dwProcessId, killed, notify);
       close_handles(*it);
     }
   }
 }
 
-void ServerUtils::stop(server_t server, DWORD pid, DWORD timeout_ms, bool& killed, Notify* notify) {
+void ServerUtils::stop(server_t server, DWORD pid, bool& killed, Notify* notify) {
   killed = false;
   if (notify)
     notify->server_stop_pending(server);
   bool shutdown_done = false;
   switch (server) {
     case dfsBroker:
-      shutdown_done = shutdown_dfsbroker(pid, timeout_ms);
+      shutdown_done = shutdown_dfsbroker(pid);
       break;
     case hypertableMaster:
-      shutdown_done = shutdown_master(pid, timeout_ms);
+      shutdown_done = shutdown_master(pid);
       break;
     case rangeServer:
-      shutdown_done = shutdown_rangeserver(pid, timeout_ms);
+      shutdown_done = shutdown_rangeserver(pid);
       break;
     default:
       break;
@@ -278,28 +278,28 @@ void ServerUtils::stop(server_t server, DWORD pid, DWORD timeout_ms, bool& kille
   if (!shutdown_done) {
     if (pid) {
       HT_NOTICEF("Killing %s (%d)", server_exe_name(server).c_str(), pid);
-      ProcessUtils::kill(pid, timeout_ms);
+      ProcessUtils::kill(pid, Config::kill_server_timeout());
     }
     else
-      kill(server, timeout_ms);
+      kill(server);
     killed = true;
   }
   if (notify)
     notify->server_stopped(server);
 }
 
-void ServerUtils::kill(const servers_t& servers, DWORD timeout_ms) {
+void ServerUtils::kill(const servers_t& servers) {
   for (servers_t::const_reverse_iterator it = servers.rbegin(); it != servers.rend(); ++it )
-    kill(*it, timeout_ms);
+    kill(*it);
 }
 
-void ServerUtils::kill(server_t server, DWORD timeout_ms) {
+void ServerUtils::kill(server_t server) {
   std::vector<DWORD> pids;
   find(server, pids);
   const String& exe_name = server_exe_name(server).c_str();
   foreach(DWORD pid, pids) {
     HT_NOTICEF("Killing %s (%d)", exe_name.c_str(), pid);
-    ProcessUtils::kill(pid, timeout_ms);
+    ProcessUtils::kill(pid, Config::kill_server_timeout());
   }
 }
 
@@ -327,7 +327,7 @@ const String& ServerUtils::server_name(server_t server) {
   return names[server];
 }
 
-bool ServerUtils::shutdown_dfsbroker(DWORD pid, DWORD timeout_ms) {
+bool ServerUtils::shutdown_dfsbroker(DWORD pid) {
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
   String host = Config::properties->get_str("DfsBroker.Host");
   uint16_t port = Config::properties->get_i16("DfsBroker.Port");
@@ -336,7 +336,7 @@ bool ServerUtils::shutdown_dfsbroker(DWORD pid, DWORD timeout_ms) {
     if (!pid)
       find(dfsBroker, pids);
     {
-      DfsBroker::ClientPtr client = new DfsBroker::Client(host, port, timeout_ms);
+      DfsBroker::ClientPtr client = new DfsBroker::Client(host, port, Config::connection_timeout());
       HT_NOTICEF("Shutdown DFS broker (%s)", InetAddr(host, port).format().c_str());
       DispatchHandlerSynchronizer sync_handler;
       client->shutdown(0, &sync_handler);
@@ -344,11 +344,11 @@ bool ServerUtils::shutdown_dfsbroker(DWORD pid, DWORD timeout_ms) {
       sync_handler.wait_for_reply(event_ptr);
     }
     if (pid) {
-      if (!ProcessUtils::join(pid, timeout_ms))
+      if (!ProcessUtils::join(pid, Config::stop_server_timeout()))
         return false;
     }
     else {
-      if (!ProcessUtils::join(pids, false, timeout_ms))
+      if (!ProcessUtils::join(pids, false, Config::stop_server_timeout()))
         return false;
     }
     return true;
@@ -359,7 +359,7 @@ bool ServerUtils::shutdown_dfsbroker(DWORD pid, DWORD timeout_ms) {
   return false;
 }
 
-bool ServerUtils::shutdown_master(DWORD pid, DWORD timeout_ms) {
+bool ServerUtils::shutdown_master(DWORD pid) {
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
   try {
     std::vector<DWORD> pids;
@@ -370,7 +370,7 @@ bool ServerUtils::shutdown_master(DWORD pid, DWORD timeout_ms) {
       ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
       Hyperspace::SessionPtr hyperspace = new Hyperspace::Session(comm, Config::properties);
 
-      if (!hyperspace->wait_for_connection(timeout_ms)) {
+      if (!hyperspace->wait_for_connection(Config::connection_timeout())) {
         conn_mgr->remove_all();
         HT_THROW(Error::REQUEST_TIMEOUT, "Unable to connect to hyperspace");
       }
@@ -379,24 +379,27 @@ bool ServerUtils::shutdown_master(DWORD pid, DWORD timeout_ms) {
       boost::trim_if(toplevel_dir, boost::is_any_of("/"));
       toplevel_dir = String("/") + toplevel_dir;
 
-      MasterClientPtr master = new MasterClient(conn_mgr, hyperspace, toplevel_dir, timeout_ms, app_queue);
+      MasterClientPtr master = new MasterClient(conn_mgr, hyperspace, toplevel_dir, Config::connection_timeout(), app_queue);
       master->set_verbose_flag(Config::properties->get_bool("verbose"));
       master->initiate_connection(0);
-      if (!master->wait_for_connection(timeout_ms)) {
+      if (!master->wait_for_connection(Config::connection_timeout())) {
         conn_mgr->remove_all();
         HT_THROW(Error::REQUEST_TIMEOUT, "Unable to connect to hypertable master");
       }
       HT_NOTICEF("Shutdown hypertable master (%s)", hyperspace->get_master_addr().format().c_str());
-      Timer timer(timeout_ms, true);
+      Timer timer(Config::connection_timeout(), true);
       master->shutdown(&timer);
+      app_queue = 0;
+      master = 0;
+      hyperspace = 0;
       conn_mgr->remove_all();
     }
     if (pid) {
-      if (!ProcessUtils::join(pid, timeout_ms))
+      if (!ProcessUtils::join(pid, Config::stop_server_timeout()))
         return false;
     }
     else {
-      if (!ProcessUtils::join(pids, false, timeout_ms))
+      if (!ProcessUtils::join(pids, false, Config::stop_server_timeout()))
         return false;
     }
     return true;
@@ -407,7 +410,7 @@ bool ServerUtils::shutdown_master(DWORD pid, DWORD timeout_ms) {
   return false;
 }
 
-bool ServerUtils::shutdown_rangeserver(DWORD pid, DWORD timeout_ms) {
+bool ServerUtils::shutdown_rangeserver(DWORD pid) {
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
   try {
     std::vector<DWORD> pids;
@@ -417,22 +420,23 @@ bool ServerUtils::shutdown_rangeserver(DWORD pid, DWORD timeout_ms) {
       Comm* comm = Comm::instance();
       ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
       InetAddr addr(Config::properties->get_str("rs-host"), Config::properties->get_i16("rs-port"));
-      conn_mgr->add(addr, timeout_ms, "Range Server");
-      if (!conn_mgr->wait_for_connection(addr, timeout_ms)) {
+      conn_mgr->add(addr, Config::connection_timeout(), "Range Server");
+      if (!conn_mgr->wait_for_connection(addr, Config::connection_timeout())) {
         conn_mgr->remove_all();
         HT_THROWF(Error::REQUEST_TIMEOUT, "Unable to connect to range server (%s)", addr.format().c_str());
       }
-      RangeServerClientPtr client = new RangeServerClient(comm, timeout_ms);
+      RangeServerClientPtr client = new RangeServerClient(comm, Config::connection_timeout());
       HT_NOTICEF("Shutdown range server (%s)", addr.format().c_str());
       client->shutdown(addr);
+      client = 0;
       conn_mgr->remove_all();
     }
     if (pid) {
-      if (!ProcessUtils::join(pid, timeout_ms << 2)) // give enough time to stop
+      if (!ProcessUtils::join(pid, Config::stop_server_timeout()))
         return false;
     }
     else {
-      if (!ProcessUtils::join(pids, false, timeout_ms << 2)) // give enough time to stop
+      if (!ProcessUtils::join(pids, false, Config::stop_server_timeout()))
         return false;
     }
     return true;

@@ -53,7 +53,7 @@ namespace Hypertable {
 
     static void start_servers();
     static void join_servers();
-    static bool join_servers(HANDLE shutdown_event, DWORD timeout_ms, Notify* notify = 0);
+    static bool join_servers(HANDLE shutdown_event, Notify* notify = 0);
     static void stop_servers();
     static void kill_servers();
 
@@ -76,21 +76,21 @@ namespace Hypertable {
     typedef std::vector<launched_server_t> launched_servers_t;
 
     static void get_servers(servers_t& servers);
-    static bool start(const servers_t& servers, const char* args, DWORD timeout_ms, launched_servers_t& launched_servers, Notify* notify);
-    static bool start(server_t server, const char* args, DWORD timeout_ms, launched_server_t& launched_server, Notify* notify);
-    static void stop(launched_servers_t& launched_servers, DWORD timeout_ms, Notify* notify);
-    static void stop(servers_t servers, DWORD timeout_ms, Notify* notify);
-    static void stop(server_t server, DWORD pid, DWORD timeout_ms, bool& killed, Notify* notify);
-    static void kill(const servers_t& servers, DWORD timeout_ms);
-    static void kill(server_t server, DWORD timeout_ms);
+    static bool start(const servers_t& servers, const char* args, launched_servers_t& launched_servers, Notify* notify);
+    static bool start(server_t server, const char* args, launched_server_t& launched_server, Notify* notify);
+    static void stop(launched_servers_t& launched_servers, Notify* notify);
+    static void stop(servers_t servers, Notify* notify);
+    static void stop(server_t server, DWORD pid, bool& killed, Notify* notify);
+    static void kill(const servers_t& servers);
+    static void kill(server_t server);
     static void find(server_t server, std::vector<DWORD>& pids);
     static String server_exe_name(server_t server);
     static String server_log_name(server_t server);
     static const String& server_name(server_t server);
 
-    static bool shutdown_dfsbroker(DWORD pid, DWORD timeout_ms);
-    static bool shutdown_master(DWORD pid, DWORD timeout_ms);
-    static bool shutdown_rangeserver(DWORD pid, DWORD timeout_ms);
+    static bool shutdown_dfsbroker(DWORD pid);
+    static bool shutdown_master(DWORD pid);
+    static bool shutdown_rangeserver(DWORD pid);
     static void close_handles(launched_servers_t& launched_servers);
     static void close_handles(launched_server_t& launched_server);
   };
