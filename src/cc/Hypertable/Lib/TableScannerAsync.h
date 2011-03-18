@@ -126,7 +126,7 @@ namespace Hypertable {
     /**
      * Returns scanspec for this scanner
      */
-    const ScanSpec &get_scan_spec() { return m_scan_spec.get(); }
+    const ScanSpec &get_scan_spec() { return m_scan_spec_builder.get(); }
   private:
     void maybe_callback_ok(bool next, bool do_callback, ScanCellsPtr &cells);
     void maybe_callback_error(bool next);
@@ -148,7 +148,7 @@ namespace Hypertable {
     String              m_error_msg;
     String              m_table_name;
     Table              *m_table;
-    ScanSpecBuilder     m_scan_spec;
+    ScanSpecBuilder     m_scan_spec_builder;
     bool                m_cancelled;
     bool                m_error_shown;
   };

@@ -42,7 +42,7 @@ TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
     RangeLocatorPtr &range_locator, const ScanSpec &scan_spec,
     uint32_t timeout_ms, bool retry_table_not_found, ResultCallback *cb)
   : m_bytes_scanned(0), m_cb(cb), m_current_scanner(0),
-    m_outstanding(0), m_error(Error::OK), m_table(table), m_scan_spec(scan_spec),
+    m_outstanding(0), m_error(Error::OK), m_table(table), m_scan_spec_builder(scan_spec),
     m_cancelled(false), m_error_shown(false) {
 
   ScopedLock lock(m_mutex);
@@ -140,6 +140,7 @@ TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
 }
 
 TableScannerAsync::~TableScannerAsync() {
+  cancel();
   wait_for_completion();
 }
 
@@ -240,7 +241,7 @@ void TableScannerAsync::handle_result(int scanner_id, EventPtr &event, bool is_c
   bool abort = (m_error != Error::OK || cancelled);
 
   bool next;
-  bool do_callback;
+  bool do_callback=false;
   int current_scanner = scanner_id;
 
   try {
@@ -248,7 +249,18 @@ void TableScannerAsync::handle_result(int scanner_id, EventPtr &event, bool is_c
     // don't bother calling into callback anymore
     if (abort) {
       next = m_interval_scanners[scanner_id]->abort(is_create);
-      maybe_callback_error(next);
+      if (cancelled && m_error == Error::OK) {
+        // scanner was cancelled and is over
+        if (next && m_outstanding==1) {
+          do_callback = true;
+          cells = new ScanCells;
+        }
+        else
+          do_callback = false;
+        maybe_callback_ok(next, do_callback, cells);
+      }
+      else
+        maybe_callback_error(next);
     }
     else {
       // send results to interval scanner
@@ -281,10 +293,12 @@ void TableScannerAsync::maybe_callback_error(bool next) {
     m_outstanding--;
   }
 
-  if (m_outstanding == 0)
+  if (m_outstanding == 0) {
     eos = true;
+  }
 
   if (!m_error_shown) {
+    HT_ASSERT(m_error != Error::OK);
     m_cb->scan_error(this, m_error, m_error_msg, eos);
     m_error_shown = true;
   }

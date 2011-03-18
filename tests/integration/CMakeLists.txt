@@ -1,11 +1,14 @@
 # CMake file for integration tests
 
+add_subdirectory(scanner-abrupt-end)
+add_subdirectory(future-abrupt-end)
 add_subdirectory(random)
 add_subdirectory(mutator-no-log-sync)
 add_subdirectory(commit-log-gc)
 add_subdirectory(ag-garbage-compaction)
 add_subdirectory(dual-instances)
 add_subdirectory(load-exception-after-split)
+add_subdirectory(master-failover)
 add_subdirectory(metadata-split)
 add_subdirectory(multiple-maintenance-threads)
 add_subdirectory(row-overflow)

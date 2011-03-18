@@ -21,10 +21,6 @@
 
 #include "Common/Compat.h"
 
-extern "C" {
-#include <poll.h>
-}
-
 #include "Common/Error.h"
 #include "Common/Logger.h"
 #include "Common/System.h"
@@ -38,8 +34,6 @@ using namespace Hypertable;
  *
  */
 void EventHandlerMasterChange::run() {
-
-  poll(0, 0, System::rand32() % 3000);  // Randomly wait between 0 and 3 seconds
 
   try {
     m_master_client->reload_master();
