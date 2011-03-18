@@ -90,10 +90,12 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
   get_servers(servers);
   if (!servers.empty()) {
     bool shutdown = false;
+    boost::xtime recent_server_start;
 
     while (!shutdown) {
       launched_servers_t launched_servers;
       if (start(servers, Config::server_args().c_str(), launched_servers, notify)) {
+        boost::xtime_get(&recent_server_start, TIME_UTC);
         HT_NOTICE("Servers started");
         joined = true;
         if (notify)
@@ -118,18 +120,35 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
             shutdown = true;
           }
           else {
-            // restart server
             launched_server_t& launched_server = launched_servers[signaled - WAIT_OBJECT_0];
             close_handles(launched_server);
-            HT_NOTICEF("Restart %s", server_exe_name(launched_server.server).c_str());
-            if (start(launched_server.server, launched_server.args.c_str(), launched_server, notify))
-              wait_handles[signaled - WAIT_OBJECT_0] = launched_server.pi.hProcess;
-            else {
-              // shutdown and restart all servers
-              stop(launched_servers, notify);
-              HT_NOTICE("Restart all servers");
-              break;
+            HT_NOTICEF("Server %s terminates unexpected", server_exe_name(launched_server.server).c_str());
+            // continuously crashing?
+            boost::xtime now;
+            boost::xtime_get(&now, TIME_UTC);
+            if (xtime_diff_millis(recent_server_start, now) > 30000) { // TODO config param
+              // is range server?
+              if (launched_server.server == rangeServer || launched_server.server == thriftBroker) {
+                // restart server
+                HT_NOTICEF("Restart %s", server_exe_name(launched_server.server).c_str());
+                if (start(launched_server.server, launched_server.args.c_str(), launched_server, notify)) {
+                  wait_handles[signaled - WAIT_OBJECT_0] = launched_server.pi.hProcess;
+                  continue;
+                }
+              }
             }
+            else {
+              // shutdown
+              HT_NOTICE("Shutdown servers");
+              if (notify)
+                notify->servers_shutdown_pending();
+              shutdown = true;
+            }
+            // shutdown and restart all servers
+            stop(launched_servers, notify);
+            if (!shutdown )
+              HT_NOTICE("Restart all servers");
+            break;
           }
         }
         delete [] wait_handles;
