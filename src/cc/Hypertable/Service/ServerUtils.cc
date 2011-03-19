@@ -250,8 +250,15 @@ bool ServerUtils::start(server_t server, const char* args, launched_server_t& la
       HT_NOTICEF("Killing %s (%d)", server_exe_name(server).c_str(), launched_server.pi.dwProcessId);
       ProcessUtils::kill(launched_server.pi.dwProcessId, Config::kill_server_timeout());
     }
-    else if (notify)
-      notify->server_started(server);
+    else {
+      // remove the logfile handle inherit capability
+      if (launched_server.logfile != INVALID_HANDLE_VALUE) {
+        if (!SetHandleInformation(launched_server.logfile, HANDLE_FLAG_INHERIT, 0))
+          WINAPI_ERROR("SetHandleInformation failed - %s")
+      }
+      if (notify)
+        notify->server_started(server);
+    }
   }
   else {
     HT_ERRORF("Launching %s failed", exe_name.c_str());

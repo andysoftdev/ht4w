@@ -69,7 +69,7 @@ bool ProcessUtils::create(const char* cmd_line, DWORD flags, const STARTUPINFO& 
 
   bool succeeded = false;
   if (cmd_line && *cmd_line) {
-    if (CreateProcess(0, (char*)cmd_line, 0, 0, FALSE, flags, 0, 0, const_cast<STARTUPINFO*>(&si), &pi))
+    if (CreateProcess(0, (char*)cmd_line, 0, 0, TRUE, flags, 0, 0, const_cast<STARTUPINFO*>(&si), &pi))
       succeeded = true;
     else
       WINAPI_ERROR("CreateProcess failed - %s")
