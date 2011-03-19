@@ -308,9 +308,15 @@ String server_args() {
     int skip_tokens = -1;
     for (uint32_t n = 0; all_service_args[n] && skip_tokens < 0; ++n) {
       const char* tok;
-      if ((tok = strstr(arg.c_str(), all_service_args[n])) != 0 )
-        skip_tokens = cmdline_desc().find(all_service_args[n], false).semantic()->min_tokens() == 1 &&
-                      *(tok + strlen(all_service_args[n])) != '=' ? 1 : 0;
+      if ((tok = strstr(arg.c_str(), all_service_args[n])) != 0 ) {
+        const boost::program_options::option_description* od = cmdline_desc().find_nothrow(all_service_args[n], false);
+        if (!od) {
+          od = file_desc().find_nothrow(all_service_args[n], false);
+        }
+        if (od) {
+          skip_tokens = od->semantic()->min_tokens() == 1 && *(tok + strlen(all_service_args[n])) != '=' ? 1 : 0;
+        }
+      }
     }
     if (skip_tokens < 0) {
       if (!args.empty())
