@@ -184,6 +184,15 @@ Table::create_mutator(uint32_t timeout_ms, uint32_t flags,
   return new TableMutator(m_props, m_comm, this, m_range_locator, timeout, flags);
 }
 
+TableMutator *
+Table::create_shared_mutator(uint32_t timeout_ms, uint32_t flags,
+                      uint32_t flush_interval_ms) {
+  uint32_t timeout = timeout_ms ? timeout_ms : m_timeout_ms;
+
+  return new TableMutatorShared(m_props, m_comm, this, m_range_locator,
+                                m_app_queue, timeout, flush_interval_ms, flags);
+}
+
 TableScanner *
 Table::create_scanner(const ScanSpec &scan_spec, uint32_t timeout_ms,
                       bool retry_table_not_found) {

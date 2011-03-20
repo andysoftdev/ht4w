@@ -70,6 +70,10 @@ namespace Hypertable {
                                  uint32_t flags = 0,
                                  uint32_t flush_interval_ms = 0);
 
+    TableMutator *create_shared_mutator(uint32_t timeout_ms = 0,
+                                        uint32_t flags = 0,
+                                        uint32_t flush_interval_ms = 0);
+
     /**
      * Creates a synchronous scanner on this table
      *
