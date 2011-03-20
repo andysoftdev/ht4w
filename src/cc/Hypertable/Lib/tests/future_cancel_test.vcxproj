@@ -154,21 +154,21 @@ del future_cancel_test.cfg</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+      <Command>xcopy /Y "$(ProjectDir)future_cancel_test.cfg" "$(TargetDir)"
 cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./future_cancel_test.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" 34587
+"$(TargetPath)"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./future_cancel_test.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
 rd /S /Q logs
-del hypertable.cfg</Command>
+del future_cancel_test.cfg</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -244,21 +244,21 @@ del future_cancel_test.cfg</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+      <Command>xcopy /Y "$(ProjectDir)future_cancel_test.cfg" "$(TargetDir)"
 cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./future_cancel_test.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" 34587
+"$(TargetPath)"
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./future_cancel_test.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
 rd /S /Q logs
-del hypertable.cfg</Command>
+del future_cancel_test.cfg</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
