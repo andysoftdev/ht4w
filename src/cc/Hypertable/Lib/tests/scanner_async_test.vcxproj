@@ -128,7 +128,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable.cfg
 del scannerAsyncTest.golden</Command>
     </PostBuildEvent>
@@ -170,7 +170,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable.cfg
 del scannerAsyncTest.golden</Command>
     </PostBuildEvent>
@@ -217,7 +217,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable.cfg
 del scannerAsyncTest.golden</Command>
     </PostBuildEvent>
@@ -264,7 +264,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable.cfg
 del scannerAsyncTest.golden</Command>
     </PostBuildEvent>

@@ -76,6 +76,13 @@ int main(int argc, char **argv) {
   num_cells = atoi(argv[1]);
   Config::init(0, 0);
 
+  #ifdef _WIN32
+
+  String cmd = format("random_write_test --Hypertable.DataDirectory=\"%s\" --config=./hypertable.cfg --total-bytes=%d --blocksize=128 > nul", System::install_dir.c_str(), 2 * 128 * num_cells);
+  HT_ASSERT(system(cmd.c_str()) == 0);
+
+  #endif
+
   ReactorFactory::initialize(2);
 
   try {

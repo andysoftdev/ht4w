@@ -44,6 +44,10 @@
 #include "Hypertable/Lib/Client.h"
 #include "Hypertable/Lib/KeySpec.h"
 
+#ifdef _WIN32
+#include "Hypertable/Lib/HqlInterpreter.h"
+#endif
+
 using namespace Hypertable;
 using namespace Hypertable::Config;
 using namespace std;
@@ -129,6 +133,17 @@ int main(int argc, char **argv) {
         hypertable_client_ptr = new Hypertable::Client();
 
       namespace_ptr = hypertable_client_ptr->open_namespace("/");
+
+#ifdef _WIN32
+
+      if( !namespace_ptr->exists_table("RandomTest") ) {
+        HqlInterpreterPtr hql = hypertable_client_ptr->create_hql_interpreter(true);
+        hql->set_namespace( namespace_ptr->get_name() );
+        hql->execute("CREATE TABLE RandomTest (Field) COMPRESSOR=\"none\"");
+      }
+
+#endif
+
       table_ptr = namespace_ptr->open_table("RandomTest");
       mutator_ptr = table_ptr->create_mutator(0, mutator_flags);
     }

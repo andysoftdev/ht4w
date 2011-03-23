@@ -115,9 +115,21 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-"$(TargetPath)"
+      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+cd "$(TargetDir)"
+if exist fs rd /S /Q fs
+if exist hyperspace rd /S /Q hyperspace
+if exist run rd /S /Q run
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
+"$(TargetPath)" --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
+rd /S /Q fs
+rd /S /Q hyperspace
+rd /S /Q run
+rd /S /Q log
+del hypertable.cfg
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -144,9 +156,21 @@ if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-"$(TargetPath)"
+      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+cd "$(TargetDir)"
+if exist fs rd /S /Q fs
+if exist hyperspace rd /S /Q hyperspace
+if exist run rd /S /Q run
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
+"$(TargetPath)" --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
+rd /S /Q fs
+rd /S /Q hyperspace
+rd /S /Q run
+rd /S /Q log
+del hypertable.cfg
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -178,9 +202,21 @@ if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-"$(TargetPath)"
+      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+cd "$(TargetDir)"
+if exist fs rd /S /Q fs
+if exist hyperspace rd /S /Q hyperspace
+if exist run rd /S /Q run
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
+"$(TargetPath)" --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
+rd /S /Q fs
+rd /S /Q hyperspace
+rd /S /Q run
+rd /S /Q log
+del hypertable.cfg
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -212,9 +248,21 @@ if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-"$(TargetPath)"
+      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
+cd "$(TargetDir)"
+if exist fs rd /S /Q fs
+if exist hyperspace rd /S /Q hyperspace
+if exist run rd /S /Q run
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
+"$(TargetPath)" --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
+call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
+rd /S /Q fs
+rd /S /Q hyperspace
+rd /S /Q run
+rd /S /Q log
+del hypertable.cfg
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

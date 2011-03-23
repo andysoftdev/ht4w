@@ -129,7 +129,7 @@ del MutatorNoLogSyncTest.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -170,7 +170,7 @@ del MutatorNoLogSyncTest.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -216,7 +216,7 @@ del MutatorNoLogSyncTest.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -262,7 +262,7 @@ del MutatorNoLogSyncTest.cfg
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

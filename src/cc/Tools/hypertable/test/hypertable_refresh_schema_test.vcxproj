@@ -129,7 +129,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable_refresh_schema_test_*.out
 del hypertable_refresh_schema_test_*.golden
 del hypertable.cfg
@@ -174,7 +174,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable_refresh_schema_test_*.out
 del hypertable_refresh_schema_test_*.golden
 del hypertable.cfg
@@ -224,7 +224,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable_refresh_schema_test_*.out
 del hypertable_refresh_schema_test_*.golden
 del hypertable.cfg
@@ -274,7 +274,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable_refresh_schema_test_*.out
 del hypertable_refresh_schema_test_*.golden
 del hypertable.cfg

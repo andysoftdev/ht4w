@@ -127,7 +127,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable.cfg</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -167,7 +167,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable.cfg</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -212,7 +212,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable.cfg</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -257,7 +257,7 @@ call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thrift
 rd /S /Q fs
 rd /S /Q hyperspace
 rd /S /Q run
-rd /S /Q logs
+rd /S /Q log
 del hypertable.cfg</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
