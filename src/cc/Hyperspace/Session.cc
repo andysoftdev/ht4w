@@ -211,6 +211,7 @@ void Session::close(uint64_t handle, Timer *timer) {
     if (!sync_handler.wait_for_reply(event_ptr))
       HT_THROW((int)Protocol::response_code(event_ptr.get()),
                "Hyperspace 'close' error");
+    m_keepalive_handler_ptr->unregister_handle(handle);
   }
   else {
     state_transition(Session::STATE_JEOPARDY);
