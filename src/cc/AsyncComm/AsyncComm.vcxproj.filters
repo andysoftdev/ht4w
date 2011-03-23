@@ -144,5 +144,8 @@
     <ClInclude Include="ResponseCallback.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="ConnectionInitializer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

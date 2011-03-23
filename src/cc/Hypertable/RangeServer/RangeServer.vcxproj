@@ -53,7 +53,6 @@
     <ClCompile Include="CellStoreV5.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="ConnectionHandler.cc" />
-    <ClCompile Include="EventHandlerMasterConnection.cc" />
     <ClCompile Include="FileBlockCache.cc" />
     <ClCompile Include="FillScanBlock.cc" />
     <ClCompile Include="Global.cc" />
@@ -66,7 +65,7 @@
     <ClCompile Include="KeyDecompressorPrefix.cc" />
     <ClCompile Include="LiveFileTracker.cc" />
     <ClCompile Include="LoadMetricsRange.cc" />
-    <ClCompile Include="Location.cc" />
+    <ClCompile Include="LocationInitializer.cc" />
     <ClCompile Include="MaintenancePrioritizer.cc" />
     <ClCompile Include="MaintenancePrioritizerLogCleanup.cc" />
     <ClCompile Include="MaintenancePrioritizerLowMemory.cc" />
@@ -85,6 +84,7 @@
     <ClCompile Include="Range.cc" />
     <ClCompile Include="RangeServer.cc" />
     <ClCompile Include="RangeStatsGatherer.cc" />
+    <ClCompile Include="RequestHandlerAcknowledgeLoad.cc" />
     <ClCompile Include="RequestHandlerClose.cc" />
     <ClCompile Include="RequestHandlerCommitLogSync.cc" />
     <ClCompile Include="RequestHandlerCompact.cc" />
@@ -153,7 +153,6 @@
     <ClInclude Include="CellStoreV5.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionHandler.h" />
-    <ClInclude Include="EventHandlerMasterConnection.h" />
     <ClInclude Include="FileBlockCache.h" />
     <ClInclude Include="FillScanBlock.h" />
     <ClInclude Include="Global.h" />
@@ -170,7 +169,7 @@
     <ClInclude Include="KeyDecompressorPrefix.h" />
     <ClInclude Include="LiveFileTracker.h" />
     <ClInclude Include="LoadMetricsRange.h" />
-    <ClInclude Include="Location.h" />
+    <ClInclude Include="LocationInitializer.h" />
     <ClInclude Include="MaintenanceFlag.h" />
     <ClInclude Include="MaintenancePrioritizer.h" />
     <ClInclude Include="MaintenancePrioritizerLogCleanup.h" />
@@ -196,6 +195,7 @@
     <ClInclude Include="RangeSet.h" />
     <ClInclude Include="RangeStatsGatherer.h" />
     <ClInclude Include="RangeTransferInfo.h" />
+    <ClInclude Include="RequestHandlerAcknowledgeLoad.h" />
     <ClInclude Include="RequestHandlerClose.h" />
     <ClInclude Include="RequestHandlerCommitLogSync.h" />
     <ClInclude Include="RequestHandlerCompact.h" />

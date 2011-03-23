@@ -57,6 +57,7 @@
     <ClInclude Include="CommHeader.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionHandlerFactory.h" />
+    <ClInclude Include="ConnectionInitializer.h" />
     <ClInclude Include="ConnectionManager.h" />
     <ClInclude Include="DispatchHandler.h" />
     <ClInclude Include="DispatchHandlerSynchronizer.h" />

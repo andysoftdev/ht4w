@@ -79,9 +79,6 @@
     <ClCompile Include="ConnectionHandler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EventHandlerMasterConnection.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FileBlockCache.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -107,9 +104,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LiveFileTracker.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Location.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MaintenancePrioritizer.cc">
@@ -286,6 +280,12 @@
     <ClCompile Include="CellStoreV5.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LocationInitializer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerAcknowledgeLoad.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -372,9 +372,6 @@
     <ClInclude Include="ConnectionHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="EventHandlerMasterConnection.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="FileBlockCache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -409,9 +406,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="LiveFileTracker.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Location.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MaintenanceFlag.h">
@@ -619,6 +613,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="CellStoreV5.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LocationInitializer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerAcknowledgeLoad.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
