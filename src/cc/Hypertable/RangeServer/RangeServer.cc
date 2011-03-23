@@ -164,12 +164,30 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     double physical_ram = System::mem_stat().ram * 1024 * 1024;
     block_cache_max = (int64_t)physical_ram;
   }
+  // reduce block cache minimum if required
+  if( (double)block_cache_min > (double)Global::memory_limit * 0.1 ) {
+    block_cache_min = (int64_t)((double)Global::memory_limit * 0.1);
+    HT_INFOF("Hypertable.RangeServer.BlockCache.MinMemory reduced to %lld", block_cache_min);
+    props->set("Hypertable.RangeServer.BlockCache.MinMemory", block_cache_min);
+  }
+  if( block_cache_min > block_cache_max ) {
+    block_cache_min = (int64_t)((double)block_cache_max * 0.1);
+    HT_INFOF("Hypertable.RangeServer.BlockCache.MinMemory reduced to %lld", block_cache_min);
+    props->set("Hypertable.RangeServer.BlockCache.MinMemory", block_cache_min);
+  }
 
   Global::block_cache = new FileBlockCache(block_cache_min, block_cache_max);
 
-  uint64_t query_cache_memory = cfg.get_i64("QueryCache.MaxMemory");
-  if (query_cache_memory > 0)
+  int64_t query_cache_memory = cfg.get_i64("QueryCache.MaxMemory");
+  if (query_cache_memory > 0) {
+    // reduce query cache if required
+    if( (double)query_cache_memory > (double)Global::memory_limit * 0.2 ) {
+      query_cache_memory = (int64_t)((double)Global::memory_limit * 0.2);
+      HT_INFOF("Hypertable.RangeServer.QueryCache.MaxMemory reduced to %lld", query_cache_memory);
+      props->set("Hypertable.RangeServer.QueryCache.MaxMemory", query_cache_memory);
+    }
     m_query_cache = new QueryCache(query_cache_memory);
+  }
 
   Global::memory_tracker = new MemoryTracker(Global::block_cache);
   Global::memory_tracker->add(MemoryTracker::query_cache, query_cache_memory);
