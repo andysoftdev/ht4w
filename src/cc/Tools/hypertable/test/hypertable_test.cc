@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
   for (int i=0; required_files[i]; i++) {
     if (!FileUtils::exists(required_files[i])) {
       HT_ERRORF("Unable to find '%s'", required_files[i]);
-      return 1;
+      _exit(1);
     }
   }
 
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
   cmd_str = "./hypertable --test-mode --config hypertable.cfg "
       "< hypertable_test.hql > hypertable_test.output 2>&1";
   if (system(cmd_str.c_str()) != 0)
-    return 1;
+    _exit(1);
 
   cmd_str = "diff hypertable_test.output hypertable_test.golden";
 #else
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
   cmd_str = "fc hypertable_test.sed.output hypertable_test.golden";
 #endif
   if (system(cmd_str.c_str()) != 0)
-    return 1;
+    _exit(1);
 
 #ifndef _WIN32
   cmd_str = "gunzip -f hypertable_select_gz_test.output.gz";
@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
   cmd_str = "gzip -d -f hypertable_select_gz_test.output.gz";
 #endif
   if (system(cmd_str.c_str()) != 0)
-    return 1;
+    _exit(1);
 
 #ifndef _WIN32
   cmd_str = "diff hypertable_select_gz_test.output hypertable_select_gz_test.golden";
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
   cmd_str = "fc hypertable_select_gz_test.output hypertable_select_gz_test.golden";
 #endif
   if (system(cmd_str.c_str()) != 0)
-    return 1;
+    _exit(1);
 
-  return 0;
+  _exit(0);
 }

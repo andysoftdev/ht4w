@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
   comm = Comm::instance();
 
   if (!InetAddr::initialize(&inet_addr, "23451"))
-    exit(1);
+    _exit(1);
   addr.set_inet(inet_addr);
 
   comm->create_datagram_receive_socket(addr, 0x10, dhp);
@@ -209,13 +209,13 @@ int main(int argc, char **argv) {
 
 #ifndef _WIN32
   if (system("diff ./hypertable_refresh_schema_test_c1.out ./hypertable_refresh_schema_test_c1.golden"))
-    return 1;
+    _exit(1);
 
   if (system("diff ./hypertable_refresh_schema_test_c2.out ./hypertable_refresh_schema_test_c2.golden"))
-    return 1;
+    _exit(1);
 
   if (system("diff ./hypertable_refresh_schema_test_c3.out ./hypertable_refresh_schema_test_c3.golden"))
-    return 1;
+    _exit(1);
 
 #else
   if (system("fc hypertable_refresh_schema_test_c1.out hypertable_refresh_schema_test_c1.golden"))
@@ -231,7 +231,7 @@ int main(int argc, char **argv) {
     return 1;
 #endif
 
-  return 0;
+  _exit(0);
 }
 
 

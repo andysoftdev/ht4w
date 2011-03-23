@@ -30,6 +30,7 @@
 #define HT_VERSION_MICRO        5
 #define HT_VERSION_PATCH        0
 #define HT_VERSION              "0.9.5.0"
+#define HT_VERSION_MISC_SUFFIX  ""
 
 namespace Hypertable {
   extern const int version_major;
