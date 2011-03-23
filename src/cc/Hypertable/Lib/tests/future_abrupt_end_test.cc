@@ -104,9 +104,9 @@ int main(int argc, char **argv) {
       HqlInterpreterPtr hql = hypertable_client_ptr->create_hql_interpreter(true);
       hql->set_namespace( namespace_ptr->get_name() );
       hql->execute("CREATE TABLE LoadTest (Field) COMPRESSOR=\"none\"");
+      String cmd = format("..\\load_generator --Hypertable.DataDirectory=\"%s\" --config=./hypertable.cfg  update --no-log-sync --parallel=10 --spec-file=./data.spec --max-bytes=250000", System::install_dir.c_str());
+      HT_ASSERT(system(cmd.c_str()) == 0);
     }
-    String cmd = format("..\\load_generator --Hypertable.DataDirectory=\"%s\" --config=./hypertable.cfg  update --no-log-sync --parallel=10 --spec-file=./data.spec --max-bytes=250000 > nul", System::install_dir.c_str());
-    HT_ASSERT(system(cmd.c_str()) == 0);
 
     #endif
 
