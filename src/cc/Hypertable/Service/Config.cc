@@ -40,7 +40,7 @@ namespace Hypertable { namespace Config {
 const char* usage =
     "Usage: Hypertable.Service [options]\n\n"
     "Description:\n"
-    "  TODO\n\n"
+    "  This program is used to manage the Hypertable servers.\n\n"
     "Options";
 
 const char* cmdline_install_service      = "install-service";
