@@ -42,9 +42,9 @@ void TableMutator::handle_exceptions() {
   try {
     throw;
   }
-  catch (std::bad_alloc &) {
+  catch (std::bad_alloc &e) {
     m_last_error = Error::BAD_MEMORY_ALLOCATION;
-    HT_ERROR("caught bad_alloc here");
+    HT_ERRORF("caught bad_alloc here: %s", e.what());
   }
   catch (std::exception &e) {
     m_last_error = Error::EXTERNAL;
