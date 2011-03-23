@@ -40,6 +40,8 @@ namespace Hypertable {
       : HandleCallback(EVENT_MASK_ATTR_SET), m_master_client(master_client),
         m_app_queue(app_queue) { }
 
+    virtual ~MasterFileHandler() { }
+
     virtual void attr_set(const std::string &name);
     MasterClient         *m_master_client;
     ApplicationQueuePtr   m_app_queue;

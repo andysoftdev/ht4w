@@ -62,6 +62,8 @@ namespace Hyperspace {
      */
     HandleCallback(uint32_t event_mask) : m_event_mask(event_mask) { return; }
 
+    virtual ~HandleCallback() { return; }
+
     /** Invoked when an attribute gets set on the file associated
      * with the registered handle
      *
