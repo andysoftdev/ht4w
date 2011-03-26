@@ -134,6 +134,7 @@ int main(int argc, char **argv) {
     }
 
     ii = 0;
+    bool cancelled=false;
     while(future_ptr->get(result) && ii < num_cells) {
       if (result->is_error()) {
         int error;
@@ -146,9 +147,15 @@ int main(int argc, char **argv) {
         if (ii >= num_cells) {
           // Dont deadlock in async scanner destruction
           future_ptr->cancel();
+          cancelled=true;
           break;
         }
       }
+    }
+    // Dont deadlock in async scanner destruction
+    if (!cancelled) {
+      future_ptr->cancel();
+      cancelled=true;
     }
   }
   catch (Hypertable::Exception &e) {
