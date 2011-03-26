@@ -120,7 +120,7 @@ cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --Hypertable.RangeServer.Scanner.BufferSize=128K --config=./hypertable.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
 "$(TargetPath)" 10 100 1 0
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
@@ -172,7 +172,7 @@ cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --Hypertable.RangeServer.Scanner.BufferSize=128K --config=./hypertable.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
 "$(TargetPath)" 10 100 1 0
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
@@ -229,7 +229,7 @@ cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --Hypertable.RangeServer.Scanner.BufferSize=128K --config=./hypertable.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
 "$(TargetPath)" 10 100 1 0
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
@@ -286,7 +286,7 @@ cd "$(TargetDir)"
 if exist fs rd /S /Q fs
 if exist hyperspace rd /S /Q hyperspace
 if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
+call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --Hypertable.RangeServer.Scanner.BufferSize=128K --config=./hypertable.cfg
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
 "$(TargetPath)" 10 100 1 0
 if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
