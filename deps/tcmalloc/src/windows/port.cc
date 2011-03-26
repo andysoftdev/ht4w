@@ -35,6 +35,11 @@
 # error You should only be including windows/port.cc in a windows environment!
 #endif
 
+#ifdef _MSC_VER
+#pragma section(".CRT$XLB", long, read)
+#pragma section(".CRT$XTU", long, read)
+#endif
+
 #define NOMINMAX       // so std::max, below, compiles correctly
 #include <config.h>
 #include <string.h>    // for strlen(), memset(), memcmp()

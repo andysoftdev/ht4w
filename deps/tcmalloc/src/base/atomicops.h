@@ -91,7 +91,7 @@
 #include "base/atomicops-internals-macosx.h"
 #elif defined(__GNUC__) && defined(__ARM_ARCH_5T__)
 #include "base/atomicops-internals-arm-gcc.h"
-#elif defined(_MSC_VER) && defined(_M_IX86)
+#elif defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_AMD64))
 #include "base/atomicops-internals-x86-msvc.h"
 #elif defined(__MINGW32__) && defined(__i386__)
 #include "base/atomicops-internals-x86-msvc.h"

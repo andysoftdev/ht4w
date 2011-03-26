@@ -97,8 +97,8 @@ struct CycleClock {
     int64 itc;
     asm("mov %0 = ar.itc" : "=r" (itc));
     return itc;
-#elif defined(_MSC_VER) && defined(_M_IX86)
-    _asm rdtsc
+#elif defined(_MSC_VER)
+    return __rdtsc();
 
 // If none of the above cases trigger, we use a solution based on
 // a system call (gettimeofday or similar).  We do these in order
