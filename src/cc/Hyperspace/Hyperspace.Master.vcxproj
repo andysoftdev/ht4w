@@ -200,7 +200,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_USE_HOARD;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
@@ -224,7 +224,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_USE_HOARD;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
@@ -250,7 +250,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_USE_HOARD;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
@@ -265,6 +265,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hypertools.lib;Hyperspace.lib;libdb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ForceSymbolReferences>
+      </ForceSymbolReferences>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -277,7 +279,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_USE_HOARD;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>

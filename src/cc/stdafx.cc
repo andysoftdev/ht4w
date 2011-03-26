@@ -32,4 +32,13 @@
 #pragma comment( lib, "netapi32.lib" )
 #pragma comment( lib, "version.lib" )
 
+
+#if defined(_USE_TCMALLOC)
+#pragma comment( lib, "tcmalloc.lib" )
+#pragma comment( linker, "/INCLUDE:__tcmalloc")
+#elif defined(_USE_HOARD)
+#pragma comment( lib, "hoard.lib" )
+#pragma comment( linker, "/INCLUDE:__hoardmalloc")
+#endif
+
 #endif
