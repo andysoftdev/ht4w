@@ -292,12 +292,19 @@ void RangeServer::shutdown() {
   try {
 
     // stop maintenance timer
-    m_timer_handler->shutdown();
+    if (m_timer_handler) {
+      m_timer_handler->shutdown();
 #if defined(CLEAN_SHUTDOWN)
-    //FIXME m_timer_handler->wait_for_shutdown();
+      //FIXME m_timer_handler->wait_for_shutdown();
 #endif
+    }
 
-    m_group_commit_timer_handler->shutdown();
+    if (m_group_commit_timer_handler) {
+      m_group_commit_timer_handler->shutdown();
+#if defined(CLEAN_SHUTDOWN)
+      //FIXME m_group_commit_timer_handler->wait_for_shutdown();
+#endif
+    }
 
     // stop maintenance queue
     Global::maintenance_queue->shutdown();
@@ -328,7 +335,8 @@ void RangeServer::shutdown() {
       delete Global::user_log;
     }
 
-    delete m_query_cache;
+    if (m_query_cache)
+      delete m_query_cache;
 
     Global::maintenance_queue = 0;
     Global::metadata_table = 0;
@@ -2509,9 +2517,12 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
     ScopedLock lock(m_mutex);
     if (!Global::rs_metrics_table) {
       try {
-        Global::rs_metrics_table = new Table(m_props, m_conn_manager,
-                                           Global::hyperspace, m_namemap,
-                                           "sys/RS_METRICS");
+        uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
+        RangeLocatorPtr range_locator = new RangeLocator(m_props, m_conn_manager, Global::hyperspace, timeout_ms);
+        Global::rs_metrics_table = new Table(m_props,  range_locator, m_conn_manager,
+                                           Global::hyperspace, m_app_queue, m_namemap,
+                                           "sys/RS_METRICS",
+                                           timeout_ms);
       }
       catch (Hypertable::Exception &e) {
         HT_ERRORF("Unable to open 'sys/RS_METRICS' - %s (%s)",
@@ -2752,8 +2763,10 @@ RangeServer::replay_load_range(ResponseCallback *cb,
      */
     if (!Global::metadata_table) {
       ScopedLock lock(m_mutex);
-      Global::metadata_table = new Table(m_props, m_conn_manager,
-          Global::hyperspace, m_namemap, TableIdentifier::METADATA_NAME);
+      uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
+      RangeLocatorPtr range_locator = new RangeLocator(m_props, m_conn_manager, Global::hyperspace, timeout_ms);
+      Global::metadata_table = new Table(m_props, range_locator, m_conn_manager,
+          Global::hyperspace, m_app_queue, m_namemap, TableIdentifier::METADATA_NAME, timeout_ms);
     }
 
     schema = table_info->get_schema();
