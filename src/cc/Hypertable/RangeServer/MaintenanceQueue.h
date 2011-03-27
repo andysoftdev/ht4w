@@ -52,7 +52,7 @@ namespace Hypertable {
         int cmp = xtime_cmp(sm1->start_time, sm2->start_time);
         if (cmp == 0)
           return sm1->priority < sm2->priority;
-        return xtime_cmp(sm1->start_time, sm2->start_time) >= 0;
+        return cmp >= 0;
       }
     };
 
