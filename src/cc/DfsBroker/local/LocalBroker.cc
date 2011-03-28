@@ -54,7 +54,17 @@ extern "C" {
 
 #include "LocalBroker.h"
 
+using namespace Hypertable;
+using namespace std;
+
 #ifdef _WIN32
+
+#define HT_WIN32_LASTERROR( msg ) \
+  { \
+    DWORD err = GetLastError(); \
+    HT_ERRORF( msg" %s", winapi_strerror(err)); \
+    SetLastError(err); \
+  }
 
 #define IO_ERROR \
     winapi_strerror(::GetLastError())
@@ -62,12 +72,23 @@ extern "C" {
 #define CRT_IO_ERROR \
     _strerror(0)
 
-inline int fsync( int fd ) {
-    if( !::FlushFileBuffers((HANDLE) _get_osfhandle(fd)) ) {
+inline DWORD fsync( HANDLE fd ) {
+    if( !::FlushFileBuffers(fd) ) {
+        HT_WIN32_LASTERROR("FlushFileBuffers failed");
         return ::GetLastError();
     }
-    return 0;
+    return ERROR_SUCCESS;
 }
+
+uint64_t SetFilePointer(HANDLE hf, __int64 distance, DWORD dwMoveMethod) {
+   LARGE_INTEGER li;
+   li.QuadPart = distance;
+   li.LowPart = SetFilePointer(hf, li.LowPart, &li.HighPart, dwMoveMethod);
+   if (li.LowPart == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
+      li.QuadPart = -1;
+   return li.QuadPart;
+}
+
 
 #else
 
@@ -78,9 +99,6 @@ inline int fsync( int fd ) {
     strerror(errno)
 
 #endif
-
-using namespace Hypertable;
-using namespace std;
 
 atomic_t LocalBroker::ms_next_fd = ATOMIC_INIT(0);
 
@@ -112,7 +130,6 @@ LocalBroker::LocalBroker(PropertiesPtr &cfg) {
   boost::trim_right_if(m_rootdir, boost::is_any_of("/\\"));
 #endif
 
-
   // ensure that root directory exists
   if (!FileUtils::mkdirs(m_rootdir))
     exit(1);
@@ -127,7 +144,12 @@ LocalBroker::~LocalBroker() {
 void
 LocalBroker::open(ResponseCallbackOpen *cb, const char *fname, 
                   uint32_t flags, uint32_t bufsz) {
-  int fd, local_fd;
+  int fd;
+#ifndef _WIN32
+  int local_fd;
+#else
+  HANDLE local_fd;
+#endif
   String abspath;
 
   HT_DEBUGF("open file='%s' flags=%u bufsz=%d", fname, flags, bufsz);
@@ -141,20 +163,30 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
 
   int oflags = O_RDONLY;
 
-  if (m_directio && flags & Filesystem::OPEN_FLAG_DIRECTIO) {
 #ifdef O_DIRECT
+  if (m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO))
     oflags |= O_DIRECT;
 #endif
-  }
 
   /**
    * Open the file
    */
+#ifndef _WIN32
   if ((local_fd = ::open(abspath.c_str(), oflags)) == -1) {
     report_error(cb);
     HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), CRT_IO_ERROR);
     return;
   }
+#else
+  DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
+  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, attr, 0)) == INVALID_HANDLE_VALUE) {
+    report_error(cb);
+    DWORD err = GetLastError();
+    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
+    SetLastError(err);
+    return;
+  }
+#endif
 
 #if defined(__APPLE__)
 #ifdef F_NOCACHE
@@ -165,7 +197,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
     directio(local_fd, DIRECTIO_ON);
 #endif
 
-  HT_INFOF("open( %s ) = %d (local=%d)", fname, (int)fd, local_fd);
+  HT_INFOF("open( %s ) = %d (local=%d)", fname, (int)fd, (int)local_fd);
 
   {
     struct sockaddr_in addr;
@@ -183,7 +215,12 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
 void
 LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
                     int32_t bufsz, int16_t replication, int64_t blksz) {
-  int fd, local_fd;
+  int fd;
+#ifndef _WIN32
+  int local_fd;
+#else
+  HANDLE local_fd;
+#endif
   int oflags = O_WRONLY | O_CREAT;
   String abspath;
 
@@ -202,20 +239,30 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
   else
     oflags |= O_APPEND;
 
-  if (m_directio && flags & Filesystem::OPEN_FLAG_DIRECTIO) {
 #ifdef O_DIRECT
+  if (m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO))
     oflags |= O_DIRECT;
 #endif
-  }
 
   /**
    * Open the file
    */
+#ifndef _WIN32
   if ((local_fd = ::open(abspath.c_str(), oflags, 0644)) == -1) {
     report_error(cb);
     HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), CRT_IO_ERROR);
     return;
   }
+#else
+  DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
+  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, CREATE_ALWAYS, attr, 0)) == INVALID_HANDLE_VALUE) {
+    report_error(cb);
+    DWORD err = GetLastError();
+    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
+    SetLastError(err);
+    return;
+  }
+#endif
 
 #if defined(__APPLE__)
 #ifdef F_NOCACHE
@@ -228,7 +275,7 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
 
   //HT_DEBUGF("created file='%s' fd=%d local_fd=%d", fname, fd, local_fd);
 
-  HT_INFOF("create( %s ) = %d (local=%d)", fname, (int)fd, local_fd);
+  HT_INFOF("create( %s ) = %d (local=%d)", fname, (int)fd, (int)local_fd);
 
   {
     struct sockaddr_in addr;
@@ -254,7 +301,11 @@ void LocalBroker::close(ResponseCallback *cb, uint32_t fd) {
 
 void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
   OpenFileDataLocalPtr fdata;
+#ifndef _WIN32
   ssize_t nread;
+#else
+  DWORD nread;
+#endif
   uint64_t offset;
   uint8_t *readbuf;
   int error;
@@ -280,10 +331,7 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
   }
 
 #ifndef _WIN32
-  if ((offset = (uint64_t)lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
-#else
-  if ((offset = (uint64_t)_telli64(fdata->fd)) == (uint64_t)-1) {
-#endif
+  if ((offset = lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
     report_error(cb);
     HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, CRT_IO_ERROR);
     return;
@@ -295,6 +343,19 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
           fdata->fd, (Llu)offset, amount, IO_ERROR);
     return;
   }
+#else
+  if ((offset = SetFilePointer(fdata->fd, 0, FILE_CURRENT)) == (uint64_t)-1) {
+    report_error(cb);
+    HT_WIN32_LASTERROR("SetFilePointer failed");
+    return;
+  }
+
+  if (!ReadFile(fdata->fd, buf.base, amount, &nread, 0)) {
+    report_error(cb);
+    HT_WIN32_LASTERROR("FileRead failed");
+    return;
+  }
+#endif
 
   buf.size = nread;
 
@@ -308,7 +369,11 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
 void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
                          uint32_t amount, const void *data, bool sync) {
   OpenFileDataLocalPtr fdata;
+#ifndef _WIN32
   ssize_t nwritten;
+#else
+  DWORD nwritten;
+#endif
   uint64_t offset;
   int error;
 
@@ -324,9 +389,6 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
 
 #ifndef _WIN32
   if ((offset = (uint64_t)lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
-#else
-  if ((offset = (uint64_t)_telli64(fdata->fd)) == (uint64_t)-1) {
-#endif
     report_error(cb);
     HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, CRT_IO_ERROR);
     return;
@@ -338,6 +400,20 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
     fdata->fd, (Llu)offset, amount, data, IO_ERROR);
     return;
   }
+#else
+  if ((offset = SetFilePointer(fdata->fd, 0, FILE_CURRENT)) == (uint64_t)-1) {
+    report_error(cb);
+    HT_WIN32_LASTERROR("SetFilePointer failed");
+    return;
+  }
+
+  if (!WriteFile(fdata->fd, data, amount, &nwritten, 0)) {
+    report_error(cb);
+    HT_WIN32_LASTERROR("WriteFile failed");
+    return;
+  }
+#endif
+
 
   if (sync && fsync(fdata->fd) != 0) {
     report_error(cb);
@@ -367,13 +443,17 @@ void LocalBroker::seek(ResponseCallback *cb, uint32_t fd, uint64_t offset) {
 
 #ifndef _WIN32
   if ((offset = (uint64_t)lseek(fdata->fd, offset, SEEK_SET)) == (uint64_t)-1) {
-#else
-  if ((offset = (uint64_t)_lseeki64(fdata->fd, offset, SEEK_SET)) == (uint64_t)-1) {
-#endif
     report_error(cb);
     HT_ERRORF("lseek failed: fd=%d offset=%llu - %s", fdata->fd, (Llu)offset, CRT_IO_ERROR);
     return;
   }
+#else
+  if ((offset = SetFilePointer(fdata->fd, offset, FILE_BEGIN)) == (uint64_t)-1) {
+    report_error(cb);
+    HT_WIN32_LASTERROR("SetFilePointer failed");
+    return;
+  }
+#endif
 
   if ((error = cb->response_ok()) != Error::OK)
     HT_ERRORF("Problem sending response for seek(%u, %llu) - %s",
@@ -437,7 +517,11 @@ void
 LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
                    uint32_t amount) {
   OpenFileDataLocalPtr fdata;
+#ifndef _WIN32
   ssize_t nread;
+#else
+  DWORD nread;
+#endif
   uint8_t *readbuf;
   int error;
 

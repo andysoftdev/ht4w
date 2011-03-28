@@ -32,6 +32,9 @@ extern "C" {
 #include "Common/String.h"
 #include "Common/atomic.h"
 #include "Common/Properties.h"
+#ifdef _WIN32
+#include "Common/Logger.h"
+#endif
 
 #include "DfsBroker/Lib/Broker.h"
 
@@ -44,12 +47,31 @@ namespace Hypertable {
    */
   class OpenFileDataLocal : public OpenFileData {
   public:
+
+#ifndef _WIN32
+
   OpenFileDataLocal(const String &fname, int _fd, int _flags) : fd(_fd), flags(_flags), filename(fname) { }
     virtual ~OpenFileDataLocal() {
       HT_INFOF("close( %s , %d )", filename.c_str(), fd);
       close(fd);
     }
     int  fd;
+
+#else
+
+    OpenFileDataLocal(const String &fname, HANDLE _fd, int _flags) : fd(_fd), flags(_flags), filename(fname) { }
+    virtual ~OpenFileDataLocal() {
+      HT_INFOF("close( %s , %d )", filename.c_str(), fd);
+      if (!CloseHandle(fd)) {
+        DWORD err = GetLastError();
+        HT_ERRORF("CloseHandle failed %s - %s", filename.c_str(), winapi_strerror(err));
+        SetLastError(err);
+      }
+    }
+    HANDLE  fd;
+
+#endif
+
     int  flags;
     String filename;
   };
