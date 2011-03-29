@@ -114,19 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)metalog_test*.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; metalog_test_localBroker.stdout 2&gt; metalog_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost --Hypertable.DataDirectory=$(TargetDir) &gt; nul
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 5 -w 1000 &gt; nul
-del metalog_test*.out
-del metalog_test*.golden
-del metalog_test*.std*
-rd /S /Q run
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,19 +141,8 @@ rd /S /Q run
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)metalog_test*.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; metalog_test_localBroker.stdout 2&gt; metalog_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost --Hypertable.DataDirectory=$(TargetDir) &gt; nul
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 5 -w 1000 &gt; nul
-del metalog_test*.out
-del metalog_test*.golden
-del metalog_test*.std*
-rd /S /Q run
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -195,19 +173,8 @@ rd /S /Q run
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)metalog_test*.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; metalog_test_localBroker.stdout 2&gt; metalog_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost --Hypertable.DataDirectory=$(TargetDir) &gt; nul
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 5 -w 1000 &gt; nul
-del metalog_test*.out
-del metalog_test*.golden
-del metalog_test*.std*
-rd /S /Q run
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -238,19 +205,8 @@ rd /S /Q run
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)metalog_test*.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; metalog_test_localBroker.stdout 2&gt; metalog_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost --Hypertable.DataDirectory=$(TargetDir) &gt; nul
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 5 -w 1000 &gt; nul
-del metalog_test*.out
-del metalog_test*.golden
-del metalog_test*.std*
-rd /S /Q run
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

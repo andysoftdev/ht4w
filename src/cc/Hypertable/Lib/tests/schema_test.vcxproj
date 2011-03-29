@@ -114,14 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)*-schema-*.xml" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)schemaTest.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del schematest.golden
-del *-schema-*.xml
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -147,14 +141,8 @@ del *-schema-*.xml
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)*-schema-*.xml" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)schemaTest.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del schematest.golden
-del *-schema-*.xml
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -185,14 +173,8 @@ del *-schema-*.xml
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)*-schema-*.xml" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)schemaTest.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del schematest.golden
-del *-schema-*.xml
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -223,14 +205,8 @@ del *-schema-*.xml
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)*-schema-*.xml" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)schemaTest.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del schematest.golden
-del *-schema-*.xml
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

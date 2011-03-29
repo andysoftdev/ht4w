@@ -118,10 +118,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf" md "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cfg" xcopy "$(SolutionDir)conf\hypertable.cfg" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml" xcopy "$(SolutionDir)conf\METADATA.xml" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -147,10 +145,8 @@ if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml"
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf" md "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cfg" xcopy "$(SolutionDir)conf\hypertable.cfg" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml" xcopy "$(SolutionDir)conf\METADATA.xml" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -181,10 +177,8 @@ if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml"
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf" md "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cfg" xcopy "$(SolutionDir)conf\hypertable.cfg" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml" xcopy "$(SolutionDir)conf\METADATA.xml" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -215,10 +209,8 @@ if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml"
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf" md "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\hypertable.cfg" xcopy "$(SolutionDir)conf\hypertable.cfg" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-if not exist "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf\METADATA.xml" xcopy "$(SolutionDir)conf\METADATA.xml" "$(SolutionDir)dist\$(Platform)\$(Configuration)\conf"
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

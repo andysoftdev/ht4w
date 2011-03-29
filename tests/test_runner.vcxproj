@@ -19,38 +19,32 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\stdafx.cc">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="CellStoreScanner_test.cc" />
+    <None Include="test_runner.js" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{F3E8B291-9328-41e7-A0E7-B12FC1815EEB}</ProjectGuid>
+    <ProjectGuid>{1AD5209E-5F92-431e-BABE-484C59BC11FD}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>cellstore_scanner_test</RootNamespace>
+    <RootNamespace>test_runner</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>Utility</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>Utility</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>Utility</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>Utility</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
@@ -73,22 +67,22 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)build\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)build\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)build\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)build\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -99,7 +93,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -108,15 +102,17 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>cscript //NoLogo "$(ProjectDir)test_runner.js" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>del $(SolutionDir)build\tools\$(ProjectName)\$(Platform)\$(Configuration)\$(ProjectName).lastbuildstate &gt; nul</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -126,7 +122,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -135,15 +131,17 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>cscript //NoLogo "$(ProjectDir)test_runner.js" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>del $(SolutionDir)build\tools\$(ProjectName)\$(Platform)\$(Configuration)\$(ProjectName).lastbuildstate &gt; nul</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -155,7 +153,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -167,15 +165,17 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>cscript //NoLogo "$(ProjectDir)test_runner.js" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>del $(SolutionDir)build\tools\$(ProjectName)\$(Platform)\$(Configuration)\$(ProjectName).lastbuildstate &gt; nul</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -187,7 +187,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\log4cpp\include;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -199,15 +199,17 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;DfsBroker.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>cscript //NoLogo "$(ProjectDir)test_runner.js" "$(SolutionDir)" "$(TargetDir)"</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>del $(SolutionDir)build\tools\$(ProjectName)\$(Platform)\$(Configuration)\$(ProjectName).lastbuildstate &gt; nul</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

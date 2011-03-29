@@ -114,19 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)good-schema-1.xml" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)" bmz
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" lzo
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" zlib
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" quicklz
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" none
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del good-schema-1.xml</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,19 +141,8 @@ del good-schema-1.xml</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)good-schema-1.xml" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)" bmz
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" lzo
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" zlib
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" quicklz
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" none
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del good-schema-1.xml</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -195,19 +173,8 @@ del good-schema-1.xml</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)good-schema-1.xml" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)" bmz
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" lzo
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" zlib
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" quicklz
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" none
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del good-schema-1.xml</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -238,19 +205,8 @@ del good-schema-1.xml</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)good-schema-1.xml" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)" bmz
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" lzo
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" zlib
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" quicklz
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" none
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del good-schema-1.xml</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

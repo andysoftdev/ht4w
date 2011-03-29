@@ -114,20 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)hyperspaceTest.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client1.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client2.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client3.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del client1.out
-del client2.out
-del client3.out
-del client1.golden
-del client2.golden
-del client3.golden
-del hyperspaceTest.cfg</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -153,20 +141,8 @@ del hyperspaceTest.cfg</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)hyperspaceTest.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client1.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client2.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client3.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del client1.out
-del client2.out
-del client3.out
-del client1.golden
-del client2.golden
-del client3.golden
-del hyperspaceTest.cfg</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -197,20 +173,8 @@ del hyperspaceTest.cfg</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)hyperspaceTest.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client1.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client2.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client3.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del client1.out
-del client2.out
-del client3.out
-del client1.golden
-del client2.golden
-del client3.golden
-del hyperspaceTest.cfg</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -241,20 +205,8 @@ del hyperspaceTest.cfg</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)hyperspaceTest.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client1.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client2.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)client3.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del client1.out
-del client2.out
-del client3.out
-del client1.golden
-del client2.golden
-del client3.golden
-del hyperspaceTest.cfg</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,10 +1,7 @@
 HOW TO BUILD HYPERTABLE FOR WINDOWS
 ===================================
 
-Building hypertable from source for Windows requires Microsoft Visual Studio 2010,
-in order to build and run all regression tests the option maximum number of parallel
-project builds should be set to one (the option is available under Tools/Options/Project
-and Solutions/Build and Run).
+Building hypertable from source for Windows requires Microsoft Visual Studio 2010 Professional or better.
 
 ###Browse or get the source###
 

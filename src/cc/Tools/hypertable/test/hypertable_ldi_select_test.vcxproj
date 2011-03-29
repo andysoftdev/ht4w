@@ -114,33 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)gzip.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_ldi_*.hql" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_*.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_test.tsv.gz" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_escape_test.tsv" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-..\hypertable -e "create namespace '/test';quit;" &gt; nul
-"$(TargetPath)" $(TargetDir)
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable_ldi_*.hql
-del hypertable_*.output
-del hypertable_*.golden
-del hypertable_test.tsv.gz
-del hypertable_escape_test.tsv
-del hypertable.cfg
-del dfs_select
-del gzip.exe</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -166,33 +141,8 @@ del gzip.exe</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)gzip.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_ldi_*.hql" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_*.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_test.tsv.gz" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_escape_test.tsv" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-..\hypertable -e "create namespace '/test';quit;" &gt; nul
-"$(TargetPath)" $(TargetDir)
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable_ldi_*.hql
-del hypertable_*.output
-del hypertable_*.golden
-del hypertable_test.tsv.gz
-del hypertable_escape_test.tsv
-del hypertable.cfg
-del dfs_select
-del gzip.exe</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -223,33 +173,8 @@ del gzip.exe</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)gzip.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_ldi_*.hql" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_*.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_test.tsv.gz" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_escape_test.tsv" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-..\hypertable -e "create namespace '/test';quit;" &gt; nul
-"$(TargetPath)" $(TargetDir)
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable_ldi_*.hql
-del hypertable_*.output
-del hypertable_*.golden
-del hypertable_test.tsv.gz
-del hypertable_escape_test.tsv
-del hypertable.cfg
-del dfs_select
-del gzip.exe</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -280,33 +205,8 @@ del gzip.exe</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)gzip.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_ldi_*.hql" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_*.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_test.tsv.gz" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_escape_test.tsv" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-..\hypertable -e "create namespace '/test';quit;" &gt; nul
-"$(TargetPath)" $(TargetDir)
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable_ldi_*.hql
-del hypertable_*.output
-del hypertable_*.golden
-del hypertable_test.tsv.gz
-del hypertable_escape_test.tsv
-del hypertable.cfg
-del dfs_select
-del gzip.exe</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

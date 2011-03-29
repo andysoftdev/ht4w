@@ -114,15 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)loadDataSourceTest*.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)loadDataSourceTest*.dat" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del loadDataSourceTest*.output
-del loadDataSourceTest*.dat
-del loadDataSourceTest*.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -148,15 +141,8 @@ del loadDataSourceTest*.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)loadDataSourceTest*.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)loadDataSourceTest*.dat" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del loadDataSourceTest*.output
-del loadDataSourceTest*.dat
-del loadDataSourceTest*.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -187,15 +173,8 @@ del loadDataSourceTest*.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)loadDataSourceTest*.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)loadDataSourceTest*.dat" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del loadDataSourceTest*.output
-del loadDataSourceTest*.dat
-del loadDataSourceTest*.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -226,15 +205,8 @@ del loadDataSourceTest*.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)loadDataSourceTest*.golden" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)loadDataSourceTest*.dat" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del loadDataSourceTest*.output
-del loadDataSourceTest*.dat
-del loadDataSourceTest*.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

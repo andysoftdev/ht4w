@@ -118,15 +118,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)init_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)" --i16 1k --i32 64K --i64 1G --boo &gt; init_test.out
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-fc init_test.out init_test.golden
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del init_test.out
-del init_test.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,15 +145,8 @@ del init_test.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)init_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)" --i16 1k --i32 64K --i64 1G --boo &gt; init_test.out
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-fc init_test.out init_test.golden
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del init_test.out
-del init_test.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -191,15 +177,8 @@ del init_test.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)init_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)" --i16 1k --i32 64K --i64 1G --boo &gt; init_test.out
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-fc init_test.out init_test.golden
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del init_test.out
-del init_test.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -230,15 +209,8 @@ del init_test.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)init_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-"$(TargetPath)" --i16 1k --i32 64K --i64 1G --boo &gt; init_test.out
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-fc init_test.out init_test.golden
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del init_test.out
-del init_test.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

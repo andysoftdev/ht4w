@@ -144,6 +144,7 @@ run/monitoring/*stats.txt
 /build
 /dist
 /ipch
+/tests/*.log
 /deps/boost/bjam.exe
 /deps/boost/bjam.log
 /deps/boost/boost/*

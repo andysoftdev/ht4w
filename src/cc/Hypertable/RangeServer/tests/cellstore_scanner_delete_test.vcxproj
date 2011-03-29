@@ -114,18 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)CellStoreScanner_delete_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; CellStoreScanner_delete_test_localBroker.stdout 2&gt; CellStoreScanner_delete_test_localBroker.stderr"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 3 -w 1000 &gt; nul
-del CellStoreScanner_delete_test_localBroker.stdout
-del CellStoreScanner_delete_test_localBroker.stderr
-del CellStoreScanner_delete_test.output
-del CellStoreScanner_delete_test.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -151,18 +141,8 @@ del CellStoreScanner_delete_test.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)CellStoreScanner_delete_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; CellStoreScanner_delete_test_localBroker.stdout 2&gt; CellStoreScanner_delete_test_localBroker.stderr"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 3 -w 1000 &gt; nul
-del CellStoreScanner_delete_test_localBroker.stdout
-del CellStoreScanner_delete_test_localBroker.stderr
-del CellStoreScanner_delete_test.output
-del CellStoreScanner_delete_test.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -193,18 +173,8 @@ del CellStoreScanner_delete_test.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)CellStoreScanner_delete_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; CellStoreScanner_delete_test_localBroker.stdout 2&gt; CellStoreScanner_delete_test_localBroker.stderr"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 3 -w 1000 &gt; nul
-del CellStoreScanner_delete_test_localBroker.stdout
-del CellStoreScanner_delete_test_localBroker.stderr
-del CellStoreScanner_delete_test.output
-del CellStoreScanner_delete_test.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -235,18 +205,8 @@ del CellStoreScanner_delete_test.golden
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)CellStoreScanner_delete_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; CellStoreScanner_delete_test_localBroker.stdout 2&gt; CellStoreScanner_delete_test_localBroker.stderr"
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 3 -w 1000 &gt; nul
-del CellStoreScanner_delete_test_localBroker.stdout
-del CellStoreScanner_delete_test_localBroker.stderr
-del CellStoreScanner_delete_test.output
-del CellStoreScanner_delete_test.golden
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

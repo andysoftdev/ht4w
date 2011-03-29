@@ -126,15 +126,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)gzip" -d -c "$(SolutionDir)tests\data\words.gz" &gt; "$(TargetDir)words"
-cd "$(TargetDir)"
-"$(SolutionDir)head" -50000 words &gt;commTestDatagram.golden
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del words
-del commTestDatagram.golden
-del commTestDatagram.output.1
-del commTestDatagram.output.2</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -160,15 +153,8 @@ del commTestDatagram.output.2</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)gzip" -d -c "$(SolutionDir)tests\data\words.gz" &gt; "$(TargetDir)words"
-cd "$(TargetDir)"
-"$(SolutionDir)head" -50000 words &gt;commTestDatagram.golden
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del words
-del commTestDatagram.golden
-del commTestDatagram.output.1
-del commTestDatagram.output.2</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -199,15 +185,8 @@ del commTestDatagram.output.2</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)gzip" -d -c "$(SolutionDir)tests\data\words.gz" &gt; "$(TargetDir)words"
-cd "$(TargetDir)"
-"$(SolutionDir)head" -50000 words &gt;commTestDatagram.golden
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del words
-del commTestDatagram.golden
-del commTestDatagram.output.1
-del commTestDatagram.output.2</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -238,15 +217,8 @@ del commTestDatagram.output.2</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)gzip" -d -c "$(SolutionDir)tests\data\words.gz" &gt; "$(TargetDir)words"
-cd "$(TargetDir)"
-"$(SolutionDir)head" -50000 words &gt;commTestDatagram.golden
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-del words
-del commTestDatagram.golden
-del commTestDatagram.output.1
-del commTestDatagram.output.2</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

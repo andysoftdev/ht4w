@@ -115,22 +115,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)MutatorNoLogSyncTest.cfg" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker --no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
-"$(TargetPath)" "$(TargetDir)..\"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
-del *.out
-del MutatorNoLogSyncTest.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -156,22 +142,8 @@ rd /S /Q log
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)MutatorNoLogSyncTest.cfg" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker --no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
-"$(TargetPath)" "$(TargetDir)..\"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
-del *.out
-del MutatorNoLogSyncTest.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -202,22 +174,8 @@ rd /S /Q log
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)MutatorNoLogSyncTest.cfg" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker --no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
-"$(TargetPath)" "$(TargetDir)..\"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
-del *.out
-del MutatorNoLogSyncTest.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -248,22 +206,8 @@ rd /S /Q log
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)MutatorNoLogSyncTest.cfg" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker --no-rangeserver -l error --Hypertable.DataDirectory=$(TargetDir) --config=./MutatorNoLogSyncTest.cfg
-"$(TargetPath)" "$(TargetDir)..\"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./MutatorNoLogSyncTest.cfg
-del *.out
-del MutatorNoLogSyncTest.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

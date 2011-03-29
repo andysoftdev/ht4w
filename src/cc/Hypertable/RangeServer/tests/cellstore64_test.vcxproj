@@ -114,19 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)CellStore64_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; CellStore64_test_localBroker.stdout 2&gt; CellStore64_test_localBroker.stderr"
-rem does not work "$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 3 -w 1000 &gt; nul
-del CellStore64_test_localBroker.stdout
-del CellStore64_test_localBroker.stderr
-rem del CellStore64_test.output
-del CellStore64_test.golden
-rem rd /S /Q CellStore64_test
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,19 +141,8 @@ rem rd /S /Q CellStore64_test
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)CellStore64_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; CellStore64_test_localBroker.stdout 2&gt; CellStore64_test_localBroker.stderr"
-rem does not work "$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 3 -w 1000 &gt; nul
-del CellStore64_test_localBroker.stdout
-del CellStore64_test_localBroker.stderr
-rem del CellStore64_test.output
-del CellStore64_test.golden
-rem rd /S /Q CellStore64_test
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -195,19 +173,8 @@ rem rd /S /Q CellStore64_test
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)CellStore64_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; CellStore64_test_localBroker.stdout 2&gt; CellStore64_test_localBroker.stderr"
-rem does not work "$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 3 -w 1000 &gt; nul
-del CellStore64_test_localBroker.stdout
-del CellStore64_test_localBroker.stderr
-rem del CellStore64_test.output
-del CellStore64_test.golden
-rem rd /S /Q CellStore64_test
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -238,19 +205,8 @@ rem rd /S /Q CellStore64_test
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(ProjectDir)CellStore64_test.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; CellStore64_test_localBroker.stdout 2&gt; CellStore64_test_localBroker.stderr"
-rem does not work "$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 3 -w 1000 &gt; nul
-del CellStore64_test_localBroker.stdout
-del CellStore64_test_localBroker.stderr
-rem del CellStore64_test.output
-del CellStore64_test.golden
-rem rd /S /Q CellStore64_test
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

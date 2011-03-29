@@ -112,23 +112,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-random_write_test --total-bytes=250000  --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" --total-bytes=250000 --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable.cfg</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,23 +137,8 @@ del hypertable.cfg</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-random_write_test --total-bytes=250000  --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" --total-bytes=250000 --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable.cfg</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -199,23 +169,8 @@ del hypertable.cfg</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-random_write_test --total-bytes=250000  --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" --total-bytes=250000 --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable.cfg</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -246,23 +201,8 @@ del hypertable.cfg</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-random_write_test --total-bytes=250000  --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-"$(TargetPath)" --total-bytes=250000 --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable.cfg</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

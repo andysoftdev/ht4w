@@ -114,16 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 8 -w 1000 &gt; nul
-del commit_log_test_localBroker.*
-rd /S /Q hypertable
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -149,16 +141,8 @@ rd /S /Q hypertable
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 8 -w 1000 &gt; nul
-del commit_log_test_localBroker.*
-rd /S /Q hypertable
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -189,16 +173,8 @@ rd /S /Q hypertable
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 8 -w 1000 &gt; nul
-del commit_log_test_localBroker.*
-rd /S /Q hypertable
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -229,16 +205,8 @@ rd /S /Q hypertable
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>cd "$(TargetDir)"
-start /min cmd /c "..\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=$(TargetDir) &gt; commit_log_test_localBroker.stdout 2&gt; commit_log_test_localBroker.stderr"
-ping 127.0.0.1 -n 2 -w 1000 &gt; nul
-"$(TargetPath)" --DfsBroker.Host=localhost
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-..\dfsclient.exe --eval shutdown
-ping 127.0.0.1 -n 8 -w 1000 &gt; nul
-del commit_log_test_localBroker.*
-rd /S /Q hypertable
-</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

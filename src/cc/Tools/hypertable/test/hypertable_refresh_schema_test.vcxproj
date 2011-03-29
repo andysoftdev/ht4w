@@ -114,26 +114,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_refresh_schema_test_*.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-..\hypertable -e "create namespace '/test';quit;" &gt; nul
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable_refresh_schema_test_*.out
-del hypertable_refresh_schema_test_*.golden
-del hypertable.cfg
-del sed.exe</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -159,26 +141,8 @@ del sed.exe</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_refresh_schema_test_*.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-..\hypertable -e "create namespace '/test';quit;" &gt; nul
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable_refresh_schema_test_*.out
-del hypertable_refresh_schema_test_*.golden
-del hypertable.cfg
-del sed.exe</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -209,26 +173,8 @@ del sed.exe</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_refresh_schema_test_*.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-..\hypertable -e "create namespace '/test';quit;" &gt; nul
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable_refresh_schema_test_*.out
-del hypertable_refresh_schema_test_*.golden
-del hypertable.cfg
-del sed.exe</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -259,26 +205,8 @@ del sed.exe</Command>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <PostBuildEvent>
-      <Command>xcopy /Y "$(SolutionDir)sed.exe" "$(TargetDir)"
-xcopy /Y "$(SolutionDir)conf\hypertable.cfg" "$(TargetDir)"
-xcopy /Y "$(ProjectDir)hypertable_refresh_schema_test_*.golden" "$(TargetDir)"
-cd "$(TargetDir)"
-if exist fs rd /S /Q fs
-if exist hyperspace rd /S /Q hyperspace
-if exist run rd /S /Q run
-call $(SolutionDir)bin/start-all-servers $(Platform) $(Configuration) --no-thriftbroker -l error --Hypertable.DataDirectory=$(TargetDir) --config=./hypertable.cfg
-..\hypertable -e "create namespace '/test';quit;" &gt; nul
-"$(TargetPath)"
-if "%ERRORLEVEL%" NEQ "0" exit %ERRORLEVEL%
-call $(SolutionDir)bin/stop-all-servers $(Platform) $(Configuration) --no-thriftbroker  -l error  --config=./hypertable.cfg
-rd /S /Q fs
-rd /S /Q hyperspace
-rd /S /Q run
-rd /S /Q log
-del hypertable_refresh_schema_test_*.out
-del hypertable_refresh_schema_test_*.golden
-del hypertable.cfg
-del sed.exe</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
