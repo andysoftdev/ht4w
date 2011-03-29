@@ -25,6 +25,9 @@
 #include "Common/StringExt.h"
 #include "Common/System.h"
 #include "Common/Time.h"
+#ifdef _WIN32
+#include "Common/HRTimer.h"
+#endif
 
 #include <algorithm>
 
@@ -45,7 +48,11 @@ TimerHandler::TimerHandler(Comm *comm, RangeServer *range_server)
   : m_comm(comm), m_range_server(range_server),
     m_last_low_memory_maintenance(TIMESTAMP_NULL),
     m_urgent_maintenance_scheduled(false), m_app_queue_paused(false),
-    m_maintenance_outstanding(false) {
+    m_maintenance_outstanding(false)
+    #ifdef _WIN32
+    , m_hrtimer(0)
+    #endif
+{
   int error;
   int32_t maintenance_interval;
 
@@ -71,6 +78,14 @@ TimerHandler::TimerHandler(Comm *comm, RangeServer *range_server)
 
   return;
 }
+
+#ifdef _WIN32
+TimerHandler::~TimerHandler() {
+  if (m_hrtimer) {
+    delete m_hrtimer;
+  }
+}
+#endif
 
 
 void TimerHandler::schedule_maintenance() {
@@ -98,11 +113,7 @@ void TimerHandler::complete_maintenance_notify() {
   if (m_app_queue_paused) {
     int64_t memory_used = Global::memory_tracker->balance();
     if (memory_used <= Global::memory_limit) {
-      HT_NOTICE("Restarting application queue");
-      m_app_queue->start();
-      m_app_queue_paused = false;
-      m_last_low_memory_maintenance = TIMESTAMP_NULL;
-      m_current_interval = m_timer_interval;
+      restart_app_queue();
     }
   }
 }
@@ -131,17 +142,16 @@ void TimerHandler::handle(Hypertable::EventPtr &event_ptr) {
       HT_NOTICE("Pausing application queue due to low memory condition");
       m_app_queue_paused = true;
       m_app_queue->stop();
+      #ifdef _WIN32
+      if (m_hrtimer)
+        delete m_hrtimer;
+      m_hrtimer = new HRTimer();
+      #endif
       m_current_interval = 500;
     }
   }
-  else {
-    if (m_app_queue_paused) {
-      HT_NOTICE("Restarting application queue");
-      m_app_queue->start();
-      m_app_queue_paused = false;
-      m_last_low_memory_maintenance = TIMESTAMP_NULL;
-      m_current_interval = m_timer_interval;
-    }
+  else if (m_app_queue_paused) {
+    restart_app_queue();
   }
 
   if (m_app_queue_paused) {
@@ -177,4 +187,24 @@ void TimerHandler::handle(Hypertable::EventPtr &event_ptr) {
   catch (Hypertable::Exception &e) {
     HT_ERROR_OUT << e << HT_END;
   }
+}
+
+void TimerHandler::restart_app_queue() {
+  HT_ASSERT(m_app_queue_paused);
+  #ifdef WIN32
+  if (m_hrtimer) {
+    HT_NOTICEF("Restarting application queue (%.3fms)", m_hrtimer->peek_ms());
+    delete m_hrtimer;
+    m_hrtimer = 0;
+  }
+  else
+  #endif
+  {
+    HT_NOTICE("Restarting application queue");
+  }
+
+  m_app_queue->start();
+  m_app_queue_paused = false;
+  m_last_low_memory_maintenance = TIMESTAMP_NULL;
+  m_current_interval = m_timer_interval;
 }

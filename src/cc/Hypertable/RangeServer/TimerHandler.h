@@ -33,12 +33,19 @@
 
 namespace Hypertable {
 
+  #ifdef _WIN32
+  class HRTimer;
+  #endif
+
   /**
    */
   class TimerHandler : public TimerInterface {
 
   public:
     TimerHandler(Comm *comm, RangeServer *range_server);
+    #ifdef _WIN32
+    virtual ~TimerHandler();
+    #endif
     virtual void handle(Hypertable::EventPtr &event_ptr);
     virtual void schedule_maintenance();
     virtual void complete_maintenance_notify();
@@ -55,6 +62,11 @@ namespace Hypertable {
     bool          m_app_queue_paused;
     boost::xtime  m_last_maintenance;
     bool          m_maintenance_outstanding;
+    #ifdef _WIN32
+    HRTimer      *m_hrtimer;
+    #endif
+
+    void restart_app_queue();
   };
   typedef boost::intrusive_ptr<TimerHandler> TimerHandlerPtr;
 }
