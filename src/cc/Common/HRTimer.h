@@ -33,7 +33,7 @@ namespace Hypertable {
 
 class HRTimer {
   public:
-    inline HRTimer(const char* _msg) {
+    inline explicit HRTimer(const char* _msg = 0) {
       if (_msg)
         msg = _msg;
       LARGE_INTEGER _freq;
@@ -44,17 +44,22 @@ class HRTimer {
         HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
     }
 
+    inline double peek_ms() {
+      if (!::QueryPerformanceCounter(&peek))
+          HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
+      return (peek.QuadPart - start.QuadPart) / (freq / 1000.0);
+    }
+
     inline ~HRTimer() {
-      if (!::QueryPerformanceCounter(&stop))
-        HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
-      double delta = (stop.QuadPart - start.QuadPart) / (freq / 1000.0);
-      HT_INFO_OUT << std::flush << std::setw(6) << ::GetCurrentThreadId() << " " << msg << " " << std::setprecision(3) << delta << "ms" << std::endl << HT_END;
+      if (!msg.empty()) {
+        HT_INFO_OUT << peek_ms() << "ms" << std::endl << HT_END;
+      }
     }
 
 private:
 
     LARGE_INTEGER start;
-    LARGE_INTEGER stop;
+    LARGE_INTEGER peek;
     double freq;
     std::string msg;
 };
