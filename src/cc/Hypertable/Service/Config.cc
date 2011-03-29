@@ -301,30 +301,83 @@ String server_args() {
     0
   };
 
-  String args;
-  const ProcInfo& proc_info = System::proc_info();
-  for (uint32_t i = 1; i < proc_info.args.size(); ++i) {
-    const String& arg = proc_info.args[i];
-    int skip_tokens = -1;
-    for (uint32_t n = 0; all_service_args[n] && skip_tokens < 0; ++n) {
-      const char* tok;
-      if ((tok = strstr(arg.c_str(), all_service_args[n])) != 0 ) {
-        const boost::program_options::option_description* od = cmdline_desc().find_nothrow(all_service_args[n], false);
-        if (!od) {
-          od = file_desc().find_nothrow(all_service_args[n], false);
-        }
-        if (od) {
-          skip_tokens = od->semantic()->min_tokens() == 1 && *(tok + strlen(all_service_args[n])) != '=' ? 1 : 0;
+  static String args;
+  if (args.empty() ) {
+    const ProcInfo& proc_info = System::proc_info();
+    for (uint32_t i = 1; i < proc_info.args.size(); ++i) {
+      const String& arg = proc_info.args[i];
+      int skip_tokens = -1;
+      for (uint32_t n = 0; all_service_args[n] && skip_tokens < 0; ++n) {
+        const char* tok;
+        if ((tok = strstr(arg.c_str(), all_service_args[n])) != 0 ) {
+          const boost::program_options::option_description* od = cmdline_desc().find_nothrow(all_service_args[n], false);
+          if (!od) {
+            od = file_desc().find_nothrow(all_service_args[n], false);
+          }
+          if (od) {
+            skip_tokens = od->semantic()->min_tokens() == 1 && *(tok + strlen(all_service_args[n])) != '=' ? 1 : 0;
+          }
         }
       }
+      if (skip_tokens < 0) {
+        if (!args.empty())
+          args.append(" ");
+        args.append(arg);
+      }
+      else
+        i += skip_tokens;
     }
-    if (skip_tokens < 0) {
-      if (!args.empty())
-        args.append(" ");
-      args.append(arg);
+  }
+  return args;
+}
+
+String service_args() {
+  static const char* all_service_args[] = {
+    cmdline_install_service,
+    cmdline_uninstall_service,
+    cmdline_start_service,
+    cmdline_stop_service,
+    cmdline_stop_all_services,
+    cmdline_service_name,
+    cmdline_service_display_name,
+    cmdline_start_servers,
+    cmdline_join_servers,
+    cmdline_stop_servers,
+    cmdline_kill_servers,
+    cmdline_create_console,
+    cmdline_rangeserver,
+
+    cfg_service_name,
+    cfg_service_display_name,
+    0
+  };
+
+  static String args;
+  if (args.empty() ) {
+    const ProcInfo& proc_info = System::proc_info();
+    for (uint32_t i = 1; i < proc_info.args.size(); ++i) {
+      const String& arg = proc_info.args[i];
+      int skip_tokens = -1;
+      for (uint32_t n = 0; all_service_args[n] && skip_tokens < 0; ++n) {
+        const char* tok;
+        if ((tok = strstr(arg.c_str(), all_service_args[n])) != 0 ) {
+          const boost::program_options::option_description* od = cmdline_desc().find_nothrow(all_service_args[n], false);
+          if (!od) {
+            od = file_desc().find_nothrow(all_service_args[n], false);
+          }
+          if (od) {
+            skip_tokens = od->semantic()->min_tokens() == 1 && *(tok + strlen(all_service_args[n])) != '=' ? 1 : 0;
+          }
+        }
+      }
+      if (skip_tokens < 0) {
+        if (!args.empty())
+          args.append(" ");
+        args.append(arg);
+      }
+      else
+        i += skip_tokens;
     }
-    else
-      i += skip_tokens;
   }
   return args;
 }

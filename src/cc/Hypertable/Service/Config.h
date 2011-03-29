@@ -77,6 +77,9 @@ namespace Hypertable { namespace Config {
   // server arguments, returns the arguments which will be passed to the servers
   String server_args();
 
+  // service arguments, returns the arguments which will be passed to the service
+  String service_args();
+
 } }
 
 #endif // HYPERTABLE_SERVICE_CONFIG_H

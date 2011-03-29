@@ -193,7 +193,7 @@ void ServiceUtils::install_service() {
     if (!service_exists(service_name)) {
       char moduleFilename[MAX_PATH];
       if (GetModuleFileName(0, moduleFilename, MAX_PATH) > 0 && GetLastError() == ERROR_SUCCESS) {
-        String exe_name = format("%s %s", moduleFilename, Config::server_args().c_str());
+        String exe_name = format("%s %s", moduleFilename, Config::service_args().c_str());
         boost::trim_right_if(exe_name, boost::is_any_of(" "));
         bool access_denied;
         if (!install_service(service_name, Config::service_display_name(), exe_name, Config::service_desc(), access_denied) && access_denied)
@@ -230,9 +230,7 @@ void ServiceUtils::uninstall_service() {
       bool access_denied;
       if (!manage_service(service_name, uninstall, access_denied) && access_denied)
         self_elevate();
-      Sleep(250);
-      if (service_exists(service_name))
-        HT_NOTICEF("Uninstalling service '%s' failed", service_name.c_str());
+      Sleep(500);
     }
     else
       HT_NOTICEF("Service '%s' does not exists", service_name.c_str());
@@ -251,7 +249,7 @@ void ServiceUtils::start_service() {
         bool access_denied;
         if (!manage_service(service_name, start, access_denied) && access_denied)
           self_elevate();
-        Sleep(250);
+        Sleep(500);
         if (service_status(service_name, status)) {
           ServerLaunchEvent service_launch_event(status.dwProcessId);
           if (!service_launch_event.wait(Config::start_service_timeout()))
@@ -280,7 +278,7 @@ void ServiceUtils::stop_service() {
         bool access_denied;
         if (!manage_service(service_name, stop, access_denied) && access_denied)
           self_elevate();
-        Sleep(250);
+        Sleep(500);
         if (!ProcessUtils::join(status.dwProcessId, Config::stop_service_timeout()))
           HT_WARNF("Stop service '%s' has been timed out", service_name.c_str());
       }
@@ -450,8 +448,12 @@ bool ServiceUtils::manage_service(const String& service_name, manage_service_t m
     if (scv) {
       switch (ms) {
       case uninstall:
-        if (!DeleteService(scv))
-          WINAPI_ERROR("DeleteService failed - %s");
+        if (!DeleteService(scv)) {
+          if (GetLastError() != ERROR_SERVICE_MARKED_FOR_DELETE)
+            HT_NOTICEF("Service '%s' has been marked for delete", service_name.c_str());
+          else
+            WINAPI_ERROR("DeleteService failed - %s");
+        }
         break;
       case start:
         if (!StartService(scv, 0, 0))
