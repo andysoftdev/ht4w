@@ -461,7 +461,8 @@ function mutator_nolog_sync_test(logfile, testName) {
 function name_id_mapper_test(logfile, testName) {
     prepare_target(testName, ["name_id_mapper_test.cfg"]);
    return run_target(logfile, testName);
-}
+
+}
 
 function op_dependency_test(logfile, testName) {
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
@@ -640,8 +641,10 @@ try {
     echo("tests complete: " + format(tests_completed));
     echo("tests failed:   " + format(tests_failed));
     echo("");
+    WScript.Quit(tests_failed);
 }
 catch (e) {
     echo("")
     echo(e.toString());
+    WScript.Quit(-1);
 }
