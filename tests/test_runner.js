@@ -141,6 +141,7 @@ function system(cmd, out, err) {
     if (count >= timeout / 200) {
         wshshell.Run("taskkill /F /T /PID:" + exec.ProcessID, 0, true);
         echo(cmdline + " has been timed out");
+        return -1;
     }
     return exec.ExitCode;
 }
@@ -172,6 +173,7 @@ function system_log(cmd, logfile, testName) {
     if (count >= timeout / 200) {
         wshshell.Run("taskkill /F /T /PID:" + exec.ProcessID, 0, true);
         echo(cmdline + " has been timed out");
+        return -1;
     }
     return exec.ExitCode;
 }
