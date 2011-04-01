@@ -140,7 +140,7 @@ function system(cmd, out, err) {
     }
     if (count >= timeout / 200) {
         wshshell.Run("taskkill /F /T /PID:" + exec.ProcessID, 0, true);
-        echo(cmdline + " has been timed out");
+        write(" timed out");
         return -1;
     }
     return exec.ExitCode;
@@ -172,7 +172,7 @@ function system_log(cmd, logfile, testName) {
     }
     if (count >= timeout / 200) {
         wshshell.Run("taskkill /F /T /PID:" + exec.ProcessID, 0, true);
-        echo(cmdline + " has been timed out");
+        write(" timed out");
         return -1;
     }
     return exec.ExitCode;
@@ -610,7 +610,7 @@ all_tests.add("tableid_cache_test", run_target);
 // globals
 var wshshell = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject")
-var timeout = 30000; // [ms]
+var timeout = 240000; // [ms]
 
 var solutionDir = null;
 var targetDir = null;
