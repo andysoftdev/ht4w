@@ -132,9 +132,15 @@ function system(cmd, out, err) {
             cmdline = cmdline + " 2> " + err;
         }
     }
+    var count = 0;
     var exec = wshshell.Exec("cmd /C " + cmdline);
-    while (exec.Status == 0) {
+    while (exec.Status == 0 && count < timeout/200) {
         WScript.Sleep(200);
+        count++;
+    }
+    if (count >= timeout / 200) {
+        wshshell.Run("taskkill /F /T /PID:" + exec.ProcessID, 0, true);
+        echo(cmdline + " has been timed out");
     }
     return exec.ExitCode;
 }
@@ -157,9 +163,15 @@ function system_log(cmd, logfile, testName) {
     if (!is_null_or_empty(testName)) {
         system_log("echo +" + testName, logfile);
     }
+    var count = 0;
     var exec = wshshell.Exec("cmd /C " + cmd + " >> " + logfile);
-    while (exec.Status == 0) {
+    while (exec.Status == 0 && count < timeout / 200) {
         WScript.Sleep(200);
+        count++;
+    }
+    if (count >= timeout / 200) {
+        wshshell.Run("taskkill /F /T /PID:" + exec.ProcessID, 0, true);
+        echo(cmdline + " has been timed out");
     }
     return exec.ExitCode;
 }
@@ -596,6 +608,7 @@ all_tests.add("tableid_cache_test", run_target);
 // globals
 var wshshell = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject")
+var timeout = 30000; // [ms]
 
 var solutionDir = null;
 var targetDir = null;
