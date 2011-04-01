@@ -179,7 +179,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
   }
 #else
   DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
-  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, attr, 0)) == INVALID_HANDLE_VALUE) {
+  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, OPEN_EXISTING, attr, 0)) == INVALID_HANDLE_VALUE) {
     report_error(cb);
     DWORD err = GetLastError();
     HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
@@ -255,7 +255,7 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
   }
 #else
   DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
-  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, CREATE_ALWAYS, attr, 0)) == INVALID_HANDLE_VALUE) {
+  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, CREATE_ALWAYS, attr, 0)) == INVALID_HANDLE_VALUE) {
     report_error(cb);
     DWORD err = GetLastError();
     HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
