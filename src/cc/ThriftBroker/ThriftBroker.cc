@@ -69,28 +69,27 @@
   THROW_TE(e.code(), oss.str()); \
 }
 
-#define LOG_API(_expr_) do { \
+#define LOG_API(_expr_) { \
   if (m_log_api) \
-    std::cout << hires_ts <<" API "<< __func__ <<": "<< _expr_ << std::endl; \
-} while (0)
+    HT_INFO_OUT << "API "<< __func__ <<": "<< _expr_ << HT_END; \
+}
 
-#define LOG_HQL_RESULT(_res_) do { \
+#define LOG_HQL_RESULT(_res_) { \
   if (m_log_api) \
-    cout << hires_ts <<" API "<< __func__ <<": result: "; \
+    HT_INFO_OUT << "API "<< __func__ <<": result: " << HT_END; \
   if (Logger::logger->isDebugEnabled()) \
-    cout << _res_; \
-  else { \
+    HT_DEBUG_OUT << _res_ << HT_END; \
+  else if (Logger::logger->isInfoEnabled()) { \
     if (_res_.__isset.results) \
-      cout <<"results.size=" << _res_.results.size(); \
+      HT_INFO_OUT <<"results.size=" << _res_.results.size() << HT_END; \
     if (_res_.__isset.cells) \
-      cout <<"cells.size=" << _res_.cells.size(); \
+      HT_INFO_OUT <<"cells.size=" << _res_.cells.size() << HT_END; \
     if (_res_.__isset.scanner) \
-      cout <<"scanner="<< _res_.scanner; \
+      HT_INFO_OUT <<"scanner="<< _res_.scanner << HT_END; \
     if (_res_.__isset.mutator) \
-      cout <<"mutator="<< _res_.mutator; \
+      HT_INFO_OUT <<"mutator="<< _res_.mutator << HT_END; \
   } \
-  cout << std::endl; \
-} while(0)
+}
 
 namespace Hypertable { namespace ThriftBroker {
 
@@ -513,7 +512,7 @@ public:
   virtual ScannerAsync
   open_scanner_async(const ThriftGen::Namespace ns, const String &table,
                      const ThriftGen::Future ff,
-                     const ThriftGen::ScanSpec &ss, bool retry_table_not_found) {
+                     const ThriftGen::ScanSpec &ss, const bool retry_table_not_found) {
     LOG_API("namespace=" << ns << " table="<< table << " future=" << ff << " scan_spec="<< ss);
 
     try {
@@ -827,9 +826,9 @@ public:
     } RETHROW()
   }
 
-  virtual ThriftGen::Future open_future(int queue_size) {
+  virtual ThriftGen::Future open_future(const int _queue_size) {
     try {
-      queue_size = (queue_size <= 0) ? m_future_queue_size : queue_size;
+      int queue_size = (_queue_size <= 0) ? m_future_queue_size : _queue_size;
       FuturePtr future_ptr = new Hypertable::Future(queue_size);
       ThriftGen::Future id = get_future_id(&future_ptr);
       LOG_API("Future id=" << id);
@@ -838,7 +837,7 @@ public:
   }
 
   virtual void
-  get_future_result(ThriftGen::Result &tresult, ThriftGen::Future ff) {
+  get_future_result(ThriftGen::Result &tresult, const ThriftGen::Future ff) {
     LOG_API("future=" << ff);
 
     try {
@@ -860,7 +859,7 @@ public:
   }
 
   virtual void
-  get_future_result_as_arrays(ThriftGen::ResultAsArrays &tresult, ThriftGen::Future ff) {
+  get_future_result_as_arrays(ThriftGen::ResultAsArrays &tresult, const ThriftGen::Future ff) {
     LOG_API("future=" << ff);
 
     try {
@@ -882,7 +881,7 @@ public:
   }
 
   virtual void
-  get_future_result_serialized(ThriftGen::ResultSerialized &tresult, ThriftGen::Future ff) {
+  get_future_result_serialized(ThriftGen::ResultSerialized &tresult, const ThriftGen::Future ff) {
     LOG_API("future=" << ff);
 
     try {
@@ -904,7 +903,7 @@ public:
   }
 
   virtual void
-  cancel_future(ThriftGen::Future ff) {
+  cancel_future(const ThriftGen::Future ff) {
     LOG_API("future=" << ff);
 
     try {
@@ -949,7 +948,7 @@ public:
     try {
       NamespacePtr namespace_ptr = get_namespace(ns);
       TablePtr t = namespace_ptr->open_table(table);
-      Mutator id =  get_mutator_id(t->create_mutator(0, flags, flush_interval));
+      Mutator id =  get_mutator_id(t->create_shared_mutator(0, flags, flush_interval));
       LOG_API("namespace=" << ns << " table="<< table <<" mutator="<< id);
       return id;
     } RETHROW()
@@ -1560,7 +1559,7 @@ public:
             <<" with appname=" << mutate_spec.appname);
     NamespacePtr namespace_ptr = get_namespace(ns);
     TablePtr t = namespace_ptr->open_table(table);
-    TableMutatorPtr mutator = t->create_mutator(0, mutate_spec.flags, mutate_spec.flush_interval);
+    TableMutatorPtr mutator = t->create_shared_mutator(0, mutate_spec.flags, mutate_spec.flush_interval);
     m_shared_mutator_map[skey] = mutator;
     return;
   }
@@ -1582,7 +1581,7 @@ public:
               " with appname=" << mutate_spec.appname);
       NamespacePtr namespace_ptr = get_namespace(ns);
       TablePtr t = namespace_ptr->open_table(table);
-      TableMutatorPtr mutator = t->create_mutator(0, mutate_spec.flags, mutate_spec.flush_interval);
+      TableMutatorPtr mutator = t->create_shared_mutator(0, mutate_spec.flags, mutate_spec.flush_interval);
       m_shared_mutator_map[skey] = mutator;
       return mutator;
     }
