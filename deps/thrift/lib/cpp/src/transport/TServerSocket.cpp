@@ -201,12 +201,23 @@ void TServerSocket::listen() {
     throw TTransportException(TTransportException::NOT_OPEN, "Could not resolve host for server socket.");
   }
 
+#ifndef _WIN32
+
   // Pick the ipv6 address first since ipv4 addresses can be mapped
   // into ipv6 space.
   for (res = res0; res; res = res->ai_next) {
     if (res->ai_family == AF_INET6 || res->ai_next == NULL)
       break;
   }
+
+#else
+
+  for (res = res0; res; res = res->ai_next) {
+    if (res->ai_family == AF_INET || res->ai_next == NULL)
+      break;
+  }
+
+#endif
 
 #ifndef _WIN32
 
