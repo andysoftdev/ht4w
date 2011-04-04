@@ -118,7 +118,7 @@ void init_service_options() {
     (cfg_thriftbroker, boo()->default_value(true), "Include thrift broker")
     (cfg_logging_dir, str()->default_value("log"), "Logging directory (if relative, it's relative to the Hypertable data directory root)")
     (cfg_start_service_timeout, i32()->default_value(15000), "Start service timeout in ms")
-    (cfg_stop_service_timeout, i32()->default_value(15000), "Stop service timeout in ms")
+    (cfg_stop_service_timeout, i32()->default_value(30000), "Stop service timeout in ms")
     (cfg_start_server_timeout, i32()->default_value(7500), "Start server timeout in ms")
     (cfg_stop_server_timeout, i32()->default_value(7500), "Stop server timeout in ms")
     (cfg_kill_server_timeout, i32()->default_value(5000), "Kill server timeout in ms")
