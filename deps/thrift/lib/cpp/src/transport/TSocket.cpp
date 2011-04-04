@@ -207,6 +207,7 @@ bool TSocket::peek() {
       return false;
     }
     #endif
+    close();
     THROW( TTransportException::UNKNOWN, "TSocket::peek() recv()",  errno_copy )
   }
   return (r > 0);
@@ -227,6 +228,7 @@ void TSocket::openConnection(struct addrinfo *res) {
   }
 
   if (socket_ == INVALID_SOCKET) {
+   close();
    THROW( TTransportException::NOT_OPEN, "TSocket::open() socket()",  SOCKETERRNO )
   }
 
@@ -337,6 +339,7 @@ void TSocket::openConnection(struct addrinfo *res) {
                 break;
             default:
                 WSACloseEvent( wait );
+                close();
                 THROW( TTransportException::NOT_OPEN, "TSocket::open() WaitForSingleObject()", GetLastError() )
                 break;
         }
@@ -344,6 +347,7 @@ void TSocket::openConnection(struct addrinfo *res) {
     }
     else {
         WSACloseEvent( wait );
+        close();
         THROW( TTransportException::NOT_OPEN, "TSocket::open() WSAEventSelect()", SOCKETERRNO )
     }
     WSACloseEvent( wait );
@@ -361,6 +365,7 @@ void TSocket::openConnection(struct addrinfo *res) {
     int ret2 = getsockopt(socket_, SOL_SOCKET, SO_ERROR, (char *)&val, &lon);
 #endif
     if (ret2 == -1) {
+      close();
       THROW( TTransportException::NOT_OPEN, "TSocket::open() getsockopt()", SOCKETERRNO )
     }
     // no errors on socket, go to town
@@ -372,9 +377,11 @@ void TSocket::openConnection(struct addrinfo *res) {
     // socket timed out
     string errStr = "TSocket::open() timed out " + getSocketInfo();
     GlobalOutput(errStr.c_str());
+    close();
     throw TTransportException(TTransportException::NOT_OPEN, errStr);
   } else {
     // error on poll()
+    close();
     THROW( TTransportException::NOT_OPEN, "TSocket::open() poll()", SOCKETERRNO )
   }
 
@@ -389,6 +396,7 @@ done:
 
   arg = 0;
   if( ioctlsocket(socket_, FIONBIO, &arg) == SOCKET_ERROR ) {
+     close();
      THROW( TTransportException::NOT_OPEN, "TSocket::open() ioctlsocket() FIONBIO", SOCKETERRNO )
   }
 
@@ -432,7 +440,7 @@ void TSocket::local_open(){
   int error;
   char port[sizeof("65535")];
   std::memset(&hints, 0, sizeof(hints));
-  hints.ai_family = PF_UNSPEC;
+  hints.ai_family = PF_INET;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
   sprintf(port, "%d", port_);
@@ -598,6 +606,7 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
 #endif
 
     // Some other error, whatevz
+    close();
     throw TTransportException(TTransportException::UNKNOWN, "Unknown", errno_copy);
   }
 
@@ -638,13 +647,12 @@ void TSocket::write(const uint8_t* buf, uint32_t len) {
     if (b < 0) {
       int errno_copy = SOCKETERRNO;
       GlobalOutput.perror("TSocket::write() send() " + getSocketInfo() + " " + STRERROR(errno_copy), errno_copy);
-
+      close();
 #ifndef _WIN32
       if (errno_copy == EPIPE || errno_copy == ECONNRESET || errno_copy == ENOTCONN) {
 #else
       if (errno_copy == WSAECONNRESET || errno_copy == WSAENOTCONN) {
 #endif
-        close();
         throw TTransportException(TTransportException::NOT_OPEN, "write() send()", errno_copy);
       }
 
@@ -653,6 +661,7 @@ void TSocket::write(const uint8_t* buf, uint32_t len) {
 
     // Fail on blocked send
     if (b == 0) {
+      close();
       throw TTransportException(TTransportException::NOT_OPEN, "Socket send returned 0.");
     }
     sent += b;
