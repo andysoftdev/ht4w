@@ -20,6 +20,11 @@
 #ifndef HYPERTABLE_THRIFT_CLIENT_H
 #define HYPERTABLE_THRIFT_CLIENT_H
 
+#ifdef _WIN32
+#pragma warning( push, 3 )
+#pragma warning( disable : 4250 ) // inherits via dominance
+#endif
+
 // Note: do NOT add any hypertable dependencies in this file
 #include <protocol/TBinaryProtocol.h>
 #include <transport/TSocket.h>
@@ -53,7 +58,7 @@ struct ClientHelper {
 /**
  * A client for the ThriftBroker
  */
-class Client : private ClientHelper, public ThriftGen::HqlServiceClient {
+class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
 public:
   Client(const std::string &host, int port, int timeout_ms = 300000,
          bool open = true)
@@ -81,24 +86,63 @@ private:
 
 class ThriftClient : public Client, public ReferenceCount {
   public:
-    ThriftClient(const std::string &host, int port, int timeout_ms = 300000, bool open = true) 
-    : Client( host, port, timeout_ms, open ) {
-      ::InitializeCriticalSection( &cs );
+    ThriftClient(const std::string &_host, int _port, int _timeout_ms = 300000, bool open = true) 
+    : Client(_host, _port, _timeout_ms, open)
+    , host(_host), port(_port), timeout_ms(_timeout_ms) {
+      ::InitializeCriticalSection(&cs);
     }
 
     virtual ~ThriftClient() {
-      ::DeleteCriticalSection( &cs );
+      ::DeleteCriticalSection(&cs);
+    }
+
+    bool isOpen() {
+      return transport && transport->isOpen();
+    }
+
+    void renew_nothrow() {
+      try {
+        boost::shared_ptr<TSocket> _socket(new TSocket(host, port));
+        socket = _socket;
+
+        boost::shared_ptr<TTransport> _transport(new TFramedTransport(socket));
+        transport = _transport;
+
+        boost::shared_ptr<TProtocol> _protocol(new TBinaryProtocol(transport));
+        protocol = piprot_ = poprot_ =  _protocol;
+        iprot_ = oprot_ = protocol.get();
+
+        socket->setConnTimeout(timeout_ms);
+        socket->setSendTimeout(timeout_ms);
+        socket->setRecvTimeout(timeout_ms);
+
+        if (transport) {
+          for (int retry = 0; true; ++retry) {
+            try {
+              transport->open();
+              break;
+            }
+            catch (apache::thrift::TException&) {
+              if (retry >= maxRetry)
+                break;
+              Sleep(250);
+            }
+          }
+        }
+      }
+      catch (...) {
+      }
     }
 
     class Lock {
     public:
 
-      inline Lock( ThriftClient* _client )
-      : client( _client ) {
+      inline Lock(ThriftClient* _client)
+      : client(_client) {
         client->lock();
       }
 
-      inline ~Lock( ) {
+      inline ~Lock() {
         client->unlock();
       }
 
@@ -110,15 +154,22 @@ class ThriftClient : public Client, public ReferenceCount {
 
   private:
 
-    inline void lock( ) {
-        ::EnterCriticalSection( &cs );
+    enum {
+      maxRetry = 4
+    };
+
+    inline void lock() {
+        ::EnterCriticalSection(&cs);
     }
 
     inline void unlock( ) {
-        ::LeaveCriticalSection( &cs );
+        ::LeaveCriticalSection(&cs);
     }
 
-      CRITICAL_SECTION cs;
+    CRITICAL_SECTION cs;
+    std::string host;
+    int port;
+    int timeout_ms;
 };
 
 typedef ::boost::intrusive_ptr<ThriftClient> ClientPtr;
@@ -126,5 +177,9 @@ typedef ::boost::intrusive_ptr<ThriftClient> ClientPtr;
 #endif
 
 }} // namespace Hypertable::Thrift
+
+#ifdef _WIN32
+#pragma warning( pop )
+#endif
 
 #endif /* HYPERTABLE_THRIFT_CLIENT_H */
