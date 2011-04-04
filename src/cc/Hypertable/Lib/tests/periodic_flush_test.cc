@@ -47,9 +47,12 @@ void check_results(Table *table) {
 
   copy(scanner, cb);
 
-  HT_ASSERT(cb.get().size() == 1);
-  HT_ASSERT(cb.get().front().value_len == 5);
-  HT_ASSERT(memcmp(cb.get().front().value, "value", 5) == 0);
+  if (cb.get().size() != 1)
+    _exit(1);
+  if (cb.get().front().value_len != 5)
+    _exit(1);
+  if (memcmp(cb.get().front().value, "value", 5) != 0)
+    _exit(1);
 }
 
 void default_test(Table *table)  {
