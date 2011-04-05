@@ -5,14 +5,14 @@ Building hypertable from source for Windows requires Microsoft Visual Studio 201
 
 ###Browse or get the source###
 
-* Browse or download the source at [github](http://github.com/andysoftdev/hypertable).
+* Browse or download the source at [github](http://github.com/andysoftdev/ht4w).
   Download the latest sources by pressing the Downloads button and choosing
   Download.tar.gz or Download.zip.
   
 * Or get the source from the repository, create a projects folder (the path must not
   contain any spaces) and use:
 
-  git clone git://github.com/andysoftdev/hypertable.git
+  git clone git://github.com/andysoftdev/ht4w.git
 
 
 ###Download and install boost###
@@ -20,31 +20,31 @@ Building hypertable from source for Windows requires Microsoft Visual Studio 201
 * Download the latest boost version from [boost](http://www.boost.org/users/download/)
   or [sourceforge](http://sourceforge.net/projects/boost/files/boost/).
 
-* Unpack the package content (*e.g.* below boost\_1\_44\_0/...) into ...\hypertable\deps\boost\.
+* Unpack the package content (*e.g.* below boost\_1\_44\_0/...) into ...\ht4w\deps\boost\.
 
-* Go to ...\hypertable\deps\boost\ and run build-win32.bat or build-x64.bat (Be patient with the build). After successful build the intermediate files located in ...\hypertable\build\deps\boost could be deleted.
+* Go to ...\ht4w\deps\boost\ and run build-win32.bat or build-x64.bat (Be patient with the build). After successful build the intermediate files located in ...\ht4w\build\deps\boost could be deleted.
 
 
 ###Download and install berkeley db###
 
 * Download the latest berkeley db from [Oracle](http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html).
 
-* Unpack the package content (*e.g.* below db-5.1.19/...) into ...\hypertable\deps\db\.
+* Unpack the package content (*e.g.* below db-5.1.19/...) into ...\ht4w\deps\db\.
 
-* Run ...\hypertable\deps\db\libdb.js. (Note: libdb will be built within the regular hypertable solution.)
+* Run ...\ht4w\deps\db\libdb.js. (Note: libdb will be built within the regular ht4w solution.)
 
 
 ###Build hypertable servers, clients and tools###
 
-* Open solution ...\hypertable\hypertable.sln with Microsoft Visual Studio 2010 and build the required configuration(s).
+* Open solution ...\ht4w\ht4w.sln with Microsoft Visual Studio 2010 and build the required configuration(s).
 
 
 MANAGE HYPERTABLE SERVERS
 =========================
 
-Use Hypertable.Service.exe (...\hypertable\dist\\[Win32|x64]\\[Release|Debug]) to manage hypertable servers. Run Hypertable.Service.exe --help (or --help-config) for a complete list of available options and configuration settings.
+Use Hypertable.Service.exe (...\ht4w\dist\\[Win32|x64]\\[Release|Debug]) to manage hypertable servers. Run Hypertable.Service.exe --help (or --help-config) for a complete list of available options and configuration settings.
 
-Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) from ...\hypertable\conf to ...\hypertable\dist\\[Win32|x64]\\[Release|Debug]\conf.
+Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) from ...\ht4w\conf to ...\ht4w\dist\\[Win32|x64]\\[Release|Debug]\conf.
 
 Using the default configuration the database data root directory (Hypertable.DataDirectory configuration paramter) will be ...\ProgrammData\Hypertable or ...\All Users\Application Data\Hypertable
 
@@ -95,11 +95,11 @@ The servers will run under the logged on windows account.
 
 * Start servers:
 
-  ...\hypertable\bin\start-all-servers [x86|x64] [debug] [additional arguments]
+  ...\ht4w\bin\start-all-servers [x86|x64] [debug] [additional arguments]
 
 * Stop servers:
 
-  ...\hypertable\bin\stop-all-servers [x86|x64] [debug] [additional arguments]
+  ...\ht4w\bin\stop-all-servers [x86|x64] [debug] [additional arguments]
 
 
 REDISTRIBUTE HYPERTABLE FOR WINDOWS
