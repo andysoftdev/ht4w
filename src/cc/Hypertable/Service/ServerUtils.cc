@@ -122,7 +122,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
           else {
             launched_server_t& launched_server = launched_servers[signaled - WAIT_OBJECT_0];
             close_handles(launched_server);
-            HT_NOTICEF("Server %s terminates unexpected", server_exe_name(launched_server.server).c_str());
+            HT_NOTICEF("Server %s terminates unexpected", server_name(launched_server.server).c_str());
             // continuously crashing?
             boost::xtime now;
             boost::xtime_get(&now, TIME_UTC);
@@ -130,7 +130,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
               // is range server?
               if (launched_server.server == rangeServer || launched_server.server == thriftBroker) {
                 // restart server
-                HT_NOTICEF("Restart %s", server_exe_name(launched_server.server).c_str());
+                HT_NOTICEF("Restart %s", server_name(launched_server.server).c_str());
                 if (start(launched_server.server, launched_server.args.c_str(), launched_server, notify)) {
                   wait_handles[signaled - WAIT_OBJECT_0] = launched_server.pi.hProcess;
                   continue;
@@ -220,7 +220,7 @@ bool ServerUtils::start(server_t server, const char* args, launched_server_t& la
   if (Config::properties->defaulted("logging-level"))
     exe_name.append(" -l notice");
 
-  HT_NOTICEF("Starting %s", exe_name.c_str());
+  HT_NOTICEF("Starting %s", server_name(server).c_str());
   if (notify)
     notify->server_start_pending(server);
   bool launched = false;
@@ -247,7 +247,7 @@ bool ServerUtils::start(server_t server, const char* args, launched_server_t& la
     ServerLaunchEvent server_launch_event(launched_server.pi.dwProcessId);
     if (!(launched = server_launch_event.wait(Config::start_server_timeout()))) {
       HT_ERRORF("Launching %s has been timed out", exe_name.c_str());
-      HT_NOTICEF("Killing %s (%d)", server_exe_name(server).c_str(), launched_server.pi.dwProcessId);
+      HT_NOTICEF("Killing %s (%d)", server_name(server).c_str(), launched_server.pi.dwProcessId);
       ProcessUtils::kill(launched_server.pi.dwProcessId, Config::kill_server_timeout());
     }
     else {
@@ -303,7 +303,7 @@ void ServerUtils::stop(server_t server, DWORD pid, bool& killed, Notify* notify)
   }
   if (!shutdown_done) {
     if (pid) {
-      HT_NOTICEF("Killing %s (%d)", server_exe_name(server).c_str(), pid);
+      HT_NOTICEF("Killing %s (%d)", server_name(server).c_str(), pid);
       ProcessUtils::kill(pid, Config::kill_server_timeout());
     }
     else
@@ -324,7 +324,7 @@ void ServerUtils::kill(server_t server) {
   find(server, pids);
   const String& exe_name = server_exe_name(server).c_str();
   foreach(DWORD pid, pids) {
-    HT_NOTICEF("Killing %s (%d)", exe_name.c_str(), pid);
+    HT_NOTICEF("Killing %s (%d)", server_name(server).c_str(), pid);
     ProcessUtils::kill(pid, Config::kill_server_timeout());
   }
 }
