@@ -23,8 +23,10 @@
 #define HYPERTABLE_SYSTEMINFO_H
 
 #include <iosfwd>
-#include "Common/System.h"
+
 #include "Common/InetAddr.h"
+#include "Common/System.h"
+#include "Common/Stopwatch.h"
 
 namespace Hypertable {
 
@@ -93,7 +95,10 @@ namespace Hypertable {
   };
 
   struct DiskStat {
-    DiskStat() : reads_rate(0.0), writes_rate(0.0), read_rate(0.0), write_rate(0.0) { }
+    DiskStat() 
+    : reads_rate(0.0), writes_rate(0.0), read_rate(0.0), write_rate(0.0),
+      prev_stat(0) { }
+    ~DiskStat();
     DiskStat &refresh(const char *dir_prefix = "/");
     bool operator==(const DiskStat &other) const;
     bool operator!=(const DiskStat &other) const {
@@ -105,9 +110,12 @@ namespace Hypertable {
     double reads_rate;
     double writes_rate;
 
-    // aggreate transfer rate in MB/s
+    // aggreate transfer rate in bytes/s
     double read_rate;
     double write_rate;
+
+    void *prev_stat;
+    Stopwatch stopwatch;
   };
 
   struct SwapStat {

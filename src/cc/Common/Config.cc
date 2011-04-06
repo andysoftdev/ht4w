@@ -303,7 +303,7 @@ void DefaultPolicy::init_options() {
         "Host on which Hypertable Master is running")
     ("Hypertable.Master.Port", i16()->default_value(38050),
         "Port number on which Hypertable Master is or should be listening")
-    ("Hypertable.Master.Workers", i32(),
+    ("Hypertable.Master.Workers", i32()->default_value(100),
         "Number of Hypertable Master worker threads created")
     ("Hypertable.Master.Reactors", i32(),
         "Number of Hypertable Master communication reactor threads created")

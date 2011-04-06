@@ -3,11 +3,11 @@ boo=true (default)
 `anonymous-namespace'::notify: foo
 mode=0
 f64=1000
-f64s=[1.5, 1500, 1.5e+006, 1.5e+009]
+float64s=[1.5, 1500, 1.5e+006, 1.5e+009]
 i16=64000
 i32=20000000
 i64=8000000000
-i64s=[16000000000, 32000000000]
+int64s=[16000000000, 32000000000]
 mode=value of type 'enum `anonymous namespace'::Mode'
-str=foo
+string=foo
 strs=[s1, s2]

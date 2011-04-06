@@ -415,6 +415,9 @@ MemStat &MemStat::refresh() {
   return *this;
 }
 
+DiskStat::~DiskStat() {
+}
+
 DiskStat &DiskStat::refresh(const char *dir_prefix) {
   ScopedRecLock lock(_mutex);
 

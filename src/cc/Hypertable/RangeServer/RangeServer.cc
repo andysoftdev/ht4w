@@ -249,7 +249,13 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
       new HandlerFactory(m_comm, m_app_queue, this);
 
   InetAddr listen_addr(INADDR_ANY, port);
-  m_comm->listen(listen_addr, chfp);
+  try {
+    m_comm->listen(listen_addr, chfp);
+  }
+  catch (Exception &e) {
+    HT_FATALF("Unable to listen on port %u - %s - %s",
+              port, Error::get_text(e.code()), e.what());
+  }
 
   /**
    * Create Master client
@@ -284,7 +290,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   HT_INFOF("Prune thresholds - min=%lld, max=%lld", (Lld)Global::log_prune_threshold_min,
            (Lld)Global::log_prune_threshold_max);
-  
+
 }
 
 void RangeServer::shutdown() {
@@ -312,6 +318,7 @@ void RangeServer::shutdown() {
     Global::maintenance_queue->join();
 #endif
 
+    Global::range_locator = 0;
     delete Global::block_cache;
 
     if (Global::rsml_writer) {
@@ -432,6 +439,7 @@ namespace {
           const OldMetaLog::RangeStates &range_states = rsml_reader->load_range_states(&found_recover_entry);
           foreach(const OldMetaLog::RangeStateInfo *i, range_states) {
             MetaLog::EntityPtr entity = new MetaLog::EntityRange(i->table, i->range, i->range_state, false);
+            ((MetaLog::EntityRange *)entity.get())->load_acknowledged = true;
             entities.push_back(entity);
           }
         }
@@ -475,6 +483,14 @@ void RangeServer::local_recover() {
 
     if (!entities.empty()) {
       HT_DEBUG_OUT <<"Found "<< Global::log_dir << "/" << rsml_definition->name() <<", start recovering"<< HT_END;
+
+      // Fix for load_acknowledge bug
+      if (rsml_reader->version() == 1) {
+	for (size_t i=0; i<entities.size(); i++) {
+	  if ((range_entity = dynamic_cast<MetaLog::EntityRange *>(entities[i].get())) != 0)
+	    range_entity->load_acknowledged = true;
+	}
+      }
 
       Global::rsml_writer = new MetaLog::Writer(Global::log_dfs, rsml_definition,
                                                 Global::log_dir + "/" + rsml_definition->name(),
@@ -843,8 +859,10 @@ RangeServer::compact(ResponseCallback *cb, const TableIdentifier *table,
   HT_INFO_OUT <<"compacting\n"<< *table << *range_spec
               <<"Compaction type="<< (major ? "major" : "minor") << HT_END;
 
-  if (!m_replay_finished)
-    wait_for_recovery_finish(table, range_spec);
+  if (!m_replay_finished) {
+    if (!wait_for_recovery_finish(table, range_spec, cb->get_event()->expiration_time()))
+      return;
+  }
 
   try {
 
@@ -897,8 +915,10 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
   HT_DEBUG_OUT <<"Creating scanner:\n"<< *table << *range_spec
                << *scan_spec << HT_END;
 
-  if (!m_replay_finished)
-    wait_for_recovery_finish(table, range_spec);
+  if (!m_replay_finished) {
+    if (!wait_for_recovery_finish(table, range_spec, cb->get_event()->expiration_time()))
+      return;
+  }
 
   try {
     DynamicBuffer rbuf;
@@ -1148,8 +1168,10 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
       return;
     }
 
-    if (!m_replay_finished)
-      wait_for_recovery_finish(table, range_spec);
+    if (!m_replay_finished) {
+      if (!wait_for_recovery_finish(table, range_spec, cb->get_event()->expiration_time()))
+	return;
+    }
 
     {
       ScopedLock lock(m_drop_table_mutex);
@@ -1429,13 +1451,15 @@ void RangeServer::acknowledge_load(ResponseCallback *cb, const TableIdentifier *
     return;
   }
 
-  if (!m_replay_finished)
-    wait_for_recovery_finish(table, range_spec);
+  if (!m_replay_finished) {
+    if (!wait_for_recovery_finish(table, range_spec, cb->get_event()->expiration_time()))
+      return;
+  }
 
   {
     ScopedLock lock(m_drop_table_mutex);
 
-    HT_INFO_OUT <<"Acknowledging range: "<< table->id <<"["<< range_spec->start_row 
+    HT_INFO_OUT <<"Acknowledging range: "<< table->id <<"["<< range_spec->start_row
                 << ".." << range_spec->end_row << "]" << HT_END;
 
     if (m_dropped_table_id_cache->contains(table->id)) {
@@ -1566,8 +1590,10 @@ RangeServer::commit_log_sync(ResponseCallback *cb, const TableIdentifier *table)
 
   HT_DEBUG_OUT <<"received commit_log_sync request for table "<< table->id<< HT_END;
 
-  if (!m_replay_finished)
-    wait_for_recovery_finish();
+  if (!m_replay_finished) {
+    if (!wait_for_recovery_finish(cb->get_event()->expiration_time()))
+      return;
+  }
 
   m_live_map->get(table, table_update.table_info);
 
@@ -1603,7 +1629,7 @@ RangeServer::commit_log_sync(ResponseCallback *cb, const TableIdentifier *table)
 
     table_update_vector.push_back(&table_update);
 
-    batch_update(table_update_vector);
+    batch_update(table_update_vector, cb->get_event()->expiration_time());
   }
   catch (Exception &e) {
     HT_ERROR_OUT << "Exception caught: " << e << HT_END;
@@ -1635,15 +1661,19 @@ RangeServer::update(ResponseCallbackUpdate *cb, const TableIdentifier *table,
 
   if (!m_replay_finished) {
     if (table->is_metadata()) {
-      wait_for_root_recovery_finish();
+      if (!wait_for_root_recovery_finish(cb->get_event()->expiration_time()))
+	return;
       table_update.wait_for_metadata_recovery = true;
     }
     else if (table->is_system()) {
-      wait_for_metadata_recovery_finish();
+      if (!wait_for_metadata_recovery_finish(cb->get_event()->expiration_time()))
+	return;
       table_update.wait_for_system_recovery = true;
     }
-    else
-      wait_for_recovery_finish();
+    else {
+      if (!wait_for_recovery_finish(cb->get_event()->expiration_time()))
+	return;
+    }
   }
 
   m_live_map->get(table, table_update.table_info);
@@ -1680,13 +1710,13 @@ RangeServer::update(ResponseCallbackUpdate *cb, const TableIdentifier *table,
 
   table_update_vector.push_back(&table_update);
 
-  batch_update(table_update_vector);
+  batch_update(table_update_vector, cb->get_event()->expiration_time());
 
 }
 
 
 void
-RangeServer::batch_update(std::vector<TableUpdate *> &updates) {
+RangeServer::batch_update(std::vector<TableUpdate *> &updates, boost::xtime expire_time) {
   const uint8_t *mod, *mod_end;
   const char *row, *last_row;
   bool a_locked = false;
@@ -1824,11 +1854,17 @@ RangeServer::batch_update(std::vector<TableUpdate *> &updates) {
         starting_range_update_count = rulist->updates.size();
 
         if (table_update->wait_for_metadata_recovery && !rulist->range->is_root()) {
-          wait_for_metadata_recovery_finish();
+          if (!wait_for_metadata_recovery_finish(expire_time)) {
+	    m_update_mutex_a.unlock();
+	    return;
+	  }
           table_update->wait_for_metadata_recovery = false;
         }
         else if (table_update->wait_for_system_recovery) {
-          wait_for_system_recovery_finish();
+          if (!wait_for_system_recovery_finish(expire_time)) {
+	    m_update_mutex_a.unlock();
+	    return;
+	  }
           table_update->wait_for_system_recovery = false;
         }
 
@@ -2320,8 +2356,10 @@ RangeServer::drop_table(ResponseCallback *cb, const TableIdentifier *table) {
     return;
   }
 
-  if (!m_replay_finished)
-    wait_for_recovery_finish();
+  if (!m_replay_finished) {
+    if (!wait_for_recovery_finish(cb->get_event()->expiration_time()))
+      return;
+  }
 
   {
     ScopedLock lock(m_drop_table_mutex);
@@ -2518,11 +2556,9 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
     if (!Global::rs_metrics_table) {
       try {
         uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
-        RangeLocatorPtr range_locator = new RangeLocator(m_props, m_conn_manager, Global::hyperspace, timeout_ms);
-        Global::rs_metrics_table = new Table(m_props,  range_locator, m_conn_manager,
+        Global::rs_metrics_table = new Table(m_props, Global::range_locator, m_conn_manager,
                                            Global::hyperspace, m_app_queue, m_namemap,
-                                           "sys/RS_METRICS",
-                                           timeout_ms);
+                                           "sys/RS_METRICS", timeout_ms);
       }
       catch (Hypertable::Exception &e) {
         HT_ERRORF("Unable to open 'sys/RS_METRICS' - %s (%s)",
@@ -2764,9 +2800,9 @@ RangeServer::replay_load_range(ResponseCallback *cb,
     if (!Global::metadata_table) {
       ScopedLock lock(m_mutex);
       uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
-      RangeLocatorPtr range_locator = new RangeLocator(m_props, m_conn_manager, Global::hyperspace, timeout_ms);
-      Global::metadata_table = new Table(m_props, range_locator, m_conn_manager,
-          Global::hyperspace, m_app_queue, m_namemap, TableIdentifier::METADATA_NAME, timeout_ms);
+      Global::metadata_table = new Table(m_props, Global::range_locator, m_conn_manager,
+          Global::hyperspace, m_app_queue, m_namemap, TableIdentifier::METADATA_NAME,
+          timeout_ms);
     }
 
     schema = table_info->get_schema();
@@ -3157,67 +3193,81 @@ void RangeServer::do_maintenance() {
 
 
 
-void RangeServer::wait_for_recovery_finish() {
+bool RangeServer::wait_for_recovery_finish(boost::xtime expire_time) {
   ScopedLock lock(m_mutex);
   while (!m_replay_finished) {
     HT_INFO_OUT << "Waiting for recovery to complete..." << HT_END;
-    m_replay_finished_cond.wait(lock);
+    if (!m_replay_finished_cond.timed_wait(lock, expire_time))
+      return false;
   }
+  return true;
 }
 
-void RangeServer::wait_for_root_recovery_finish() {
+bool RangeServer::wait_for_root_recovery_finish(boost::xtime expire_time) {
   ScopedLock lock(m_mutex);
   while (!m_root_replay_finished) {
     HT_INFO_OUT << "Waiting for ROOT recovery to complete..." << HT_END;
-    m_root_replay_finished_cond.wait(lock);
+    if (!m_root_replay_finished_cond.timed_wait(lock, expire_time))
+      return false;
   }
+  return true;
 }
 
-void RangeServer::wait_for_metadata_recovery_finish() {
+bool RangeServer::wait_for_metadata_recovery_finish(boost::xtime expire_time) {
   ScopedLock lock(m_mutex);
   while (!m_metadata_replay_finished) {
     HT_INFO_OUT << "Waiting for METADATA recovery to complete..." << HT_END;
-    m_metadata_replay_finished_cond.wait(lock);
+    if (!m_metadata_replay_finished_cond.timed_wait(lock, expire_time))
+      return false;
   }
+  return true;
 }
 
-void RangeServer::wait_for_system_recovery_finish() {
+bool RangeServer::wait_for_system_recovery_finish(boost::xtime expire_time) {
   ScopedLock lock(m_mutex);
   while (!m_system_replay_finished) {
     HT_INFO_OUT << "Waiting for SYSTEM recovery to complete..." << HT_END;
-    m_system_replay_finished_cond.wait(lock);
+    if (!m_system_replay_finished_cond.timed_wait(lock, expire_time))
+      return false;
   }
+  return true;
 }
 
 
-void
+bool
 RangeServer::wait_for_recovery_finish(const TableIdentifier *table,
-                                      const RangeSpec *range_spec) {
+                                      const RangeSpec *range_spec,
+				      boost::xtime expire_time) {
   ScopedLock lock(m_mutex);
   if (table->is_metadata()) {
     if (!strcmp(range_spec->end_row, Key::END_ROOT_ROW)) {
       while (!m_root_replay_finished) {
         HT_INFO_OUT << "Waiting for ROOT recovery to complete..." << HT_END;
-        m_root_replay_finished_cond.wait(lock);
+        if (!m_root_replay_finished_cond.timed_wait(lock, expire_time))
+	  return false;
       }
     }
     else {
       while (!m_metadata_replay_finished) {
         HT_INFO_OUT << "Waiting for METADATA recovery to complete..." << HT_END;
-        m_metadata_replay_finished_cond.wait(lock);
+        if (!m_metadata_replay_finished_cond.timed_wait(lock, expire_time))
+	  return false;
       }
     }
   }
   else if (table->is_system()) {
     while (!m_system_replay_finished) {
       HT_INFO_OUT << "Waiting for SYSTEM recovery to complete..." << HT_END;
-      m_system_replay_finished_cond.wait(lock);
+      if (!m_system_replay_finished_cond.timed_wait(lock, expire_time))
+	return false;
     }
   }
   else {
     while (!m_replay_finished) {
       HT_INFO_OUT << "Waiting for recovery to complete..." << HT_END;
-      m_replay_finished_cond.wait(lock);
+      if (!m_replay_finished_cond.timed_wait(lock, expire_time))
+	return false;
     }
   }
+  return true;
 }

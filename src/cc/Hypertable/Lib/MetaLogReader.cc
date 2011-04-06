@@ -42,12 +42,12 @@ using namespace Hypertable;
 using namespace Hypertable::MetaLog;
 
 Reader::Reader(FilesystemPtr &fs, DefinitionPtr &definition) :
-  m_fs(fs), m_definition(definition) {
+  m_fs(fs), m_definition(definition), m_version(0) {
 }
 
 
 Reader::Reader(FilesystemPtr &fs, DefinitionPtr &definition, const String &path) :
-  m_fs(fs), m_definition(definition) {
+  m_fs(fs), m_definition(definition), m_version(0) {
 
   // Setup DFS path name
   m_path = path;
@@ -191,7 +191,7 @@ bool Reader::load_file(const String &fname) {
         continue;
       }
 
-      EntityPtr entity = m_definition->create(header);
+      EntityPtr entity = m_definition->create(m_version, header);
 
       buf.clear();
       buf.ensure(header.length);
@@ -250,8 +250,10 @@ void Reader::read_header(int fd) {
     HT_THROWF(Error::METALOG_BAD_HEADER, "Wrong name in %s header ('%s' != '%s')",
               m_definition->name(), header.name, m_definition->name());
 
-  if (header.version != m_definition->version())
+  m_version = header.version;
+
+  if (!m_definition->supported_version(m_version))
     HT_THROWF(Error::METALOG_VERSION_MISMATCH,
-              "Incompatible version in %s header (expected %d, got %d)",
-              m_definition->name(), m_definition->version(), header.version);
+              "Unsuported %s version (definition: %d, header: %d)",
+              m_definition->name(), m_definition->version(), m_version);
 }

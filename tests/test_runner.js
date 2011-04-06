@@ -390,10 +390,10 @@ function future_abrupt_end_test(logfile, testName) {
     return run_target(logfile, testName, "10 100 4 6");
 }
 
-function future_cancel_test(logfile, testName) {
-    prepare_target(testName, ["future_cancel_test.cfg"]);
+function future_test(logfile, testName) {
+    prepare_target(testName, ["future_test.cfg"]);
     file_copy(solutionDir + "\\tests\\integration\\future-abrupt-end\\data.spec", targetDir);
-    run_servers("--no-thriftbroker --config=./future_cancel_test.cfg --Hypertable.DataDirectory=" + targetDir);
+    run_servers("--no-thriftbroker --config=./future_test.cfg --Hypertable.DataDirectory=" + targetDir);
     return run_target(logfile, testName);
 }
 
@@ -573,7 +573,7 @@ all_tests.add("escape_test", run_target);
 all_tests.add("exception_test", run_target);
 all_tests.add("fileblock_cache_test", fileblock_cache_test);
 all_tests.add("future_abrupt_end_test", future_abrupt_end_test);
-all_tests.add("future_cancel_test", future_cancel_test);
+all_tests.add("future_test", future_test);
 all_tests.add("hash_test", run_target);
 all_tests.add("hyperspace_test", hyperspace_test);
 all_tests.add("hypertable_ldi_select_test", hypertable_ldi_select_test);

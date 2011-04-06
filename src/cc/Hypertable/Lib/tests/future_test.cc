@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
   srandom(seed);
 
   try {
-    Client *hypertable = new Client(argv[0], "./future_cancel_test.cfg");
+    Client *hypertable = new Client(argv[0], "./future_test.cfg");
     NamespacePtr ns = hypertable->open_namespace("/");
 
     TablePtr table_ptr;
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
     mutator_ptr = 0;
 
     {
-      // Do asynchronous scan
+      // Do asynchronous scan and cancel after some time
       Future ff(5);
       TableScannerAsyncPtr scanner_ptr;
 
@@ -167,6 +167,7 @@ int main(int argc, char **argv) {
         result->get_cells(cells);
         for (size_t ii=0; ii< cells.size(); ++ii) {
           md5_update(&md5_ctx, (unsigned char *)cells[ii].value, cells[ii].value_len);
+          HT_INFO_OUT <<  "Got cell with key=" << cells[ii].row_key << HT_END;
           num_cells++;
           if (num_cells>=50) {
             ff.cancel();
@@ -175,15 +176,50 @@ int main(int argc, char **argv) {
           }
         }
       }
+      md5_finish(&md5_ctx, received_digest);
+
+      if (memcmp(sent_digest, received_digest, 16)) {
+        HT_ERROR("MD5 digest mismatch between sent and received");
+        _exit(1);
+      }
+      HT_INFO_OUT << "cancel test finished" << HT_END;
+
+      // this time let the scan run through till completion
+      memset(&md5_ctx, 0, sizeof(md5_ctx));
+      md5_starts(&md5_ctx);
+      Future ff2(5);
+      ssbuilder.clear();
+      ssbuilder.add_row_interval("00000",true, "00010", false);
+      ssbuilder.add_row_interval("00010",true, "00027", false);
+      ssbuilder.add_row_interval("00027",true, "00050", false);
+      scan_spec = ssbuilder.get();
+      scanner_ptr = table_ptr->create_scanner_async(&ff2, scan_spec);
+
+      while (ff2.get(result)) {
+        if (result->is_error()) {
+          int error;
+          String error_msg;
+          result->get_error(error, error_msg);
+          Exception e(error, error_msg);
+          HT_ERROR_OUT << "Encountered scan error " << e << HT_END;
+          _exit(1);
+        }
+
+        result->get_cells(cells);
+        for (size_t ii=0; ii< cells.size(); ++ii) {
+          md5_update(&md5_ctx, (unsigned char *)cells[ii].value, cells[ii].value_len);
+          HT_INFO_OUT <<  "Got cell with key=" << cells[ii].row_key << HT_END;
+        }
+      }
+
+      md5_finish(&md5_ctx, received_digest);
+
+      if (memcmp(sent_digest, received_digest, 16)) {
+        HT_ERROR("MD5 digest mismatch between sent and received");
+        _exit(1);
+      }
+      HT_INFO_OUT << "full scan test finished" << HT_END;
     }
-
-    md5_finish(&md5_ctx, received_digest);
-
-    if (memcmp(sent_digest, received_digest, 16)) {
-      HT_ERROR("MD5 digest mismatch between sent and received");
-      _exit(1);
-    }
-
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

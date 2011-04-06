@@ -25,12 +25,13 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="future_cancel_test.cc" />
+    <ClCompile Include="future_test.cc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{EB0C9E88-2872-41d8-ADC7-38CCED077225}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>future_cancel_test</RootNamespace>
+    <ProjectName>future_test</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

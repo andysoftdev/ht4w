@@ -44,7 +44,7 @@ class RRDStat
 
 
   def get_table_info
-    json = StatsJson.new(:file => 'table_summary.json',:data => '/opt/hypertable/0.9.4.3/run/monitoring/')
+    json = StatsJson.new(:file => 'table_summary.json',:data => '/opt/hypertable/current/run/monitoring/')
     range_servers = json.parse_stats_file
     range_servers['TableSummary']['tables'].each do |server|
       @server_ip_list[:"#{server['id']}"] = server['name']
@@ -53,7 +53,7 @@ class RRDStat
   end
 
   def get_rs_info
-    json = StatsJson.new(:file => 'rangeserver_summary.json',:data => '/opt/hypertable/0.9.4.3/run/monitoring/')
+    json = StatsJson.new(:file => 'rangeserver_summary.json',:data => '/opt/hypertable/current/run/monitoring/')
     range_servers = json.parse_stats_file
     range_servers['RangeServerSummary']['servers'].each do |server|
       @server_ip_list[:"#{server['location']}"] = server['ip']
@@ -62,11 +62,47 @@ class RRDStat
   end
 
   def get_stat_types
-    @stats_config.keys.sort { |a,b| a.to_s <=> b.to_s}.map { |d| d.to_s}
+  [ "scan_rate",
+    "cell_read_rate",
+    "byte_read_rate",
+    "update_rate",
+    "cell_write_rate",
+    "byte_write_rate",
+    "sync_rate",
+    "disk_read_iops",
+    "disk_write_iops",
+    "disk_read_bytes",
+    "disk_write_bytes",
+    "net_rx_rate",
+    "net_tx_rate",
+    "loadavg",
+    "range_count",
+    "disk_used_pct",
+    "vm_size",
+    "vm_resident",
+    "bcache_fill",
+    "bcache_hit_pct",
+    "bcache_max_mem",
+    "qcache_fill",
+    "qcache_hit_pct",
+    "qcache_max_mem" ]
   end
 
   def get_table_stat_types
-    @table_stats_config.keys.sort { |a,b| a.to_s <=> b.to_s}.map { |d| d.to_s}
+  [ "scan_rate",
+    "cell_read_rate",
+    "byte_read_rate",
+    "update_rate",
+    "cell_write_rate",
+    "byte_write_rate",
+    "range_count",
+    "disk_used",
+    "memory_used",
+    "memory_allocated",
+    "block_index_memory",
+    "bloom_filter_memory",
+    "bloom_filter_access",
+    "bloom_filter_maybes" ]
   end
 
   def get_rs_rrd_file(rs)

@@ -45,6 +45,7 @@ namespace Hypertable {
       void reload();
       int32_t next_file_number() { return m_next_filenum; }
       bool load_file(const String &fname);
+      uint16_t version() { return m_version; }
 
     private:
 
@@ -60,6 +61,7 @@ namespace Hypertable {
       std::vector<EntityPtr> m_entities;
       size_t m_cur_offset;
       String m_backup_path;
+      uint16_t m_version;
     };
     typedef intrusive_ptr<Reader> ReaderPtr;
   }

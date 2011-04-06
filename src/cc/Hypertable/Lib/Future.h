@@ -52,12 +52,14 @@ namespace Hypertable {
      * @param result will contain a reference to the result object
      * @param timeout_ms max milliseconds to block for
      * @param timed_out set to true if the call times out
-     * @return true if asynchronous operations have completed
+     * @return false if asynchronous operations have completed
      */
     bool get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out);
 
     /**
-     * Cancels outstanding scanners/mutators
+     * Cancels outstanding scanners/mutators. Callers responsibility to make sure that
+     * this method gets called before async scanner/mutator destruction when the application
+     * abruptly stops processing async results before all operations are complete
      */
     void cancel();
 
@@ -87,8 +89,6 @@ namespace Hypertable {
 
     ResultQueue m_queue;
     size_t m_queue_capacity;
-    boost::condition m_cond;
-    Mutex m_mutex;
     bool m_cancelled;
     typedef map<uint64_t, TableScannerAsync *> ScannerMap;
     ScannerMap m_scanner_map;

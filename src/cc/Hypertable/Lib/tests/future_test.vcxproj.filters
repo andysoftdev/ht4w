@@ -7,10 +7,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="future_cancel_test.cc">
+    <ClCompile Include="..\..\..\stdafx.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\stdafx.cc">
+    <ClCompile Include="future_test.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

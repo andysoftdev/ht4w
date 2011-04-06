@@ -87,12 +87,16 @@ int main(int argc, char **argv) {
     HyperspaceSessionHandler hs_handler;
     Global::hyperspace = new Hyperspace::Session(comm, properties);
     Global::hyperspace->add_callback(&hs_handler);
-    int timeout = get_i32("Hyperspace.Timeout");
+    int hyperspace_timeout = get_i32("Hyperspace.Timeout");
 
-    if (!Global::hyperspace->wait_for_connection(timeout)) {
+    if (!Global::hyperspace->wait_for_connection(hyperspace_timeout)) {
       HT_ERROR("Unable to connect to hyperspace, exiting...");
       exit(1);
     }
+
+    uint32_t timeout_ms = get_i32("Hypertable.Request.Timeout");
+    Global::range_locator =
+        new Hypertable::RangeLocator(properties, conn_manager, Global::hyperspace, timeout_ms);
 
     #ifdef _WIN32
     server_launch_event.set_event();
