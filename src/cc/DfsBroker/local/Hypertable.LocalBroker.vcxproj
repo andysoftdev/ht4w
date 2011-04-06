@@ -35,8 +35,8 @@
     <ResourceCompile Include="..\..\hypertable.rc">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">HYPERTABLE_LOCALBROKER</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">HYPERTABLE_LOCALBROKER</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">HYPERTABLE_LOCALBROKER</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">HYPERTABLE_LOCALBROKER</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_WIN64;HYPERTABLE_LOCALBROKER</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_WIN64;HYPERTABLE_LOCALBROKER</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">

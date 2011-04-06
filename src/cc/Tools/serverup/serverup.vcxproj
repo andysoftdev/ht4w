@@ -28,7 +28,10 @@
     <ClCompile Include="serverup.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\hypertable.rc" />
+    <ResourceCompile Include="..\..\hypertable.rc">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_WIN64</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_WIN64</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C2DC7923-6128-4c45-9826-77F780E1E5CD}</ProjectGuid>

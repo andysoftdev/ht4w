@@ -28,7 +28,10 @@
     <ClCompile Include="rsstat.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\hypertable.rc" />
+    <ResourceCompile Include="..\..\hypertable.rc">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_WIN64</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_WIN64</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8C6DE950-270C-4e6e-8529-401E7BDE7241}</ProjectGuid>

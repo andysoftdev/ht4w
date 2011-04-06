@@ -127,8 +127,8 @@
     <ResourceCompile Include="..\hypertable.rc">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">HYPERSPACE_MASTER</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">HYPERSPACE_MASTER</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">HYPERSPACE_MASTER</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">HYPERSPACE_MASTER</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_WIN64;HYPERSPACE_MASTER</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_WIN64;HYPERSPACE_MASTER</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">

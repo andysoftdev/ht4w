@@ -28,7 +28,10 @@
     <ClCompile Include="dumplog.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\hypertable.rc" />
+    <ResourceCompile Include="..\..\hypertable.rc">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_WIN64</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_WIN64</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6A9C5520-3CFD-40f8-BDA7-B4EE55101689}</ProjectGuid>

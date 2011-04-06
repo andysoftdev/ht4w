@@ -36,7 +36,10 @@
     <ClCompile Include="dfsclient.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\hypertable.rc" />
+    <ResourceCompile Include="..\..\hypertable.rc">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_WIN64</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_WIN64</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandCopyFromLocal.h" />
