@@ -630,6 +630,9 @@ try {
         file_delete(logfile);
     }
 
+    // clean target
+    clean_target();
+
     // invoke all tests
     var all_test_keys = (new VBArray(all_tests.Keys())).toArray();
     var all_test_count = all_test_keys.length;
