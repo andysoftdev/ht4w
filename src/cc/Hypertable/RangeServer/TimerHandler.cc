@@ -139,7 +139,7 @@ void TimerHandler::handle(Hypertable::EventPtr &event_ptr) {
 
   if (m_range_server->replay_finished() && memory_used > Global::memory_limit) {
     if (!m_app_queue_paused) {
-      HT_NOTICE("Pausing application queue due to low memory condition");
+      HT_INFO("Pausing application queue due to low memory condition");
       m_app_queue_paused = true;
       m_app_queue->stop();
       #ifdef _WIN32
@@ -193,14 +193,18 @@ void TimerHandler::restart_app_queue() {
   HT_ASSERT(m_app_queue_paused);
   #ifdef WIN32
   if (m_hrtimer) {
-    HT_NOTICEF("Restarting application queue (%.3fms)", m_hrtimer->peek_ms());
+    double paused_ms = m_hrtimer->peek_ms();
+    if (paused_ms >= 1000.0)
+      HT_NOTICEF("Restarting application queue (%.3fms)", paused_ms);
+    else
+      HT_INFOF("Restarting application queue (%.3fms)", paused_ms);
     delete m_hrtimer;
     m_hrtimer = 0;
   }
   else
   #endif
   {
-    HT_NOTICE("Restarting application queue");
+    HT_INFO("Restarting application queue");
   }
 
   m_app_queue->start();
