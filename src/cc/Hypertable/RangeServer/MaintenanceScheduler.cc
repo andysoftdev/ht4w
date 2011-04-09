@@ -80,6 +80,17 @@ void MaintenanceScheduler::schedule() {
       m_scheduling_needed = true;
     int64_t excess = (memory_state.balance > Global::memory_limit) ? memory_state.balance - Global::memory_limit : 0;
     memory_state.needed = ((Global::memory_limit * m_low_memory_limit_percentage) / 100) + excess;
+    if (Global::memory_limit_ensure_unused_current) {
+      int64_t extra = Global::memory_limit_ensure_unused_current
+                        - (int64_t)(System::mem_stat().free * Property::MiB)
+                        - memory_state.needed;
+      if (extra > 0)
+        memory_state.needed += extra;
+
+      const MemStat &mem_stat = System::mem_stat();
+      HT_NOTICEF("Extra %.2fMB (free %.2fMB, limit %.2fMB)", extra / (double)Property::MiB,
+                 mem_stat.free, Global::memory_limit_ensure_unused_current / (double)Property::MiB);
+    }
   }
 
   boost::xtime now;
