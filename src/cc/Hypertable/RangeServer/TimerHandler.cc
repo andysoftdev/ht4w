@@ -216,7 +216,7 @@ bool TimerHandler::low_memory_mode() {
   if (memory_used > Global::memory_limit)
     return true;
 
-  // ensure unused physical memory if possible
+  // ensure unused physical memory if it makes sense
   if (Global::memory_limit_ensure_unused_current &&
       memory_used - m_query_cache_memory > Global::memory_limit_ensure_unused_current) {
 
@@ -229,7 +229,7 @@ bool TimerHandler::low_memory_mode() {
 
     // low physical memory reached?
     if ((int64_t)(mem_stat.free * Property::MiB) < Global::memory_limit_ensure_unused_current) {
-       HT_NOTICEF("Low physical memory (free %.2fMB, limit %.2fMB)",
+       HT_INFOF("Low physical memory (free %.2fMB, limit %.2fMB)",
                  mem_stat.free, Global::memory_limit_ensure_unused_current / (double)Property::MiB);
        return true;
     }

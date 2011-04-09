@@ -86,10 +86,6 @@ void MaintenanceScheduler::schedule() {
                         - memory_state.needed;
       if (extra > 0)
         memory_state.needed += extra;
-
-      const MemStat &mem_stat = System::mem_stat();
-      HT_NOTICEF("Extra %.2fMB (free %.2fMB, limit %.2fMB)", extra / (double)Property::MiB,
-                 mem_stat.free, Global::memory_limit_ensure_unused_current / (double)Property::MiB);
     }
   }
 
