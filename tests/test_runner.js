@@ -623,7 +623,7 @@ try {
 
     solutionDir = get_solution_path(WScript.Arguments);
     targetDir = get_target_path(WScript.Arguments);
-    echo("test runner @" + targetDir);
+    echo("ht4w test runner @" + targetDir);
 
     // logfile
     var logfile = WScript.ScriptFullName + ".log";

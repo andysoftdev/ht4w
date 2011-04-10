@@ -16,14 +16,14 @@ for %%p in (%*) do (
 				set platform=x64
 			) else (
 				if /i "%%~p" == "win64" (
-					set platform=x64					
+					set platform=x64
 				) else (
 					if /i "%%~p" == "release" (
 						set configuration=Release
 					) else (
 						if /i "%%~p" == "debug" (
 							set configuration=Debug
-						) else (							
+						) else (
 							set params=!params! %%p
 						)
 					)

@@ -34,20 +34,22 @@ for %%p in (%*) do (
 )
 
 set bin=%~dp0..\dist\%platform%\%configuration%\
+set test=%~dp0..\tests\
 
 if not exist %bin%\conf md %bin%\conf > nul
 if not exist %bin%\conf\hypertable.cfg xcopy %~dp0..\conf\hypertable.cfg %bin%\conf\ /Q /R /Y /D > nul
 xcopy %~dp0..\conf\METADATA.xml %bin%\conf\ /Q /R /Y /D > nul
 xcopy %~dp0..\conf\RS_METRICS.xml %bin%\conf\ /Q /R /Y /D > nul
 
-if not exist %bin%\hypertable.service.exe goto :missing_exe
-@%bin%\hypertable.service.exe --stop-all-services --start-servers %params%
+if not exist %test%\test_runner.js goto :missing_js
+cd %test%
+@cscript.exe //NoLogo test_runner.js %~dp0..\ %bin%tests\ %params%
+cd %~dp0
 
 goto done
 
-:missing_exe
-echo hypertable.service.exe does not exists
+:missing_js
+echo test_runner.js does not exists
 goto done:
 
 :done
-
