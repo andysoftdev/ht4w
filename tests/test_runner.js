@@ -261,6 +261,15 @@ function get_target_path(args) {
     return targetDir;
 }
 
+function get_test_filter(args) {
+    throw_if_null(args);
+    var re = null;
+    if (args.Length > 2) {
+        re = args(2);
+    }
+    return re;
+}
+
 
 // tests
 function bdb_fs_test(logfile, testName) {
@@ -615,6 +624,7 @@ var timeout = 240000; // [ms]
 
 var solutionDir = null;
 var targetDir = null;
+var testFilter = null;
 
 // main
 try {
@@ -623,6 +633,7 @@ try {
 
     solutionDir = get_solution_path(WScript.Arguments);
     targetDir = get_target_path(WScript.Arguments);
+    testFilter = get_test_filter(WScript.Arguments);
     echo("ht4w test runner @" + targetDir);
 
     // logfile
@@ -638,6 +649,9 @@ try {
     var all_test_keys = (new VBArray(all_tests.Keys())).toArray();
     var all_test_count = all_test_keys.length;
     for (var n in all_test_keys) {
+        if (testFilter != null && !all_test_keys[n].match(testFilter)) {
+            continue;
+        }
         var preffix = format(Number(n) + 1) + "/" + format(all_test_count) + " " + all_test_keys[n];
         write(preffix);
 
