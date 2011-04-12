@@ -48,7 +48,7 @@ TimerHandler::TimerHandler(Comm *comm, RangeServer *range_server)
   : m_comm(comm), m_range_server(range_server),
     m_last_low_memory_maintenance(TIMESTAMP_NULL),
     m_urgent_maintenance_scheduled(false), m_app_queue_paused(false),
-    m_low_physical_memory(false), m_maintenance_outstanding(false)
+    m_low_physical_memory(false), m_moderate_low_memory(false), m_maintenance_outstanding(false)
     #ifdef _WIN32
     , m_hrtimer(0)
     #endif
@@ -233,5 +233,6 @@ bool TimerHandler::low_memory_mode() {
     // don't care
     m_low_physical_memory = false;
   }
+  m_moderate_low_memory = (double)memory_used > 0.8 * (double)Global::memory_limit;
   return memory_used > Global::memory_limit;
 }

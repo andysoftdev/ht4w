@@ -87,8 +87,9 @@ void MaintenanceScheduler::schedule() {
   if (low_memory_mode()) {
     if (Global::maintenance_queue->pending() < Global::maintenance_queue->workers())
       m_scheduling_needed = true;
-    int64_t excess = (memory_state.balance > memory_state.limit) ? memory_state.balance - memory_state.limit : 0;
-    memory_state.needed = ((memory_state.limit * m_low_memory_limit_percentage) / 100) + excess;
+    bool exceeded = memory_state.balance > memory_state.limit;
+    int64_t excess = exceeded ? memory_state.balance - memory_state.limit : 0;
+    memory_state.needed = ((memory_state.limit * (exceeded ? m_low_memory_limit_percentage : m_low_memory_limit_percentage / 2)) / 100) + excess;
   }
 
   boost::xtime now;

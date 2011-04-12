@@ -49,7 +49,7 @@ namespace Hypertable {
     virtual void handle(Hypertable::EventPtr &event_ptr);
     virtual void schedule_maintenance();
     virtual void complete_maintenance_notify();
-    virtual bool low_memory() { return m_app_queue_paused || m_low_physical_memory; }
+    virtual bool low_memory() { return m_app_queue_paused || m_low_physical_memory || m_moderate_low_memory; }
 
   private:
     Comm         *m_comm;
@@ -62,6 +62,7 @@ namespace Hypertable {
     bool          m_urgent_maintenance_scheduled;
     bool          m_app_queue_paused;
     bool          m_low_physical_memory;
+    bool          m_moderate_low_memory;
     boost::xtime  m_last_maintenance;
     bool          m_maintenance_outstanding;
     #ifdef _WIN32
