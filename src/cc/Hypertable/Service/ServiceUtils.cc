@@ -71,12 +71,12 @@ namespace {
       set_status(SERVICE_START_PENDING, waitHint);
       HT_INFO("Service start pending");
       ServerUtils::join_servers(shutdown_event->handle(), static_cast<ServerUtils::Notify*>(this));
-      set_status(SERVICE_STOPPED);
       HT_INFO("Service stopped");
       delete shutdown_event;
       shutdown_event = 0;
       delete service_launch_event;
       service_launch_event = 0;
+      set_status(SERVICE_STOPPED);
       ssh = 0;
     }
 
@@ -136,18 +136,18 @@ namespace {
       set_status(ss.dwCurrentState, waitHint);
     }
 
-    void set_status(DWORD dwCurrentState, DWORD dwWaitHint = 0) {
+    void set_status(DWORD dwState, DWORD dwWaitHint = 0) {
       static DWORD dwCheckPoint = 1;
-      ss.dwCurrentState = dwCurrentState;
+      ss.dwCurrentState = dwState;
       ss.dwWin32ExitCode = NO_ERROR;
       ss.dwWaitHint = dwWaitHint;
 
-      if (dwCurrentState == SERVICE_START_PENDING)
+      if (dwState == SERVICE_START_PENDING)
         ss.dwControlsAccepted = 0;
       else
         ss.dwControlsAccepted = SERVICE_ACCEPT_STOP|SERVICE_ACCEPT_SHUTDOWN;
 
-      if (dwCurrentState == SERVICE_RUNNING || dwCurrentState == SERVICE_STOPPED)
+      if (dwState == SERVICE_RUNNING || dwState == SERVICE_STOPPED)
         ss.dwCheckPoint = 0;
       else
         ss.dwCheckPoint = ++dwCheckPoint;
@@ -198,9 +198,7 @@ void ServiceUtils::install_service() {
         bool access_denied;
         if (!install_service(service_name, Config::service_display_name(), exe_name, Config::service_desc(), access_denied) && access_denied)
           self_elevate();
-        Sleep(250);
-        if (!service_exists(service_name))
-          HT_NOTICEF("Installing service '%s' failed", service_name.c_str());
+        Sleep(500);
       }
       else
         WINAPI_ERROR("GetModuleFileName failed - %s");
@@ -449,7 +447,7 @@ bool ServiceUtils::manage_service(const String& service_name, manage_service_t m
       switch (ms) {
       case uninstall:
         if (!DeleteService(scv)) {
-          if (GetLastError() != ERROR_SERVICE_MARKED_FOR_DELETE)
+          if (GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE)
             HT_NOTICEF("Service '%s' has been marked for delete", service_name.c_str());
           else
             WINAPI_ERROR("DeleteService failed - %s");
