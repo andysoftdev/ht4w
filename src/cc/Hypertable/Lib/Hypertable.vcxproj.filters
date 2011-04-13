@@ -241,6 +241,9 @@
     <ClCompile Include="Future.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FutureCallback.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">
@@ -517,6 +520,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Future.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FutureCallback.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

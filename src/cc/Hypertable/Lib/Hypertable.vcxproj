@@ -33,6 +33,7 @@
     <ClCompile Include="EventHandlerMasterChange.cc" />
     <ClCompile Include="FixedRandomStringGenerator.cc" />
     <ClCompile Include="Future.cc" />
+    <ClCompile Include="FutureCallback.cc" />
     <ClCompile Include="HqlCommandInterpreter.cc" />
     <ClCompile Include="HqlHelpText.cc" />
     <ClCompile Include="HqlInterpreter.cc" />
@@ -186,6 +187,7 @@
     <ClInclude Include="EventHandlerMasterChange.h" />
     <ClInclude Include="FixedRandomStringGenerator.h" />
     <ClInclude Include="Future.h" />
+    <ClInclude Include="FutureCallback.h" />
     <ClInclude Include="HqlCommandInterpreter.h" />
     <ClInclude Include="HqlHelpText.h" />
     <ClInclude Include="HqlInterpreter.h" />
