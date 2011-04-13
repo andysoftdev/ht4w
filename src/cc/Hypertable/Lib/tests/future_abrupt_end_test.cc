@@ -113,8 +113,6 @@ int main(int argc, char **argv) {
     table_ptr = namespace_ptr->open_table("LoadTest");
     // Do asynchronous scan
     FuturePtr future_ptr = new Future(5);
-    vector<TableScannerAsyncPtr> scanners;
-    TableScannerAsyncPtr scanner;
     ResultPtr result;
     Cells cells;
     String start_str;
@@ -129,8 +127,7 @@ int main(int argc, char **argv) {
       }
       scan_spec = ssbuilder.get();
       cout << "Creating scanner with start_row=" << start_str << endl;
-      scanner = table_ptr->create_scanner_async(future_ptr.get(), scan_spec);
-      scanners.push_back(scanner);
+      table_ptr->create_scanner_async(future_ptr.get(), scan_spec);
     }
 
     ii = 0;

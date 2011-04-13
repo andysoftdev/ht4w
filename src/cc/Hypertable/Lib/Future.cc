@@ -27,6 +27,13 @@
 
 using namespace Hypertable;
 
+Future::~Future() {
+  cancel();
+  wait_for_completion();
+  foreach (TableScannerAsync *scanner, m_scanners_owned)
+    intrusive_ptr_release(scanner);
+}
+
 bool Future::get(ResultPtr &result) {
   ScopedRecLock lock(m_outstanding_mutex);
 
@@ -107,27 +114,22 @@ void Future::update_error(TableMutator *mutator, int error, const String &error_
 void Future::cancel() {
   ScopedRecLock lock(m_outstanding_mutex);
   m_cancelled = true;
-  ScannerMap::iterator it = m_scanner_map.begin();
-  while (it != m_scanner_map.end()) {
-    it->second->cancel();
-    it++;
-  }
+  foreach (TableScannerAsync *scanner, m_scanner_set)
+    scanner->cancel();
   m_outstanding_cond.notify_all();
 }
 
 void Future::register_scanner(TableScannerAsync *scanner) {
   ScopedRecLock lock(m_outstanding_mutex);
-  uint64_t addr = (uint64_t) scanner;
-  ScannerMap::iterator it = m_scanner_map.find(addr);
   // XXX: TODO DON"T ASSERT if m_cancelled == true throw an exception
-  HT_ASSERT(it == m_scanner_map.end() && !m_cancelled);
-  m_scanner_map[addr] = scanner;
+  HT_ASSERT(m_scanner_set.insert(scanner).second && !m_cancelled);
+  if (m_scanners_owned.insert(scanner).second)
+    intrusive_ptr_add_ref(scanner);
 }
 
 void Future::deregister_scanner(TableScannerAsync *scanner) {
   ScopedRecLock lock(m_outstanding_mutex);
-  uint64_t addr = (uint64_t) scanner;
-  ScannerMap::iterator it = m_scanner_map.find(addr);
-  HT_ASSERT(it != m_scanner_map.end());
-  m_scanner_map.erase(it);
+  ScannerSet::iterator it = m_scanner_set.find(scanner);
+  HT_ASSERT(it != m_scanner_set.end());
+  m_scanner_set.erase(it);
 }

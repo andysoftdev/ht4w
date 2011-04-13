@@ -22,7 +22,7 @@
 
 #include <boost/thread/condition.hpp>
 #include <list>
-#include <map>
+#include <set>
 
 #include "ResultCallback.h"
 #include "Result.h"
@@ -38,7 +38,7 @@ namespace Hypertable {
      * @param capacity number of Result objects to enqueue
      */
     Future(size_t capacity) : m_queue_capacity(capacity), m_cancelled(false) { return; }
-    ~Future() { cancel(); }
+    ~Future();
 
     /**
      * This call blocks till there is a result available unless async ops have completed
@@ -63,6 +63,10 @@ namespace Hypertable {
      */
     void cancel();
 
+    bool is_cancelled() const {
+      return m_cancelled;
+    }
+
     void register_scanner(TableScannerAsync *scanner);
 
     void deregister_scanner(TableScannerAsync *scanner);
@@ -81,17 +85,15 @@ namespace Hypertable {
     bool is_full() { return (m_queue_capacity <= m_queue.size()); }
 
     bool is_empty() { return m_queue.empty(); }
-    bool is_cancelled() const {
-      return m_cancelled;
-    }
 
     void enqueue(ResultPtr &result);
 
     ResultQueue m_queue;
     size_t m_queue_capacity;
     bool m_cancelled;
-    typedef map<uint64_t, TableScannerAsync *> ScannerMap;
-    ScannerMap m_scanner_map;
+    typedef set<TableScannerAsync *> ScannerSet;
+    ScannerSet m_scanner_set;
+    ScannerSet m_scanners_owned;
   };
   typedef intrusive_ptr<Future> FuturePtr;
 }

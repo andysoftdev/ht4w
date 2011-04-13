@@ -138,7 +138,6 @@ int main(int argc, char **argv) {
     {
       // Do asynchronous scan and cancel after some time
       Future ff(5);
-      TableScannerAsyncPtr scanner_ptr;
 
       ssbuilder.set_row_limit(60);
       ssbuilder.add_row_interval("00000",true, "00048", false);
@@ -147,7 +146,7 @@ int main(int argc, char **argv) {
       ssbuilder.add_row_interval("00050",true, "01000", false);
       scan_spec = ssbuilder.get();
 
-      scanner_ptr = table_ptr->create_scanner_async(&ff, scan_spec);
+      table_ptr->create_scanner_async(&ff, scan_spec);
 
       memset(&md5_ctx, 0, sizeof(md5_ctx));
       md5_starts(&md5_ctx);
@@ -193,7 +192,7 @@ int main(int argc, char **argv) {
       ssbuilder.add_row_interval("00010",true, "00027", false);
       ssbuilder.add_row_interval("00027",true, "00050", false);
       scan_spec = ssbuilder.get();
-      scanner_ptr = table_ptr->create_scanner_async(&ff2, scan_spec);
+      table_ptr->create_scanner_async(&ff2, scan_spec);
 
       while (ff2.get(result)) {
         if (result->is_error()) {
