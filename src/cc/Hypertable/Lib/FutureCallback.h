@@ -49,8 +49,9 @@ namespace Hypertable {
      */
     void cancel();
 
-    bool is_cancelled() const {
-      return m_cancelled;
+    bool is_cancelled() {
+      ScopedRecLock lock(m_outstanding_mutex);
+      return _is_cancelled();
     }
 
     void register_scanner(TableScannerAsync *scanner);
@@ -68,6 +69,9 @@ namespace Hypertable {
   private:
     friend class TableScannerAsync;
     friend class TableMutator;
+
+    // without locks
+    bool _is_cancelled() const { return m_cancelled; }
 
     bool m_cancelled;
     typedef std::set<TableScannerAsync*> ScannerSet;

@@ -38,13 +38,13 @@ bool Future::get(ResultPtr &result) {
   ScopedRecLock lock(m_outstanding_mutex);
 
   // wait till we have results to serve
-  while(is_empty() && !is_done() && !is_cancelled()) {
+  while(_is_empty() && !is_done() && !_is_cancelled()) {
     m_outstanding_cond.wait(lock);
   }
 
-  if (is_cancelled())
+  if (_is_cancelled())
     return false;
-  if (is_empty() && is_done())
+  if (_is_empty() && is_done())
     return false;
   result = m_queue.front();
   // wake a thread blocked on queue space
@@ -63,14 +63,14 @@ bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
   xtime_add_millis(wait_time, timeout_ms);
 
   // wait till we have results to serve
-  while(is_empty() && !is_done() && !is_cancelled()) {
+  while(_is_empty() && !is_done() && !_is_cancelled()) {
     timed_out = m_outstanding_cond.timed_wait(lock, wait_time);
     if (timed_out)
       return is_done();
   }
-  if (is_cancelled())
+  if (_is_cancelled())
     return false;
-  if (is_empty() && is_done())
+  if (_is_empty() && is_done())
     return false;
   result = m_queue.front();
   // wake a thread blocked on queue space
@@ -86,10 +86,10 @@ void Future::scan_ok(TableScannerAsync *scanner, ScanCellsPtr &cells) {
 
 void Future::enqueue(ResultPtr &result) {
   ScopedRecLock lock(m_outstanding_mutex);
-  while (is_full() && !is_cancelled()) {
+  while (_is_full() && !_is_cancelled()) {
     m_outstanding_cond.wait(lock);
   }
-  if (!is_cancelled()) {
+  if (!_is_cancelled()) {
     m_queue.push_back(result);
   }
   m_outstanding_cond.notify_one();

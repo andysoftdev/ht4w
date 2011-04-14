@@ -63,8 +63,19 @@ namespace Hypertable {
      */
     void cancel();
 
-    bool is_cancelled() const {
-      return m_cancelled;
+    bool is_full() {
+      ScopedRecLock lock(m_outstanding_mutex);
+      return _is_full();
+    }
+
+    bool is_empty() {
+      ScopedRecLock lock(m_outstanding_mutex);
+      return _is_empty();
+    }
+
+    bool is_cancelled() {
+      ScopedRecLock lock(m_outstanding_mutex);
+      return _is_cancelled();
     }
 
     void register_scanner(TableScannerAsync *scanner);
@@ -82,9 +93,10 @@ namespace Hypertable {
     void update_ok(TableMutator *mutator, FailedMutations &failed_mutations);
     void update_error(TableMutator *mutator, int error, const String &error_msg);
 
-    bool is_full() { return (m_queue_capacity <= m_queue.size()); }
-
-    bool is_empty() { return m_queue.empty(); }
+    // without locks
+    bool _is_full() { return (m_queue_capacity <= m_queue.size()); }
+    bool _is_empty() { return m_queue.empty(); }
+    bool _is_cancelled() const { return m_cancelled; }
 
     void enqueue(ResultPtr &result);
 
