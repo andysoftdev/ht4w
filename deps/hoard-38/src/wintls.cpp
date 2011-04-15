@@ -118,9 +118,15 @@ extern "C" {
 
 #if defined(_LIB) && defined(_MSC_VER)
 
+#ifndef _WIN64
 #pragma comment(linker, "/INCLUDE:__tls_used")
 #pragma comment(linker, "/INCLUDE:_p_cb_hoard")
 #pragma comment(linker, "/INCLUDE:_p_cb_process_term_hoard")
+#else
+#pragma comment(linker, "/INCLUDE:_tls_used")
+#pragma comment(linker, "/INCLUDE:p_cb_hoard")
+#pragma comment(linker, "/INCLUDE:p_cb_process_term_hoard")
+#endif
 
 // extern "C" suppresses C++ name mangling so we know the symbol names
 // for the linker /INCLUDE:symbol pragmas above.

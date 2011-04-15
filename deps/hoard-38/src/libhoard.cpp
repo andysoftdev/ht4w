@@ -58,8 +58,13 @@
 // This is an unused but exported symbol that we can use to tell the
 // MSVC linker to bring in libtcmalloc, via the /INCLUDE linker flag.
 // This function exports the symbol "__hoardmalloc".
+#ifndef _WIN64
 extern "C" void _hoardmalloc();
 void _hoardmalloc() { }
+#else
+extern "C" void __hoardmalloc();
+void __hoardmalloc() { }
+#endif
 
 #endif
 

@@ -119,8 +119,13 @@ const char kMangledDeleteArrayNothrow[] = "??_V@YAXPAXABUnothrow_t@std@@@Z";
 // namespace.  I'd rather export a variable named "_tcmalloc", but I
 // couldn't figure out how to get that to work.  This function exports
 // the symbol "__tcmalloc".)
+#ifndef _WIN64
 extern "C" PERFTOOLS_DLL_DECL void _tcmalloc();
 void _tcmalloc() { }
+#else
+extern "C" PERFTOOLS_DLL_DECL void __tcmalloc();
+void __tcmalloc() { }
+#endif
 
 namespace {    // most everything here is in an unnamed namespace
 
