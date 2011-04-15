@@ -80,8 +80,8 @@ void MaintenanceScheduler::schedule() {
       memory_state.balance - m_query_cache_memory > Global::memory_limit_ensure_unused_current) {
     int64_t excess = Global::memory_limit_ensure_unused_current
                        - (int64_t)(System::mem_stat().free * Property::MiB);
-     if (excess > 0)
-       memory_state.limit = memory_state.balance - excess;
+    if (excess > 0)
+      memory_state.limit = memory_state.balance - excess;
   }
 
   if (low_memory_mode()) {
@@ -193,8 +193,8 @@ void MaintenanceScheduler::schedule() {
 
     HT_INFOF("Memory Statistics (MB): VM=%.2f, RSS=%.2f, tracked=%.2f, computed=%.2f limit=%.2f",
       System::proc_stat().vm_size, System::proc_stat().vm_resident,
-      (double)memory_state.balance/(double)Property::MiB, (double)total_memory/(double)Property::MiB,
-      (double)memory_state.limit/(double)Property::MiB);
+        (double)memory_state.balance/(double)Property::MiB, (double)total_memory/(double)Property::MiB,
+        (double)Global::memory_limit/(double)Property::MiB);
     HT_INFOF("Memory Allocation: BlockCache=%.2f%% BlockIndex=%.2f%% "
       "BloomFilter=%.2f%% CellCache=%.2f%% ShadowCache=%.2f%% "
       "QueryCache=%.2f%%",

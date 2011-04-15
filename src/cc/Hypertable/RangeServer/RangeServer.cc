@@ -153,6 +153,13 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     Global::memory_limit = (int64_t)(mem_stat.ram * Property::MiB * pct);
   }
 
+  if (cfg.has("MemoryLimit.EnsureUnused"))
+    Global::memory_limit_ensure_unused = cfg.get_i64("MemoryLimit.EnsureUnused");
+  else {
+    double pct = std::max(1.0, std::min((double)cfg.get_i32("MemoryLimit.EnsureUnused.Percentage"), 99.0)) / 100.0;
+    Global::memory_limit_ensure_unused = (int64_t)(mem_stat.ram * Property::MiB * pct);
+  }
+
   #if defined(_WIN32) && !defined(_WIN64)
   // 32-bit process get's only 2GB address space
   Global::memory_limit = std::min(Global::memory_limit, (int64_t)(1.25 * Property::GiB));
@@ -1038,7 +1045,7 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
 
     if (table->is_metadata())
       HT_INFOF("Successfully created scanner (id=%u) on table '%s', returning "
-               "%lld k/v pairs", id, table->id, (Lld)cells_returned);
+               "%lld k/v pairs, more=%lld", id, table->id, (Lld)cells_returned, (Lld) more);
 
     /**
      *  Send back data
