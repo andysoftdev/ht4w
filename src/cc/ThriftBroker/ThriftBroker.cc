@@ -435,7 +435,7 @@ public:
     m_next_threshold = Config::get_i32("ThriftBroker.NextThreshold");
     m_client = new Hypertable::Client();
     m_next_namespace_id = 1;
-    m_next_future_id = 0;
+    m_next_future_id = 1;
     m_future_queue_size = Config::get_i32("ThriftBroker.Future.QueueSize");
   }
 
@@ -841,7 +841,7 @@ public:
     LOG_API("future=" << ff);
 
     try {
-      FuturePtr &future_ptr = get_future(ff);
+      FuturePtr future_ptr = get_future(ff);
       ResultPtr hresult;
       bool done = !(future_ptr->get(hresult));
       if (done) {
@@ -863,7 +863,7 @@ public:
     LOG_API("future=" << ff);
 
     try {
-      FuturePtr &future_ptr = get_future(ff);
+      FuturePtr future_ptr = get_future(ff);
       ResultPtr hresult;
       bool done = !(future_ptr->get(hresult));
       if (done) {
@@ -907,7 +907,7 @@ public:
     LOG_API("future=" << ff);
 
     try {
-      FuturePtr &future_ptr = get_future(ff);
+      FuturePtr future_ptr = get_future(ff);
       future_ptr->cancel();
     } RETHROW()
   }
@@ -1288,7 +1288,7 @@ public:
                       bool retry_table_not_found) {
     NamespacePtr namespace_ptr = get_namespace(ns);
     TablePtr t = namespace_ptr->open_table(table);
-    FuturePtr &future_ptr = get_future(ff);
+    FuturePtr future_ptr = get_future(ff);
 
     Hypertable::ScanSpec hss;
     convert_scan_spec(ss, hss);
@@ -1401,7 +1401,7 @@ public:
     get_mutator(mutator)->set_cells(cb.get());
   }
 
-  FuturePtr& get_future(::int64_t id) {
+  FuturePtr get_future(::int64_t id) {
     ScopedLock lock(m_future_mutex);
     FutureMap::iterator it = m_future_map.find(id);
 
@@ -1415,7 +1415,7 @@ public:
   }
 
 
-  NamespacePtr& get_namespace(::int64_t id) {
+  NamespacePtr get_namespace(::int64_t id) {
     ScopedLock lock(m_namespace_mutex);
     NamespaceMap::iterator it = m_namespace_map.find(id);
 
