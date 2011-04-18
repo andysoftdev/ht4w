@@ -345,5 +345,8 @@
     <ClInclude Include="StringDecompressorPrefix.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="SpiritParser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

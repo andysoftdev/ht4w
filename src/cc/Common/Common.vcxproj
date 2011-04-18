@@ -269,6 +269,7 @@
     <ClInclude Include="ServerLauncher.h" />
     <ClInclude Include="ServerLaunchEvent.h" />
     <ClInclude Include="SockAddrMap.h" />
+    <ClInclude Include="SpiritParser.h" />
     <ClInclude Include="StaticBuffer.h" />
     <ClInclude Include="StatsSerializable.h" />
     <ClInclude Include="StatsSystem.h" />
