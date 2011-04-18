@@ -88,19 +88,52 @@ class ThriftClient : public Client, public ReferenceCount {
   public:
     ThriftClient(const std::string &_host, int _port, int _timeout_ms = 300000, bool open = true) 
     : Client(_host, _port, _timeout_ms, open)
-    , host(_host), port(_port), timeout_ms(_timeout_ms) {
+    , host(_host), port(_port), timeout_ms(_timeout_ms), locked(0), next_client(0) {
       ::InitializeCriticalSection(&cs);
     }
 
     virtual ~ThriftClient() {
+      client_pool.clear();
       ::DeleteCriticalSection(&cs);
     }
 
-    bool isOpen() {
+    ThriftClient* clone() {
+      Lock lock( this );
+      return new ThriftClient(host, port, timeout_ms);
+    }
+
+    ThriftClient* get_pooled() {
+      Lock lock( this );
+      if (client_pool.size() < maxConnectionPoolSize) {
+        ClientPtr client = new ThriftClient(host, port, timeout_ms);
+        client_pool.push_back(client);
+        return client.get();
+      }
+      while (client_pool.size() > maxConnectionPoolSize)
+        client_pool.erase(client_pool.begin());
+      next_client = next_client % client_pool.size();
+      for (int i = 0; i < (int)client_pool.size(); ++i) {
+        ClientPtr client = client_pool[next_client];
+        next_client = (++next_client) % client_pool.size();
+        if (!client->is_locked())
+          return client.get();
+      }
+      ClientPtr client = new ThriftClient(host, port, timeout_ms);
+      client_pool.push_back(client);
+      return client.get();
+    }
+
+    bool is_open() {
+      Lock lock( this );
       return transport && transport->isOpen();
     }
 
+    inline bool is_locked() const {
+      return _InterlockedOr( const_cast<volatile long*>(&locked), 0 ) > 0;
+    }
+
     void renew_nothrow() {
+      Lock lock( this );
       try {
         boost::shared_ptr<TSocket> _socket(new TSocket(host, port));
         socket = _socket;
@@ -123,7 +156,7 @@ class ThriftClient : public Client, public ReferenceCount {
               break;
             }
             catch (apache::thrift::TException&) {
-              if (retry >= maxRetry)
+              if (retry >= maxRetryConnect)
                 break;
               Sleep(250);
             }
@@ -155,21 +188,30 @@ class ThriftClient : public Client, public ReferenceCount {
   private:
 
     enum {
-      maxRetry = 4
+      maxRetryConnect = 4,
+      maxConnectionPoolSize = 5
     };
 
+    typedef ::boost::intrusive_ptr<ThriftClient> ClientPtr;
+    typedef std::vector<ClientPtr> client_pool_t;
+
     inline void lock() {
-        ::EnterCriticalSection(&cs);
+      ::EnterCriticalSection(&cs);
+      _InterlockedIncrement( &locked );
     }
 
     inline void unlock( ) {
-        ::LeaveCriticalSection(&cs);
+       _InterlockedDecrement( &locked );
+      ::LeaveCriticalSection(&cs);
     }
 
     CRITICAL_SECTION cs;
+    volatile long locked;
     std::string host;
     int port;
     int timeout_ms;
+    client_pool_t client_pool;
+    int next_client;
 };
 
 typedef ::boost::intrusive_ptr<ThriftClient> ClientPtr;
