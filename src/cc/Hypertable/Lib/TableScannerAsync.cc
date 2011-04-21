@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "Common/Error.h"
-#include "Common/String.h"
+#include "Common/StringExt.h"
 
 #include "Table.h"
 #include "TableScannerAsync.h"
@@ -243,7 +243,6 @@ void TableScannerAsync::handle_result(int scanner_id, EventPtr &event, bool is_c
   bool cancelled = is_cancelled();
   ScopedLock lock(m_mutex);
   ScanCellsPtr cells;
-
   // abort interval scanners if we've seen an error previously or scanned has been cancelled
   bool abort = (m_error != Error::OK || cancelled);
 
@@ -386,14 +385,22 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool 
 }
 
 void TableScannerAsync::dump_state() {
+  String active_interval_scanners;
+
+  for(size_t ii=0; ii< m_interval_scanners.size(); ii++) {
+    if (m_interval_scanners[ii] != 0)
+      active_interval_scanners = active_interval_scanners + (int) ii + ", ";
+  }
+
   HT_INFO_OUT << "TableScannerAsync state m_current_scanner=" << m_current_scanner
-      << ", m_interval_scanners.size()" << m_interval_scanners.size()
+      << ", m_interval_scanners.size()=" << m_interval_scanners.size()
       << ", m_outstanding=" << m_outstanding << ", m_error=" << m_error
       << ", m_error_msg=" << m_error_msg
       << ", m_table_name=" << m_table_name << ", m_cancelled=" << m_cancelled
-      << ", m_scan_spec=" << m_scan_spec_builder.get()
+      << ", active_interval_scanners={" << active_interval_scanners << "}"
       << ", current_interval_scanner_async=" << std::hex
       << m_interval_scanners[m_current_scanner].get()
       << ", TableScannerAsync=" << this
       << HT_END;
+
 }
