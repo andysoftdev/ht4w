@@ -132,6 +132,7 @@ namespace Hypertable {
     void maybe_callback_error(int scanner_id, bool next);
     void wait_for_completion();
     void move_to_next_interval_scanner(int current_scanner, bool cancelled);
+    void dump_state();
 
     std::vector<IntervalScannerAsyncPtr>  m_interval_scanners;
     uint32_t            m_timeout_ms;

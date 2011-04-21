@@ -523,3 +523,21 @@ void IntervalScannerAsync::do_readahead() {
   }
   return;
 }
+
+void IntervalScannerAsync::dump_state() {
+  HT_INFO_OUT << "m_eos=" << m_eos << ", m_cur_row=" << m_cur_row
+      << ", m_create_scanner_row=" << m_create_scanner_row
+      << ", m_range_info.start_row=" << m_range_info.start_row
+      << ", m_range_info.end_row=" << m_range_info.end_row
+      << ", m_next_range_info.start_row=" << m_next_range_info.start_row
+      << ", m_next_range_info.end_row=" << m_next_range_info.end_row
+      << ", m_start_row=" << m_start_row << ", m_end_row=" << m_end_row
+      << ", m_current=" << m_current << ", m_cur_scanner_finished=" << m_cur_scanner_finished
+      << ", m_cur_scanner_id=" << m_cur_scanner_id
+      << ", m_create_event_saved=" << m_create_event_saved
+      << ", m_aborted=" << m_aborted
+      << ", m_fetch_outstanding=" << m_fetch_outstanding
+      << ", m_create_outstanding=" << m_create_outstanding
+      << ", m_id=" << m_id << " IntervalScannerAsync=" << std::hex << this
+      << HT_END;
+}

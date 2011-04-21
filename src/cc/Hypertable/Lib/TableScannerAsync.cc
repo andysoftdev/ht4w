@@ -365,7 +365,15 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool 
     m_current_scanner = current_scanner;
     if (m_interval_scanners[current_scanner] !=0) {
       next = m_interval_scanners[current_scanner]->set_current(&do_callback, cells, abort);
-      HT_ASSERT(do_callback || !next || abort);
+      if (!(do_callback|| !next || abort)) {
+        HT_INFO_OUT << "current_scanner=" << current_scanner << ", do_callback="
+            << do_callback << ", next=" << next << ", abort=" << abort
+            << ", cancelled=" << cancelled << ", abort=" << abort
+            << HT_END;
+        m_interval_scanners[current_scanner]->dump_state();
+        dump_state();
+        HT_ASSERT(false);
+      }
 
       // scan was cancelled and this is the last outstanding scanner
       if (next && m_outstanding==1 && cancelled && m_error == Error::OK) {
@@ -377,3 +385,15 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool 
   }
 }
 
+void TableScannerAsync::dump_state() {
+  HT_INFO_OUT << "TableScannerAsync state m_current_scanner=" << m_current_scanner
+      << ", m_interval_scanners.size()" << m_interval_scanners.size()
+      << ", m_outstanding=" << m_outstanding << ", m_error=" << m_error
+      << ", m_error_msg=" << m_error_msg
+      << ", m_table_name=" << m_table_name << ", m_cancelled=" << m_cancelled
+      << ", m_scan_spec=" << m_scan_spec_builder.get()
+      << ", current_interval_scanner_async=" << std::hex
+      << m_interval_scanners[m_current_scanner].get()
+      << ", TableScannerAsync=" << this
+      << HT_END;
+}

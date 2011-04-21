@@ -74,7 +74,7 @@ namespace Hypertable {
     bool set_current(bool *show_results, ScanCellsPtr &cells, bool abort);
     inline bool has_outstanding_requests() { return m_create_outstanding || m_fetch_outstanding; }
     int64_t bytes_scanned() { return m_bytes_scanned; }
-
+    void dump_state();
   private:
     void reset_outstanding_status(bool is_create, bool reset_timer);
     void do_readahead();
