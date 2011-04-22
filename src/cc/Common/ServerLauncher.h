@@ -102,7 +102,8 @@ namespace Hypertable {
 
       // wait
       ServerLaunchEvent server_launch_event(m_pi.dwProcessId);
-      server_launch_event.wait(10000);
+      bool timed_out;
+      server_launch_event.wait(10000, timed_out);
 
       if (!CloseHandle(m_pi.hThread)) {
         HT_ERRORF("CloseHandle error: %s", winapi_strerror(GetLastError()));

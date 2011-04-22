@@ -37,7 +37,7 @@ namespace Hypertable {
     virtual ~ServerLaunchEvent();
 
     void set_event();
-    bool wait(int timeout_ms);
+    bool wait(int timeout_ms, bool& timed_out);
     inline bool is_existing_event() const { 
       return already_exists;
     }
@@ -47,6 +47,7 @@ namespace Hypertable {
 
   private:
     HANDLE evt;
+    DWORD pid;
     bool already_exists;
 
     static HANDLE create_event(const char* preffix, DWORD pid, bool& already_exists);

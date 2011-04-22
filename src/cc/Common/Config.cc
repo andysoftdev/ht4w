@@ -420,6 +420,26 @@ void DefaultPolicy::init_options() {
     ("ThriftBroker.Workers", i32()->default_value(50), "Number of "
         "worker threads for thrift broker")
 
+#ifdef _WIN32
+
+    ("Hypertable.Service.Name", str()->default_value("Hypertable"), "Service name")
+    ("Hypertable.Service.DisplayName", str()->default_value("Hypertable Database Service"), "Service display name")
+    ("Hypertable.Service.DfsBroker", boo()->default_value(true), "Include DFS broker")
+    ("Hypertable.Service.HyperspaceMaster", boo()->default_value(true), "Include hyperspace master")
+    ("Hypertable.Service.HypertableMaster", boo()->default_value(true), "Include hypertable master")
+    ("Hypertable.Service.RangeServer", boo()->default_value(true), "Include range server")
+    ("Hypertable.Service.ThriftBroker", boo()->default_value(true), "Include thrift broker")
+    ("Hypertable.Service.Logging.Directory", str()->default_value("log"), "Logging directory (if relative, it's relative to the Hypertable data directory root)")
+    ("Hypertable.Service.Timeout.StartService", i32()->default_value(30000), "Start service timeout in ms")
+    ("Hypertable.Service.Timeout.StopService", i32()->default_value(60000), "Stop service timeout in ms")
+    ("Hypertable.Service.Timeout.StartServer", i32()->default_value(7500), "Start server timeout in ms")
+    ("Hypertable.Service.Timeout.StopServer", i32()->default_value(7500), "Stop server timeout in ms")
+    ("Hypertable.Service.Timeout.KillServer", i32()->default_value(5000), "Kill server timeout in ms")
+    ("Hypertable.Service.Timeout.Connection", i32()->default_value(5000), "Connection timeout in ms");
+    ("Hypertable.Service.MinimumUptimeBeforeRestart", i32()->default_value(30000), "Minumum servers uptime in ms before restart on failure");
+
+#endif
+
     ;
   alias("Hypertable.RangeServer.CommitLog.RollLimit",
         "Hypertable.CommitLog.RollLimit");

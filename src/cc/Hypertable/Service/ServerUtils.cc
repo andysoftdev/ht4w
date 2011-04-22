@@ -94,65 +94,65 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
 
     while (!shutdown) {
       launched_servers_t launched_servers;
-      if (start(servers, Config::server_args().c_str(), launched_servers, notify)) {
-        boost::xtime_get(&recent_server_start, TIME_UTC);
-        HT_NOTICE("Servers started");
-        joined = true;
-        if (notify)
-          notify->servers_joined();
-        DWORD num_wait_handles = launched_servers.size() + 1;
-        HANDLE* wait_handles = new HANDLE[num_wait_handles];
-        int n = 0;
-        foreach(const launched_server_t& launched_server, launched_servers)
-          wait_handles[n++] = launched_server.pi.hProcess;
-        wait_handles[n] = shutdown_event;
+      if (!start(servers, Config::server_args().c_str(), launched_servers, notify))
+        break;
+      boost::xtime_get(&recent_server_start, TIME_UTC);
+      HT_NOTICE("Servers started");
+      joined = true;
+      if (notify)
+        notify->servers_joined();
+      DWORD num_wait_handles = launched_servers.size() + 1;
+      HANDLE* wait_handles = new HANDLE[num_wait_handles];
+      int n = 0;
+      foreach(const launched_server_t& launched_server, launched_servers)
+        wait_handles[n++] = launched_server.pi.hProcess;
+      wait_handles[n] = shutdown_event;
 
-        while (!shutdown) {
-          DWORD signaled = WaitForMultipleObjects(num_wait_handles, wait_handles, FALSE, INFINITE);
-          if (signaled - WAIT_OBJECT_0 == num_wait_handles - 1 || signaled == WAIT_FAILED) {
-            if (signaled == WAIT_FAILED)
-              WINAPI_ERROR("WaitForMultipleObjects failed - %s")
+      while (!shutdown) {
+        DWORD signaled = WaitForMultipleObjects(num_wait_handles, wait_handles, FALSE, INFINITE);
+        if (signaled - WAIT_OBJECT_0 == num_wait_handles - 1 || signaled == WAIT_FAILED) {
+          if (signaled == WAIT_FAILED)
+            WINAPI_ERROR("WaitForMultipleObjects failed - %s")
+          // shutdown
+          HT_NOTICE("Shutdown servers");
+          if (notify)
+            notify->servers_shutdown_pending();
+          stop(launched_servers, notify);
+          shutdown = true;
+        }
+        else {
+          launched_server_t& launched_server = launched_servers[signaled - WAIT_OBJECT_0];
+          close_handles(launched_server);
+          HT_NOTICEF("Server %s terminates unexpected", server_name(launched_server.server).c_str());
+          // continuously crashing?
+          boost::xtime now;
+          boost::xtime_get(&now, TIME_UTC);
+          if (xtime_diff_millis(recent_server_start, now) > Config::minuptime_before_restart()) {
+            // is range server or thrift broker?
+            if (launched_server.server == rangeServer || launched_server.server == thriftBroker) {
+              // restart server
+              HT_NOTICEF("Restart %s", server_name(launched_server.server).c_str());
+              if (start(launched_server.server, launched_server.args.c_str(), launched_server, notify)) {
+                wait_handles[signaled - WAIT_OBJECT_0] = launched_server.pi.hProcess;
+                continue;
+              }
+            }
+          }
+          else {
             // shutdown
             HT_NOTICE("Shutdown servers");
             if (notify)
               notify->servers_shutdown_pending();
-            stop(launched_servers, notify);
             shutdown = true;
           }
-          else {
-            launched_server_t& launched_server = launched_servers[signaled - WAIT_OBJECT_0];
-            close_handles(launched_server);
-            HT_NOTICEF("Server %s terminates unexpected", server_name(launched_server.server).c_str());
-            // continuously crashing?
-            boost::xtime now;
-            boost::xtime_get(&now, TIME_UTC);
-            if (xtime_diff_millis(recent_server_start, now) > 30000) { // TODO config param
-              // is range server?
-              if (launched_server.server == rangeServer || launched_server.server == thriftBroker) {
-                // restart server
-                HT_NOTICEF("Restart %s", server_name(launched_server.server).c_str());
-                if (start(launched_server.server, launched_server.args.c_str(), launched_server, notify)) {
-                  wait_handles[signaled - WAIT_OBJECT_0] = launched_server.pi.hProcess;
-                  continue;
-                }
-              }
-            }
-            else {
-              // shutdown
-              HT_NOTICE("Shutdown servers");
-              if (notify)
-                notify->servers_shutdown_pending();
-              shutdown = true;
-            }
-            // shutdown and restart all servers
-            stop(launched_servers, notify);
-            if (!shutdown )
-              HT_NOTICE("Restart all servers");
-            break;
-          }
+          // shutdown and restart all servers
+          stop(launched_servers, notify);
+          if (!shutdown )
+            HT_NOTICE("Restart all servers");
+          break;
         }
-        delete [] wait_handles;
       }
+      delete [] wait_handles;
     }
     if (joined && notify)
       notify->servers_shutdown();
@@ -193,6 +193,8 @@ void ServerUtils::get_servers(servers_t& servers) {
 
 bool ServerUtils::start(const servers_t& servers, const char* args, launched_servers_t& launched_servers, Notify* notify) {
   launched_servers.clear();
+  if (!check_metadata())
+    return false;
   for (servers_t::const_iterator it = servers.begin(); it != servers.end(); ++it ) {
     launched_server_t launched_server;
     if (!start(*it, args, launched_server, notify)) {
@@ -245,10 +247,15 @@ bool ServerUtils::start(server_t server, const char* args, launched_server_t& la
   if (ProcessUtils::create(cmd.c_str(), Config::create_console() ? CREATE_NEW_CONSOLE : CREATE_NEW_PROCESS_GROUP|DETACHED_PROCESS,
                            si, logfile.c_str(), true, launched_server.pi, launched_server.logfile)) {
     ServerLaunchEvent server_launch_event(launched_server.pi.dwProcessId);
-    if (!(launched = server_launch_event.wait(Config::start_server_timeout()))) {
-      HT_ERRORF("Launching %s has been timed out", exe_name.c_str());
-      HT_NOTICEF("Killing %s (%d)", server_name(server).c_str(), launched_server.pi.dwProcessId);
-      ProcessUtils::kill(launched_server.pi.dwProcessId, Config::kill_server_timeout());
+    bool timed_out;
+    if (!(launched = server_launch_event.wait(Config::start_server_timeout(), timed_out))) {
+      if (timed_out) {
+        HT_ERRORF("Launching %s has been timed out", exe_name.c_str());
+        HT_NOTICEF("Killing %s (%d)", server_name(server).c_str(), launched_server.pi.dwProcessId);
+        ProcessUtils::kill(launched_server.pi.dwProcessId, Config::kill_server_timeout());
+      }
+      else
+        HT_ERRORF("Launching %s failed", exe_name.c_str());
     }
     else {
       // remove the logfile handle inherit capability
@@ -351,6 +358,20 @@ const String& ServerUtils::server_name(server_t server) {
     "Hypertable.ThriftBroker",
   };
   return names[server];
+}
+
+bool ServerUtils::check_metadata( ) {
+  String filename = System::install_dir + "\\conf\\METADATA.xml";
+  if (!FileUtils::exists(filename)) {
+    HT_ERRORF("File '%s' does not exist", filename.c_str());
+    return false;
+  }
+  filename = System::install_dir + "\\conf\\RS_METRICS.xml";
+  if (!FileUtils::exists(filename)) {
+    HT_ERRORF("File '%s' does not exist", filename.c_str());
+    return false;
+  }
+  return true;
 }
 
 bool ServerUtils::shutdown_dfsbroker(DWORD pid) {

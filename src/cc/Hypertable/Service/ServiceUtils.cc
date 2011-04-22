@@ -249,12 +249,23 @@ void ServiceUtils::start_service() {
           self_elevate();
         Sleep(500);
         if (service_status(service_name, status)) {
-          ServerLaunchEvent service_launch_event(status.dwProcessId);
-          if (!service_launch_event.wait(Config::start_service_timeout()))
-            HT_ERRORF("Launching service '%s' has been timed out", service_name.c_str());
+          if (status.dwCurrentState != SERVICE_STOPPED && status.dwCurrentState != SERVICE_STOP_PENDING) {
+            ServerLaunchEvent service_launch_event(status.dwProcessId);
+            bool timed_out;
+            if (!service_launch_event.wait(Config::start_service_timeout(), timed_out)) {
+              if (timed_out)
+                HT_ERRORF("Launching service '%s' has been timed out", service_name.c_str());
+              else
+                HT_ERRORF("Launching service '%s' failed", service_name.c_str());
+            }
+            else
+              HT_INFO("New service process has not been found");
+          }
+          else
+            HT_ERRORF("Launching service '%s' failed", service_name.c_str());
         }
         else
-          HT_INFO("New service process has not been found");
+          HT_NOTICEF("Service '%s' does not exists", service_name.c_str());
       }
       else
         HT_NOTICEF("Service '%s' is already running", service_name.c_str());
@@ -420,8 +431,6 @@ bool ServiceUtils::install_service(const String& service_name, const String& ser
         if (!ChangeServiceConfig2(scv, SERVICE_CONFIG_DESCRIPTION, &desc))
           WINAPI_ERROR("ChangeServiceConfig2 failed - %s");
       }
-      if (!CloseServiceHandle(scm))
-        WINAPI_ERROR("CloseServiceHandle failed - %s");
     }
     else if (GetLastError() == ERROR_ACCESS_DENIED)
       access_denied = true;

@@ -87,6 +87,7 @@ namespace Hypertable {
     static String server_exe_name(server_t server);
     static String server_log_name(server_t server);
     static const String& server_name(server_t server);
+    static bool check_metadata( );
 
     static bool shutdown_dfsbroker(DWORD pid);
     static bool shutdown_master(DWORD pid);

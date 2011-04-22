@@ -77,6 +77,7 @@ const char* cfg_start_server_timeout     = "Hypertable.Service.Timeout.StartServ
 const char* cfg_stop_server_timeout      = "Hypertable.Service.Timeout.StopServer";
 const char* cfg_kill_server_timeout      = "Hypertable.Service.Timeout.KillServer";
 const char* cfg_connection_timeout       = "Hypertable.Service.Timeout.Connection";
+const char* cfg_minuptime_before_restart = "Hypertable.Service.MinimumUptimeBeforeRestart";
 
 void init(int argc, char **argv) {
   typedef Meta::list<ServicePolicy, DefaultServerPolicy > Policies;
@@ -106,23 +107,6 @@ void init_service_options() {
     (cmdline_create_console, boo()->zero_tokens()->default_value(false), "Create a console for each server")
     (cmdline_logging_dir, str()->default_value("log"), "Logging directory (if relative, it's relative to the Hypertable data directory root)")
     (cmdline_rangeserver, str()->default_value("localhost:38060"), "Range server to connect in <host:port> format");
-
-  // config file options
-  file_desc().add_options()
-    (cfg_service_name, str()->default_value("Hypertable"), "Service name")
-    (cfg_service_display_name, str()->default_value("Hypertable Database Service"), "Service display name")
-    (cfg_dfsbroker, boo()->default_value(true), "Include DFS broker")
-    (cfg_hyperspace, boo()->default_value(true), "Include hyperspace master")
-    (cfg_hypertable, boo()->default_value(true), "Include hypertable master")
-    (cfg_rangeserver, boo()->default_value(true), "Include range server")
-    (cfg_thriftbroker, boo()->default_value(true), "Include thrift broker")
-    (cfg_logging_dir, str()->default_value("log"), "Logging directory (if relative, it's relative to the Hypertable data directory root)")
-    (cfg_start_service_timeout, i32()->default_value(30000), "Start service timeout in ms")
-    (cfg_stop_service_timeout, i32()->default_value(60000), "Stop service timeout in ms")
-    (cfg_start_server_timeout, i32()->default_value(7500), "Start server timeout in ms")
-    (cfg_stop_server_timeout, i32()->default_value(7500), "Stop server timeout in ms")
-    (cfg_kill_server_timeout, i32()->default_value(5000), "Kill server timeout in ms")
-    (cfg_connection_timeout, i32()->default_value(5000), "Connection timeout in ms");
 
   // aliases
   alias(cmdline_service_name, cfg_service_name);
@@ -239,6 +223,10 @@ int32_t connection_timeout() {
   return get_i32(cfg_connection_timeout);
 }
 
+int32_t minuptime_before_restart() {
+  return get_i32(cfg_minuptime_before_restart);
+}
+
 bool silent() {
   return get_bool("silent");
 }
@@ -298,6 +286,7 @@ String server_args() {
     cfg_stop_server_timeout,
     cfg_kill_server_timeout,
     cfg_connection_timeout,
+    cfg_minuptime_before_restart,
     0
   };
 

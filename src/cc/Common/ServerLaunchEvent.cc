@@ -41,19 +41,23 @@ using namespace Hypertable;
 }
 
 ServerLaunchEvent::ServerLaunchEvent()
-  : evt(create_event(0, GetCurrentProcessId(), already_exists)) {
+  : evt(0), pid(0), already_exists(false) {
+  evt = create_event(0, GetCurrentProcessId(), already_exists);
 }
 
 ServerLaunchEvent::ServerLaunchEvent(const char* preffix)
-  : evt(create_event(preffix, GetCurrentProcessId(), already_exists)) {
+: evt(0), pid(0), already_exists(false) {
+  evt = create_event(preffix, GetCurrentProcessId(), already_exists);
 }
 
-ServerLaunchEvent::ServerLaunchEvent(DWORD pid)
-  : evt(create_event(0, pid, already_exists)) {
+ServerLaunchEvent::ServerLaunchEvent(DWORD _pid)
+  : evt(0), pid(_pid), already_exists(false) {
+  evt = create_event(0, pid, already_exists);
 }
 
-ServerLaunchEvent::ServerLaunchEvent(const char* preffix, DWORD pid)
-  : evt(create_event(preffix, pid, already_exists)) {
+ServerLaunchEvent::ServerLaunchEvent(const char* preffix, DWORD _pid)
+: evt(0), pid(_pid), already_exists(false) {
+  evt = create_event(preffix, pid, already_exists);
 }
 
 ServerLaunchEvent::~ServerLaunchEvent() {
@@ -74,19 +78,48 @@ void ServerLaunchEvent::set_event() {
     HT_ERRORF("ServerLaunchEvent::set_event - invalid event handle");
 }
 
-bool ServerLaunchEvent::wait(int timeout_ms) {
+bool ServerLaunchEvent::wait(int timeout_ms, bool& timed_out) {
+  timed_out = false;
   if (evt) {
+    if (pid) {
+      HANDLE p = OpenProcess(SYNCHRONIZE, FALSE, pid);
+      if (p) {
+        HANDLE handles[2] = { evt, p };
+        switch (WaitForMultipleObjects(2, handles, FALSE, timeout_ms)) {
+          case WAIT_OBJECT_0:
+            return true;
+          case WAIT_OBJECT_0 + 1:
+            return false;
+          case WAIT_ABANDONED: {
+            HT_ERRORF("ServerLaunchEvent::wait - abandoned");
+            break;
+          }
+          case WAIT_FAILED:
+            WINAPI_ERROR("WaitForMultipleObjects failed - %s");
+            break;
+          default:
+            timed_out = true;
+            break;
+        }
+        return false;
+      }
+      else if (GetLastError() == ERROR_INVALID_PARAMETER) {
+        return false; // process id does not exists
+      }
+      else
+        WINAPI_ERROR("OpenProcess failed - %s")
+    }
     switch (WaitForSingleObject(evt, timeout_ms)) {
       case WAIT_OBJECT_0:
         return true;
-      case WAIT_ABANDONED: {
+      case WAIT_ABANDONED:
         HT_ERRORF("ServerLaunchEvent::wait - abandoned");
         break;
-      }
       case WAIT_FAILED:
         WINAPI_ERROR("WaitForSingleObject failed - %s");
         break;
       default:
+        timed_out = true;
         break;
     }
   }

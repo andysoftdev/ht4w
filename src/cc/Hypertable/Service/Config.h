@@ -71,6 +71,7 @@ namespace Hypertable { namespace Config {
   int32_t stop_server_timeout();
   int32_t kill_server_timeout();
   int32_t connection_timeout();
+  int32_t minuptime_before_restart();
 
   bool silent();
 
