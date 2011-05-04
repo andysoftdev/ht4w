@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007 Doug Judd (Zvents, Inc.)
+ * Copyright (C) 2011 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -34,6 +34,7 @@ namespace Hypertable {
    */
   struct Endpoint {
     Endpoint(const String &host, uint16_t port) : host(host), port(port) {}
+    Endpoint() : port(0) {}
 
     String host;
     uint16_t port;
@@ -114,6 +115,12 @@ namespace Hypertable {
      */
     static bool parse_ipv4(const char *ip, uint16_t port, sockaddr_in &addr,
                            int base = 0);
+
+    /**
+     * Tests whether the input string in n.n.n.n format (base 10)
+     * @param ip - ipv4 string
+     */
+    static bool is_ipv4(const char *ip);
 
     /** Initialize addr from an integer ip address and port */
     static bool initialize(sockaddr_in *addr, uint32_t haddr, uint16_t port);

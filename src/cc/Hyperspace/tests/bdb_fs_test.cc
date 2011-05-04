@@ -34,13 +34,16 @@ extern "C" {
 #include "Common/Logger.h"
 #include "Common/String.h"
 #include "Common/System.h"
+#include "Common/Init.h"
 #include "Common/Properties.h"
+#include "Common/Config.h"
 #include "Common/Thread.h"
 
 #include "Hyperspace/BerkeleyDbFilesystem.h"
 
 using namespace Hyperspace;
 using namespace Hypertable;
+using namespace Config;
 using namespace std;
 
 int main(int argc, char **argv) {
@@ -49,7 +52,7 @@ int main(int argc, char **argv) {
   int ret = 0;
   bool isdir;
   PropertiesPtr props = new Properties();
-  String localhost = "localhost";
+  init_with_policy<DefaultPolicy>(argc, argv);
 
   System::initialize(System::locate_install_dir(argv[0]));
 
@@ -76,7 +79,7 @@ int main(int argc, char **argv) {
   props->set("Hypertable.DataDirectory", System::install_dir);
 #endif
 
-  bdb_fs = new BerkeleyDbFilesystem(props, localhost, filename, thread_ids);
+  bdb_fs = new BerkeleyDbFilesystem(props, filename, thread_ids);
 
   BDbTxn txn;
   bdb_fs->start_transaction(txn);

@@ -168,6 +168,7 @@
     <ClInclude Include="KeyDecompressorNone.h" />
     <ClInclude Include="KeyDecompressorPrefix.h" />
     <ClInclude Include="LiveFileTracker.h" />
+    <ClInclude Include="LoadFactors.h" />
     <ClInclude Include="LoadMetricsRange.h" />
     <ClInclude Include="LocationInitializer.h" />
     <ClInclude Include="MaintenanceFlag.h" />

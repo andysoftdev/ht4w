@@ -112,6 +112,9 @@
     <ClCompile Include="StringDecompressorPrefix.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Escaper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Abi.h">
@@ -346,6 +349,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="SpiritParser.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Escaper.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

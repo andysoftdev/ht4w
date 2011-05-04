@@ -180,6 +180,7 @@
     <ClCompile Include="DiscreteRandomGeneratorFactory.cc" />
     <ClCompile Include="DiscreteRandomGeneratorZipf.cc" />
     <ClCompile Include="Error.cc" />
+    <ClCompile Include="Escaper.cc" />
     <ClCompile Include="FailureInducer.cc" />
     <ClCompile Include="Filesystem.cc" />
     <ClCompile Include="FileUtils.cc" />
@@ -236,6 +237,7 @@
     <ClInclude Include="DynamicBuffer.h" />
     <ClInclude Include="endian-c.h" />
     <ClInclude Include="Error.h" />
+    <ClInclude Include="Escaper.h" />
     <ClInclude Include="FailureInducer.h" />
     <ClInclude Include="Filesystem.h" />
     <ClInclude Include="FileUtils.h" />

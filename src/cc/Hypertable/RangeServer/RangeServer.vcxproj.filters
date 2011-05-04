@@ -621,5 +621,8 @@
     <ClInclude Include="RequestHandlerAcknowledgeLoad.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="LoadFactors.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

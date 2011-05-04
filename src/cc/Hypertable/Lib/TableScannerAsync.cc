@@ -40,7 +40,7 @@ using namespace Hypertable;
  */
 TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue, Table *table,
     RangeLocatorPtr &range_locator, const ScanSpec &scan_spec,
-    uint32_t timeout_ms, bool retry_table_not_found, ResultCallback *cb)
+    uint32_t timeout_ms, ResultCallback *cb)
   : m_bytes_scanned(0), m_cb(cb), m_current_scanner(0),
     m_outstanding(0), m_error(Error::OK), m_table(table), m_scan_spec_builder(scan_spec),
     m_cancelled(false) {
@@ -63,7 +63,7 @@ TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
       if (scan_spec.cell_intervals.empty()) {
         ri_scanner = 0;
         ri_scanner = new IntervalScannerAsync(comm, app_queue, table, range_locator, scan_spec,
-            timeout_ms, retry_table_not_found, !current_set, this, scanner_id++);
+                                              timeout_ms, !current_set, this, scanner_id++);
 
         current_set = true;
         m_interval_scanners.push_back(ri_scanner);
@@ -76,8 +76,8 @@ TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
               scan_spec.cell_intervals[i]);
           ri_scanner = 0;
           ri_scanner = new IntervalScannerAsync(comm, app_queue, table, range_locator,
-              interval_scan_spec, timeout_ms, retry_table_not_found, !current_set, this,
-              scanner_id++);
+                                                interval_scan_spec, timeout_ms,
+                                                !current_set, this, scanner_id++);
           current_set = true;
           m_interval_scanners.push_back(ri_scanner);
           m_outstanding++;
@@ -94,8 +94,8 @@ TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
           interval_scan_spec.row_intervals.push_back(ri);
           ri_scanner = 0;
           ri_scanner = new IntervalScannerAsync(comm, app_queue, table, range_locator,
-              interval_scan_spec, timeout_ms, retry_table_not_found, !current_set,
-              this, scanner_id++);
+                                                interval_scan_spec, timeout_ms, !current_set,
+                                                this, scanner_id++);
           current_set = true;
           m_interval_scanners.push_back(ri_scanner);
           m_outstanding++;
@@ -106,7 +106,7 @@ TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
       if (rowset_scan_spec.row_intervals.size()) {
        ri_scanner = 0;
        ri_scanner = new IntervalScannerAsync(comm, app_queue, table, range_locator,
-            rowset_scan_spec, timeout_ms, retry_table_not_found, !current_set,
+                                             rowset_scan_spec, timeout_ms, !current_set,
             this, scanner_id++);
         current_set = true;
         m_interval_scanners.push_back(ri_scanner);
@@ -119,8 +119,8 @@ TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
         interval_scan_spec.row_intervals.push_back(scan_spec.row_intervals[i]);
         ri_scanner = 0;
         ri_scanner = new IntervalScannerAsync(comm, app_queue, table, range_locator,
-            interval_scan_spec, timeout_ms, retry_table_not_found, !current_set,
-            this, scanner_id++);
+                                              interval_scan_spec, timeout_ms, !current_set,
+                                              this, scanner_id++);
         current_set = true;
         m_interval_scanners.push_back(ri_scanner);
         m_outstanding++;
@@ -170,7 +170,7 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
     switch(error) {
       case (Error::TABLE_NOT_FOUND):
       case (Error::RANGESERVER_TABLE_NOT_FOUND):
-        if (m_retry_table_not_found && is_create)
+        if (m_table->auto_refresh() && is_create)
         abort = !(m_interval_scanners[scanner_id]->retry_or_abort(true, true, is_create, &next));
         else {
           next = m_interval_scanners[scanner_id]->abort(is_create);
@@ -178,12 +178,16 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
         }
         break;
       case (Error::RANGESERVER_GENERATION_MISMATCH):
-        if (is_create)
+        if (m_table->auto_refresh() && is_create)
         abort = !(m_interval_scanners[scanner_id]->retry_or_abort(true, false, is_create, &next));
         else {
           next = m_interval_scanners[scanner_id]->abort(is_create);
           abort = true;
         }
+        break;
+      case(Error::RANGESERVER_INVALID_SCANNER_ID):
+        abort = !(m_interval_scanners[scanner_id]->is_destroyed_scanner(is_create));
+        next = true;
         break;
       case(Error::RANGESERVER_RANGE_NOT_FOUND):
       case(Error::COMM_NOT_CONNECTED):
@@ -214,6 +218,9 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
     maybe_callback_error(scanner_id, next);
     if (next && scanner_id == m_current_scanner)
       move_to_next_interval_scanner(scanner_id, cancelled);
+  }
+  else if (next && scanner_id == m_current_scanner) {
+    move_to_next_interval_scanner(scanner_id, cancelled);
   }
 }
 
@@ -364,15 +371,7 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool 
     m_current_scanner = current_scanner;
     if (m_interval_scanners[current_scanner] !=0) {
       next = m_interval_scanners[current_scanner]->set_current(&do_callback, cells, abort);
-      if (!(do_callback|| !next || abort)) {
-        HT_INFO_OUT << "current_scanner=" << current_scanner << ", do_callback="
-            << do_callback << ", next=" << next << ", abort=" << abort
-            << ", cancelled=" << cancelled << ", abort=" << abort
-            << HT_END;
-        m_interval_scanners[current_scanner]->dump_state();
-        dump_state();
-        HT_ASSERT(false);
-      }
+      HT_ASSERT(do_callback || !next || abort);
 
       // scan was cancelled and this is the last outstanding scanner
       if (next && m_outstanding==1 && cancelled && m_error == Error::OK) {
@@ -382,25 +381,4 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool 
       maybe_callback_ok(m_current_scanner, next, do_callback, cells);
     }
   }
-}
-
-void TableScannerAsync::dump_state() {
-  String active_interval_scanners;
-
-  for(size_t ii=0; ii< m_interval_scanners.size(); ii++) {
-    if (m_interval_scanners[ii] != 0)
-      active_interval_scanners = active_interval_scanners + (int) ii + ", ";
-  }
-
-  HT_INFO_OUT << "TableScannerAsync state m_current_scanner=" << m_current_scanner
-      << ", m_interval_scanners.size()=" << m_interval_scanners.size()
-      << ", m_outstanding=" << m_outstanding << ", m_error=" << m_error
-      << ", m_error_msg=" << m_error_msg
-      << ", m_table_name=" << m_table_name << ", m_cancelled=" << m_cancelled
-      << ", active_interval_scanners={" << active_interval_scanners << "}"
-      << ", current_interval_scanner_async=" << std::hex
-      << m_interval_scanners[m_current_scanner].get()
-      << ", TableScannerAsync=" << this
-      << HT_END;
-
 }

@@ -38,19 +38,18 @@ using namespace Hypertable;
 
 IntervalScannerAsync::IntervalScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
     Table *table, RangeLocatorPtr &range_locator, const ScanSpec &scan_spec,
-    uint32_t timeout_ms, bool retry_table_not_found, bool current,
-    TableScannerAsync *scanner, int id)
+    uint32_t timeout_ms, bool current, TableScannerAsync *scanner, int id)
   : m_comm(comm), m_table(table), m_range_locator(range_locator),
     m_loc_cache(range_locator->location_cache()),
     m_range_server(comm, timeout_ms), m_eos(false),
     m_fetch_outstanding(false), m_create_outstanding(false),
     m_end_inclusive(false), m_rows_seen(0), m_timeout_ms(timeout_ms),
-    m_retry_table_not_found(retry_table_not_found), m_current(current), m_bytes_scanned(0),
+    m_current(current), m_bytes_scanned(0),
     m_create_handler(app_queue, scanner, id, true),
     m_fetch_handler(app_queue, scanner, id, false),
     m_scanner(scanner), m_id(id), m_create_timer(timeout_ms), m_fetch_timer(timeout_ms),
     m_cur_scanner_finished(false), m_cur_scanner_id(0), m_create_event_saved(false),
-    m_aborted(false) {
+    m_aborted(false), m_invalid_scanner_id_ok(false) {
 
   HT_ASSERT(m_timeout_ms);
 
@@ -63,6 +62,7 @@ void IntervalScannerAsync::init(const ScanSpec &scan_spec) {
   const char *start_row, *end_row;
   String family, qualifier;
   bool has_qualifier, is_regexp;
+  bool start_row_inclusive=true;
 
   if (!scan_spec.row_intervals.empty() && !scan_spec.cell_intervals.empty())
     HT_THROW(Error::BAD_SCAN_SPEC,
@@ -92,7 +92,7 @@ void IntervalScannerAsync::init(const ScanSpec &scan_spec) {
     if (!scan_spec.scan_and_filter_rows) {
       start_row = (scan_spec.row_intervals[0].start == 0) ? ""
           : scan_spec.row_intervals[0].start;
-
+      start_row_inclusive = scan_spec.row_intervals[0].start_inclusive;
       if (scan_spec.row_intervals[0].end == 0 ||
           scan_spec.row_intervals[0].end[0] == 0)
         end_row = Key::END_ROW_MARKER;
@@ -177,6 +177,8 @@ void IntervalScannerAsync::init(const ScanSpec &scan_spec) {
 
   // start scan asynchronously (can trigger table not found exceptions)
   m_create_scanner_row = m_start_row;
+  if (!start_row_inclusive)
+    m_create_scanner_row.append(1,1);
   find_range_and_start_scan(m_create_scanner_row.c_str());
   HT_ASSERT(m_create_outstanding && !m_fetch_outstanding);
 }
@@ -267,13 +269,13 @@ void IntervalScannerAsync::reset_outstanding_status(bool is_create, bool reset_t
     HT_ASSERT(m_create_outstanding && !m_create_event_saved);
     m_create_outstanding = false;
     if (reset_timer)
-      m_create_timer.stop();
+      m_create_timer.reset();
   }
   else {
-    HT_ASSERT(m_fetch_outstanding && m_current);
+    HT_ASSERT(m_fetch_outstanding && (m_current || m_invalid_scanner_id_ok));
     m_fetch_outstanding = false;
     if (reset_timer)
-      m_fetch_timer.stop();
+      m_fetch_timer.reset();
   }
 }
 
@@ -285,6 +287,19 @@ bool IntervalScannerAsync::abort(bool is_create) {
   if (move_to_next)
     m_current = false;
   return move_to_next;
+}
+
+bool IntervalScannerAsync::is_destroyed_scanner(bool is_create) {
+  // handle case where row limit was hit and scanner was cancelled but fetch request is
+  // still outstanding
+  reset_outstanding_status(is_create, true);
+  if (m_invalid_scanner_id_ok) {
+    HT_ASSERT(!is_create);
+    HT_ASSERT(!has_outstanding_requests());
+    m_invalid_scanner_id_ok = false;
+    return true;
+  }
+  return false;
 }
 
 bool IntervalScannerAsync::retry_or_abort(bool refresh, bool hard, bool is_create,
@@ -445,8 +460,8 @@ void IntervalScannerAsync::load_result(ScanCellsPtr &cells) {
   if (m_eos && !m_cur_scanner_finished) {
     HT_ASSERT(m_fetch_outstanding);
     m_range_server.destroy_scanner(m_range_info.addr, m_cur_scanner_id, 0);
+    m_invalid_scanner_id_ok=true;
     m_cur_scanner_id = 0;
-    m_fetch_outstanding = false;
   }
   return;
 }
@@ -522,22 +537,4 @@ void IntervalScannerAsync::do_readahead() {
     find_range_and_start_scan(m_create_scanner_row.c_str());
   }
   return;
-}
-
-void IntervalScannerAsync::dump_state() {
-  HT_INFO_OUT << "m_eos=" << m_eos << ", m_cur_row=" << m_cur_row
-      << ", m_create_scanner_row=" << m_create_scanner_row
-      << ", m_range_info.start_row=" << m_range_info.start_row
-      << ", m_range_info.end_row=" << m_range_info.end_row
-      << ", m_next_range_info.start_row=" << m_next_range_info.start_row
-      << ", m_next_range_info.end_row=" << m_next_range_info.end_row
-      << ", m_start_row=" << m_start_row << ", m_end_row=" << m_end_row
-      << ", m_current=" << m_current << ", m_cur_scanner_finished=" << m_cur_scanner_finished
-      << ", m_cur_scanner_id=" << m_cur_scanner_id
-      << ", m_create_event_saved=" << m_create_event_saved
-      << ", m_aborted=" << m_aborted
-      << ", m_fetch_outstanding=" << m_fetch_outstanding
-      << ", m_create_outstanding=" << m_create_outstanding
-      << ", m_id=" << m_id << " IntervalScannerAsync=" << std::hex << this
-      << HT_END;
 }

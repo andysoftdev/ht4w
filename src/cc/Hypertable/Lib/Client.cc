@@ -214,8 +214,6 @@ void Client::initialize_with_hyperspace() {
 
   m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
 
-  m_refresh_schema = m_props->get_bool("Hypertable.Client.RefreshSchema");
-
   if (m_timeout_ms == 0)
     m_timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
 

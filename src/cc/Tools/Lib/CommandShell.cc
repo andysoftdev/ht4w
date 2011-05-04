@@ -76,6 +76,28 @@ namespace {
   "source <f> (.)  Execute commands in file <f>.\n" \
   "system     (\\!) Execute a system shell command.\n" \
   "\n";
+
+  char *find_char(const char *s, int c) {
+    bool in_quotes = false;
+    char quote_char = 0;
+
+    for (const char *ptr=s; *ptr; ptr++) {
+      if (in_quotes) {
+        if (*ptr == quote_char && *(ptr-1) != '\\')
+          in_quotes = false;
+      }
+      else {
+        if (*ptr == (char )c)
+          return (char *)ptr;
+        else if (*ptr == '\'' || *ptr == '"') {
+          in_quotes = true;
+          quote_char = *ptr;
+        }
+      }
+    }
+    return 0;
+  }
+
 }
 
 
@@ -328,7 +350,7 @@ int CommandShell::run() {
        * Add commands to queue
        */
       base = line;
-      ptr = strchr(base, ';');
+      ptr = find_char(base, ';');
       while (ptr) {
         m_accum += string(base, ptr-base);
         if (m_accum.size() > 0) {
@@ -339,7 +361,7 @@ int CommandShell::run() {
           m_cont = false;
         }
         base = ptr+1;
-        ptr = strchr(base, ';');
+        ptr = find_char(base, ';');
       }
       command = string(base);
       boost::trim(command);

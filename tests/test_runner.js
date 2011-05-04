@@ -421,16 +421,6 @@ function hypertable_ldi_select_test(logfile, testName) {
     return status;
 }
 
-function hypertable_refresh_schema_test(logfile, testName) {
-    file_copy(solutionDir + "\\sed.exe", targetDir);
-    prepare_target(testName, ["hypertable_refresh_schema_test_*.golden"]);
-    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
-    system("..\\hypertable.exe  -e \"create namespace '/test';quit;\"");
-    var status = run_target(logfile, testName);
-    file_delete("sed.exe");
-    return status;
-}
-
 function hypertable_test(logfile, testName) {
     file_copy(solutionDir + "\\gzip.exe", targetDir);
     file_copy(solutionDir + "\\sed.exe", targetDir);
@@ -586,7 +576,6 @@ all_tests.add("future_test", future_test);
 all_tests.add("hash_test", run_target);
 all_tests.add("hyperspace_test", hyperspace_test);
 all_tests.add("hypertable_ldi_select_test", hypertable_ldi_select_test);
-all_tests.add("hypertable_refresh_schema_test", hypertable_refresh_schema_test);
 all_tests.add("hypertable_test", hypertable_test);
 all_tests.add("inetaddr_test", run_target);
 all_tests.add("init_test", init_test);
