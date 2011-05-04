@@ -2,42 +2,41 @@
 <Project DefaultTargets="Make" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
 
 	<ItemGroup>
-		<TargetCfg Include="." >
+		<MakeConfiguration Include="." >
 			<Configuration>Debug</Configuration>
 			<Platform>Win32</Platform>
-		</TargetCfg>
-		<TargetCfg Include="." >
+		</MakeConfiguration>
+		<MakeConfiguration Include="." >
 			<Configuration>Release</Configuration>
 			<Platform>Win32</Platform>
-		</TargetCfg>
-		<TargetCfg Include="." >
+		</MakeConfiguration>
+		<MakeConfiguration Include="." >
 			<Configuration>Debug</Configuration>
 			<Platform>x64</Platform>
-		</TargetCfg>
-		<TargetCfg Include="." >
+		</MakeConfiguration>
+		<MakeConfiguration Include="." >
 			<Configuration>Release</Configuration>
 			<Platform>x64</Platform>
-		</TargetCfg>
+		</MakeConfiguration>
 	</ItemGroup>
 
 	<Target Name="Clean">
 		<MSBuild
 			Projects="ht4w.sln"
 			Targets="Clean"
-			Properties="Configuration=%(TargetCfg.Configuration);Platform=%(TargetCfg.Platform)"
+			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform)"
 			ContinueOnError="false" />
 	</Target>
 
-	<Target Name="Make">
-		<CallTarget
-			Targets="Build" />
+	<Target Name="Make"
+			DependsOnTargets="Build">
 	</Target>
 
 	<Target Name="Build">
 		<MSBuild
 			Projects="ht4w.sln"
 			Targets="Build"
-			Properties="Configuration=%(TargetCfg.Configuration);Platform=%(TargetCfg.Platform)"
+			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform)"
 			ContinueOnError="false" />
 	</Target>
 
