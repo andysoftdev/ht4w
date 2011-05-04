@@ -29,7 +29,7 @@ using namespace Hypertable;
 
 FutureCallback::~FutureCallback() {
   cancel();
-  ResultCallback::wait_for_completion();
+  wait_for_completion();
   foreach (TableScannerAsync *scanner, m_scanners_owned)
     intrusive_ptr_release(scanner);
 }
@@ -56,30 +56,16 @@ void FutureCallback::deregister_scanner(TableScannerAsync *scanner) {
   m_scanner_set.erase(it);
 }
 
-void FutureCallback::wait_for_completion() {
-  ResultCallback::wait_for_completion();
-  if (m_last_error)
-    throw Exception(m_last_error, m_last_error_msg);
-}
-
 const ScanSpec &FutureCallback::get_scan_spec(TableScannerAsync *scanner) {
   return scanner->get_scan_spec();
 }
 
 void FutureCallback::scan_error(TableScannerAsync *scanner, int error, const String &error_msg, bool eos) {
-  ScopedLock lock(m_last_error_mutex);
-  if (!m_last_error) {
-    m_last_error_msg = error_msg;
-    m_last_error = error;
-    cancel();
-  }
+  cancel();
+  throw Exception(error, error_msg);
 }
 
 void FutureCallback::update_error(TableMutator *mutator, int error, const String &error_msg) {
-  ScopedLock lock(m_last_error_mutex);
-  if (!m_last_error) {
-    m_last_error_msg = error_msg;
-    m_last_error = error;
-    cancel();
-  }
+  cancel();
+  throw Exception(error, error_msg);
 }

@@ -39,7 +39,7 @@ namespace Hypertable {
      * FutureCallback objects are used to access results from asynchronous scanners/mutators
      * @param capacity number of Result objects to enqueue
      */
-    FutureCallback() : m_cancelled(false), m_last_error(Error::OK) { }
+    FutureCallback() : m_cancelled(false) { }
     virtual ~FutureCallback();
 
     /**
@@ -56,8 +56,6 @@ namespace Hypertable {
 
     void register_scanner(TableScannerAsync *scanner);
     void deregister_scanner(TableScannerAsync *scanner);
-
-    void wait_for_completion();
 
     const ScanSpec &get_scan_spec(TableScannerAsync *scanner);
 
@@ -77,9 +75,6 @@ namespace Hypertable {
     typedef std::set<TableScannerAsync*> ScannerSet;
     ScannerSet m_scanner_set;
     ScannerSet m_scanners_owned;
-    Mutex m_last_error_mutex;
-    int m_last_error;
-    String m_last_error_msg;
   };
   typedef intrusive_ptr<FutureCallback> FutureCallbackPtr;
 }
