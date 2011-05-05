@@ -55,10 +55,10 @@ Building Hypertable from source for Windows requires Microsoft Visual Studio 201
 MANAGE HYPERTABLE SERVERS
 =========================
 
-Use Hypertable.Service.exe (...\\ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage Hypertable servers. Run:
+Use Hypertable.Service.exe (...\\ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage Hypertable servers. For a complete list
+of available options and configuration settings run:
 
-		Hypertable.Service.exe --help
-(or --help-config) for a complete list of available options and configuration settings.
+		Hypertable.Service.exe [--help|--help-config]
 
 Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) from ...\\ht4w\\conf to ...\\ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]\\conf.
 
