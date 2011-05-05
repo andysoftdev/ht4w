@@ -54,7 +54,7 @@
 
 	<!-- Build and make master -->
 	<Target Name="Make"
-			DependsOnTargets="Build;MakeMaster">
+			DependsOnTargets="CleanMaster;Build;MakeMaster">
 	</Target>
 
 	<!-- Build -->
