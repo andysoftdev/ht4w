@@ -35,26 +35,29 @@ Building Hypertable from source for Windows requires Microsoft Visual Studio 201
 
 * Unpack the package content (*e.g.* below db-5.1.19\\...) into ...\\ht4w\\deps\\db\\ and run:
 
-		cscript ...\\ht4w\\deps\\db\\libdb.js
-  libdb will be built within the regular ht4w solution.
+		cscript ...\ht4w\deps\db\libdb.js
+  libdb will be built within the regular ht4w solution or msbuild script.
 
 
 ###Build Hypertable servers, clients and tools###
 
-* Open solution ...\\ht4w\\ht4w.sln with Microsoft Visual Studio 2010 and build the solution configuration(s) or
-  run Visual Studio Command Prompt, cd to ...\\ht4w\\ and type:
+* Open the ht4w solution (...\\ht4w\\ht4w.sln) with Microsoft Visual Studio 2010 and build the solution configuration(s) or
+  run Visual Studio Command Prompt and run:
 
+		cd ...\ht4w
 		msbuild ht4w.buildproj
-
   or for a complete rebuild
 
+		cd ...\ht4w
 		msbuild ht4w.buildproj /t:Clean;Make
 
 
 MANAGE HYPERTABLE SERVERS
 =========================
 
-Use Hypertable.Service.exe (...\\ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage Hypertable servers. Run Hypertable.Service.exe --help
+Use Hypertable.Service.exe (...\\ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage Hypertable servers. Run:
+
+		Hypertable.Service.exe --help
 (or --help-config) for a complete list of available options and configuration settings.
 
 Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) from ...\\ht4w\\conf to ...\\ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]\\conf.
@@ -109,11 +112,11 @@ The servers will run under the logged on windows account.
 
 * Start servers:
 
-		...\\ht4w\\bin\\start-all-servers [x86|x64] [debug] [additional arguments]
+		...\ht4w\bin\start-all-servers [x86|x64] [debug] [additional arguments]
 
 * Stop servers:
 
-		...\\ht4w\\bin\\stop-all-servers [x86|x64] [debug] [additional arguments]
+		...\ht4w\bin\stop-all-servers [x86|x64] [debug] [additional arguments]
 
 
 REDISTRIBUTE HYPERTABLE FOR WINDOWS
