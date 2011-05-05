@@ -1,6 +1,34 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Make" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
 
+	<!-- Master files to make -->
+	<PropertyGroup>
+		<Version>0.9.5.0</Version>
+		<MasterServers_x86>dist\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
+		<MasterTools_x86>dist\ht4w-tools-$(Version)-win-x86.zip</MasterTools_x86>
+		<MasterServers_x64>dist\ht4w-$(Version)-win-x64.zip</MasterServers_x64>
+		<MasterTools_x64>dist\ht4w-tools-$(Version)-win-x64.zip</MasterTools_x64>
+	</PropertyGroup>
+
+	<!-- Check for MSBuildCommunityTasks -->
+	<PropertyGroup>
+		<MSBuildCommunityTasksTargets>$(MSBuildExtensionsPath)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets</MSBuildCommunityTasksTargets>
+		<HasMSBuildCommunityTasks>false</HasMSBuildCommunityTasks>
+		<HasMSBuildCommunityTasks Condition="Exists('$(MSBuildCommunityTasksTargets)')">true</HasMSBuildCommunityTasks>
+	</PropertyGroup>
+
+	<!-- Get machine's architecture -->
+	<PropertyGroup>
+		<MachineProcessorArchitecture>$(registry:HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment@PROCESSOR_ARCHITECTURE)</MachineProcessorArchitecture>
+		<Is32Bit>False</Is32Bit>
+		<Is32Bit
+			Condition="'$(MachineProcessorArchitecture)' == 'x86'">true</Is32Bit>
+		<Is64Bit>False</Is64Bit>
+		<Is64Bit
+			Condition="'$(MachineProcessorArchitecture)' == 'AMD64'">true</Is64Bit>
+	</PropertyGroup>
+
+	<!-- Configuration group -->
 	<ItemGroup>
 		<MakeConfiguration Include="." >
 			<Configuration>Debug</Configuration>
@@ -10,17 +38,80 @@
 			<Configuration>Release</Configuration>
 			<Platform>Win32</Platform>
 		</MakeConfiguration>
-		<MakeConfiguration Include="." >
+		<MakeConfiguration Include="." Condition="$(Is64Bit) == true" >
 			<Configuration>Debug</Configuration>
 			<Platform>x64</Platform>
 		</MakeConfiguration>
-		<MakeConfiguration Include="." >
+		<MakeConfiguration Include="." Condition="$(Is64Bit) == true" >
 			<Configuration>Release</Configuration>
 			<Platform>x64</Platform>
 		</MakeConfiguration>
 	</ItemGroup>
 
-	<Target Name="Clean">
+	<!-- Import MSBuildCommunityTasksTargets if available -->
+	<Import Project="$(MSBuildCommunityTasksTargets)"
+			Condition="$(HasMSBuildCommunityTasks) == true"/>
+
+	<!-- Build and make master -->
+	<Target Name="Make"
+			DependsOnTargets="Build;MakeMaster">
+	</Target>
+
+	<!-- Build -->
+	<Target Name="Build">
+		<MSBuild
+			Projects="ht4w.sln"
+			Targets="Build"
+			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform)"
+			ContinueOnError="false" />
+	</Target>
+
+	<!-- Make master -->
+	<Target Name="MakeMaster"
+			Condition="$(HasMSBuildCommunityTasks) == true" >
+
+		<ItemGroup>
+			<MasterServersFiles_x86 Include="dist\Win32\Release\Hypertable.*.exe;dist\Win32\Release\Hyperspace.Master.exe;dist\Win32\Release\hypertable.exe;dist\Win32\Release\conf\*.*" />
+		</ItemGroup>
+
+		<ItemGroup>
+			<MasterServersFiles_x64 Include="dist\x64\Release\Hypertable.*.exe;dist\x64\Release\Hyperspace.Master.exe;dist\x64\Release\hypertable.exe;dist\x64\Release\conf\*.*" />
+		</ItemGroup>
+		
+		<ItemGroup>
+			<MasterToolsFiles_x86 Include="dist\Win32\Release\*.exe;dist\x86\Release\conf\*.*" Exclude="dist\Win32\Release\Hypertable.*.exe;dist\Win32\Release\Hyperspace.Master.exe;dist\Win32\Release\hypertable.exe" />
+		</ItemGroup>
+
+		<ItemGroup>
+			<MasterToolsFiles_x64 Include="dist\x64\Release\*.exe;dist\x64\Release\conf\*.*" Exclude="dist\x64\Release\Hypertable.*.exe;dist\x64\Release\Hyperspace.Master.exe;dist\x64\Release\hypertable.exe" />
+		</ItemGroup>
+
+		<Zip
+			Files="@(MasterServersFiles_x86)" 
+			ZipFileName="$(MasterServers_x86)"
+			WorkingDirectory="dist\Win32\Release\" />
+
+		<Zip
+			Files="@(MasterServersFiles_x64)" 
+			ZipFileName="$(MasterServers_x64)"
+			WorkingDirectory="dist\x64\Release\"
+			Condition="$(Is64Bit) == true" />
+
+		<Zip
+			Files="@(MasterToolsFiles_x86)" 
+			ZipFileName="$(MasterTools_x86)"
+			WorkingDirectory="dist\Win32\Release\" />
+
+		<Zip
+			Files="@(MasterToolsFiles_x64)" 
+			ZipFileName="$(MasterTools_x64)"
+			WorkingDirectory="dist\x64\Release\"
+			Condition="$(Is64Bit) == true" />
+	</Target>
+
+	<!-- Cleans build and deletes the master files -->
+	<Target Name="Clean"
+			DependsOnTargets="CleanMaster">
 		<MSBuild
 			Projects="ht4w.sln"
 			Targets="Clean"
@@ -28,16 +119,16 @@
 			ContinueOnError="false" />
 	</Target>
 
-	<Target Name="Make"
-			DependsOnTargets="Build">
-	</Target>
-
-	<Target Name="Build">
-		<MSBuild
-			Projects="ht4w.sln"
-			Targets="Build"
-			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform)"
-			ContinueOnError="false" />
+	<!-- Deletes the master files -->
+	<Target Name="CleanMaster">
+		<Delete
+			Files="$(MasterServers_x86)" />
+		<Delete
+			Files="$(MasterServers_x64)" />
+		<Delete
+			Files="$(MasterTools_x86)" />
+		<Delete
+			Files="$(MasterTools_x64)" />
 	</Target>
 
 </Project>
