@@ -161,16 +161,18 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   if (cfg.has("MemoryLimit.EnsureUnused"))
     Global::memory_limit_ensure_unused = cfg.get_i64("MemoryLimit.EnsureUnused");
-  else {
+  else if (cfg.has("MemoryLimit.EnsureUnused.Percentage")) {
     double pct = std::max(1.0, std::min((double)cfg.get_i32("MemoryLimit.EnsureUnused.Percentage"), 99.0)) / 100.0;
     Global::memory_limit_ensure_unused = (int64_t)(mem_stat.ram * Property::MiB * pct);
   }
 
-  // adjust current limit according to the actual memory situation
-  int64_t free_memory_50pct = (int64_t)(0.5 * mem_stat.free * Property::MiB);
-  Global::memory_limit_ensure_unused_current = std::min(free_memory_50pct, Global::memory_limit_ensure_unused);
-  if (Global::memory_limit_ensure_unused_current < Global::memory_limit_ensure_unused)
-    HT_NOTICEF("Start up in low memory condition (free memory %.2fMB)", mem_stat.free);
+  if (Global::memory_limit_ensure_unused) {
+    // adjust current limit according to the actual memory situation
+    int64_t free_memory_50pct = (int64_t)(0.5 * mem_stat.free * Property::MiB);
+    Global::memory_limit_ensure_unused_current = std::min(free_memory_50pct, Global::memory_limit_ensure_unused);
+    if (Global::memory_limit_ensure_unused_current < Global::memory_limit_ensure_unused)
+      HT_NOTICEF("Start up in low memory condition (free memory %.2fMB)", mem_stat.free);
+  }
 
   m_max_clock_skew = cfg.get_i32("ClockSkew.Max");
 
