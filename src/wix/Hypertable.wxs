@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:fw="http://schemas.microsoft.com/wix/FirewallExtension">
+
+  <!-- product declaration-->
+  <?define ProductName = "Hypertable"?>
+  <?define Manufacturer="ht4w.softdev.ch"?>
+  <?define Description="Hypertable for Windows (x86)"?>
+  <?define Copyright="ht4w, Copyright © 2010-2011"?>
+
+  <!-- passed by the build process -->
+  <!--<?define ProductVersion="0.9.5.0" ?>-->
+  <!--<?define ProductCode="2A319B06-F775-475C-8362-C7DCA58DE419"?>--> <!-- change for each version -->
+
+  <?define RTMProductVersion="0.0.0.1" ?>
+  <?define UpgradeCode="6B37E81D-D706-4339-B55F-EA7DD7F0F43A"?> <!-- immutable -->
+
+  <!-- folder declaration-->
+  <?define ConfDir="..\..\conf"?>
+  <?define LicenseDir="..\.."?>
+  <?define ResDir="res"?>
+
+  <Product
+    Id="$(var.ProductCode)"
+    Name="$(var.ProductName) $(var.ProductVersion)"
+    Version="$(var.ProductVersion)"
+    Manufacturer="$(var.Manufacturer)"
+    UpgradeCode="$(var.UpgradeCode)"
+    Language="1033">
+
+    <Package
+      Platform="$(var.ProductPlatform)"
+      Description="$(var.Description)"
+      Comments="$(var.Copyright)"
+      Manufacturer="$(var.Manufacturer)"
+      InstallerVersion="300"
+      ReadOnly="yes"
+      Compressed="yes" />
+
+    <Media
+      Id="1"
+      Cabinet="Hypertable.cab"
+      EmbedCab="yes" />
+
+    <Upgrade Id="$(var.UpgradeCode)">
+      <UpgradeVersion
+        Minimum="$(var.ProductVersion)"
+        IncludeMinimum="no"
+        OnlyDetect="yes"
+        Language="1033"
+        Property="NEWPRODUCTFOUND" />
+
+      <UpgradeVersion
+        Minimum="$(var.RTMProductVersion)"
+        IncludeMinimum="yes"
+        Maximum="$(var.ProductVersion)"
+        IncludeMaximum="no"
+        Language="1033"
+        Property="UPGRADEFOUND" />
+    </Upgrade>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="$(var.ProgramFilesFolder)">
+        <Directory Id="INSTALLLOCATION" Name="Hypertable">
+          <Merge
+            Id="VCRedist"
+            SourceFile="$(var.MergeModulesDir)\Microsoft_VC100_CRT_$(var.ProductPlatform).msm"
+            DiskId="1"
+            Language="0" />
+
+          <Component Id="Hypertable.Service.Install" Guid="D1876420-F748-49F6-8EBD-549D6AFD3B1F" Win64="$(var.Win64)">
+            <Condition>HYPERTABLE_SERVICE_CREATE=1</Condition>
+            <File Id="Hypertable.Service.svc" Source="$(var.MasterDir)\Hypertable.Service.exe" KeyPath="yes" Checksum="yes" />
+
+            <ServiceInstall
+              Id="HypertableServiceInstall"
+              Type="ownProcess"
+              Vital="yes"
+              Name="[HYPERTABLE_SERVICE_NAME]"
+              DisplayName="[HYPERTABLE_SERVICE_DISPLAYNAME]"
+              Description="Hypertable is a high performance distributed data storage system designed to support applications requiring maximum performance, scalability, and reliability."
+              Start="auto"
+              Account="LocalSystem"
+              ErrorControl="ignore"
+              Interactive="no">
+            </ServiceInstall>
+
+            <ServiceControl
+              Id="HypertableServiceControl"
+              Start="install"
+              Stop="both"
+              Remove="uninstall"
+              Name="[HYPERTABLE_SERVICE_NAME]" Wait="yes" />
+
+          </Component>
+          <Component Id="Hypertable.Service" Guid="3541CB1B-3BB2-43A7-92C1-F2A87D306E6A" Win64="$(var.Win64)">
+            <Condition>NOT HYPERTABLE_SERVICE_CREATE=1</Condition>
+            <File Id="Hypertable.Service.exe" Source="$(var.MasterDir)\Hypertable.Service.exe" KeyPath="yes" Checksum="yes" />
+
+            <ServiceControl
+              Id="HypertableServiceControlRemoveOnly"
+              Stop="both"
+              Remove="uninstall"
+              Name="[HYPERTABLE_SERVICE_NAME]"
+              Wait="yes" />
+
+          </Component>
+          <Component Id="Hypertable.LocalBroker" Guid="FF109788-0014-43BF-B590-1D3263C3D9C6" Win64="$(var.Win64)">
+            <File Id="Hypertable.LocalBroker.exe" Source="$(var.MasterDir)\Hypertable.LocalBroker.exe" KeyPath="yes" Checksum="yes" />
+          </Component>
+          <Component Id="Hyperspace.Master" Guid="FAF9CC2A-0F9A-45DD-A980-34ABC79EB0AB" Win64="$(var.Win64)">
+            <File Id="Hyperspace.Master.exe" Source="$(var.MasterDir)\Hyperspace.Master.exe" KeyPath="yes" Checksum="yes" />
+          </Component>
+          <Component Id="Hypertable.Master" Guid="9F92D565-F63F-4954-A700-17ADD9CDC63C" Win64="$(var.Win64)">
+            <File Id="Hypertable.Master.exe" Source="$(var.MasterDir)\Hypertable.Master.exe" KeyPath="yes" Checksum="yes" />
+          </Component>
+          <Component Id="Hypertable.RangeServer" Guid="6B287EB1-3309-4E9B-8A19-D28BBD703AF1" Win64="$(var.Win64)">
+            <File Id="Hypertable.RangeServer.exe" Source="$(var.MasterDir)\Hypertable.RangeServer.exe" KeyPath="yes" Checksum="yes" />
+          </Component>
+          <Component Id="Hypertable.ThriftBroker" Guid="B01A8EB8-27DE-457B-919F-D4A9EE21E406" Win64="$(var.Win64)">
+            <File Id="Hypertable.ThriftBroker.exe" Source="$(var.MasterDir)\Hypertable.ThriftBroker.exe" KeyPath="yes" Checksum="yes" />
+          </Component>
+          <Component Id="Hypertable" Guid="FD6FA005-4295-4802-9625-8517D7860DAA" Win64="$(var.Win64)">
+            <File Id="Hypertable.exe" Source="$(var.MasterDir)\Hypertable.exe" KeyPath="yes" Checksum="yes" />
+          </Component>
+          <Component Id="license" Guid="15CE4ED5-7BC7-41F0-9E8E-BFBB5D0BA22F" Win64="$(var.Win64)">
+            <File Id="license.txt" Source="$(var.LicenseDir)\LICENSE.txt" KeyPath="yes" Checksum="yes" />
+          </Component>
+          <Component Id="changes" Guid="0F80D9B9-9254-42FD-A113-C5283FD29838" Win64="$(var.Win64)">
+            <File Id="changes" Source="$(var.LicenseDir)\CHANGES" KeyPath="yes" Checksum="yes" />
+          </Component>
+          <Directory Id="ConfDir" Name="conf">
+            <Component Id="config" Guid="695E1BF5-3823-4BF3-A7FD-6FC3DB9EFBCA" Win64="$(var.Win64)">
+              <File Id="hypertable.cfg" Source="$(var.ConfDir)\hypertable.cfg" KeyPath="yes" Checksum="yes" />
+            </Component>
+            <Component Id="metadata" Guid="734E5A41-79DB-4529-BA9C-C3CE5B7F1569" Win64="$(var.Win64)">
+              <File Id="METADATA.xml" Source="$(var.ConfDir)\METADATA.xml" KeyPath="yes" Checksum="yes" />
+            </Component>
+            <Component Id="rs_metrics" Guid="934069F6-611F-406E-9B0A-0C3F2C4B1C4B" Win64="$(var.Win64)">
+              <File Id="RS_METRICS.xml" Source="$(var.ConfDir)\RS_METRICS.xml" KeyPath="yes" Checksum="yes" />
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <!-- firewall rules for all servers-->
+    <ComponentGroup Id="FirewallRules">
+      <Component Id="Hypertable.LocalBroker.FwTcp" Guid="0785614E-B2DF-4A51-B74C-E5023891614A" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hypertable.LocalBroker.FwTcp"
+          Name="Hypertable LocalBroker"
+          Program="[#Hypertable.LocalBroker.exe]"
+          IgnoreFailure="yes"
+          Protocol="tcp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hypertable.LocalBroker.FwUdp" Guid="F929816A-8A35-4F71-BCD3-84C1D4CD0057" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hypertable.LocalBroker.FwUdp"
+          Name="Hypertable LocalBroker"
+          Program="[#Hypertable.LocalBroker.exe]"
+          IgnoreFailure="yes"
+          Protocol="udp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hyperspace.Master.FwTcp" Guid="E06ADAE9-6A0F-462D-B68B-96E6E42E290A" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hyperspace.Master.FwTcp"
+          Name="Hyperspace Master"
+          Program="[#Hyperspace.Master.exe]"
+          IgnoreFailure="yes"
+          Protocol="tcp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hyperspace.Master.FwUdp" Guid="712CAEDA-BB51-4A9F-87E4-E3835032A36E" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hyperspace.Master.FwUdp"
+          Name="Hyperspace Master"
+          Program="[#Hyperspace.Master.exe]"
+          IgnoreFailure="yes"
+          Protocol="udp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hypertable.Master.FwTcp" Guid="20B2BEFA-2F1A-43B5-933B-83FADA03003F" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hypertable.Master.FwTcp"
+          Name="Hypertable Master"
+          Program="[#Hypertable.Master.exe]"
+          IgnoreFailure="yes"
+          Protocol="tcp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hypertable.Master.FwUdp" Guid="3790865E-0D30-4342-8D97-BC8061037262" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hypertable.Master.FwUdp"
+          Name="Hypertable Master"
+          Program="[#Hypertable.Master.exe]"
+          IgnoreFailure="yes"
+          Protocol="udp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hypertable.RangeServer.FwTcp" Guid="351B498A-8292-4E06-AC07-EB9F954157AE" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hypertable.RangeServer.FwTcp"
+          Name="Hypertable RangeServer"
+          Program="[#Hypertable.RangeServer.exe]"
+          IgnoreFailure="yes"
+          Protocol="tcp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hypertable.RangeServer.FwUdp" Guid="91717174-0D2E-4391-9605-8403474B83B6" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hypertable.RangeServer.FwUdp"
+          Name="Hypertable RangeServer"
+          Program="[#Hypertable.RangeServer.exe]"
+          IgnoreFailure="yes"
+          Protocol="udp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hypertable.ThriftBroker.FwTcp" Guid="7D990A37-4C18-4F80-9A8F-C7DF69F84DF5" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hypertable.ThriftBroker.FwTcp"
+          Name="Hypertable ThriftBroker"
+          Program="[#Hypertable.ThriftBroker.exe]"
+          IgnoreFailure="yes"
+          Protocol="tcp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+      <Component Id="Hypertable.ThriftBroker.FwUdp" Guid="62A55116-B5DF-48AB-917B-50820B677890" Directory="TARGETDIR" Win64="$(var.Win64)">
+        <Condition>HYPERTABLE_FIREWALLRULES_CREATE=1</Condition>
+        <fw:FirewallException
+          Id="Hypertable.ThriftBroker.FwUdp"
+          Name="Hypertable ThriftBroker"
+          Program="[#Hypertable.ThriftBroker.exe]"
+          IgnoreFailure="yes"
+          Protocol="udp"
+          Scope="localSubnet"
+          Profile="all">
+        </fw:FirewallException>
+      </Component>
+    </ComponentGroup>
+
+    <!-- Hypertable-->
+    <Feature Id="HypertableFeature" Title="Hypertable" AllowAdvertise="no" Level="1">
+      <ComponentRef Id="Hypertable.Service.Install" />
+      <ComponentRef Id="Hypertable.Service" />
+      <ComponentRef Id="Hypertable.LocalBroker" />
+      <ComponentRef Id="Hyperspace.Master" />
+      <ComponentRef Id="Hypertable.Master" />
+      <ComponentRef Id="Hypertable.RangeServer" />
+      <ComponentRef Id="Hypertable.ThriftBroker" />
+      <ComponentRef Id="Hypertable" />
+      <ComponentRef Id="license" />
+      <ComponentRef Id="changes" />
+      <ComponentRef Id="config" />
+      <ComponentRef Id="metadata" />
+      <ComponentRef Id="rs_metrics" />
+      <ComponentRef Id="Hypertable.LocalBroker.FwTcp" />
+      <ComponentRef Id="Hypertable.LocalBroker.FwUdp" />
+      <ComponentRef Id="Hyperspace.Master.FwTcp" />
+      <ComponentRef Id="Hyperspace.Master.FwUdp" />
+      <ComponentRef Id="Hypertable.Master.FwTcp" />
+      <ComponentRef Id="Hypertable.Master.FwUdp" />
+      <ComponentRef Id="Hypertable.RangeServer.FwTcp" />
+      <ComponentRef Id="Hypertable.RangeServer.FwUdp" />
+      <ComponentRef Id="Hypertable.ThriftBroker.FwTcp" />
+      <ComponentRef Id="Hypertable.ThriftBroker.FwUdp" />
+
+      <!-- Note: The following ComponentGroupRef is required to pull in generated authoring from project references. -->
+      <ComponentGroupRef Id="Product.Generated" />
+    </Feature>
+
+    <!-- Visual C++ CRT-->
+    <Feature Id="VCRedist" Title="Visual C++ 10.0 Runtime" AllowAdvertise="no" Display="hidden" Level="1">
+      <MergeRef Id="VCRedist" />
+    </Feature>
+
+    <!-- msi property declarations-->
+    <Property Id="ARPPRODUCTICON" Value="Hypertable.Service.exe" />
+    <Property Id="ALLUSERS" Value="1" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLLOCATION" />
+    <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable" />
+    <Property Id="HYPERTABLE_SERVICE_CREATE" Value="1" />
+    <Property Id="HYPERTABLE_FIREWALLRULES_CREATE" Value="1" />
+    <Property Id="HYPERTABLE_SERVICE_NAME" Value="Hypertable" />
+    <Property Id="HYPERTABLE_SERVICE_DISPLAYNAME" Value="Hypertable Database Service" />
+
+    <!-- branding-->
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseDir)\LICENSE.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.ResDir)\UIBanner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.ResDir)\UIDialog.bmp" />
+    <Icon Id="Hypertable.Service.exe" SourceFile="$(var.MasterDir)\Hypertable.Service.exe" />
+
+    <!-- wizard UI-->
+    <UI>
+      <UIRef Id="WixUI_InstallDir" />
+      <Dialog Id="SettingsDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="Next">
+          <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
+        </Control>
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="Back">
+          <Publish Event="NewDialog" Value="LicenseAgreementDlg">1</Publish>
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" Text="Select appropriate options below." />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" Text="{\WixUI_Font_Title}Service and Firewall options" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" Text="!(loc.InstallDirDlgBannerBitmap)" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Type="CheckBox" Id="CreateService" Property="HYPERTABLE_SERVICE_CREATE" CheckBoxValue="1" Width="300" Height="17" X="20" Y="57">
+          <Text>Create and start Hypertable service</Text>
+        </Control>
+        <Control Type="CheckBox" Id="CreateFirewallRules" Property="HYPERTABLE_FIREWALLRULES_CREATE" CheckBoxValue="1" Width="300" Height="17" X="20" Y="87">
+          <Text>Create firewall rules for Hypertable servers</Text>
+        </Control>
+      </Dialog>
+      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="SettingsDlg" Order="2">1</Publish>
+      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="SettingsDlg" Order="2">1</Publish>
+    </UI>
+
+    <!-- upgrade sequence-->
+    <CustomAction
+      Id="PreventDowngrading"
+      Error="A later version of [ProductName] is already installed. Setup will now exit." />
+    <InstallExecuteSequence>
+      <Custom Action="PreventDowngrading" After="FindRelatedProducts">NEWPRODUCTFOUND</Custom>
+      <RemoveExistingProducts After="InstallFinalize" />
+    </InstallExecuteSequence>
+    <InstallUISequence>
+      <Custom Action="PreventDowngrading" After="FindRelatedProducts">NEWPRODUCTFOUND</Custom>
+    </InstallUISequence>
+
+  </Product>
+</Wix>

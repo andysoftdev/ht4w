@@ -4,10 +4,14 @@
 	<!-- Master files to make -->
 	<PropertyGroup>
 		<Version>0.9.5.0</Version>
+		<ProductCode>2A319B06-F775-475C-8362-C7DCA58DE419</ProductCode>
+
 		<MasterServers_x86>dist\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
 		<MasterTools_x86>dist\ht4w-tools-$(Version)-win-x86.zip</MasterTools_x86>
+		<MasterMsi_x86>dist\ht4w-$(Version)-win-x86.msi</MasterMsi_x86>
 		<MasterServers_x64>dist\ht4w-$(Version)-win-x64.zip</MasterServers_x64>
 		<MasterTools_x64>dist\ht4w-tools-$(Version)-win-x64.zip</MasterTools_x64>
+		<MasterMsi_x64>dist\ht4w-$(Version)-win-x64.msi</MasterMsi_x64>
 	</PropertyGroup>
 
 	<!-- Check for MSBuildCommunityTasks -->
@@ -26,6 +30,13 @@
 		<Is64Bit>False</Is64Bit>
 		<Is64Bit
 			Condition="'$(MachineProcessorArchitecture)' == 'AMD64'">true</Is64Bit>
+	</PropertyGroup>
+
+	<!-- Check for WiX -->
+	<PropertyGroup>
+		<HasMSBuildWiXTasks>false</HasMSBuildWiXTasks>
+		<HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
+		<HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
 	</PropertyGroup>
 
 	<!-- Configuration group -->
@@ -54,7 +65,7 @@
 
 	<!-- Build and make master -->
 	<Target Name="Make"
-			DependsOnTargets="CleanMaster;Build;MakeMaster">
+			DependsOnTargets="CleanMaster;Build;MakeMaster;MakeMsi">
 	</Target>
 
 	<!-- Build -->
@@ -108,6 +119,28 @@
 			WorkingDirectory="dist\x64\Release\"
 			Condition="$(Is64Bit) == true" />
 	</Target>
+	
+	<!-- Make msi -->
+	<Target Name="MakeMsi"
+			Condition="$(HasMSBuildWiXTasks) == true">
+
+		<ItemGroup>
+			<WixConfiguration Include="." >
+				<Configuration>Release</Configuration>
+				<Platform>x86</Platform>
+			</WixConfiguration>
+			<WixConfiguration Include="." Condition="$(Is64Bit) == true" >
+				<Configuration>Release</Configuration>
+				<Platform>x64</Platform>
+			</WixConfiguration>
+		</ItemGroup>
+
+		<MSBuild
+			Projects="src\wix\hypertable-msi.wixproj"
+			Targets="Build"
+			Properties="Configuration=%(WixConfiguration.Configuration);Platform=%(WixConfiguration.Platform);MsiProductVersion=$(Version);MsiProductCode=$(ProductCode)"
+			ContinueOnError="false" />
+	</Target>
 
 	<!-- Cleans build and deletes the master files -->
 	<Target Name="Clean"
@@ -129,6 +162,10 @@
 			Files="$(MasterTools_x86)" />
 		<Delete
 			Files="$(MasterTools_x64)" />
+		<Delete
+			Files="$(MasterMsi_x86)" />
+		<Delete
+			Files="$(MasterMsi_x64)" />
 	</Target>
 
 </Project>

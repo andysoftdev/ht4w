@@ -120,7 +120,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hypertable", "src\cc\Hypert
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shells", "shells", "{444EBCDF-3795-494E-AB8D-A5CDA7AB604E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hypertable", "src\cc\Tools\hypertable\hypertable.vcxproj", "{D09D88FC-B838-4892-99C1-7E2EA3DAF77C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hypertable", "src\cc\Tools\hypertable\Hypertable.vcxproj", "{D09D88FC-B838-4892-99C1-7E2EA3DAF77C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A9BF580D-EF90-4E64-94CB-CC57DF1FB223} = {A9BF580D-EF90-4E64-94CB-CC57DF1FB223}
 		{C2ACC713-E242-45B2-B703-8D3DB3860C44} = {C2ACC713-E242-45B2-B703-8D3DB3860C44}
@@ -143,7 +143,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hypertable", "src\cc\Tools\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libdb", "deps\db\build_windows\libdb.vcxproj", "{671539AA-D9A6-4B7B-8044-61B511D6F432}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hyperspace", "src\cc\Tools\hyperspace\hyperspace.vcxproj", "{F14547FE-D398-48CC-AD3E-5EBA00DDC76F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hyperspace", "src\cc\Tools\hyperspace\Hyperspace.vcxproj", "{F14547FE-D398-48CC-AD3E-5EBA00DDC76F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A9BF580D-EF90-4E64-94CB-CC57DF1FB223} = {A9BF580D-EF90-4E64-94CB-CC57DF1FB223}
 		{C2ACC713-E242-45B2-B703-8D3DB3860C44} = {C2ACC713-E242-45B2-B703-8D3DB3860C44}
