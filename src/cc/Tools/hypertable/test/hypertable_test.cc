@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
   if (system(cmd_str.c_str()) != 0)
     return 1;
 
-  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/g hypertable_test.output > hypertable_test.sed.output";
+  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/ig hypertable_test.output > hypertable_test.sed.output";
   if (system(cmd_str.c_str()) != 0)
     return 1;
 
