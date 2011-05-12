@@ -7,9 +7,7 @@
   <?define Description="Hypertable for Windows (x86)"?>
   <?define Copyright="ht4w, Copyright © 2010-2011"?>
 
-  <!-- passed by the build process -->
-  <!--<?define ProductVersion="0.9.5.0" ?>-->
-  <!--<?define ProductCode="2A319B06-F775-475C-8362-C7DCA58DE419"?>--> <!-- change for each version -->
+  <!-- ProductVersion/ProductCode passed by hypertable-msi.wixproj -->
 
   <?define RTMProductVersion="0.0.0.1" ?>
   <?define UpgradeCode="6B37E81D-D706-4339-B55F-EA7DD7F0F43A"?> <!-- immutable -->
@@ -53,7 +51,7 @@
         Minimum="$(var.RTMProductVersion)"
         IncludeMinimum="yes"
         Maximum="$(var.ProductVersion)"
-        IncludeMaximum="no"
+        IncludeMaximum="yes"
         Language="1033"
         Property="UPGRADEFOUND" />
     </Upgrade>
@@ -104,38 +102,38 @@
               Wait="yes" />
 
           </Component>
-          <Component Id="Hypertable.LocalBroker" Guid="FF109788-0014-43BF-B590-1D3263C3D9C6" Win64="$(var.Win64)">
+          <Component Id="Hypertable.LocalBroker" Win64="$(var.Win64)">
             <File Id="Hypertable.LocalBroker.exe" Source="$(var.MasterDir)\Hypertable.LocalBroker.exe" KeyPath="yes" Checksum="yes" />
           </Component>
-          <Component Id="Hyperspace.Master" Guid="FAF9CC2A-0F9A-45DD-A980-34ABC79EB0AB" Win64="$(var.Win64)">
+          <Component Id="Hyperspace.Master" Win64="$(var.Win64)">
             <File Id="Hyperspace.Master.exe" Source="$(var.MasterDir)\Hyperspace.Master.exe" KeyPath="yes" Checksum="yes" />
           </Component>
-          <Component Id="Hypertable.Master" Guid="9F92D565-F63F-4954-A700-17ADD9CDC63C" Win64="$(var.Win64)">
+          <Component Id="Hypertable.Master" Win64="$(var.Win64)">
             <File Id="Hypertable.Master.exe" Source="$(var.MasterDir)\Hypertable.Master.exe" KeyPath="yes" Checksum="yes" />
           </Component>
-          <Component Id="Hypertable.RangeServer" Guid="6B287EB1-3309-4E9B-8A19-D28BBD703AF1" Win64="$(var.Win64)">
+          <Component Id="Hypertable.RangeServer" Win64="$(var.Win64)">
             <File Id="Hypertable.RangeServer.exe" Source="$(var.MasterDir)\Hypertable.RangeServer.exe" KeyPath="yes" Checksum="yes" />
           </Component>
-          <Component Id="Hypertable.ThriftBroker" Guid="B01A8EB8-27DE-457B-919F-D4A9EE21E406" Win64="$(var.Win64)">
+          <Component Id="Hypertable.ThriftBroker" Win64="$(var.Win64)">
             <File Id="Hypertable.ThriftBroker.exe" Source="$(var.MasterDir)\Hypertable.ThriftBroker.exe" KeyPath="yes" Checksum="yes" />
           </Component>
-          <Component Id="Hypertable" Guid="FD6FA005-4295-4802-9625-8517D7860DAA" Win64="$(var.Win64)">
+          <Component Id="Hypertable" Win64="$(var.Win64)">
             <File Id="Hypertable.exe" Source="$(var.MasterDir)\Hypertable.exe" KeyPath="yes" Checksum="yes" />
           </Component>
-          <Component Id="license" Guid="15CE4ED5-7BC7-41F0-9E8E-BFBB5D0BA22F" Win64="$(var.Win64)">
+          <Component Id="license" Win64="$(var.Win64)">
             <File Id="license.txt" Source="$(var.LicenseDir)\LICENSE.txt" KeyPath="yes" Checksum="yes" />
           </Component>
-          <Component Id="changes" Guid="0F80D9B9-9254-42FD-A113-C5283FD29838" Win64="$(var.Win64)">
+          <Component Id="changes" Win64="$(var.Win64)">
             <File Id="changes" Source="$(var.LicenseDir)\CHANGES" KeyPath="yes" Checksum="yes" />
           </Component>
           <Directory Id="ConfDir" Name="conf">
-            <Component Id="config" Guid="695E1BF5-3823-4BF3-A7FD-6FC3DB9EFBCA" Win64="$(var.Win64)">
+            <Component Id="config" Win64="$(var.Win64)">
               <File Id="hypertable.cfg" Source="$(var.ConfDir)\hypertable.cfg" KeyPath="yes" Checksum="yes" />
             </Component>
-            <Component Id="metadata" Guid="734E5A41-79DB-4529-BA9C-C3CE5B7F1569" Win64="$(var.Win64)">
+            <Component Id="metadata" Win64="$(var.Win64)">
               <File Id="METADATA.xml" Source="$(var.ConfDir)\METADATA.xml" KeyPath="yes" Checksum="yes" />
             </Component>
-            <Component Id="rs_metrics" Guid="934069F6-611F-406E-9B0A-0C3F2C4B1C4B" Win64="$(var.Win64)">
+            <Component Id="rs_metrics" Win64="$(var.Win64)">
               <File Id="RS_METRICS.xml" Source="$(var.ConfDir)\RS_METRICS.xml" KeyPath="yes" Checksum="yes" />
             </Component>
           </Directory>

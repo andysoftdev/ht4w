@@ -1,11 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Make" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
 
-	<!-- Master files to make -->
 	<PropertyGroup>
+		<!-- Version and ProductCode (x86/x64), change for each version (update also src\wix\hypertable-msi.wixproj) -->
 		<Version>0.9.5.0</Version>
-		<ProductCode>2A319B06-F775-475C-8362-C7DCA58DE419</ProductCode>
+		<ProductCode_x86>2A319B06-F775-475C-8362-C7DCA58DE419</ProductCode_x86>
+		<ProductCode_x64>AAC09B7F-F852-456A-BD09-3E780132E7EF</ProductCode_x64>
 
+		<!-- Master files to make -->
 		<MasterServers_x86>dist\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
 		<MasterTools_x86>dist\ht4w-tools-$(Version)-win-x86.zip</MasterTools_x86>
 		<MasterMsi_x86>dist\ht4w-$(Version)-win-x86.msi</MasterMsi_x86>
@@ -128,17 +130,19 @@
 			<WixConfiguration Include="." >
 				<Configuration>Release</Configuration>
 				<Platform>x86</Platform>
+				<ProductCode>$(ProductCode_x86)</ProductCode>
 			</WixConfiguration>
 			<WixConfiguration Include="." Condition="$(Is64Bit) == true" >
 				<Configuration>Release</Configuration>
 				<Platform>x64</Platform>
+				<ProductCode>$(ProductCode_x64)</ProductCode>
 			</WixConfiguration>
 		</ItemGroup>
 
 		<MSBuild
 			Projects="src\wix\hypertable-msi.wixproj"
 			Targets="Build"
-			Properties="Configuration=%(WixConfiguration.Configuration);Platform=%(WixConfiguration.Platform);MsiProductVersion=$(Version);MsiProductCode=$(ProductCode)"
+			Properties="Configuration=%(WixConfiguration.Configuration);Platform=%(WixConfiguration.Platform);MsiProductVersion=$(Version);MsiProductCode=%(WixConfiguration.ProductCode)"
 			ContinueOnError="false" />
 	</Target>
 
