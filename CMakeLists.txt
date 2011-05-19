@@ -24,7 +24,7 @@ set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
 set(VERSION_MICRO "5")
 set(VERSION_PATCH "0")
-set(VERSION_MISC_SUFFIX  "pre4")
+set(VERSION_MISC_SUFFIX  "pre5")
 
 # cmake behavior compatibility
 cmake_minimum_required(VERSION 2.6.0)
@@ -167,7 +167,7 @@ include(DocHelper)
 
 # sub-project directories
 add_subdirectory(src)
-#add_subdirectory(examples)
+add_subdirectory(examples)
 add_subdirectory(contrib)
 add_subdirectory(tests/integration)
 

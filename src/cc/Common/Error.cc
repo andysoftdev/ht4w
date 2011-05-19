@@ -24,6 +24,11 @@
 
 #include "Error.h"
 
+namespace Hypertable { namespace Logger {
+    extern bool show_line_numbers;
+  }
+}
+
 using namespace Hypertable;
 
 namespace {
@@ -279,19 +284,36 @@ const char *Error::get_text(int error) {
 
 namespace Hypertable {
 
+  const char *relative_fname(const Exception &e) {
+    if (e.file()) {
+      const char *ptr = strstr(e.file(), "src/cc/");
+      return ptr ? ptr : e.file();
+    }
+    return "";
+  }
+
 std::ostream &operator<<(std::ostream &out, const Exception &e) {
   out <<"Hypertable::Exception: "<< e.message() <<" - "
       << Error::get_text(e.code());
 
-  if (e.line())
-    out <<"\n\tat "<< e.func() <<" ("<< e.file() <<':'<< e.line() <<')';
+  if (e.line()) {
+    out <<"\n\tat "<< e.func() <<" (";
+    if (Logger::show_line_numbers)
+      out << e.file() <<':'<< e.line();
+    else
+      out << relative_fname(e);
+    out <<')';
+  }
 
   int prev_code = e.code();
 
   for (Exception *prev = e.prev; prev; prev = prev->prev) {
-    out <<"\n\tat "<< (prev->func() ? prev->func() : "-") <<" ("
-        << (prev->file() ? prev->file() : "-") <<':'<< prev->line() <<"): "
-        << prev->message();
+    out <<"\n\tat "<< (prev->func() ? prev->func() : "-") <<" (";
+    if (Logger::show_line_numbers)
+      out << (prev->file() ? prev->file() : "-") <<':'<< prev->line();
+    else
+      out << relative_fname(*prev);
+    out <<"): " << prev->message();
 
     if (prev->code() != prev_code) {
       out <<" - "<< Error::get_text(prev->code());

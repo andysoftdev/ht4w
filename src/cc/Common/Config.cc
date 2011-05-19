@@ -330,14 +330,13 @@ void DefaultPolicy::init_options() {
      i32()->default_value(1024), "CellCache scanner cache size")
     ("Hypertable.RangeServer.AccessGroup.ShadowCache",
      boo()->default_value(false), "Enable CellStore shadow caching")
-    ("Hypertable.RangeServer.AccessGroup.MaxFiles", i32()->default_value(20),
-        "Maximum number of cell store files to create before merging")
     ("Hypertable.RangeServer.AccessGroup.MaxMemory", i64()->default_value(1*G),
         "Maximum bytes consumed by an Access Group")
-    ("Hypertable.RangeServer.AccessGroup.MergeFiles", i32()->default_value(5),
-        "How many files to merge during a merging compaction")
     ("Hypertable.RangeServer.CellStore.TargetSize.Minimum",
-        i64()->default_value(50*M), "Target minimum size for CellStores")
+        i64()->default_value(10*MiB), "Target minimum size for CellStores")
+    ("Hypertable.RangeServer.CellStore.TargetSize.Window",
+        i64()->default_value(30*MiB), "Size window above target minimum for "
+        "CellStores in which merges will be considered")
     ("Hypertable.RangeServer.CellStore.DefaultBlockSize",
         i32()->default_value(64*KiB), "Default block size for cell stores")
     ("Hypertable.RangeServer.CellStore.DefaultReplication",
@@ -352,6 +351,8 @@ void DefaultPolicy::init_options() {
      "Default minimum group commit interval in milliseconds")
     ("Hypertable.RangeServer.BlockCache.MinMemory", i64()->default_value(150*M),
         "Minimum size of block cache")
+    ("Hypertable.RangeServer.BlockCache.MaxMemory", i64(),
+        "Maximum (target) size of block cache")
     ("Hypertable.RangeServer.QueryCache.MaxMemory", i64()->default_value(50*M),
         "Maximum size of query cache")
     ("Hypertable.RangeServer.Range.SplitSize", i64()->default_value(256*MiB),
@@ -396,6 +397,10 @@ void DefaultPolicy::init_options() {
         "Timer interval in milliseconds (reaping scanners, purging commit logs, etc.)")
     ("Hypertable.RangeServer.Maintenance.Interval", i32()->default_value(30000),
         "Maintenance scheduling interval in milliseconds")
+    ("Hypertable.RangeServer.Maintenance.MergesPerInterval", i32(),
+        "Limit on number of merging tasks to create per maintenance interval")
+    ("Hypertable.RangeServer.Maintenance.MergingCompaction.Delay", i32()->default_value(900000),
+        "Millisecond delay before scheduling merging compactions in non-low memory mode")
     ("Hypertable.RangeServer.Monitoring.DataDirectories", str()->default_value("/"),
         "Comma-separated list of directory mount points of disk volumes to monitor")
     ("Hypertable.RangeServer.Workers", i32()->default_value(50),

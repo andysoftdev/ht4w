@@ -36,16 +36,6 @@
 #include "Range.h"
 #include "TableInfo.h"
 
-#ifndef _WIN32
-namespace __gnu_cxx {
-  template<> struct hash<Hypertable::Range *>  {
-    size_t operator()(const Hypertable::Range *x) const {
-      return (size_t)x;
-    }
-  };
-}
-#endif
-
 namespace Hypertable {
 
   struct SendBackRec {
@@ -161,24 +151,6 @@ namespace Hypertable {
 }
 
 #ifndef _WIN32
-namespace __gnu_cxx {
-  template<> struct hash<Hypertable::TableIdentifier>  {
-    size_t operator()(Hypertable::TableIdentifier tid) const {
-      hash<const char*> H;
-      return (size_t)H(tid.id) ^ tid.generation;
-    }
-  };
-}
 #endif
-
-namespace Hypertable {
-  struct eqtid {
-    bool operator()(TableIdentifier tid1, TableIdentifier tid2) const {
-      return strcmp(tid1.id, tid2.id) == 0 && tid1.generation == tid2.generation;
-    }
-  };
-}
-
-
 #endif // HYPERSPACE_GROUPCOMMITINTERFACE_H
 

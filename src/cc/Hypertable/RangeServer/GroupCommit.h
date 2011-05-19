@@ -22,14 +22,29 @@
 #ifndef HYPERSPACE_GROUPCOMMIT_H
 #define HYPERSPACE_GROUPCOMMIT_H
 
-#include "Common/HashMap.h"
 #include "Common/Mutex.h"
 #include "Common/FlyweightString.h"
 
 #include "GroupCommitInterface.h"
 #include "RangeServer.h"
 
+#include <map>
+
 namespace Hypertable {
+
+  struct lttid {
+    bool operator()(const Hypertable::TableIdentifier &tid1, const Hypertable::TableIdentifier &tid2) const {
+      if (tid1.id == 0 || tid2.id == 0) {
+        if (tid1.id == 0)
+          return true;
+        return false;
+      }
+      int cmpval = strcmp(tid1.id, tid2.id);
+      if (cmpval != 0)
+        return cmpval < 0;
+      return tid1.generation < tid2.generation;
+    }
+  };
 
   /**
    */
@@ -48,35 +63,7 @@ namespace Hypertable {
     int           m_counter;
     FlyweightString m_flyweight_strings;
 
-#ifndef _WIN32
-
-    typedef hash_map<TableIdentifier, TableUpdate *, __gnu_cxx::hash<TableIdentifier>, eqtid> TableUpdateMap;
-
-#else
-
-    struct TableIdentifierComparer {
-      enum { bucket_size = 4 };
-      size_t operator()(const TableIdentifier& tid) const {
-        hash<const char*> H;
-        return (size_t)H(tid.id) ^ tid.generation;
-      }
-      bool operator()(const TableIdentifier& a, const TableIdentifier& b) const { // a < b
-        if (a.id == b.id)
-          return false;
-        if (!a.id)
-          return true;
-        if (!b.id)
-          return false;
-        int cmp;
-        if ((cmp = strcmp(a.id, b.id)) != 0)
-          return cmp < 0;
-        return a.generation < b.generation;
-      }
-    };
-
-    typedef hash_map<TableIdentifier, TableUpdate *, TableIdentifierComparer> TableUpdateMap;
-
-#endif
+    typedef std::map<TableIdentifier, TableUpdate *, lttid> TableUpdateMap;
 
     TableUpdateMap m_table_map;
   };
