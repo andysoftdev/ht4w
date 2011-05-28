@@ -44,6 +44,27 @@
 
 namespace Hypertable { namespace Config {
 
+#ifdef _WIN32
+
+String common_app_data_dir() {
+  char str_common_app_data[MAX_PATH] = { 0 };
+  if( SUCCEEDED(::SHGetFolderPathA(0, CSIDL_COMMON_APPDATA, 0, SHGFP_TYPE_CURRENT, str_common_app_data)) ) {
+      if( !*str_common_app_data ) {
+          ::SHGetFolderPathA( 0, CSIDL_COMMON_APPDATA, 0, SHGFP_TYPE_DEFAULT, str_common_app_data );
+      }
+      if( *str_common_app_data ) {
+          ::PathAddBackslashA( str_common_app_data );
+          strcat_s(str_common_app_data, "Hypertable");
+      }
+  }
+  else {
+      HT_ERRORF("SHGetFolderPathA failure - %s", winapi_strerror(::GetLastError()));
+  }
+  return str_common_app_data;
+}
+
+#endif
+
 // singletons
 RecMutex rec_mutex;
 PropertiesPtr properties;
@@ -145,19 +166,9 @@ void DefaultPolicy::init_options() {
 
 #ifdef _WIN32
 
-    char str_common_app_data[MAX_PATH] = { 0 };
-    if( SUCCEEDED(::SHGetFolderPathA(0, CSIDL_COMMON_APPDATA, 0, SHGFP_TYPE_CURRENT, str_common_app_data)) ) {
-        if( !*str_common_app_data ) {
-            ::SHGetFolderPathA( 0, CSIDL_COMMON_APPDATA, 0, SHGFP_TYPE_DEFAULT, str_common_app_data );
-        }
-        if( *str_common_app_data ) {
-            ::PathAddBackslashA( str_common_app_data );
-            default_data_dir = str_common_app_data;
-            default_data_dir += "Hypertable";
-        }
-    }
-    else {
-        HT_ERRORF("SHGetFolderPathA failure - %s", winapi_strerror(::GetLastError()));
+    String str_common_app_data = common_app_data_dir();
+    if (!str_common_app_data.empty()) {
+      default_data_dir = str_common_app_data;
     }
 
 #endif
@@ -486,8 +497,20 @@ void parse_args(int argc, char *argv[]) {
     parse_file(filename, cmdline_hidden_desc());
     file_loaded = true;
   }
+#ifdef _WIN32
+  else {
+    String cfg_common_app_data = common_app_data_dir();
+    if (!cfg_common_app_data.empty() && FileUtils::exists(cfg_common_app_data += "\\hypertable.cfg")) {
+      parse_file(cfg_common_app_data, cmdline_hidden_desc());
+      file_loaded = true;
+    }
+    else if (!defaulted("config"))
+      HT_THROW(Error::FILE_NOT_FOUND, filename);
+  }
+#else
   else if (!defaulted("config"))
-    HT_THROW(Error::FILE_NOT_FOUND, filename);
+      HT_THROW(Error::FILE_NOT_FOUND, filename);
+#endif
 
   sync_aliases();       // call before use
 }
