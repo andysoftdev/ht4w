@@ -192,7 +192,7 @@ void ServiceUtils::install_service() {
   if (!service_name.empty()) {
     if (!service_exists(service_name)) {
       char moduleFilename[MAX_PATH];
-      if (GetModuleFileName(0, moduleFilename, MAX_PATH) > 0 && GetLastError() == ERROR_SUCCESS) {
+      if (GetModuleFileName(0, moduleFilename, MAX_PATH)) {
         String exe_name = format("%s %s", moduleFilename, Config::service_args().c_str());
         boost::trim_right_if(exe_name, boost::is_any_of(" "));
         bool access_denied;
