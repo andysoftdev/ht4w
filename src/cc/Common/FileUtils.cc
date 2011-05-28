@@ -49,7 +49,9 @@ extern "C" {
 #include "FileUtils.h"
 #include "Logger.h"
 #ifdef _WIN32
-#include "SecurityUtils.h"
+#include "Path.h"
+#include <Shlobj.h>
+#include <boost/algorithm/string/replace.hpp>
 #endif
 
 using namespace Hypertable;
@@ -77,14 +79,14 @@ String FileUtils::file_to_string(const String &fname) {
 #define HT_WIN32_LASTERROR( msg ) \
   { \
     DWORD err = GetLastError(); \
-    HT_ERRORF( msg" %s", winapi_strerror(err)); \
+    HT_ERRORF( msg" failed - %s", winapi_strerror(err)); \
     SetLastError(err); \
   }
 
 ssize_t FileUtils::read(HANDLE fd, void *vptr, size_t n) {
   DWORD nread;
   if( !::ReadFile(fd, vptr, n, &nread, 0) ) {
-    HT_WIN32_LASTERROR("read");
+    HT_WIN32_LASTERROR("ReadFile");
     return -1;
   }
   return nread;
@@ -101,11 +103,11 @@ ssize_t FileUtils::pread(HANDLE fd, void *vptr, size_t n, uint64_t offset) {
   DWORD nread;
   if(!::ReadFile(fd, vptr, n, &nread, &ov)) {
     if( GetLastError() != ERROR_IO_PENDING ) {
-      HT_WIN32_LASTERROR("pread");
+      HT_WIN32_LASTERROR("ReadFile");
       return -1;
     }
     if(!::GetOverlappedResult(fd, &ov, &nread, TRUE)) {
-      HT_WIN32_LASTERROR("pread");
+      HT_WIN32_LASTERROR("GetOverlappedResult");
       return -1;
     }
   }
@@ -120,7 +122,7 @@ ssize_t FileUtils::write(const String &fname, String &contents) {
   HANDLE fd = ::CreateFile(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, NULL);
   if (fd == INVALID_HANDLE_VALUE) {
     DWORD err = GetLastError();
-    HT_ERRORF("Unable to open file \"%s\" for writing - %s", fname.c_str(), winapi_strerror(err));
+    HT_ERRORF("CreateFile %s failed - %s", fname.c_str(), winapi_strerror(err));
     SetLastError(err);
   }
   ssize_t rval = write(fd, contents.c_str(), contents.length());
@@ -131,7 +133,7 @@ ssize_t FileUtils::write(const String &fname, String &contents) {
 ssize_t FileUtils::write(HANDLE fd, const void *vptr, size_t n) {
   DWORD nwritten;
   if (!::WriteFile(fd, vptr, n, &nwritten, 0)) {
-    HT_WIN32_LASTERROR("write");
+    HT_WIN32_LASTERROR("WriteFile");
     return -1; /* error */
   }
   return nwritten;
@@ -147,7 +149,7 @@ char *FileUtils::file_to_buffer(const String &fname, size_t *lenp) {
   HANDLE fd = ::CreateFile(fname.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, NULL);
   if (fd == INVALID_HANDLE_VALUE) {
     DWORD err = ::GetLastError();
-    HT_ERRORF("CreateFile(\"%s\") failure - %s", fname.c_str(), winapi_strerror(err));
+    HT_ERRORF("CreateFile %s failed - %s", fname.c_str(), winapi_strerror(err));
     ::SetLastError(err);
     return 0;
   }
@@ -155,7 +157,7 @@ char *FileUtils::file_to_buffer(const String &fname, size_t *lenp) {
   LARGE_INTEGER fs;
   if (!::GetFileSizeEx(fd, &fs)) {
     DWORD err = ::GetLastError();
-    HT_ERRORF("GetFileSizeEx(\"%s\") failure - %s", fname.c_str(), winapi_strerror(err));
+    HT_ERRORF("GetFileSizeEx %s failed - %s", fname.c_str(), winapi_strerror(err));
     ::CloseHandle(fd);
     ::SetLastError(err);
     return 0;
@@ -182,47 +184,20 @@ char *FileUtils::file_to_buffer(const String &fname, size_t *lenp) {
 }
 
 bool FileUtils::mkdirs(const String &dirname) {
-  boost::shared_array<char> tmp_dir(new char [dirname.length() + 1]);
-  char *tmpdir = tmp_dir.get();
-  char *ptr = tmpdir+1;
-
-  strcpy(tmpdir, dirname.c_str());
-  while ((ptr = strchr(ptr, '\\')) != 0) {
-    *ptr = '/';
-  }
-  ptr = tmpdir+1;
-
-  //bool ace_added = false;
-  while ((ptr = strchr(ptr, '/')) != 0) {
-    *ptr = 0;
-    if (!FileUtils::exists(tmpdir)) {
-      if (!::CreateDirectory(tmpdir, 0)) {
-        DWORD err = GetLastError();
-        HT_ERRORF("Problem creating directory '%s' - %s", tmpdir, winapi_strerror(err));
-        SetLastError(err);
-        return false;
-      }
-      /*else if (!ace_added) {
-        if (!SecurityUtils::set_file_security_info(tmpdir, WinBuiltinUsersSid, GENERIC_ALL))
-          HT_ERROR("set_file_security_info failed");
-        ace_added = true;
-      }*/
+  if (!exists(dirname)) {
+    Path dir(dirname);
+    if (!dir.is_complete()) {
+      dir = boost::filesystem::current_path();
+      dir /= dirname;
     }
-    *ptr++ = '/';
-  }
-
-  if (!FileUtils::exists(tmpdir) ) {
-    if (!::CreateDirectory(tmpdir, 0)) {
-      DWORD err = GetLastError();
-      HT_ERRORF("Problem creating directory '%s' - %s", tmpdir, winapi_strerror(err));
+    String dirname_bs(dir.normalize().string());
+    boost::replace_all(dirname_bs, "/", "\\");
+    int err;
+    if( (err = SHCreateDirectoryExA(0, dirname_bs.c_str(), 0)) != ERROR_SUCCESS ) {
+      HT_ERRORF("SHCreateDirectoryExA %s failed - %s", dirname_bs.c_str(), winapi_strerror(err));
       SetLastError(err);
       return false;
     }
-    /*else if (!ace_added) {
-      if (!SecurityUtils::set_file_security_info(tmpdir, WinBuiltinUsersSid, GENERIC_ALL))
-        HT_ERROR("set_file_security_info failed");
-      ace_added = true;
-    }*/
   }
   return true;
 }
@@ -233,7 +208,7 @@ bool FileUtils::exists(const String &fname) {
   DWORD err = ::GetLastError();
   if (err != ERROR_FILE_NOT_FOUND &&
     err != ERROR_PATH_NOT_FOUND) {
-      HT_ERRORF("GetFileAttributes '%s' - %s", fname.c_str(), winapi_strerror(err));
+      HT_ERRORF("GetFileAttributes %s failed - %s", fname.c_str(), winapi_strerror(err));
       ::SetLastError(err);
   }
   return false;
@@ -242,7 +217,7 @@ bool FileUtils::exists(const String &fname) {
 bool FileUtils::unlink(const String &fname) {
   if (!::DeleteFile(fname.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) {
     DWORD err = ::GetLastError();
-    HT_ERRORF("DeleteFile(\"%s\") failed - %s", fname.c_str(), winapi_strerror(err));
+    HT_ERRORF("DeleteFile %s failed - %s", fname.c_str(), winapi_strerror(err));
     ::SetLastError(err);
     return false;
   }
@@ -257,7 +232,7 @@ uint64_t FileUtils::size(const String &fname) {
 bool FileUtils::rename(const String &oldpath, const String &newpath) {
   if (!::MoveFileEx(oldpath.c_str(), newpath.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING)) {
     DWORD err = ::GetLastError();
-    HT_ERRORF("MoveFileEx(\"%s\", \"%s\") failed - %s", oldpath.c_str(), newpath.c_str(), winapi_strerror(err));
+    HT_ERRORF("MoveFileEx %s, %s failed - %s", oldpath.c_str(), newpath.c_str(), winapi_strerror(err));
     ::SetLastError(err);
     return false;
   }
@@ -269,7 +244,7 @@ int64_t FileUtils::length(const String &fname) {
   HANDLE fh = ::FindFirstFile(fname.c_str(), &wfd);
   if (fh == INVALID_HANDLE_VALUE) {
     DWORD err = ::GetLastError();
-    HT_ERRORF("length (FindFirstFile) failed: file='%s' - %s", fname.c_str(), winapi_strerror(err));
+    HT_ERRORF("FindFirstFile %s failed - %s", fname.c_str(), winapi_strerror(err));
     ::SetLastError(err);
     return (int64_t)-1;
   }
@@ -518,14 +493,14 @@ char *FileUtils::file_to_buffer(const String &fname, off_t *lenp) {
 
   if ((fd = open(fname.c_str(), O_RDONLY)) < 0) {
     int saved_errno = errno;
-    HT_ERRORF("open(\"%s\") failure - %s", fname.c_str(),  strerror(saved_errno));
+    HT_ERRORF("open(\"%s\") failed - %s", fname.c_str(),  strerror(saved_errno));
     errno = saved_errno;
     return 0;
   }
 
   if (fstat(fd, &statbuf) < 0) {
     int saved_errno = errno;
-    HT_ERRORF("fstat(\"%s\") failure - %s", fname.c_str(),  strerror(saved_errno));
+    HT_ERRORF("fstat(\"%s\") failed - %s", fname.c_str(),  strerror(saved_errno));
     errno = saved_errno;
     return 0;
   }
@@ -540,7 +515,7 @@ char *FileUtils::file_to_buffer(const String &fname, off_t *lenp) {
 
   if (nread == (ssize_t)-1) {
     int saved_errno = errno;
-    HT_ERRORF("read(\"%s\") failure - %s", fname.c_str(),  strerror(saved_errno));
+    HT_ERRORF("read(\"%s\") failed - %s", fname.c_str(),  strerror(saved_errno));
     errno = saved_errno;
     delete [] rbuf;
     *lenp = 0;
