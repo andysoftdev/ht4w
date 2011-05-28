@@ -4,11 +4,10 @@
   <!-- product declaration-->
   <?define ProductName = "Hypertable"?>
   <?define Manufacturer="ht4w.softdev.ch"?>
-  <?define Description="Hypertable for Windows (x86)"?>
+  <?define Description="Hypertable for Windows"?>
   <?define Copyright="ht4w, Copyright © 2010-2011"?>
 
   <!-- ProductVersion/ProductCode passed by hypertable-msi.wixproj -->
-
   <?define RTMProductVersion="0.0.0.1" ?>
   <?define UpgradeCode="6B37E81D-D706-4339-B55F-EA7DD7F0F43A"?> <!-- immutable -->
 
@@ -127,9 +126,6 @@
             <File Id="changes" Source="$(var.LicenseDir)\CHANGES" KeyPath="yes" Checksum="yes" />
           </Component>
           <Directory Id="ConfDir" Name="conf">
-            <Component Id="config" Win64="$(var.Win64)">
-              <File Id="hypertable.cfg" Source="$(var.ConfDir)\hypertable.cfg" KeyPath="yes" Checksum="yes" />
-            </Component>
             <Component Id="metadata" Win64="$(var.Win64)">
               <File Id="METADATA.xml" Source="$(var.ConfDir)\METADATA.xml" KeyPath="yes" Checksum="yes" />
             </Component>
@@ -139,6 +135,15 @@
           </Directory>
         </Directory>
       </Directory>
+
+      <Directory Id="CommonAppDataFolder">
+        <Directory Id="CommonAppDataHypertableDir" Name="Hypertable">
+          <Component Id="config" Win64="$(var.Win64)">
+            <File Id="hypertable.cfg" Source="$(var.ConfDir)\hypertable.cfg" KeyPath="yes" Checksum="yes" PatchIgnore="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+
     </Directory>
 
     <!-- firewall rules for all servers-->
