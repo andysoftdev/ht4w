@@ -1,7 +1,7 @@
 HOW TO BUILD HYPERTABLE FOR WINDOWS
 ===================================
 
-Building Hypertable from source for Windows requires Microsoft Visual Studio 2010 Professional or better.
+Building Hypertable for Windows from source requires Microsoft Visual Studio 2010 Professional or better.
 
 ###Browse or get the source###
 
@@ -22,48 +22,50 @@ Building Hypertable from source for Windows requires Microsoft Visual Studio 201
 * Download the latest boost version from [boost](http://www.boost.org/users/download/)
   or [sourceforge](http://sourceforge.net/projects/boost/files/boost/).
 
-* Unpack the package content (*e.g.* below boost\_1\_44\_0\\...) into ...\\ht4w\\deps\\boost\\ and run:
+* Unpack the package content (*e.g.* below boost\_1\_44\_0\\) into ht4w\\deps\\boost\\ and run:
 
-		...\ht4w\deps\boost\build-win32.bat
-		...\ht4w\deps\boost\build-x64.bat
-  After successful build the intermediate files located in ...\\ht4w\\build\\deps\\boost could be deleted.
+		cd ht4w\deps\boost
+		build-win32.bat
+		build-x64.bat
+  After successful build the intermediate files located in ht4w\\build\\deps\\boost could be deleted.
 
 
 ###Download and install berkeley db###
 
 * Download the latest berkeley db from [Oracle](http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html).
 
-* Unpack the package content (*e.g.* below db-5.1.19\\...) into ...\\ht4w\\deps\\db\\ and run:
+* Unpack the package content (*e.g.* below db-5.1.25\\) into ht4w\\deps\\db\\ and run:
 
-		cscript ...\ht4w\deps\db\libdb.js
+		cd ht4w\deps\db
+		cscript libdb.js
   libdb will be built within the regular ht4w solution or msbuild script.
 
 
 ###Build Hypertable servers, clients and tools###
 
-* Open the ht4w solution (...\\ht4w\\ht4w.sln) with Microsoft Visual Studio 2010 and build the solution configuration(s) or
+* Open the ht4w solution (ht4w\\ht4w.sln) with Microsoft Visual Studio 2010 and build the solution configuration(s) or
   run Visual Studio Command Prompt and run:
 
-		cd ...\ht4w
+		cd ht4w
 		msbuild ht4w.buildproj
   or for a complete rebuild
 
-		cd ...\ht4w
+		cd ht4w
 		msbuild ht4w.buildproj /t:Clean;Make
 
 
 MANAGE HYPERTABLE SERVERS
 =========================
 
-Use Hypertable.Service.exe (...\\ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage Hypertable servers. For a complete list
+Use Hypertable.Service.exe (ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage Hypertable servers. For a complete list
 of available options and configuration settings run:
 
 		Hypertable.Service.exe [--help|--help-config]
 
-Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) from ...\\ht4w\\conf to ...\\ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]\\conf.
+Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) from ht4w\\conf to ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]\\conf.
 
-Using the default configuration the database data root directory (Hypertable.DataDirectory configuration parameter) will be ...\\ProgrammData\\Hypertable
-or ...\\All Users\\Application Data\\Hypertable
+Using the default configuration the database data root directory (Hypertable.DataDirectory configuration parameter) will be ProgrammData\\Hypertable
+or All Users\\Application Data\\Hypertable
 
 
 ###Run Hypertable servers as Windows service###
@@ -112,11 +114,13 @@ The servers will run under the logged on windows account.
 
 * Start servers:
 
-		...\ht4w\bin\start-all-servers [x86|x64] [debug] [additional arguments]
+		cd ht4w\bin
+		start-all-servers [x86|x64] [debug] [additional arguments]
 
 * Stop servers:
 
-		...\ht4w\bin\stop-all-servers [x86|x64] [debug] [additional arguments]
+		cd ht4w\bin
+		stop-all-servers [x86|x64] [debug] [additional arguments]
 
 
 REDISTRIBUTE HYPERTABLE FOR WINDOWS
