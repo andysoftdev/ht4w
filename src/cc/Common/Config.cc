@@ -453,8 +453,8 @@ void DefaultPolicy::init_options() {
     ("Hypertable.Service.Timeout.StartServer", i32()->default_value(7500), "Start server timeout in ms")
     ("Hypertable.Service.Timeout.StopServer", i32()->default_value(7500), "Stop server timeout in ms")
     ("Hypertable.Service.Timeout.KillServer", i32()->default_value(5000), "Kill server timeout in ms")
-    ("Hypertable.Service.Timeout.Connection", i32()->default_value(5000), "Connection timeout in ms");
-    ("Hypertable.Service.MinimumUptimeBeforeRestart", i32()->default_value(30000), "Minumum servers uptime in ms before restart on failure");
+    ("Hypertable.Service.Timeout.Connection", i32()->default_value(5000), "Connection timeout in ms")
+    ("Hypertable.Service.MinimumUptimeBeforeRestart", i32()->default_value(30000), "Minumum servers uptime in ms before restart on failure")
 
 #endif
 
