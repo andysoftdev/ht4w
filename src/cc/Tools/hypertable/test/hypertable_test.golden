@@ -149,7 +149,7 @@ key4	TestColumnFamily	tcf4
 LOAD DATA INFILE ROW_KEY_COLUMN=rowkey "hypertable_unknown_cf.tsv" INTO TABLE hypertable;
 ERROR hypertable : Hypertable::TableMutator::set: Hypertable::Exception: Bad column family 'Unknown' - HYPERTABLE bad key
         at Hypertable::TableMutator::to_full_key (TableMutator.cc)
-Error: line number 2 - HQL bad load file format
+Error: line number 2 - HYPERTABLE bad key
 DROP TABLE IF EXISTS hypertable;
 CREATE TABLE hypertable ( TestColumnFamily );
 LOAD DATA INFILE ROW_KEY_COLUMN=rowkey "hypertable_ts.tsv" INTO TABLE hypertable;

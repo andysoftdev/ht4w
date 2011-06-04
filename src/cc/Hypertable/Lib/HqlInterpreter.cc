@@ -595,6 +595,7 @@ cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
 
 
   LoadDataSourcePtr lds;
+  bool is_delete;
 
   // init Dfs client if not done yet
   if(state.input_file_src == DFS_FILE && !dfs_client)
@@ -634,7 +635,7 @@ cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
 
   try {
 
-    while (lds->next(0, &key, &value, &value_len, &consumed)) {
+    while (lds->next(&key, &value, &value_len, &is_delete, &consumed)) {
 
       ++cb.total_cells;
       cb.total_values_size += value_len;
@@ -659,7 +660,10 @@ cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
 
       if (into_table) {
         try {
-          mutator->set(key, escaped_buf, escaped_len);
+          if (is_delete)
+            mutator->set_delete(key);
+          else
+            mutator->set(key, escaped_buf, escaped_len);
         }
         catch (Exception &e) {
           do {
@@ -686,8 +690,7 @@ cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
     }
   }
   catch (Exception &e) {
-    HT_THROW2F(Error::HQL_BAD_LOAD_FILE_FORMAT, e,
-        "line number %lld", (Lld)lds->get_current_lineno());
+    HT_THROW2F(e.code(), e, "line number %lld", (Lld)lds->get_current_lineno());
   }
 
   fout.strict_sync();
