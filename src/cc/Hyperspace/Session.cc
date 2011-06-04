@@ -944,7 +944,7 @@ int Session::state_transition(int state) {
   else if (m_state == STATE_EXPIRED) {
     if (old_state != STATE_EXPIRED) {
       for(CallbackMap::iterator it = m_callbacks.begin(); it != m_callbacks.end(); it++)
-        (it->second)->reconnected();
+        (it->second)->expired();
     }
     m_cond.notify_all();
   }
