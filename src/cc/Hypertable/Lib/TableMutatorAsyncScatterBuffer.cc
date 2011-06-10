@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2008 Doug Judd (Zvents, Inc.)
+ * Copyright (C) 2011 Hypertable, Inc
  *
  * This file is part of Hypertable.
  *
@@ -26,20 +26,24 @@
 #include "Key.h"
 #include "KeySpec.h"
 #include "Table.h"
-#include "TableMutatorDispatchHandler.h"
-#include "TableMutatorScatterBuffer.h"
+#include "TableMutatorAsyncDispatchHandler.h"
+#include "TableMutatorAsyncHandler.h"
+#include "TableMutatorAsyncScatterBuffer.h"
 #include "RangeServerProtocol.h"
 
 using namespace Hypertable;
 
 
-TableMutatorScatterBuffer::TableMutatorScatterBuffer(Comm *comm,
+TableMutatorAsyncScatterBuffer::TableMutatorAsyncScatterBuffer(Comm *comm,
+    ApplicationQueuePtr &app_queue, TableMutatorAsync *mutator,
     const TableIdentifier *table_identifier, SchemaPtr &schema,
-    RangeLocatorPtr &range_locator, bool auto_refresh, uint32_t timeout_ms)
-  : m_comm(comm), m_schema(schema), m_range_locator(range_locator),
-    m_range_server(comm, timeout_ms), m_table_identifier(*table_identifier),
-    m_full(false), m_auto_refresh(auto_refresh), m_resends(0), m_timeout_ms(timeout_ms),
-    m_counter_value(9)  {
+    RangeLocatorPtr &range_locator, bool auto_refresh, uint32_t timeout_ms, uint32_t id)
+  : m_comm(comm), m_app_queue(app_queue), m_mutator(mutator), m_schema(schema),
+    m_range_locator(range_locator), m_range_server(comm, timeout_ms),
+    m_table_identifier(*table_identifier),
+    m_full(false), m_resends(0), m_auto_refresh(auto_refresh), m_timeout_ms(timeout_ms),
+    m_counter_value(9), m_timer(timeout_ms), m_id(id), m_memory_used(0), m_outstanding(false),
+    m_send_flags(0), m_wait_time(ms_init_redo_wait_time) {
 
   m_loc_cache = m_range_locator->location_cache();
 
@@ -51,23 +55,23 @@ TableMutatorScatterBuffer::TableMutatorScatterBuffer(Comm *comm,
 
 
 void
-TableMutatorScatterBuffer::set(const Key &key, const void *value,
-                               uint32_t value_len, Timer &timer) {
+TableMutatorAsyncScatterBuffer::set(const Key &key, const void *value, uint32_t value_len,
+    size_t incr_mem) {
   RangeLocationInfo range_info;
-  TableMutatorSendBufferMap::const_iterator iter;
+  TableMutatorAsyncSendBufferMap::const_iterator iter;
 
   if (!m_loc_cache->lookup(m_table_identifier.id, key.row, &range_info)) {
-    timer.start();
+    m_timer.start();
     m_range_locator->find_loop(&m_table_identifier, key.row, &range_info,
-                               timer, false);
+        m_timer, false);
   }
 
   iter = m_buffer_map.find(range_info.addr);
 
   if (iter == m_buffer_map.end()) {
     // this can be optimized by using the insert() method
-    m_buffer_map[range_info.addr] = new TableMutatorSendBuffer(
-        &m_table_identifier, &m_completion_counter, m_range_locator.get());
+    m_buffer_map[range_info.addr] = new TableMutatorAsyncSendBuffer(&m_table_identifier,
+        &m_completion_counter, m_range_locator.get());
     iter = m_buffer_map.find(range_info.addr);
     (*iter).second->addr = range_info.addr;
   }
@@ -112,24 +116,25 @@ TableMutatorScatterBuffer::set(const Key &key, const void *value,
 
   if ((*iter).second->accum.fill() > m_server_flush_limit)
     m_full = true;
+  m_memory_used += incr_mem;
 }
 
 
-void TableMutatorScatterBuffer::set_delete(const Key &key, Timer &timer) {
+void TableMutatorAsyncScatterBuffer::set_delete(const Key &key, size_t incr_mem) {
   RangeLocationInfo range_info;
-  TableMutatorSendBufferMap::const_iterator iter;
+  TableMutatorAsyncSendBufferMap::const_iterator iter;
 
   if (!m_loc_cache->lookup(m_table_identifier.id, key.row, &range_info)) {
-    timer.start();
+    m_timer.start();
     m_range_locator->find_loop(&m_table_identifier, key.row, &range_info,
-                               timer, false);
+        m_timer, false);
   }
 
   iter = m_buffer_map.find(range_info.addr);
 
   if (iter == m_buffer_map.end()) {
-    m_buffer_map[range_info.addr] = new TableMutatorSendBuffer(
-        &m_table_identifier, &m_completion_counter, m_range_locator.get());
+    m_buffer_map[range_info.addr] = new TableMutatorAsyncSendBuffer(&m_table_identifier,
+        &m_completion_counter, m_range_locator.get());
     iter = m_buffer_map.find(range_info.addr);
     (*iter).second->addr = range_info.addr;
   }
@@ -149,29 +154,29 @@ void TableMutatorScatterBuffer::set_delete(const Key &key, Timer &timer) {
 
   if ((*iter).second->accum.fill() > m_server_flush_limit)
     m_full = true;
+  m_memory_used += incr_mem;
 }
 
 
 void
-TableMutatorScatterBuffer::set(SerializedKey key, ByteString value,
-                               Timer &timer) {
+TableMutatorAsyncScatterBuffer::set(SerializedKey key, ByteString value, size_t incr_mem) {
   RangeLocationInfo range_info;
-  TableMutatorSendBufferMap::const_iterator iter;
+  TableMutatorAsyncSendBufferMap::const_iterator iter;
   const uint8_t *ptr = key.ptr;
   size_t len = Serialization::decode_vi32(&ptr);
 
   if (!m_loc_cache->lookup(m_table_identifier.id, (const char *)ptr+1,
-                           &range_info)) {
-    timer.start();
+        &range_info)) {
+    m_timer.start();
     m_range_locator->find_loop(&m_table_identifier, (const char *)ptr+1,
-                               &range_info, timer, false);
+        &range_info, m_timer, false);
   }
 
   iter = m_buffer_map.find(range_info.addr);
 
   if (iter == m_buffer_map.end()) {
-    m_buffer_map[range_info.addr] = new TableMutatorSendBuffer(
-        &m_table_identifier, &m_completion_counter, m_range_locator.get());
+    m_buffer_map[range_info.addr] = new TableMutatorAsyncSendBuffer(&m_table_identifier,
+        &m_completion_counter, m_range_locator.get());
     iter = m_buffer_map.find(range_info.addr);
     (*iter).second->addr = range_info.addr;
   }
@@ -182,6 +187,7 @@ TableMutatorScatterBuffer::set(SerializedKey key, ByteString value,
 
   if ((*iter).second->accum.fill() > m_server_flush_limit)
     m_full = true;
+  m_memory_used += incr_mem;
 }
 
 
@@ -203,19 +209,20 @@ namespace {
 }
 
 
-void TableMutatorScatterBuffer::send(RangeServerFlagsMap &rangeserver_flags_map,
-                                     uint32_t flags) {
-  TableMutatorSendBufferPtr send_buffer;
+void TableMutatorAsyncScatterBuffer::send(uint32_t flags) {
+  TableMutatorAsyncSendBufferPtr send_buffer;
   std::vector<SendRec> send_vec;
   uint8_t *ptr;
   SerializedKey key;
   SendRec send_rec;
   size_t len;
   String range_location;
+  bool outstanding=false;
 
+  HT_ASSERT(!m_outstanding);
   m_completion_counter.set(m_buffer_map.size());
 
-  for (TableMutatorSendBufferMap::const_iterator iter = m_buffer_map.begin();
+  for (TableMutatorAsyncSendBufferMap::const_iterator iter = m_buffer_map.begin();
        iter != m_buffer_map.end(); ++iter) {
     send_buffer = (*iter).second;
 
@@ -228,7 +235,7 @@ void TableMutatorScatterBuffer::send(RangeServerFlagsMap &rangeserver_flags_map,
 
     if (send_buffer->resend()) {
       memcpy(send_buffer->pending_updates.base,
-             send_buffer->accum.base, len);
+          send_buffer->accum.base, len);
       send_buffer->send_count = send_buffer->retry_count;
     }
     else {
@@ -236,7 +243,7 @@ void TableMutatorScatterBuffer::send(RangeServerFlagsMap &rangeserver_flags_map,
       send_vec.reserve(send_buffer->key_offsets.size());
       for (size_t i=0; i<send_buffer->key_offsets.size(); i++) {
         send_rec.key.ptr = send_buffer->accum.base
-                           + send_buffer->key_offsets[i];
+          + send_buffer->key_offsets[i];
         send_rec.offset = send_buffer->key_offsets[i];
         send_vec.push_back(send_rec);
       }
@@ -253,8 +260,8 @@ void TableMutatorScatterBuffer::send(RangeServerFlagsMap &rangeserver_flags_map,
       }
       HT_ASSERT((size_t)(ptr-send_buffer->pending_updates.base)==len);
       send_buffer->dispatch_handler =
-        new TableMutatorDispatchHandler(send_buffer.get(), m_auto_refresh);
-
+        new TableMutatorAsyncDispatchHandler(m_app_queue, m_mutator, m_id, send_buffer.get(),
+                                             m_auto_refresh);
       send_buffer->send_count = send_buffer->key_offsets.size();
     }
 
@@ -265,94 +272,76 @@ void TableMutatorScatterBuffer::send(RangeServerFlagsMap &rangeserver_flags_map,
      * Send update
      */
     try {
+      m_send_flags = flags;
       send_buffer->pending_updates.own = false;
       m_range_server.update(send_buffer->addr, m_table_identifier,
           send_buffer->send_count, send_buffer->pending_updates, flags,
           send_buffer->dispatch_handler.get());
-      rangeserver_flags_map[send_buffer->addr] = flags;
+
+      outstanding = true;
+
+      if (flags & Table::MUTATOR_FLAG_NO_LOG_SYNC ==Table::MUTATOR_FLAG_NO_LOG_SYNC)
+        m_unsynced_rangeservers.insert(send_buffer->addr);
+
     }
     catch (Exception &e) {
       if (e.code() == Error::COMM_NOT_CONNECTED) {
         send_buffer->add_retries(send_buffer->send_count, 0,
-                                 send_buffer->pending_updates.size);
+            send_buffer->pending_updates.size);
         m_completion_counter.decrement();
       }
     }
     send_buffer->pending_updates.own = true;
   }
-}
 
-
-bool TableMutatorScatterBuffer::completed() {
-  return m_completion_counter.is_complete();
-}
-
-
-bool TableMutatorScatterBuffer::wait_for_completion() {
-  if (!m_completion_counter.wait_for_completion()) {
-    if (m_completion_counter.has_errors()) {
-      TableMutatorSendBufferPtr send_buffer;
-      std::vector<FailedRegion> failed_regions;
-
-      for (TableMutatorSendBufferMap::const_iterator it = m_buffer_map.begin();
-           it != m_buffer_map.end(); ++it) {
-        (*it).second->get_failed_regions(failed_regions);
-        (*it).second->failed_regions.clear();
-      }
-
-      if (!failed_regions.empty()) {
-        Cell cell;
-        Key key;
-        ByteString bs;
-        const uint8_t *endptr;
-        Schema::ColumnFamily *cf;
-        for (size_t i=0; i<failed_regions.size(); i++) {
-          bs.ptr = failed_regions[i].base;
-          endptr = bs.ptr + failed_regions[i].len;
-          while (bs.ptr < endptr) {
-            key.load((SerializedKey)bs);
-            cell.row_key = key.row;
-            cf = m_schema->get_column_family(key.column_family_code);
-            HT_ASSERT(cf);
-            cell.column_family = m_constant_strings.get(cf->name.c_str());
-            cell.column_qualifier = key.column_qualifier;
-            cell.timestamp = key.timestamp;
-            bs.next();
-            cell.value_len = bs.decode_length(&cell.value);
-            bs.next();
-            m_failed_mutations.push_back(std::make_pair(cell,
-                                         failed_regions[i].error));
-          }
-        }
-      }
-
-      // this prevents this mutation failure logic from being executed twice
-      // if this method gets called again
-      m_completion_counter.clear_errors();
-
-      if (m_failed_mutations.size() > 0)
-        HT_THROW(failed_regions[0].error, "");
-
-    }
-    return false;
+  {
+    ScopedLock lock(m_mutex);
+    if (outstanding)
+      m_outstanding = true;
+    else
+      m_app_queue->add(new TableMutatorAsyncHandler(m_mutator, m_id));
   }
-  return true;
 }
 
 
-TableMutatorScatterBuffer *
-TableMutatorScatterBuffer::create_redo_buffer(Timer &timer) {
-  TableMutatorSendBufferPtr send_buffer;
+bool TableMutatorAsyncScatterBuffer::completed() {
+  ScopedLock lock(m_mutex);
+  return m_outstanding;
+}
+
+
+void TableMutatorAsyncScatterBuffer::wait_for_completion() {
+  ScopedLock lock(m_mutex);
+
+  while(m_outstanding)
+    m_cond.wait(lock);
+}
+
+
+TableMutatorAsyncScatterBuffer *
+TableMutatorAsyncScatterBuffer::create_redo_buffer(uint32_t id) {
+  TableMutatorAsyncSendBufferPtr send_buffer;
+  TableMutatorAsyncScatterBuffer *redo_buffer = 0;
   SerializedKey key;
   ByteString value, bs;
-  TableMutatorScatterBuffer *redo_buffer = 0;
+  size_t incr_mem;
 
   try {
-    redo_buffer = new TableMutatorScatterBuffer(m_comm, &m_table_identifier,
-                           m_schema, m_range_locator, false, m_timeout_ms);
+    if (m_timer.remaining() < m_wait_time) {
+      set_retries_to_fail(Error::REQUEST_TIMEOUT);
+      return 0;
+    }
 
-    for (TableMutatorSendBufferMap::const_iterator iter = m_buffer_map.begin();
-         iter != m_buffer_map.end(); ++iter) {
+    m_timer.start();
+    poll(0,0, m_wait_time);
+    m_timer.stop();
+    redo_buffer = new TableMutatorAsyncScatterBuffer(m_comm, m_app_queue, m_mutator,
+        &m_table_identifier, m_schema, m_range_locator, m_auto_refresh, m_timeout_ms, id);
+    redo_buffer->m_timer = m_timer;
+    redo_buffer->m_wait_time = m_wait_time + 2000;
+
+    for (TableMutatorAsyncSendBufferMap::const_iterator iter = m_buffer_map.begin();
+        iter != m_buffer_map.end(); ++iter) {
       send_buffer = (*iter).second;
 
       if (send_buffer->accum.fill()) {
@@ -365,24 +354,146 @@ TableMutatorScatterBuffer::create_redo_buffer(Timer &timer) {
         while (bs.ptr < endptr) {
           key.ptr = bs.next();
           value.ptr = bs.next();
-          redo_buffer->set(key, value, timer);
+          incr_mem = key.length() + value.length();
+          redo_buffer->set(key, value, incr_mem);
           m_resends++;
         }
       }
-
     }
   }
-  catch (Exception &) {
-    delete redo_buffer;
-    throw;
+  catch (Exception &e) {
+    if (redo_buffer != 0) {
+      delete redo_buffer;
+      redo_buffer=0;
+    }
+    set_retries_to_fail(e.code());
+    return 0;
   }
-
   return redo_buffer;
 }
 
+void TableMutatorAsyncScatterBuffer::set_retries_to_fail(int error) {
+  TableMutatorAsyncSendBufferPtr send_buffer;
+  Key key;
+  Cell cell;
+  ByteString value, bs;
+  Schema::ColumnFamily *cf;
 
-void TableMutatorScatterBuffer::reset() {
-  for (TableMutatorSendBufferMap::const_iterator iter = m_buffer_map.begin();
+  for (TableMutatorAsyncSendBufferMap::const_iterator iter = m_buffer_map.begin();
+      iter != m_buffer_map.end(); ++iter) {
+    send_buffer = (*iter).second;
+    if (send_buffer->accum.fill()) {
+      const uint8_t *endptr;
+
+      bs.ptr = send_buffer->accum.base;
+      endptr = bs.ptr + send_buffer->accum.fill();
+
+      while (bs.ptr < endptr) {
+        key.load((SerializedKey)bs);
+        cell.row_key = key.row;
+        cell.flag = key.flag;
+        if (cell.flag == FLAG_DELETE_ROW) {
+          cell.column_family = 0;
+        }
+        else {
+          cf = m_schema->get_column_family(key.column_family_code);
+          HT_ASSERT(cf);
+          cell.column_family = m_constant_strings.get(cf->name.c_str());
+        }
+        cell.column_qualifier = key.column_qualifier;
+        cell.timestamp = key.timestamp;
+        bs.next();
+        cell.value_len = bs.decode_length(&cell.value);
+        bs.next();
+        m_failed_mutations.push_back(std::make_pair(cell, error));
+      }
+    }
+  }
+}
+
+int TableMutatorAsyncScatterBuffer::set_failed_mutations() {
+  TableMutatorAsyncSendBufferPtr send_buffer;
+  std::vector<FailedRegionAsync> failed_regions;
+  int error = Error::OK;
+
+  for (TableMutatorAsyncSendBufferMap::const_iterator it = m_buffer_map.begin();
+      it != m_buffer_map.end(); ++it) {
+    (*it).second->get_failed_regions(failed_regions);
+    (*it).second->failed_regions.clear();
+  }
+
+  if (!failed_regions.empty()) {
+    Cell cell;
+    Key key;
+    ByteString bs;
+    const uint8_t *endptr;
+    Schema::ColumnFamily *cf;
+    for (size_t i=0; i<failed_regions.size(); i++) {
+      bs.ptr = failed_regions[i].base;
+      endptr = bs.ptr + failed_regions[i].len;
+      while (bs.ptr < endptr) {
+        key.load((SerializedKey)bs);
+        cell.row_key = key.row;
+        cell.flag = key.flag;
+        if (cell.flag == FLAG_DELETE_ROW) {
+          cell.column_family = 0;
+        }
+        else {
+          cf = m_schema->get_column_family(key.column_family_code);
+          HT_ASSERT(cf);
+          cell.column_family = m_constant_strings.get(cf->name.c_str());
+        }
+        cell.column_qualifier = key.column_qualifier;
+        cell.timestamp = key.timestamp;
+        bs.next();
+        cell.value_len = bs.decode_length(&cell.value);
+        bs.next();
+        m_failed_mutations.push_back(std::make_pair(cell,
+              failed_regions[i].error));
+      }
+    }
+  }
+  if (m_failed_mutations.size() > 0)
+    error = failed_regions[0].error;
+  return error;
+}
+
+
+void TableMutatorAsyncScatterBuffer::reset() {
+  HT_ASSERT(completed());
+  for (TableMutatorAsyncSendBufferMap::const_iterator iter = m_buffer_map.begin();
        iter != m_buffer_map.end(); ++iter)
     (*iter).second->reset();
+  m_full = false;
+  m_resends = 0;
+  m_memory_used = 0;
+  m_failed_mutations.clear();
+  m_wait_time = ms_init_redo_wait_time;
+  m_unsynced_rangeservers.clear();
+}
+
+void TableMutatorAsyncScatterBuffer::finish() {
+
+  int error = Error::OK;
+  bool has_retries=false, has_errors=false;
+
+  if (m_completion_counter.has_errors()) {
+    has_errors = true;
+    error = set_failed_mutations();
+    // this prevents this mutation failure logic from being executed twice
+    // if this method gets called again
+    m_completion_counter.clear_errors();
+  }
+
+  if (m_completion_counter.has_retries()) {
+    has_retries = true;
+  }
+
+  m_mutator->buffer_finish(m_id, error, has_retries);
+
+  {
+    ScopedLock lock(m_mutex);
+    m_outstanding = false;
+    m_cond.notify_all();
+  }
 }

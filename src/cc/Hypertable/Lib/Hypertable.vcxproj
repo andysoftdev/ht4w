@@ -26,6 +26,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ApacheLogParser.cc" />
+    <ClCompile Include="BalancePlan.cc" />
     <ClCompile Include="Cell.cc" />
     <ClCompile Include="Client.cc" />
     <ClCompile Include="Config.cc" />
@@ -144,6 +145,7 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Old%(Filename).obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="RangeLocator.cc" />
+    <ClCompile Include="RangeMoveSpec.cc" />
     <ClCompile Include="RangeServerClient.cc" />
     <ClCompile Include="RangeServerProtocol.cc" />
     <ClCompile Include="RangeState.cc" />
@@ -157,17 +159,19 @@
     <ClCompile Include="StatsTable.cc" />
     <ClCompile Include="Table.cc" />
     <ClCompile Include="TableCache.cc" />
+    <ClCompile Include="TableCallback.cc" />
     <ClCompile Include="TableDumper.cc" />
     <ClCompile Include="TableMutator.cc" />
-    <ClCompile Include="TableMutatorDispatchHandler.cc" />
+    <ClCompile Include="TableMutatorAsync.cc" />
+    <ClCompile Include="TableMutatorAsyncDispatchHandler.cc" />
+    <ClCompile Include="TableMutatorAsyncHandler.cc" />
+    <ClCompile Include="TableMutatorAsyncScatterBuffer.cc" />
     <ClCompile Include="TableMutatorFlushHandler.cc" />
     <ClCompile Include="TableMutatorIntervalHandler.cc" />
-    <ClCompile Include="TableMutatorScatterBuffer.cc" />
     <ClCompile Include="TableMutatorShared.cc" />
     <ClCompile Include="TableMutatorSyncDispatchHandler.cc" />
     <ClCompile Include="TableScanner.cc" />
     <ClCompile Include="TableScannerAsync.cc" />
-    <ClCompile Include="TableScannerCallback.cc" />
     <ClCompile Include="TableScannerDispatchHandler.cc" />
     <ClCompile Include="TableScannerHandler.cc" />
     <ClCompile Include="TableSplit.cc" />
@@ -175,6 +179,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h" />
+    <ClInclude Include="BalancePlan.h" />
     <ClInclude Include="Cell.h" />
     <ClInclude Include="Cells.h" />
     <ClInclude Include="Client.h" />
@@ -233,6 +238,7 @@
     <ClInclude Include="old\RangeServerMetaLogReader.h" />
     <ClInclude Include="RangeLocationInfo.h" />
     <ClInclude Include="RangeLocator.h" />
+    <ClInclude Include="RangeMoveSpec.h" />
     <ClInclude Include="RangeServerClient.h" />
     <ClInclude Include="RangeServerProtocol.h" />
     <ClInclude Include="RangeState.h" />
@@ -248,19 +254,24 @@
     <ClInclude Include="StatsTable.h" />
     <ClInclude Include="Table.h" />
     <ClInclude Include="TableCache.h" />
+    <ClInclude Include="TableCallback.h" />
     <ClInclude Include="TableDumper.h" />
     <ClInclude Include="TableMutator.h" />
+    <ClInclude Include="TableMutatorAsync.h" />
+    <ClInclude Include="TableMutatorAsyncCompletionCounter.h" />
+    <ClInclude Include="TableMutatorAsyncDispatchHandler.h" />
+    <ClInclude Include="TableMutatorAsyncHandler.h" />
+    <ClInclude Include="TableMutatorAsyncScatterBuffer.h" />
+    <ClInclude Include="TableMutatorAsyncSendBuffer.h" />
     <ClInclude Include="TableMutatorCompletionCounter.h" />
-    <ClInclude Include="TableMutatorDispatchHandler.h" />
     <ClInclude Include="TableMutatorFlushHandler.h" />
     <ClInclude Include="TableMutatorIntervalHandler.h" />
-    <ClInclude Include="TableMutatorScatterBuffer.h" />
+    <ClInclude Include="TableMutatorQueue.h" />
     <ClInclude Include="TableMutatorSendBuffer.h" />
     <ClInclude Include="TableMutatorShared.h" />
     <ClInclude Include="TableMutatorSyncDispatchHandler.h" />
     <ClInclude Include="TableScanner.h" />
     <ClInclude Include="TableScannerAsync.h" />
-    <ClInclude Include="TableScannerCallback.h" />
     <ClInclude Include="TableScannerDispatchHandler.h" />
     <ClInclude Include="TableScannerHandler.h" />
     <ClInclude Include="TableScannerQueue.h" />

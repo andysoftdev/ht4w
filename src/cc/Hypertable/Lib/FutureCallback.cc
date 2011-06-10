@@ -24,6 +24,7 @@
 
 #include "FutureCallback.h"
 #include "TableScannerAsync.h"
+#include "TableMutatorAsync.h"
 
 using namespace Hypertable;
 
@@ -32,6 +33,8 @@ FutureCallback::~FutureCallback() {
   wait_for_completion();
   foreach (TableScannerAsync *scanner, m_scanners_owned)
     intrusive_ptr_release(scanner);
+  foreach (TableMutatorAsync *mutator, m_mutators_owned)
+    intrusive_ptr_release(mutator);
 }
 
 void FutureCallback::cancel() {
@@ -56,16 +59,28 @@ void FutureCallback::deregister_scanner(TableScannerAsync *scanner) {
   m_scanner_set.erase(it);
 }
 
+void FutureCallback::register_mutator(TableMutatorAsync *mutator) {
+  ScopedRecLock lock(m_outstanding_mutex);
+  m_mutator_set.insert(mutator);
+  if (m_mutators_owned.insert(mutator).second)
+    intrusive_ptr_add_ref(mutator);
+}
+
+void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
+  ScopedRecLock lock(m_outstanding_mutex);
+  MutatorSet::iterator it = m_mutator_set.find(mutator);
+  HT_ASSERT(it != m_mutator_set.end());
+  m_mutator_set.erase(it);
+}
+
 const ScanSpec &FutureCallback::get_scan_spec(TableScannerAsync *scanner) {
   return scanner->get_scan_spec();
 }
 
 void FutureCallback::scan_error(TableScannerAsync *scanner, int error, const String &error_msg, bool eos) {
   cancel();
-  throw Exception(error, error_msg);
 }
 
-void FutureCallback::update_error(TableMutator *mutator, int error, const String &error_msg) {
+void FutureCallback::update_error(TableMutatorAsync *mutator, int error, FailedMutations &failedMutations) {
   cancel();
-  throw Exception(error, error_msg);
 }

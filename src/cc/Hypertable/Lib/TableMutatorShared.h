@@ -1,5 +1,5 @@
 /** -*- C++ -*-
- * Copyright (C) 2009  Luke Lu (llu@hypertable.org)
+ * Copyright (C) 2011 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -135,7 +135,7 @@ public:
   void interval_flush();
 
 protected:
-  virtual void auto_flush(Timer &);
+  virtual void auto_flush();
 
 private:
   RecMutex      m_mutex;

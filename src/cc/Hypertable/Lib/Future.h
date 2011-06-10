@@ -22,6 +22,7 @@
 
 #include <boost/thread/condition.hpp>
 #include <list>
+#include <map>
 #include <set>
 
 #include "ResultCallback.h"
@@ -35,10 +36,13 @@ namespace Hypertable {
 
     /**
      * Future objects are used to access results from asynchronous scanners/mutators
-     * @param capacity number of Result objects to enqueue
+     * @param capacity byte capacity of future queue. Results will be blocked from being
+     *     enqueued if the amount of memory used by the existing enqueued results exceeds
+     *     this amount. Defaults to zero, making the queue capacity unbounded.
      */
-    Future(size_t capacity) : m_queue_capacity(capacity), m_cancelled(false) { return; }
-    ~Future();
+    Future(size_t capacity=0) : m_capacity(capacity), m_memory_used(0), m_cancelled(false)
+        { }
+    virtual ~Future();
 
     /**
      * This call blocks till there is a result available unless async ops have completed
@@ -63,24 +67,44 @@ namespace Hypertable {
      */
     void cancel();
 
+    void register_scanner(TableScannerAsync *scanner);
+
+    void deregister_scanner(TableScannerAsync *scanner);
+
+    void register_mutator(TableMutatorAsync *scanner);
+
+    void deregister_mutator(TableMutatorAsync *scanner);
+
+    /**
+     * Checks whether the Future result queue is full
+     */
     bool is_full() {
       ScopedRecLock lock(m_outstanding_mutex);
-      return _is_full();
+      return !has_remaining_capacity();
     }
 
+    /**
+     * Checks whether the Future result queue is empty
+     */
     bool is_empty() {
       ScopedRecLock lock(m_outstanding_mutex);
       return _is_empty();
     }
 
+    /**
+     * Checks whether the Future object has been cancelled
+     */
     bool is_cancelled() {
       ScopedRecLock lock(m_outstanding_mutex);
       return _is_cancelled();
     }
 
-    void register_scanner(TableScannerAsync *scanner);
-
-    void deregister_scanner(TableScannerAsync *scanner);
+    /**
+     * Checks whether there are any outstanding operations
+     */
+    bool has_outstanding() {
+      return !is_done();
+    }
 
   private:
     friend class TableScannerAsync;
@@ -90,22 +114,41 @@ namespace Hypertable {
     void scan_ok(TableScannerAsync *scanner, ScanCellsPtr &cells);
     void scan_error(TableScannerAsync *scanner, int error, const String &error_msg,
                     bool eos);
-    void update_ok(TableMutator *mutator, FailedMutations &failed_mutations);
-    void update_error(TableMutator *mutator, int error, const String &error_msg);
+    void update_ok(TableMutatorAsync *mutator);
+    void update_error(TableMutatorAsync *mutator, int error, FailedMutations &failures);
 
-    // without locks
-    bool _is_full() { return (m_queue_capacity <= m_queue.size()); }
+    size_t memory_used() {
+      return m_memory_used;
+    }
+
+    bool has_remaining_capacity() {
+      if (!m_capacity)
+        // unbounded buffer
+        return true;
+      else
+        return m_memory_used < m_capacity;
+    }
+
     bool _is_empty() { return m_queue.empty(); }
-    bool _is_cancelled() const { return m_cancelled; }
+    bool _is_cancelled() const {
+      return m_cancelled;
+    }
 
     void enqueue(ResultPtr &result);
 
     ResultQueue m_queue;
-    size_t m_queue_capacity;
+    size_t m_capacity;
+    size_t m_memory_used;
     bool m_cancelled;
+    typedef map<uint64_t, TableScannerAsync *> ScannerMap;
+    typedef map<uint64_t, TableMutatorAsync *> MutatorMap;
+    ScannerMap m_scanner_map;
+    MutatorMap m_mutator_map;
+
     typedef set<TableScannerAsync *> ScannerSet;
-    ScannerSet m_scanner_set;
     ScannerSet m_scanners_owned;
+    typedef set<TableMutatorAsync *> MutatorSet;
+    MutatorSet m_mutators_owned;
   };
   typedef intrusive_ptr<Future> FuturePtr;
 }

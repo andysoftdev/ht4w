@@ -472,7 +472,7 @@ function mutator_nolog_sync_test(logfile, testName) {
 }
 
 function name_id_mapper_test(logfile, testName) {
-    prepare_target(testName, ["name_id_mapper_test.cfg"]);
+   prepare_target(testName, ["name_id_mapper_test.cfg"]);
    return run_target(logfile, testName);
 
 }
@@ -539,12 +539,6 @@ function scanner_abrupt_end_test(logfile, testName) {
     return run_target(logfile, testName, "100000");
 }
 
-function scanner_async_test(logfile, testName) {
-    prepare_target(testName, ["scannerAsyncTest.golden"]);
-    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
-    return run_target(logfile, testName);
-}
-
 function schema_test(logfile, testName) {
     prepare_target(testName, ["*-schema-*.xml", "schemaTest.golden"]);
     return run_target(logfile, testName);
@@ -598,7 +592,6 @@ all_tests.add("random_read_test", random_read_test);
 all_tests.add("rangeserver_serialize_test", run_target);
 all_tests.add("row_delete_test", row_delete_test);
 all_tests.add("scanner_abrupt_end_test", scanner_abrupt_end_test);
-all_tests.add("scanner_async_test", scanner_async_test);
 all_tests.add("schema_test", schema_test);
 all_tests.add("scope_guard_test", run_target);
 all_tests.add("serialization_test", run_target);

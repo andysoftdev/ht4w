@@ -94,6 +94,7 @@ namespace Hypertable {
           } while (!mutator->retry());
         }
       }
+
     };
 
     /** An example for simple queries that returns small number of results */

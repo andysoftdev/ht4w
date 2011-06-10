@@ -100,6 +100,15 @@
     <ClCompile Include="ResponseManager.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OperationBalance.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadBalancer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadBalancerBasic.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -202,6 +211,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ResponseManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationBalance.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadBalancer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadBalancerBasic.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

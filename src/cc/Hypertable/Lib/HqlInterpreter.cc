@@ -441,7 +441,7 @@ cmd_select(NamespacePtr &ns, ConnectionManagerPtr &conn_manager,
 
   fout.strict_sync();
 
-  cb.on_finish(0);
+  cb.on_finish((TableMutator*)0);
 }
 
 
@@ -548,7 +548,7 @@ cmd_dump_table(NamespacePtr &ns,
 
   fout.strict_sync();
 
-  cb.on_finish(0);
+  cb.on_finish((TableMutator*)0);
 }
 
 void
@@ -568,10 +568,10 @@ cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
   ::int64_t last_total = 0, new_total;
 
   if (LoadDataFlags::ignore_unknown_cfs(state.load_flags))
-    mutator_flags |= TableMutator::FLAG_IGNORE_UNKNOWN_CFS;
+    mutator_flags |= Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS;
 
   // Turn on no-log-sync unconditionally for LOAD DATA INFILE
-  mutator_flags |= TableMutator::FLAG_NO_LOG_SYNC;
+  mutator_flags |= Table::MUTATOR_FLAG_NO_LOG_SYNC;
 
   if (state.table_name.empty()) {
     if (state.output_file.empty())
@@ -811,6 +811,17 @@ cmd_drop_table(NamespacePtr &ns, ParserState &state,
   cb.on_finish();
 }
 
+void
+cmd_balance(Client *client, ParserState &state,
+            HqlInterpreter::Callback &cb) {
+  MasterClientPtr master = client->get_master_client();
+
+  master->balance(state.balance_plan);
+
+  cb.on_finish();
+}
+
+
 void cmd_shutdown_master(Client *client, HqlInterpreter::Callback &cb) {
   client->shutdown();
   cb.on_finish();
@@ -828,7 +839,7 @@ HqlInterpreter::HqlInterpreter(Client *client, ConnectionManagerPtr &conn_manage
     bool immutable_namespace) : m_client(client), m_mutator_flags(0),
     m_conn_manager(conn_manager), m_dfs_client(0), m_immutable_namespace(immutable_namespace) {
   if (Config::properties->get_bool("Hypertable.HqlInterpreter.Mutator.NoLogSync"))
-    m_mutator_flags = TableMutator::FLAG_NO_LOG_SYNC;
+    m_mutator_flags = Table::MUTATOR_FLAG_NO_LOG_SYNC;
 
 }
 
@@ -894,6 +905,8 @@ void HqlInterpreter::execute(const String &line, Callback &cb) {
                         m_immutable_namespace, state, cb);         break;
     case COMMAND_DROP_NAMESPACE:
       cmd_drop_namespace(m_client, m_namespace, state, cb);        break;
+    case COMMAND_BALANCE:
+      cmd_balance(m_client, state, cb);                            break;
 
     default:
       HT_THROW(Error::HQL_PARSE_ERROR, String("unsupported command: ") + stripped_line);

@@ -30,6 +30,7 @@
 namespace Hypertable {
 
   class TableScannerAsync;
+  class TableMutatorAsync;
   class ScanSpec;
 
   class FutureCallback : public ResultCallback {
@@ -57,12 +58,15 @@ namespace Hypertable {
     void register_scanner(TableScannerAsync *scanner);
     void deregister_scanner(TableScannerAsync *scanner);
 
+    void register_mutator(TableMutatorAsync *scanner);
+    void deregister_mutator(TableMutatorAsync *scanner);
+
     const ScanSpec &get_scan_spec(TableScannerAsync *scanner);
 
   protected:
 
     virtual void scan_error(TableScannerAsync *scanner, int error, const String &error_msg, bool eos);
-    virtual void update_error(TableMutator *mutator, int error, const String &error_msg);
+    virtual void update_error(TableMutatorAsync *mutator, int error, FailedMutations &failedMutations);
 
   private:
     friend class TableScannerAsync;
@@ -75,6 +79,10 @@ namespace Hypertable {
     typedef std::set<TableScannerAsync*> ScannerSet;
     ScannerSet m_scanner_set;
     ScannerSet m_scanners_owned;
+
+    typedef set<TableMutatorAsync*> MutatorSet;
+    MutatorSet m_mutator_set;
+    MutatorSet m_mutators_owned;
   };
   typedef intrusive_ptr<FutureCallback> FutureCallbackPtr;
 }

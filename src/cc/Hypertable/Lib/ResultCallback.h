@@ -32,9 +32,7 @@
 namespace Hypertable {
 
   class TableScannerAsync;
-  class TableMutator;
-  typedef std::pair<Cell, int> FailedMutation;
-  typedef std::vector<FailedMutation> FailedMutations;
+  class TableMutatorAsync;
 
   /** Represents an open table.
    */
@@ -61,12 +59,12 @@ namespace Hypertable {
     /**
      * Hook for derived classes which want to keep track of scanners/mutators
      */
-    virtual void register_mutator(TableMutator *mutator) { }
+    virtual void register_mutator(TableMutatorAsync *mutator) { }
 
     /**
      * Hook for derived classes which want to keep track of scanners/mutators
      */
-    virtual void deregister_mutator(TableMutator *mutator) { }
+    virtual void deregister_mutator(TableMutatorAsync *mutator) { }
 
 
     /**
@@ -91,20 +89,18 @@ namespace Hypertable {
     /**
      * Callback method for successful update
      *
-     * @param scanner
-     * @param error
-     * @param error_msg
+     * @param mutator
      */
-    virtual void update_ok(TableMutator *mutator, FailedMutations &failed_mutations)=0;
+    virtual void update_ok(TableMutatorAsync *mutator)=0;
 
     /**
      * Callback method for update errors
      *
-     * @param scanner
+     * @param mutator
      * @param error
-     * @param error_msg
+     * @param failures vector of failed mutations
      */
-    virtual void update_error(TableMutator *mutator, int error, const String &error_msg)=0;
+    virtual void update_error(TableMutatorAsync *mutator, int error, FailedMutations &failedMutations)=0;
 
     /**
      * Blocks till outstanding == 0

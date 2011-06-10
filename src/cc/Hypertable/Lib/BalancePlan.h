@@ -19,21 +19,39 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#ifndef HYPERTABLE_BALANCEPLAN_H
+#define HYPERTABLE_BALANCEPLAN_H
 
-#include "TableScannerCallback.h"
-#include "TableScanner.h"
+#include <vector>
+
+#include "Common/ReferenceCount.h"
+
+#include "RangeMoveSpec.h"
 
 namespace Hypertable {
 
-void TableScannerCallback::scan_ok(TableScannerAsync *scanner, ScanCellsPtr &cells) {
-  m_scanner->scan_ok(cells);
-}
+  /**
+   * Represents a scan predicate.
+   */
+  class BalancePlan : public ReferenceCount {
+  public:
+    BalancePlan() : duration_millis(0) { }
+    size_t encoded_length() const;
+    void encode(uint8_t **bufp) const;
+    void decode(const uint8_t **bufp, size_t *remainp);
 
-void TableScannerCallback::scan_error(TableScannerAsync *scanner, int error,
-                                          const String &error_msg, bool eos) {
-  m_scanner->scan_error(error, error_msg);
-}
+    void clear() {
+      moves.clear();
+      duration_millis = 0;
+    }
+
+    std::vector<RangeMoveSpecPtr> moves;
+    uint32_t duration_millis;
+  };
+  typedef intrusive_ptr<BalancePlan> BalancePlanPtr;
+
+  std::ostream &operator<<(std::ostream &os, const BalancePlan &plan);
 
 } // namespace Hypertable
 
+#endif // HYPERTABLE_BALANCEPLAN_H

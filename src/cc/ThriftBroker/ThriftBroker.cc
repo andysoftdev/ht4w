@@ -69,27 +69,28 @@
   THROW_TE(e.code(), oss.str()); \
 }
 
-#define LOG_API(_expr_) { \
+#define LOG_API(_expr_) do { \
   if (m_log_api) \
-    HT_INFO_OUT << "API "<< __func__ <<": "<< _expr_ << HT_END; \
-}
+    std::cout << hires_ts <<" API "<< __func__ <<": "<< _expr_ << std::endl; \
+} while (0)
 
-#define LOG_HQL_RESULT(_res_) { \
+#define LOG_HQL_RESULT(_res_) do { \
   if (m_log_api) \
-    HT_INFO_OUT << "API "<< __func__ <<": result: " << HT_END; \
+    cout << hires_ts <<" API "<< __func__ <<": result: "; \
   if (Logger::logger->isDebugEnabled()) \
-    HT_DEBUG_OUT << _res_ << HT_END; \
-  else if (Logger::logger->isInfoEnabled()) { \
+    cout << _res_; \
+  else { \
     if (_res_.__isset.results) \
-      HT_INFO_OUT <<"results.size=" << _res_.results.size() << HT_END; \
+      cout <<"results.size=" << _res_.results.size(); \
     if (_res_.__isset.cells) \
-      HT_INFO_OUT <<"cells.size=" << _res_.cells.size() << HT_END; \
+      cout <<"cells.size=" << _res_.cells.size(); \
     if (_res_.__isset.scanner) \
-      HT_INFO_OUT <<"scanner="<< _res_.scanner << HT_END; \
+      cout <<"scanner="<< _res_.scanner; \
     if (_res_.__isset.mutator) \
-      HT_INFO_OUT <<"mutator="<< _res_.mutator << HT_END; \
+      cout <<"mutator="<< _res_.mutator; \
   } \
-}
+  cout << std::endl; \
+} while(0)
 
 namespace Hypertable { namespace ThriftBroker {
 
@@ -146,6 +147,7 @@ typedef hash_map< ::int64_t, TableScannerPtr> ScannerMap;
 typedef hash_map< ::int64_t, TableScannerAsyncPtr> ScannerAsyncMap;
 typedef hash_map< ::int64_t, ::int64_t> ReverseScannerAsyncMap;
 typedef hash_map< ::int64_t, TableMutatorPtr> MutatorMap;
+typedef hash_map< ::int64_t, TableMutatorAsyncPtr> MutatorAsyncMap;
 typedef hash_map< ::int64_t, NamespacePtr> NamespaceMap;
 typedef hash_map< ::int64_t, FuturePtr> FutureMap;
 typedef hash_map< ::int64_t, HqlInterpreterPtr> HqlInterpreterMap;
@@ -892,7 +894,7 @@ public:
     LOG_API("future=" << ff);
 
     try {
-      FuturePtr &future_ptr = get_future(ff);
+      FuturePtr future_ptr = get_future(ff);
       ResultPtr hresult;
       bool done = !(future_ptr->get(hresult));
       if (done) {
@@ -919,6 +921,45 @@ public:
     } RETHROW()
   }
 
+  virtual bool
+  future_is_empty(const ThriftGen::Future ff) {
+    LOG_API("future=" << ff);
+
+    try {
+      FuturePtr future_ptr = get_future(ff);
+      return future_ptr->is_empty();
+    } RETHROW()
+  }
+
+  virtual bool
+  future_is_full(const ThriftGen::Future ff) {
+    LOG_API("future=" << ff);
+
+    try {
+      FuturePtr future_ptr = get_future(ff);
+      return future_ptr->is_full();
+    } RETHROW()
+  }
+
+  virtual bool
+  future_is_cancelled(const ThriftGen::Future ff) {
+    LOG_API("future=" << ff);
+
+    try {
+      FuturePtr future_ptr = get_future(ff);
+      return future_ptr->is_cancelled();
+    } RETHROW()
+  }
+
+  virtual bool
+  future_has_outstanding(const ThriftGen::Future ff) {
+    LOG_API("future=" << ff);
+
+    try {
+      FuturePtr future_ptr = get_future(ff);
+      return future_ptr->has_outstanding();
+    } RETHROW()
+  }
 
   virtual void close_future(const ThriftGen::Future ff) {
     LOG_API("future="<< ff);
@@ -937,14 +978,20 @@ public:
       ThriftGen::Namespace id = get_namespace_id(&namespace_ptr);
       LOG_API("namespace name=" << ns << " namespace id="<< id);
       return id;
-    } catch (Hypertable::Exception &e) {
-      std::ostringstream oss;  oss << HT_FUNC <<": "<< e;
-      if( e.code() == Error::NAMESPACE_DOES_NOT_EXIST) // info should be sufficient
-          HT_INFO_OUT << oss.str() << HT_END;
-      else
-          HT_ERROR_OUT << oss.str() << HT_END;
-      THROW_TE(e.code(), oss.str());
-    }
+    } RETHROW()
+  }
+
+  virtual MutatorAsync
+  open_mutator_async(const ThriftGen::Namespace ns, const String &table,
+                     const ThriftGen::Future ff, const ::int32_t flags) {
+    LOG_API("namespace=" << ns << "table="<< table << " future=" << ff <<" flags="<< flags);
+
+    try {
+      MutatorAsync id =  get_mutator_async_id(_open_mutator_async(ns, table, ff, flags).get());
+      LOG_API("namespace=" << ns << " table="<< table << " future=" << ff <<" flags="<< flags
+              <<" mutator="<< id);
+      return id;
+    } RETHROW()
   }
 
   virtual Mutator open_mutator(const ThriftGen::Namespace ns, const String &table, const ::int32_t flags,
@@ -955,7 +1002,7 @@ public:
     try {
       NamespacePtr namespace_ptr = get_namespace(ns);
       TablePtr t = namespace_ptr->open_table(table);
-      Mutator id =  get_mutator_id(t->create_shared_mutator(0, flags, flush_interval));
+      Mutator id =  get_mutator_id(t->create_mutator(0, flags, flush_interval));
       LOG_API("namespace=" << ns << " table="<< table <<" mutator="<< id);
       return id;
     } RETHROW()
@@ -970,6 +1017,16 @@ public:
     } RETHROW()
   }
 
+  virtual void flush_mutator_async(const MutatorAsync mutator) {
+    LOG_API("mutator="<< mutator);
+
+    try {
+      get_mutator_async(mutator)->flush();
+      LOG_API("mutator="<< mutator <<" done");
+    } RETHROW()
+  }
+
+
   virtual void close_mutator(const Mutator mutator, const bool flush) {
     LOG_API("mutator="<< mutator <<" flush="<< flush);
 
@@ -978,6 +1035,15 @@ public:
         flush_mutator(mutator);
 
       remove_mutator(mutator);
+      LOG_API("mutator="<< mutator <<" done");
+    } RETHROW()
+  }
+
+  virtual void close_mutator_async(const MutatorAsync mutator) {
+    LOG_API("mutator="<< mutator);
+
+    try {
+      remove_mutator_async(mutator);
       LOG_API("mutator="<< mutator <<" done");
     } RETHROW()
   }
@@ -1028,7 +1094,7 @@ public:
     try {
       CellsBuilder cb;
       Hypertable::Cell hcell;
-	  SerializedCellsReader reader((void *)cells.c_str(), (uint32_t)cells.length());
+      SerializedCellsReader reader((void *)cells.c_str(), (uint32_t)cells.length());
       while (reader.next()) {
         reader.get(hcell);
         cb.add(hcell, false);
@@ -1036,6 +1102,66 @@ public:
 	  get_mutator(mutator)->set_cells(cb.get());
       if (flush || reader.flush())
         get_mutator(mutator)->flush();
+      LOG_API("mutator="<< mutator <<" done");
+    } RETHROW()
+  }
+
+  virtual void set_cells_async(const MutatorAsync mutator, const ThriftCells &cells) {
+    LOG_API("mutator="<< mutator <<" cell.size="<< cells.size());
+
+    try {
+      _set_cells_async(mutator, cells);
+      LOG_API("mutator="<< mutator <<" done");
+    } RETHROW()
+  }
+
+  virtual void set_cell_async(const MutatorAsync mutator, const ThriftGen::Cell &cell) {
+    LOG_API("mutator="<< mutator <<" cell="<< cell);
+
+    try {
+      _set_cell_async(mutator, cell);
+      LOG_API("mutator="<< mutator <<" done");
+    } RETHROW()
+  }
+
+  virtual void
+  set_cells_as_arrays_async(const MutatorAsync mutator, const ThriftCellsAsArrays &cells) {
+    LOG_API("mutator="<< mutator <<" cell.size="<< cells.size());
+
+    try {
+      _set_cells_async(mutator, cells);
+      LOG_API("mutator="<< mutator <<" done");
+    } RETHROW()
+  }
+
+  virtual void
+  set_cell_as_array_async(const MutatorAsync mutator, const CellAsArray &cell) {
+    // gcc 4.0.1 cannot seems to handle << cell here (see ThriftHelper.h)
+    LOG_API("mutator="<< mutator <<" cell_as_array.size="<< cell.size());
+
+    try {
+      _set_cell_async(mutator, cell);
+      LOG_API("mutator="<< mutator <<" done");
+    } RETHROW()
+  }
+
+  virtual void
+  set_cells_serialized_async(const MutatorAsync mutator, const CellsSerialized &cells,
+      const bool flush) {
+    LOG_API("mutator="<< mutator <<" cell.size="<< cells.size());
+
+    try {
+      CellsBuilder cb;
+      Hypertable::Cell hcell;
+      SerializedCellsReader reader((void *)cells.c_str(), (uint32_t)cells.length());
+      while (reader.next()) {
+        reader.get(hcell);
+        cb.add(hcell, false);
+      }
+      TableMutatorAsyncPtr mutator_ptr = get_mutator_async(mutator);
+	    mutator_ptr->set_cells(cb.get());
+      if (flush || reader.flush())
+        mutator_ptr->flush();
       LOG_API("mutator="<< mutator <<" done");
     } RETHROW()
   }
@@ -1235,7 +1361,16 @@ public:
       }
     }
     else {
-      HT_THROW(Error::NOT_IMPLEMENTED, "Support for asynchronous mutators not yet implemented");
+      tresult.is_scan = false;
+      tresult.id = get_mutator_async_id(hresult->get_mutator());
+      if (hresult->is_error()) {
+        tresult.is_error = true;
+        hresult->get_error(tresult.error, tresult.error_msg);
+        hresult->get_failed_cells(hcells);
+        convert_cells(hcells, tresult.cells);
+        tresult.__isset.error = true;
+        tresult.__isset.error_msg = true;
+      }
     }
   }
 
@@ -1287,6 +1422,16 @@ public:
     else {
       HT_THROW(Error::NOT_IMPLEMENTED, "Support for asynchronous mutators not yet implemented");
     }
+  }
+
+  TableMutatorAsyncPtr
+  _open_mutator_async(const ThriftGen::Namespace ns, const String &table,
+                      const ThriftGen::Future ff, ::int32_t flags) {
+    NamespacePtr namespace_ptr = get_namespace(ns);
+    TablePtr t = namespace_ptr->open_table(table);
+    FuturePtr future_ptr = get_future(ff);
+
+    return t->create_mutator_async(future_ptr.get(), flags);
   }
 
   TableScannerAsyncPtr
@@ -1406,7 +1551,23 @@ public:
     get_mutator(mutator)->set_cells(cb.get());
   }
 
-  FuturePtr get_future(::int64_t id) {
+  template <class CellT>
+  void _set_cells_async(const MutatorAsync mutator, const vector<CellT> &cells) {
+    Hypertable::Cells hcells;
+    convert_cells(cells, hcells);
+    get_mutator_async(mutator)->set_cells(hcells);
+  }
+
+  template <class CellT>
+  void _set_cell_async(const MutatorAsync mutator, const CellT &cell) {
+    CellsBuilder cb;
+    Hypertable::Cell hcell;
+    convert_cell(cell, hcell);
+    cb.add(hcell, false);
+    get_mutator_async(mutator)->set_cells(cb.get());
+  }
+
+  FuturePtr& get_future(::int64_t id) {
     ScopedLock lock(m_future_mutex);
     FutureMap::iterator it = m_future_map.find(id);
 
@@ -1420,7 +1581,7 @@ public:
   }
 
 
-  NamespacePtr get_namespace(::int64_t id) {
+  NamespacePtr& get_namespace(::int64_t id) {
     ScopedLock lock(m_namespace_mutex);
     NamespaceMap::iterator it = m_namespace_map.find(id);
 
@@ -1544,6 +1705,14 @@ public:
     return id;
   }
 
+  ::int64_t get_mutator_async_id(TableMutatorAsync *mutator) {
+    ScopedLock lock(m_mutator_async_mutex);
+    ::int64_t id = (::int64_t)mutator;
+    m_mutator_async_map.insert(make_pair(id, mutator)); // no overwrite
+    return id;
+  }
+
+
   virtual void refresh_shared_mutator(const ThriftGen::Namespace ns, const String &table,
       const ThriftGen::MutateSpec &mutate_spec) {
     ScopedLock lock(m_shared_mutator_mutex);
@@ -1564,7 +1733,7 @@ public:
             <<" with appname=" << mutate_spec.appname);
     NamespacePtr namespace_ptr = get_namespace(ns);
     TablePtr t = namespace_ptr->open_table(table);
-    TableMutatorPtr mutator = t->create_shared_mutator(0, mutate_spec.flags, mutate_spec.flush_interval);
+    TableMutatorPtr mutator = t->create_mutator(0, mutate_spec.flags, mutate_spec.flush_interval);
     m_shared_mutator_map[skey] = mutator;
     return;
   }
@@ -1586,7 +1755,7 @@ public:
               " with appname=" << mutate_spec.appname);
       NamespacePtr namespace_ptr = get_namespace(ns);
       TablePtr t = namespace_ptr->open_table(table);
-      TableMutatorPtr mutator = t->create_shared_mutator(0, mutate_spec.flags, mutate_spec.flush_interval);
+      TableMutatorPtr mutator = t->create_mutator(0, mutate_spec.flags, mutate_spec.flush_interval);
       m_shared_mutator_map[skey] = mutator;
       return mutator;
     }
@@ -1597,6 +1766,18 @@ public:
     MutatorMap::iterator it = m_mutator_map.find(id);
 
     if (it != m_mutator_map.end())
+      return it->second;
+
+    HT_ERROR_OUT << "Bad mutator id - " << id << HT_END;
+    THROW_TE(Error::THRIFTBROKER_BAD_MUTATOR_ID,
+             format("Invalid mutator id: %lld", (Lld)id));
+  }
+
+  TableMutatorAsyncPtr get_mutator_async(::int64_t id) {
+    ScopedLock lock(m_mutator_async_mutex);
+    MutatorAsyncMap::iterator it = m_mutator_async_map.find(id);
+
+    if (it != m_mutator_async_map.end())
       return it->second;
 
     HT_ERROR_OUT << "Bad mutator id - " << id << HT_END;
@@ -1647,12 +1828,28 @@ public:
              format("Invalid mutator id: %lld", (Lld)id));
   }
 
+  void remove_mutator_async(::int64_t id) {
+    ScopedLock lock(m_mutator_async_mutex);
+    MutatorAsyncMap::iterator it = m_mutator_async_map.find(id);
+
+    if (it != m_mutator_async_map.end()) {
+      m_mutator_async_map.erase(it);
+      return;
+    }
+
+    HT_ERROR_OUT << "Bad mutator id - " << id << HT_END;
+    THROW_TE(Error::THRIFTBROKER_BAD_MUTATOR_ID,
+             format("Invalid mutator id: %lld", (Lld)id));
+  }
+
 private:
   bool             m_log_api;
   Mutex            m_scanner_mutex;
   ScannerMap       m_scanner_map;
   Mutex            m_mutator_mutex;
+  Mutex            m_mutator_async_mutex;
   MutatorMap       m_mutator_map;
+  MutatorAsyncMap  m_mutator_async_map;
   Mutex            m_shared_mutator_mutex;
   ::int64_t        m_next_namespace_id;
   NamespaceMap     m_namespace_map;

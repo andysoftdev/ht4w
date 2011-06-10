@@ -65,7 +65,7 @@ void LoadThread::operator()() {
         m_state.min_latency = latency;
       if (latency > m_state.max_latency)
         m_state.max_latency = latency;
-      
+
       m_state.requests.pop_front();
       m_state.garbage.push_back(request);
     }

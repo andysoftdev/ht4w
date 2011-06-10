@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
 
     table_ptr = namespace_ptr->open_table("LoadTest");
     // Do asynchronous scan
-    FuturePtr future_ptr = new Future(5);
+    FuturePtr future_ptr = new Future(5000000);
     ResultPtr result;
     Cells cells;
     String start_str;

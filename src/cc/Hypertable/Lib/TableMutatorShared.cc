@@ -1,5 +1,5 @@
 /** -*- C++ -*-
- * Copyright (C) 2009  Luke Lu (llu@hypertable.org)
+ * Copyright (C) 2011 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -43,9 +43,9 @@ TableMutatorShared::~TableMutatorShared() {
 }
 
 
-void TableMutatorShared::auto_flush(Timer &timer) {
+void TableMutatorShared::auto_flush() {
   ScopedRecLock lock(m_mutex);
-  Parent::auto_flush(timer);
+  Parent::auto_flush();
   m_last_flush_ts.reset();
 }
 

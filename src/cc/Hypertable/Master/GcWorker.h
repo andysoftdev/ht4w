@@ -36,7 +36,7 @@ namespace Hypertable {
   public:
     GcWorker(ContextPtr &context);
     void gc();
-    
+
   private:
     void scan_metadata(CountMap &files_map);
     void delete_row(const std::string &row, TableMutatorPtr &mutator);

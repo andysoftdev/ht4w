@@ -130,16 +130,10 @@
     <ClCompile Include="TableMutator.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TableMutatorDispatchHandler.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TableMutatorFlushHandler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TableMutatorIntervalHandler.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TableMutatorScatterBuffer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TableMutatorShared.cc">
@@ -226,9 +220,6 @@
     <ClCompile Include="TableScannerAsync.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TableScannerCallback.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TableScannerDispatchHandler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -242,6 +233,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FutureCallback.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BalancePlan.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeMoveSpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorAsync.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorAsyncDispatchHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorAsyncHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMutatorAsyncScatterBuffer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableCallback.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -399,16 +411,10 @@
     <ClInclude Include="TableMutatorCompletionCounter.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="TableMutatorDispatchHandler.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="TableMutatorFlushHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TableMutatorIntervalHandler.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TableMutatorScatterBuffer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TableMutatorSendBuffer.h">
@@ -504,9 +510,6 @@
     <ClInclude Include="TableScannerAsync.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="TableScannerCallback.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="TableScannerDispatchHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -523,6 +526,36 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="FutureCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BalancePlan.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeMoveSpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorAsync.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorAsyncCompletionCounter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorAsyncDispatchHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorAsyncHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorAsyncScatterBuffer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorAsyncSendBuffer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableMutatorQueue.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableCallback.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

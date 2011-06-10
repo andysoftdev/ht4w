@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2008 Doug Judd (Zvents, Inc.)
+ * Copyright (C) 2011 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,28 +25,31 @@
 #include "Common/Error.h"
 #include "Common/Logger.h"
 
-#include "Table.h"
-#include "TableMutatorDispatchHandler.h"
+#include "TableMutatorAsyncDispatchHandler.h"
+#include "TableMutatorAsyncHandler.h"
 
 using namespace Hypertable;
 using namespace Serialization;
 
-
 /**
  *
  */
-TableMutatorDispatchHandler::TableMutatorDispatchHandler(
-       TableMutatorSendBuffer *send_buffer, bool auto_refresh)
-  : m_send_buffer(send_buffer), m_auto_refresh(auto_refresh) {
+TableMutatorAsyncDispatchHandler::TableMutatorAsyncDispatchHandler(
+    ApplicationQueuePtr &app_queue, TableMutatorAsync *mutator,
+    uint32_t scatter_buffer, TableMutatorAsyncSendBuffer *send_buffer, bool auto_refresh)
+  : m_app_queue(app_queue), m_mutator(mutator),
+    m_scatter_buffer(scatter_buffer), m_send_buffer(send_buffer),
+    m_auto_refresh(auto_refresh), m_handled(false) {
 }
 
-
-
 /**
  *
  */
-void TableMutatorDispatchHandler::handle(EventPtr &event_ptr) {
+void TableMutatorAsyncDispatchHandler::handle(EventPtr &event_ptr) {
   int32_t error;
+
+  HT_ASSERT(!m_handled);
+  m_handled = true;
 
   if (event_ptr->type == Event::MESSAGE) {
     error = Protocol::response_code(event_ptr);
@@ -80,8 +83,9 @@ void TableMutatorDispatchHandler::handle(EventPtr &event_ptr) {
           }
           if (error == Error::RANGESERVER_OUT_OF_RANGE)
             m_send_buffer->add_retries(count, offset, len);
-          else
+          else {
             m_send_buffer->add_errors(error, count, offset, len);
+          }
         }
       }
     }
@@ -95,6 +99,12 @@ void TableMutatorDispatchHandler::handle(EventPtr &event_ptr) {
     HT_ERRORF("%s", event_ptr->to_str().c_str());
   }
 
-  m_send_buffer->counterp->decrement();
+  bool complete = m_send_buffer->counterp->decrement();
+  if (complete) {
+    TableMutatorAsyncHandler *handler = new TableMutatorAsyncHandler(m_mutator, m_scatter_buffer);
+    //HT_INFO_OUT << "[bibble] Created TableMutatorAsyncHandler " << std::hex << handler
+    //    << " in TableMutatorAsyncDispatchHandler " << this << HT_END;
+    m_app_queue->add(handler);
+  }
 }
 

@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2008 Doug Judd (Zvents, Inc.)
+ * Copyright (C) 2011 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,28 +19,38 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_TABLEMUTATORDISPATCHHANDLER_H
-#define HYPERTABLE_TABLEMUTATORDISPATCHHANDLER_H
+#ifndef HYPERTABLE_TABLEMUTATORASYNCDISPATCHHANDLER_H
+#define HYPERTABLE_TABLEMUTATORASYNCDISPATCHHANDLER_H
 
 #include "AsyncComm/DispatchHandler.h"
 #include "AsyncComm/Event.h"
 
-#include "TableMutatorScatterBuffer.h"
-#include "TableMutatorSendBuffer.h"
+#include "TableMutatorAsync.h"
+#include "TableMutatorAsyncSendBuffer.h"
 
 namespace Hypertable {
 
   /**
-   * This class is a DispatchHandler class that can be used
+   * This class is a DispatchHandler
    *
    */
-  class TableMutatorDispatchHandler : public DispatchHandler {
+  class TableMutatorAsyncDispatchHandler : public DispatchHandler {
 
   public:
     /**
      * Constructor.  Initializes state.
      */
-    TableMutatorDispatchHandler(TableMutatorSendBuffer *send_buffer, bool auto_refresh);
+    TableMutatorAsyncDispatchHandler(ApplicationQueuePtr &app_queue,
+                                     TableMutatorAsync *mutator,
+                                     uint32_t scatter_buffer,
+                                     TableMutatorAsyncSendBuffer *send_buffer,
+                                     bool auto_refresh);
+
+    ~TableMutatorAsyncDispatchHandler() {
+      //HT_INFO_OUT << "[bibble] Destroying TableMutatorAsyncDispatchHandler " << std::hex
+      //    << this << HT_END;
+      HT_ASSERT(m_handled);
+    }
 
     /**
      * Dispatch method.  This gets called by the AsyncComm layer
@@ -52,10 +62,12 @@ namespace Hypertable {
     virtual void handle(EventPtr &event_ptr);
 
   private:
-    TableMutatorSendBuffer *m_send_buffer;
+    ApplicationQueuePtr     m_app_queue;
+    TableMutatorAsync *m_mutator;
+    uint32_t m_scatter_buffer;
+    TableMutatorAsyncSendBuffer *m_send_buffer;
     bool m_auto_refresh;
+    bool m_handled;
   };
 }
-
-
-#endif // HYPERTABLE_TABLEMUTATORDISPATCHHANDLER_H
+#endif // HYPERTABLE_TABLEMUTATORDISPATCHHANDLERASYNC_H
