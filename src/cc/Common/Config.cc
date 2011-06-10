@@ -63,6 +63,15 @@ String common_app_data_dir() {
   return str_common_app_data;
 }
 
+String expand_environment_strings(const String& str) {
+  char expanded[2048];
+  if (ExpandEnvironmentStrings(str.c_str(), expanded, sizeof(expanded))) {
+    return expanded;
+  }
+  return str;
+}
+
+
 #endif
 
 // singletons
@@ -492,6 +501,12 @@ void parse_args(int argc, char *argv[]) {
 
   filename = get_str("config");
 
+#ifdef _WIN32
+
+  filename = expand_environment_strings(filename);
+
+#endif
+
   // Only try to parse config file if it exists or not default
   if (FileUtils::exists(filename)) {
     parse_file(filename, cmdline_hidden_desc());
@@ -499,13 +514,13 @@ void parse_args(int argc, char *argv[]) {
   }
 #ifdef _WIN32
   else {
+    if (!defaulted("config"))
+      HT_THROW(Error::FILE_NOT_FOUND, filename);
     String cfg_common_app_data = common_app_data_dir();
     if (!cfg_common_app_data.empty() && FileUtils::exists(cfg_common_app_data += "\\hypertable.cfg")) {
       parse_file(cfg_common_app_data, cmdline_hidden_desc());
       file_loaded = true;
     }
-    else if (!defaulted("config"))
-      HT_THROW(Error::FILE_NOT_FOUND, filename);
   }
 #else
   else if (!defaulted("config"))
@@ -513,6 +528,31 @@ void parse_args(int argc, char *argv[]) {
 #endif
 
   sync_aliases();       // call before use
+
+#ifdef _WIN32
+
+#define PROP_EXPAND_ENVIRONMENT_STRINGS( p ) \
+  if (has(p) && !defaulted(p)) { \
+    String s = get_str(p); \
+    String e = expand_environment_strings(s); \
+    if (s != e) { \
+      properties->set(p, e); \
+      ++num_prop_expanded; \
+    } \
+  }
+
+  int num_prop_expanded = 0;
+  PROP_EXPAND_ENVIRONMENT_STRINGS("Hypertable.DataDirectory")
+  PROP_EXPAND_ENVIRONMENT_STRINGS("DfsBroker.Local.Root")
+  PROP_EXPAND_ENVIRONMENT_STRINGS("Hyperspace.Replica.Dir")
+  PROP_EXPAND_ENVIRONMENT_STRINGS("Hypertable.Directory")
+  PROP_EXPAND_ENVIRONMENT_STRINGS("Hypertable.RangeServer.Monitoring.DataDirectories")
+  PROP_EXPAND_ENVIRONMENT_STRINGS("Hypertable.Service.Logging.Directory")
+
+  if (num_prop_expanded)
+    sync_aliases();       // once more
+
+#endif
 }
 
 void
