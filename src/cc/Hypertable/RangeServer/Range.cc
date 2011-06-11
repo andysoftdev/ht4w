@@ -1195,7 +1195,7 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
       m_metalog_entity->needs_compaction = false;
       Global::rsml_writer->record_state(m_metalog_entity.get());
     }
-    catch (Exception &e) {
+    catch (Exception &) {
       HT_ERRORF("Problem updating meta log entry for %s", m_name.c_str());
       m_metalog_entity->needs_compaction = true;
     }

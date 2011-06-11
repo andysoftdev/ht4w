@@ -41,7 +41,7 @@ void TableMutatorAsync::handle_send_exceptions() {
   try {
     throw;
   }
-  catch (std::bad_alloc &e) {
+  catch (std::bad_alloc &) {
     m_last_error = Error::BAD_MEMORY_ALLOCATION;
     HT_ERROR("caught bad_alloc here");
   }
@@ -100,7 +100,7 @@ void TableMutatorAsync::wait_for_completion() {
 void
 TableMutatorAsync::set(const KeySpec &key, const void *value, uint32_t value_len) {
   bool unknown_cf;
-  bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) ;
+  bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) > 0;
   size_t incr_mem;
 
   try {
@@ -123,7 +123,7 @@ TableMutatorAsync::set(const KeySpec &key, const void *value, uint32_t value_len
 void
 TableMutatorAsync::set_cells(Cells::const_iterator it, Cells::const_iterator end) {
   bool unknown_cf;
-  bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) ;
+  bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) > 0;
   size_t incr_mem;
 
   try {
@@ -163,7 +163,7 @@ TableMutatorAsync::set_cells(Cells::const_iterator it, Cells::const_iterator end
 void TableMutatorAsync::set_delete(const KeySpec &key) {
   Key full_key;
   bool unknown_cf;
-  bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) ;
+  bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) > 0;
   size_t incr_mem;
   try {
     key.sanity_check();
@@ -193,7 +193,7 @@ void
 TableMutatorAsync::to_full_key(const void *row, const char *column_family,
     const void *column_qualifier, int64_t timestamp, int64_t revision,
     uint8_t flag, Key &full_key, bool &unknown_cf) {
-  bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS);
+  bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) > 0;
 
   unknown_cf = false;
 

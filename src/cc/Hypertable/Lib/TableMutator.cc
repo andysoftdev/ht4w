@@ -41,7 +41,7 @@ void TableMutator::handle_exceptions() {
   try {
     throw;
   }
-  catch (std::bad_alloc &e) {
+  catch (std::bad_alloc &) {
     m_last_error = Error::BAD_MEMORY_ALLOCATION;
     HT_ERROR("caught bad_alloc here");
   }
