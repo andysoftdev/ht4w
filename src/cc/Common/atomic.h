@@ -43,6 +43,12 @@ inline int atomic_add_return(int i, atomic_t *v)
   return _InterlockedExchangeAdd(&v->counter, i) + i;
 }
 
+inline int atomic_sub_return(int i, atomic_t *v)
+{
+  return _InterlockedExchangeAdd(&v->counter, -i) - i;
+}
+
+
 inline int atomic_sub_and_test(int i, atomic_t *v)
 {
   return _InterlockedExchangeAdd(&v->counter, -i) == i;
