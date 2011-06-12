@@ -66,7 +66,7 @@ namespace Hypertable {
 			      time_t arival_time=0);
 #elif defined(_WIN32)
     bool async_accept();
-    virtual bool handle_event(OverlappedEx *event, clock_t arrival_clocks,
+    virtual bool handle_event(IOOP *event, clock_t arrival_clocks,
                               time_t arival_time=0);
 #else
     ImplementMe;

@@ -59,11 +59,11 @@ void ReactorRunner::operator()() {
   IOHandler *handler;
   std::set<IOHandler *> removed_handlers;
   PollTimeout timeout;
+#ifndef _WIN32
   bool did_delay = false;
   clock_t arrival_clocks = 0;
   time_t arrival_time = 0;
   bool got_clocks = false;
-#ifndef _WIN32
   std::vector<struct pollfd> pollfds;
 #endif
   std::vector<IOHandler *> handlers;
@@ -135,7 +135,7 @@ void ReactorRunner::operator()() {
     }
 
     if (!shutdown)
-      HT_ERRORF("poll() failed : %s", strerror(errno));
+      HT_ERRORF("poll() failed - %s", strerror(errno));
 
     return;
   }
@@ -184,7 +184,7 @@ void ReactorRunner::operator()() {
   }
 
   if (!shutdown)
-    HT_ERRORF("epoll_wait(%d) failed : %s", m_reactor_ptr->poll_fd,
+    HT_ERRORF("epoll_wait(%d) failed - %s", m_reactor_ptr->poll_fd,
     strerror(errno));
 
 #elif defined(__sun__)
@@ -245,7 +245,7 @@ void ReactorRunner::operator()() {
   }
 
   if (!shutdown) {
-    HT_ERRORF("port_getn(%d) failed : %s", m_reactor_ptr->poll_fd,
+    HT_ERRORF("port_getn(%d) failed - %s", m_reactor_ptr->poll_fd,
       strerror(errno));
     if (timeout.get_timespec() == 0)
       HT_ERROR("timespec is null");
@@ -291,23 +291,23 @@ void ReactorRunner::operator()() {
   }
 
   if (!shutdown)
-    HT_ERRORF("kevent(%d) failed : %s", m_reactor_ptr->kqd, strerror(errno));
+    HT_ERRORF("kevent(%d) failed - %s", m_reactor_ptr->kqd, strerror(errno));
 
 #elif defined(_WIN32)
 
-  while (1) {
+  while (true) {
     DWORD numberOfBytes = 0;
     ULONG_PTR completionKey = 0;
-    OverlappedEx* pol = 0;
-    if(GetQueuedCompletionStatus(ReactorFactory::hIOCP,
-      &numberOfBytes,
-      &completionKey,
-      (LPOVERLAPPED*)&pol,
-      timeout.get_millis())) {
+    IOOP* pol = 0;
+    if (GetQueuedCompletionStatus(ReactorFactory::hIOCP,
+          &numberOfBytes,
+          &completionKey,
+          (LPOVERLAPPED*)&pol,
+          timeout.get_millis())) {
         if (pol) {
           // IO completed with no error
-          pol->m_err = NOERROR;
-          pol->m_numberOfBytes = numberOfBytes;
+          pol->err = NOERROR;
+          pol->numberOfBytes = numberOfBytes;
         }
     }
     else {
@@ -316,39 +316,31 @@ void ReactorRunner::operator()() {
       if (err != WAIT_TIMEOUT) {
         // IO error
         HT_ASSERT(pol);
-        pol->m_err = err;
-        pol->m_numberOfBytes = numberOfBytes;
+        pol->err = err;
+        pol->numberOfBytes = numberOfBytes;
       }
       else
         HT_ASSERT(!pol);
     }
 
-    if (record_arrival_clocks)
-      got_clocks = false;
-    if (dispatch_delay)
-      did_delay = false;
-
     // handlers removed by shutdown call (program exit or error in send/recv/...)
     m_reactor_ptr->get_removed_handlers(removed_handlers);
 
     if (pol) { // IO completed, not a timeout return
-      HT_ASSERT(pol->m_handler == (IOHandler*)completionKey);
+      HT_ASSERT(pol->handler == (IOHandler*)completionKey);
       handler = (IOHandler*)completionKey;
       if (!handler->is_closed() && !handler->is_shutdown() && removed_handlers.count(handler) == 0) {
+
+#ifdef _DEBUG
         // dispatch delay for testing
-        if (dispatch_delay && !did_delay &&
-          (pol->m_type == OverlappedEx::RECV ||
-          pol->m_type == OverlappedEx::RECVFROM)) {
+        if (dispatch_delay &&
+          (pol->op == IOOP::RECV ||
+          pol->op == IOOP::RECVFROM)) {
             SLEEP((int)dispatch_delay);
-            did_delay = true;
         }
-        if (record_arrival_clocks && !got_clocks &&
-          (pol->m_type == OverlappedEx::RECV ||
-          pol->m_type == OverlappedEx::RECVFROM)) {
-            arrival_clocks = std::clock();
-            got_clocks = true;
-        }
-        if (handler && handler->handle_event(pol, arrival_clocks)) {
+#endif
+
+        if (handler->handle_event(pol, record_arrival_clocks ? std::clock() : 0, 0)) {
           handler_map->decomission_handler(handler->get_address());
           // cleanup and remove handler
           handler->close();
@@ -359,7 +351,7 @@ void ReactorRunner::operator()() {
       delete pol; // also deletes commbuf
     }
     if (!removed_handlers.empty())
-      cleanup_and_remove_handlers( removed_handlers);
+      cleanup_and_remove_handlers(removed_handlers);
     m_reactor_ptr->handle_timeouts(timeout);
 
     if (shutdown)

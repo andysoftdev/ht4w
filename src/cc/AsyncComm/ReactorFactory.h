@@ -73,14 +73,14 @@ namespace Hypertable {
 #ifdef _WIN32
     static HANDLE hIOCP;
 #else
-	static bool ms_epollet;
+    static bool ms_epollet;
     static bool use_poll;
 #endif
         
     static bool proxy_master;
 
   private:
-    static Mutex        ms_mutex;
+    static Mutex    ms_mutex;
     static atomic_t ms_next_reactor;
 
   };

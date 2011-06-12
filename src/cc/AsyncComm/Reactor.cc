@@ -65,7 +65,7 @@ const int Reactor::WRITE_READY  = 0x02;
 
 #ifdef _WIN32
 
-Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
+Reactor::Reactor() : m_mutex() {
 }
 
 #else
@@ -149,7 +149,7 @@ Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
       event.events = EPOLLIN | EPOLLOUT | POLLRDHUP | EPOLLET;
       if (epoll_ctl(poll_fd, EPOLL_CTL_ADD, m_interrupt_sd, &event) < 0) {
 	HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_ADD, %d, EPOLLIN|EPOLLOUT|POLLRDHUP|"
-		  "EPOLLET) failed : %s", poll_fd, m_interrupt_sd,
+		  "EPOLLET) failed - %s", poll_fd, m_interrupt_sd,
 		  strerror(errno));
 	exit(1);
       }
@@ -158,7 +158,7 @@ Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
       struct epoll_event event;
       memset(&event, 0, sizeof(struct epoll_event));
       if (epoll_ctl(poll_fd, EPOLL_CTL_ADD, m_interrupt_sd, &event) < 0) {
-	HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_ADD, %d, 0) failed : %s",
+	HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_ADD, %d, 0) failed - %s",
 		  poll_fd, m_interrupt_sd, strerror(errno));
 	exit(1);
       }
@@ -263,8 +263,7 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
 #ifdef _WIN32
 
 int Reactor::poll_loop_interrupt() {
-  m_interrupt_in_progress = true;
-  if(!PostQueuedCompletionStatus(ReactorFactory::hIOCP, 0, 0, 0)) {
+  if (!PostQueuedCompletionStatus(ReactorFactory::hIOCP, 0, 0, 0)) {
     HT_ERRORF("PostQueuedCompletionStatus failed - %s",  winapi_strerror(GetLastError()));
     return Error::COMM_SEND_ERROR;
   }

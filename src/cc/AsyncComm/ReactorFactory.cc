@@ -28,6 +28,7 @@
 #include "HandlerMap.h"
 #include "ReactorFactory.h"
 #include "ReactorRunner.h"
+
 using namespace Hypertable;
 
 #include <cassert>
@@ -44,7 +45,7 @@ atomic_t     ReactorFactory::ms_next_reactor = ATOMIC_INIT(0);
 bool         ReactorFactory::ms_epollet = true;
 bool         ReactorFactory::use_poll = false;
 #else
-HANDLE		 ReactorFactory::hIOCP = 0;
+HANDLE       ReactorFactory::hIOCP = 0;
 #endif
 bool         ReactorFactory::proxy_master = false;
 
@@ -68,7 +69,7 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
   }
 
   hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, reactor_count);
-  if(hIOCP == 0) {
+  if (hIOCP == 0) {
     HT_ERRORF( "CreateIoCompletionPort failed: %s", winapi_strerror(GetLastError()));
     return;
   }
@@ -112,9 +113,7 @@ void ReactorFactory::destroy() {
   ReactorRunner::handler_map = 0;
 
 #ifdef _WIN32
-
   if( WSACleanup() != 0 )
     HT_ERRORF( "WSACleanup: %s", winapi_strerror(WSAGetLastError()));
-
 #endif
 }

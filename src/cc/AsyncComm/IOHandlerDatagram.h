@@ -34,7 +34,6 @@ extern "C" {
 #include "CommBuf.h"
 #include "IOHandler.h"
 
-
 namespace Hypertable {
 
   /**
@@ -47,17 +46,13 @@ namespace Hypertable {
       : IOHandler(sd, addr, dhp)
 
 #ifndef _WIN32
-
-	  , m_send_queue()
-
+      , m_send_queue()
 #endif
-	{
+    {
       m_message = new uint8_t [65536];
 
 #ifdef _WIN32
-
-	  async_recvfrom();
-
+    async_recvfrom();
 #endif
     }
 
@@ -71,34 +66,30 @@ namespace Hypertable {
 
     // define default poll() interface for everyone since it is chosen at runtime
     virtual bool handle_event(struct pollfd *event, clock_t arrival_clocks,
-			      time_t arival_time=0);
+            time_t arival_time=0);
 
 #else
-
     bool async_recvfrom();
-
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
     virtual bool handle_event(struct kevent *event, clock_t arrival_clocks,
-			      time_t arival_time=0);
+            time_t arival_time=0);
 #elif defined(__linux__)
     virtual bool handle_event(struct epoll_event *event, clock_t arrival_clocks,
-			      time_t arival_time=0);
+            time_t arival_time=0);
 #elif defined(__sun__)
     virtual bool handle_event(port_event_t *event, clock_t arrival_clocks,
-			      time_t arival_time=0);
+            time_t arival_time=0);
 #elif defined(_WIN32)
-    virtual bool handle_event(OverlappedEx *event, clock_t arrival_clocks,
+    virtual bool handle_event(IOOP *event, clock_t arrival_clocks,
                               time_t arival_time=0);
 #else
     ImplementMe;
 #endif
 
 #ifndef _WIN32
-
     int handle_write_readiness();
-
 #endif
 
   private:
@@ -109,11 +100,11 @@ namespace Hypertable {
     struct sockaddr_in  m_whence;  // sender address
     int                 m_whencelen;
 #else
-    Mutex           m_mutex;    
+    Mutex               m_mutex;
     std::list<SendRec>  m_send_queue;
 #endif
 
-	uint8_t        *m_message;
+  uint8_t              *m_message;
   };
 
   typedef boost::intrusive_ptr<IOHandlerDatagram> IOHandlerDatagramPtr;

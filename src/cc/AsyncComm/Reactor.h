@@ -145,9 +145,9 @@ namespace Hypertable {
 
 #ifndef _WIN32
     int             m_interrupt_sd;
+    bool            m_interrupt_in_progress;
 #endif
 
-    bool            m_interrupt_in_progress;
     boost::xtime    m_next_wakeup;
     std::set<IOHandler *> m_removed_handlers;
   };

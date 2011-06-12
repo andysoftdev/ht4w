@@ -61,7 +61,7 @@ namespace Hypertable {
 
 #ifdef _WIN32
 
-struct OverlappedEx;
+struct IOOP;
 
 #endif
 
@@ -105,7 +105,7 @@ struct OverlappedEx;
 			      time_t arival_time=0) = 0;
 
 #elif defined(_WIN32)
-	virtual bool handle_event(OverlappedEx *event, clock_t arrival_clocks, time_t arival_time=0) = 0;
+	virtual bool handle_event(IOOP *event, clock_t arrival_clocks, time_t arival_time) = 0;
 #else
     ImplementMe;
 #endif
@@ -164,9 +164,7 @@ struct OverlappedEx;
       return m_sd == INVALID_SOCKET;
     }
 
-    inline bool is_shutdown() const {
-      return m_shutdown;
-    }
+    bool is_shutdown() const;
 
     void close() {
       ScopedLock lock(m_mutex);
@@ -266,7 +264,7 @@ struct OverlappedEx;
 #elif defined(__sun__)
     void display_event(port_event_t *event);
 #elif defined(_WIN32)
-    void display_event(OverlappedEx *event);
+    void display_event(IOOP *event);
 #endif
 
   protected:
@@ -320,6 +318,7 @@ struct OverlappedEx;
 #else
 
     bool                m_shutdown;
+
 #endif
   };
   typedef boost::intrusive_ptr<IOHandler> IOHandlerPtr;
@@ -332,23 +331,47 @@ struct OverlappedEx;
 
   #ifdef _WIN32
 
-  struct OverlappedEx : OVERLAPPED {
-    enum Type { CONNECT, ACCEPT, RECV, SEND, RECVFROM, SENDTO };
-    OverlappedEx(socket_t s, Type t, IOHandler* handler) :
-        m_sd(s),
-        m_type(t),
-        m_handler(handler),
-        m_err(NOERROR),
-        m_commbuf(0) {
+  struct IOOP : OVERLAPPED {
+
+    enum OP {
+      CONNECT,
+      ACCEPT,
+      RECV,
+      SEND,
+      RECVFROM,
+      SENDTO
+    };
+
+    IOOP(socket_t _sd, OP _op, IOHandler* _handler) :
+        sd(_sd),
+        op(_op),
+        handler(_handler),
+        numberOfBytes(0),
+        commbuf(0),
+        err(NOERROR)
+   {
       ZeroMemory(this, sizeof(OVERLAPPED));
     }
-    const socket_t m_sd;
-    const Type m_type;
-    IOHandlerPtr m_handler; // prevent Handler to be deleted until all the IOCP done
-    DWORD m_numberOfBytes;  // from GetQueuedCompletionStatus
-    DWORD m_err;            // GetLastError just after GetQueuedCompletionStatus
-    CommBufPtr m_commbuf;   // buffer to be freed after WSASend (or WSASentTo) is complete
-    BYTE  m_addresses[(sizeof(struct sockaddr_in) + 16)*2]; // for AcceptEx
+
+    IOOP(socket_t _sd, OP _op, IOHandler* _handler, CommBufPtr& _commbuf) :
+        sd(_sd),
+        op(_op),
+        handler(_handler),
+        numberOfBytes(0),
+        commbuf(_commbuf),
+        err(NOERROR)
+    {
+      ZeroMemory(this, sizeof(OVERLAPPED));
+    }
+
+    const socket_t sd;
+    const OP op;
+    IOHandlerPtr handler; // prevent Handler to be deleted until all the IOCP done
+    DWORD numberOfBytes;  // from GetQueuedCompletionStatus
+    CommBufPtr commbuf;   // buffer to be freed after WSASend (or WSASentTo) is complete
+    BYTE addresses[(sizeof(struct sockaddr_in) + 16)*2]; // for AcceptEx
+    DWORD err;            // GetLastError just after GetQueuedCompletionStatus
+
     String to_str() const;
   };
 

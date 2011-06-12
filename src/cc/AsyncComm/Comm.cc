@@ -260,7 +260,7 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
 
   u_long one_arg = 1;
   if( ioctlsocket(sd, FIONBIO, &one_arg) == SOCKET_ERROR ) {
-    HT_ERRORF("ioctlsocket(FIONBIO) failed : %s", winapi_strerror(WSAGetLastError()));
+    HT_ERRORF("ioctlsocket(FIONBIO) failed - %s", winapi_strerror(WSAGetLastError()));
   }
 
 #else
@@ -401,20 +401,20 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
   socket_t sd;
 
   HT_ASSERT(addr.is_inet());
-  int bufsize = 4*32768;
 
 #ifdef _WIN32
 
-  sd = WSASocket(AF_INET, SOCK_DGRAM, 0, 0, 0, WSA_FLAG_OVERLAPPED);
+  sd = WSASocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, 0, 0, WSA_FLAG_OVERLAPPED);
   if (sd  == SOCKET_ERROR)
     HT_THROWF(Error::COMM_SOCKET_ERROR, "WSASocket: %s", winapi_strerror(WSAGetLastError()));
 
   // Set to non-blocking
   u_long one_arg = 1;
   if( ioctlsocket(sd, FIONBIO, &one_arg) == SOCKET_ERROR ) {
-    HT_ERRORF("ioctlsocket(FIONBIO) failed : %s", winapi_strerror(WSAGetLastError()));
+    HT_ERRORF("ioctlsocket(FIONBIO) failed - %s", winapi_strerror(WSAGetLastError()));
   }
 
+  int bufsize = 0; // see also http://support.microsoft.com/kb/181611
   if (setsockopt(sd, SOL_SOCKET, SO_SNDBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
     HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", winapi_strerror(WSAGetLastError()));
   if (setsockopt(sd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
@@ -424,6 +424,7 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
 
 #else
 
+  int bufsize = 4*32768;
   if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     HT_THROWF(Error::COMM_SOCKET_ERROR, "%s", strerror(errno));
 
@@ -590,7 +591,7 @@ int Comm::connect_socket(socket_t sd, const CommAddress &addr,
 
   u_long one_arg = 1;
   if( ioctlsocket(sd, FIONBIO, &one_arg) == SOCKET_ERROR ) {
-    HT_ERRORF("ioctlsocket(FIONBIO) failed : %s", winapi_strerror(WSAGetLastError()));
+    HT_ERRORF("ioctlsocket(FIONBIO) failed - %s", winapi_strerror(WSAGetLastError()));
   }
 
 #else
@@ -633,7 +634,7 @@ int Comm::connect_socket(socket_t sd, const CommAddress &addr,
     return Error::COMM_POLL_ERROR;
 
   // will be deleted in ReactorRunner::operator()
-  OverlappedEx *pol = new OverlappedEx(sd, OverlappedEx::CONNECT, data_handler);
+  IOOP *pol = new IOOP(sd, IOOP::CONNECT, data_handler);
 
   if (!pfnConnectEx(sd, (struct sockaddr *)&connectable_addr.inet, sizeof(struct sockaddr_in),
     0, 0, 0, pol)) {

@@ -45,7 +45,8 @@ namespace Hypertable {
   public:
 
     IOHandlerData(socket_t sd, const InetAddr &addr, DispatchHandlerPtr &dhp, bool connected=false)
-      : IOHandler(sd, addr, dhp), m_send_queue() {
+      : IOHandler(sd, addr, dhp), m_send_queue()
+    {
       m_connected = connected;
       reset_incoming_message_state();
     }
@@ -86,7 +87,7 @@ namespace Hypertable {
     bool async_recv_header() {
 		return async_recv(m_message_header_ptr, m_message_header_remaining);
     }
-    virtual bool handle_event(OverlappedEx *event, clock_t arrival_clocks, time_t arival_time=0);
+    virtual bool handle_event(IOOP *event, clock_t arrival_clocks, time_t arival_time=0);
 #else
     ImplementMe;
 #endif

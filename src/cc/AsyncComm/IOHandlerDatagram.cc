@@ -297,7 +297,7 @@ bool IOHandlerDatagram::async_recvfrom() {
   // try to receive message, result will be in ReactorRunner,
   // then in IOHandlerDatagram::handle_event
   DWORD flags = 0;
-  OverlappedEx* pol = new OverlappedEx(m_sd, OverlappedEx::RECVFROM, this);
+  IOOP* pol = new IOOP(m_sd, IOOP::RECVFROM, this);
 
   WSABUF wsabuf;
   wsabuf.buf = (char*)m_message;
@@ -305,7 +305,6 @@ bool IOHandlerDatagram::async_recvfrom() {
 
   m_whencelen = sizeof(struct sockaddr_in);
 
-//  HT_INFOF("WSARecvFrom(%d)", m_sd);
   if (WSARecvFrom(m_sd, &wsabuf, 1, 0, &flags, (struct sockaddr *)&m_whence,
                   &m_whencelen, pol, NULL) == SOCKET_ERROR) {
     int err = WSAGetLastError();
@@ -321,37 +320,34 @@ bool IOHandlerDatagram::async_recvfrom() {
 /**
  *
  */
-bool IOHandlerDatagram::handle_event(OverlappedEx *pol, clock_t, time_t) {
-
-  //HT_DEBUGF("IOHandlerDatagram::handle_event(%d)", pol->m_type);
-
-  if (pol->m_type == OverlappedEx::RECVFROM) {
-    if (pol->m_err != NOERROR) {
+bool IOHandlerDatagram::handle_event(IOOP *pol, clock_t, time_t) {
+  if (pol->op == IOOP::RECVFROM) {
+    if (pol->err != NOERROR) {
+      HT_INFOF("IOOP::RECVFROM - %s", winapi_strerror(pol->err));
       deliver_event(new Event(Event::ERROR, m_addr, Error::COMM_RECEIVE_ERROR));
       return true;
     }
 
     Event *event = new Event(Event::MESSAGE, m_whence, Error::OK);
-
     event->load_header(m_sd, m_message, (size_t)m_message[1]);
-
-    event->payload_len = pol->m_numberOfBytes - (ssize_t)event->header.header_len;
+    event->payload_len = pol->numberOfBytes - (ssize_t)event->header.header_len;
     event->payload = new uint8_t [event->payload_len];
     memcpy((void *)event->payload, m_message + event->header.header_len,
            event->payload_len);
 
-    deliver_event( event );
-
+    deliver_event(event);
     async_recvfrom();
-
-    return false;
   }
-  else if (pol->m_type == OverlappedEx::SENDTO) {
-    if (pol->m_err != NOERROR) {
+  else if (pol->op == IOOP::SENDTO) {
+    if (pol->err != NOERROR) {
+      HT_INFOF("IOOP::SENDTO - %s", winapi_strerror(pol->err));
       deliver_event(new Event(Event::ERROR, m_addr, Error::COMM_SEND_ERROR));
       return true;
     }
   }
+  else
+    HT_ERRORF("Unhandled I/O operation - %d", pol->op);
+
   return false;
 }
 #else
@@ -362,21 +358,18 @@ ImplementMe;
 
 int IOHandlerDatagram::send_message(const InetAddr &addr, CommBufPtr &cbp) {
   WSABUF wsabuf;
+  IOOP* pol = new IOOP(m_sd, IOOP::SENDTO, this, cbp);
   wsabuf.buf = (char*)cbp->data_ptr;
   wsabuf.len = cbp->data.size - (cbp->data_ptr - cbp->data.base);
 
-  OverlappedEx* pol = new OverlappedEx(m_sd, OverlappedEx::SENDTO, this);
-  pol->m_commbuf = cbp; // keep it until completion
-
-//  HT_INFOF("WSASendTo(%d)", m_sd);
-  int rc = WSASendTo(m_sd, &wsabuf, 1, 0, 0, (sockaddr *)&addr,
-                    sizeof(struct sockaddr_in), pol, 0);
-  if (rc == SOCKET_ERROR) {
+  if (WSASendTo(pol->sd, &wsabuf, 1, 0, 0
+                , (const sockaddr*)&addr, sizeof(struct sockaddr_in), pol, 0) == SOCKET_ERROR) {
     int err = WSAGetLastError();
-    if(err != WSA_IO_PENDING) {
-      HT_WARNF("WSASendTo(%d, len=%d, addr=%s:%d) failed : %s",
-          m_sd, wsabuf.len, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port),
-          winapi_strerror(err));
+    if (err != WSA_IO_PENDING) {
+      HT_ERRORF("WSASendTo(len=%d, addr=%s:%d) failed - %s",
+                wsabuf.len, inet_ntoa(addr.sin_addr),
+                ntohs(addr.sin_port),
+                winapi_strerror(err));
       delete pol;
       return Error::COMM_BROKEN_CONNECTION;
     }

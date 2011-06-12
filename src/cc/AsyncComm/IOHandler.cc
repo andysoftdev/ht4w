@@ -409,42 +409,48 @@ void IOHandler::display_event(struct kevent *event) {
 
 #else
 
-void IOHandler::display_event(OverlappedEx *pol) {
+#include "ReactorRunner.h"
+
+bool IOHandler::is_shutdown() const {
+  return m_shutdown || ReactorRunner::shutdown;
+}
+
+void IOHandler::display_event(IOOP *pol) {
   clog << pol->to_str() << endl;
 }
 
 
-String OverlappedEx::to_str() const {
-  switch(m_type) {
+String IOOP::to_str() const {
+  switch(op) {
   case CONNECT:
-    if(m_err!=NOERROR)
-      return format("CONNECT error: %s", winapi_strerror(m_err));
+    if(err!=NOERROR)
+      return format("CONNECT error - %s", winapi_strerror(err));
     return "CONNECT";
 
   case ACCEPT:
-    if(m_err!=NOERROR)
-      return format("ACCEPT error: %s", winapi_strerror(m_err));
+    if(err!=NOERROR)
+      return format("ACCEPT error - %s", winapi_strerror(err));
     return "ACCEPT";
 
   case RECV:
-    if(m_err!=NOERROR)
-      return format("RECV error: %s", winapi_strerror(m_err));
-    return format("RECV %d bytes", m_numberOfBytes);
+    if(err!=NOERROR)
+      return format("RECV error - %s", winapi_strerror(err));
+    return format("RECV %d bytes", numberOfBytes);
 
   case SEND:
-    if(m_err!=NOERROR)
-      return format("SEND error: %s", winapi_strerror(m_err));
-    return format("SEND %d bytes", m_numberOfBytes);
+    if(err!=NOERROR)
+      return format("SEND error - %s", winapi_strerror(err));
+    return format("SEND %d bytes", numberOfBytes);
 
   case RECVFROM:
-    if(m_err!=NOERROR)
-      return format("RECVFROM error: %s", winapi_strerror(m_err));
-    return format("RECVFROM %d bytes", m_numberOfBytes);
+    if(err!=NOERROR)
+      return format("RECVFROM error - %s", winapi_strerror(err));
+    return format("RECVFROM %d bytes", numberOfBytes);
 
   case SENDTO:
-    if(m_err!=NOERROR)
-      return format("SENDTO error: %s", winapi_strerror(m_err));
-    return format("SENDTO %d bytes", m_numberOfBytes);
+    if(err!=NOERROR)
+      return format("SENDTO error - %s", winapi_strerror(err));
+    return format("SENDTO %d bytes", numberOfBytes);
 
   default:
     HT_ASSERT(false);
