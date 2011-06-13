@@ -744,10 +744,11 @@ bool IOHandlerData::handle_write_readiness() {
         break;
       }
 
-      int bufsize = 0; // see also http://support.microsoft.com/kb/181611
-      if (setsockopt(m_sd, SOL_SOCKET, SO_SNDBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
+      int sndbufsize = 0;
+      int rcvbufsize = 4*32768;
+      if (setsockopt(m_sd, SOL_SOCKET, SO_SNDBUF, (char *)&sndbufsize, sizeof(sndbufsize)) == SOCKET_ERROR)
         HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", winapi_strerror(WSAGetLastError()));
-      if (setsockopt(m_sd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
+      if (setsockopt(m_sd, SOL_SOCKET, SO_RCVBUF, (char *)&rcvbufsize, sizeof(rcvbufsize)) == SOCKET_ERROR)
         HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", winapi_strerror(WSAGetLastError()));
 
       if (getsockname(m_sd, (struct sockaddr *)&m_local_addr, &name_len) == SOCKET_ERROR) {

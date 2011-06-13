@@ -401,6 +401,7 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
   socket_t sd;
 
   HT_ASSERT(addr.is_inet());
+  int bufsize = 4*32768;
 
 #ifdef _WIN32
 
@@ -414,8 +415,8 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
     HT_ERRORF("ioctlsocket(FIONBIO) failed - %s", winapi_strerror(WSAGetLastError()));
   }
 
-  int bufsize = 0; // see also http://support.microsoft.com/kb/181611
-  if (setsockopt(sd, SOL_SOCKET, SO_SNDBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
+  int sndbufsize = 0;
+  if (setsockopt(sd, SOL_SOCKET, SO_SNDBUF, (char *)&sndbufsize, sizeof(sndbufsize)) == SOCKET_ERROR)
     HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", winapi_strerror(WSAGetLastError()));
   if (setsockopt(sd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
     HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", winapi_strerror(WSAGetLastError()));
@@ -424,7 +425,6 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
 
 #else
 
-  int bufsize = 4*32768;
   if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     HT_THROWF(Error::COMM_SOCKET_ERROR, "%s", strerror(errno));
 
