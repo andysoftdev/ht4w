@@ -272,6 +272,12 @@ function get_test_filter(args) {
 
 
 // tests
+function async_api_test(logfile, testName) {
+    prepare_target(testName, ["asyncApiTest.golden"]);
+    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
+    return run_target(logfile, testName);
+}
+
 function bdb_fs_test(logfile, testName) {
     prepare_target(testName, ["bdb_fs_test.golden"]);
     return run_target(logfile, testName);
@@ -397,6 +403,37 @@ function future_abrupt_end_test(logfile, testName) {
         return status;
     }
     return run_target(logfile, testName, "10 100 4 6");
+}
+
+function future_mutator_cancel_test(logfile, testName) {
+    prepare_target(testName, ["future_test.cfg"]);
+    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
+    var status = run_target(logfile, testName, "1 100 10000", true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "2 100 10000", true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "4 10 10000", true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "8 1000 100000", true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "8 100 100000", true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    return run_target(logfile, testName, "8 10000 200000");
 }
 
 function future_test(logfile, testName) {
@@ -548,6 +585,7 @@ function schema_test(logfile, testName) {
 // all tests
 var all_tests = new ActiveXObject("Scripting.Dictionary");
 all_tests.add("accessgroup_garbage_tracker_test", run_target);
+all_tests.add("async_api_test", async_api_test);
 all_tests.add("bdb_fs_test", bdb_fs_test);
 all_tests.add("bloom_filter_test", run_target);
 all_tests.add("bmz_test", bmz_test);
@@ -567,6 +605,7 @@ all_tests.add("escaper_test", run_target);
 all_tests.add("exception_test", run_target);
 all_tests.add("fileblock_cache_test", fileblock_cache_test);
 all_tests.add("future_abrupt_end_test", future_abrupt_end_test);
+all_tests.add("future_mutator_cancel_test", future_mutator_cancel_test);
 all_tests.add("future_test", future_test);
 all_tests.add("hash_test", run_target);
 all_tests.add("hyperspace_test", hyperspace_test);

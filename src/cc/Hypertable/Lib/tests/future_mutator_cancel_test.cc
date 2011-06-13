@@ -29,10 +29,24 @@
 #include "Hypertable/Lib/Client.h"
 #include "Hypertable/Lib/Future.h"
 
+#ifdef _WIN32
+#define srandom srand
+#define random rand
+#endif
+
 using namespace std;
 using namespace Hypertable;
 
 namespace {
+
+  const char *schema =
+  "<Schema>"
+  "  <AccessGroup name=\"default\">"
+  "    <ColumnFamily>"
+  "      <Name>data</Name>"
+  "    </ColumnFamily>"
+  "  </AccessGroup>"
+  "</Schema>";
 
   const char *usage[] = {
     "usage: ./future_mutator_cancel_test num_mutators cells_per_flush total_cells",
@@ -96,9 +110,12 @@ int main(int argc, char **argv) {
     {
       Future ff;
       vector<TableMutatorAsyncPtr> mutator_ptrs;
+      ns->drop_table("FutureTest", true);
+      ns->create_table("FutureTest", schema);
       table_ptr = ns->open_table("FutureTest");
 
-      for(size_t ii=0; ii<num_mutators; ++ii)
+      size_t ii=0;
+      for(ii=0; ii<num_mutators; ++ii)
         mutator_ptrs.push_back(table_ptr->create_mutator_async(&ff));
 
       key.column_family = "data";
@@ -106,7 +123,7 @@ int main(int argc, char **argv) {
       key.column_qualifier_len = 0;
 
       size_t cells=0;
-      size_t ii=0;
+      ii=0;
       while(true) {
         for (size_t jj=0; jj < num_mutators; ++jj) {
           load_buffer_with_random(buf, 10);
