@@ -76,11 +76,3 @@ void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
 const ScanSpec &FutureCallback::get_scan_spec(TableScannerAsync *scanner) {
   return scanner->get_scan_spec();
 }
-
-void FutureCallback::scan_error(TableScannerAsync *scanner, int error, const String &error_msg, bool eos) {
-  cancel();
-}
-
-void FutureCallback::update_error(TableMutatorAsync *mutator, int error, FailedMutations &failedMutations) {
-  cancel();
-}

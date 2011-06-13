@@ -63,11 +63,6 @@ namespace Hypertable {
 
     const ScanSpec &get_scan_spec(TableScannerAsync *scanner);
 
-  protected:
-
-    virtual void scan_error(TableScannerAsync *scanner, int error, const String &error_msg, bool eos);
-    virtual void update_error(TableMutatorAsync *mutator, int error, FailedMutations &failedMutations);
-
   private:
     friend class TableScannerAsync;
     friend class TableMutator;
