@@ -61,6 +61,8 @@ namespace Hypertable {
     void register_mutator(TableMutatorAsync *scanner);
     void deregister_mutator(TableMutatorAsync *scanner);
 
+    void wait_for_completion();
+
     const ScanSpec &get_scan_spec(TableScannerAsync *scanner);
 
   private:
@@ -77,7 +79,6 @@ namespace Hypertable {
 
     typedef set<TableMutatorAsync*> MutatorSet;
     MutatorSet m_mutator_set;
-    MutatorSet m_mutators_owned;
   };
   typedef intrusive_ptr<FutureCallback> FutureCallbackPtr;
 }

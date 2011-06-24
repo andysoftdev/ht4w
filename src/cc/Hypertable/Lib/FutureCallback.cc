@@ -33,8 +33,6 @@ FutureCallback::~FutureCallback() {
   wait_for_completion();
   foreach (TableScannerAsync *scanner, m_scanners_owned)
     intrusive_ptr_release(scanner);
-  foreach (TableMutatorAsync *mutator, m_mutators_owned)
-    intrusive_ptr_release(mutator);
 }
 
 void FutureCallback::cancel() {
@@ -62,8 +60,6 @@ void FutureCallback::deregister_scanner(TableScannerAsync *scanner) {
 void FutureCallback::register_mutator(TableMutatorAsync *mutator) {
   ScopedRecLock lock(m_outstanding_mutex);
   m_mutator_set.insert(mutator);
-  if (m_mutators_owned.insert(mutator).second)
-    intrusive_ptr_add_ref(mutator);
 }
 
 void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
@@ -71,6 +67,15 @@ void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
   MutatorSet::iterator it = m_mutator_set.find(mutator);
   HT_ASSERT(it != m_mutator_set.end());
   m_mutator_set.erase(it);
+}
+
+void FutureCallback::wait_for_completion() {
+  {
+    ScopedRecLock lock(m_outstanding_mutex);
+    foreach (TableMutatorAsync *mutator, m_mutator_set)
+      mutator->flush();
+  }
+  ResultCallback::wait_for_completion();
 }
 
 const ScanSpec &FutureCallback::get_scan_spec(TableScannerAsync *scanner) {
