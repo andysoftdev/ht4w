@@ -274,7 +274,7 @@ void DefaultPolicy::init_options() {
         " when logs exceed this size limit")
     ("Hyperspace.Client.Datagram.SendPort", i16()->default_value(0),
         "Client UDP send port for keepalive packets")
-    ("Hyperspace.LogGc.Interval", i32()->default_value(3600000), "Check for unused BerkeleyDB "
+    ("Hyperspace.LogGc.Interval", i32()->default_value(60000), "Check for unused BerkeleyDB "
         "log files after this much time")
     ("Hyperspace.LogGc.MaxUnusedLogs", i32()->default_value(200), "Number of unused BerkeleyDB "
         " to keep around in case of lagging replicas")
@@ -409,7 +409,7 @@ void DefaultPolicy::init_options() {
         "Commit log compressor to use (zlib, lzo, quicklz, bmz, none)")
     ("Hypertable.CommitLog.SkipErrors", boo()->default_value(false),
         "Skip over any corruption encountered in the commit log")
-    ("Hypertable.RangeServer.Scanner.Ttl", i32()->default_value(100*M),
+    ("Hypertable.RangeServer.Scanner.Ttl", i32()->default_value(1800*K),
         "Number of milliseconds of inactivity before destroying scanners")
     ("Hypertable.RangeServer.Scanner.BufferSize", i64()->default_value(1*M),
         "Size of transfer buffer for scan results")
