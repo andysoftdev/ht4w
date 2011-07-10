@@ -165,6 +165,7 @@ namespace {
     }
 
     void completed() {
+      ScopedLock lock(mutex);
       outfile << "Async calls completed" << endl;
     }
 
@@ -243,10 +244,10 @@ namespace {
       key.row_len = strlen(fruits[ii]);
 
       mutator_color->set(key, (uint8_t *)colors[ii], strlen(colors[ii]));
-      mutator_color->flush();
       mutator_location->set(key, (uint8_t *)locations[ii], strlen(locations[ii]));
-      mutator_location->flush();
       mutator_energy->set(key, (uint8_t *)energy_densities[ii], strlen(energy_densities[ii]));
+      mutator_location->flush();
+      mutator_color->flush();
       mutator_energy->flush();
     }
   }
