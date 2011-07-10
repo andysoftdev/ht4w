@@ -166,6 +166,8 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
 
     rrd_data.timestamp = stats[i].stats_timestamp / 1000000000LL;
     rrd_data.range_count = stats[i].stats->range_count;
+    rrd_data.scanner_count = stats[i].stats->scanner_count;
+    rrd_data.file_count = stats[i].stats->file_count;
     rrd_data.qcache_max_mem = stats[i].stats->query_cache_max_memory;
     rrd_data.qcache_fill = stats[i].stats->query_cache_max_memory -
       stats[i].stats->query_cache_available_memory;
@@ -301,7 +303,7 @@ void Monitoring::add_table_stats(std::vector<StatsTable> &table_stats,int64_t fe
     }
     table_data.fetch_timestamp = fetch_timestamp;
     table_data.range_count += table_stats[i].range_count;
-
+    table_data.scanner_count += table_stats[i].scanner_count;
     table_data.cell_count += table_stats[i].cell_count;
     table_data.file_count += table_stats[i].file_count;
     table_data.scans += table_stats[i].scans;
@@ -376,6 +378,8 @@ void Monitoring::create_rangeserver_rrd(const String &filename) {
   args.push_back(filename);
   args.push_back(step);
   args.push_back((String)"DS:range_count:GAUGE:600:0:U"); // num_ranges is not a rate, 600s heartbeat
+  args.push_back((String)"DS:scanner_count:GAUGE:600:0:U");
+  args.push_back((String)"DS:file_count:GAUGE:600:0:U");
   args.push_back((String)"DS:scan_rate:GAUGE:600:0:U"); // scans is a rate, 600s heartbeat
   args.push_back((String)"DS:update_rate:GAUGE:600:0:U");
   args.push_back((String)"DS:sync_rate:GAUGE:600:0:U");
@@ -449,6 +453,7 @@ void Monitoring::create_table_rrd(const String &filename) {
   args.push_back(filename);
   args.push_back(step);
   args.push_back((String)"DS:range_count:GAUGE:600:0:U"); // num_ranges is not a rate, 600s heartbeat
+  args.push_back((String)"DS:scanner_count:GAUGE:600:0:U");
   args.push_back((String)"DS:scan_rate:GAUGE:600:0:U"); // scans is a rate, 600s heartbeat
   args.push_back((String)"DS:update_rate:GAUGE:600:0:U");
   args.push_back((String)"DS:cell_read_rate:GAUGE:600:0:U");
@@ -503,9 +508,10 @@ void Monitoring::update_table_rrd(const String &filename, struct table_rrd_data 
   args.push_back((String)"update");
   args.push_back(filename);
 
-  update = format("%llu:%d:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%lld:%.2f:%lld:%lld:%lld:%lld:%lld:%lld:%lld",
+  update = format("%llu:%d:%d:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%lld:%.2f:%lld:%lld:%lld:%lld:%lld:%lld:%lld",
 		  (Llu)table_stats_timestamp,
 		  rrd_data.range_count,
+		  rrd_data.scanner_count,
 		  rrd_data.scan_rate,
 		  rrd_data.update_rate,
 		  rrd_data.cell_read_rate,
@@ -557,9 +563,11 @@ void Monitoring::update_rangeserver_rrd(const String &filename, struct rangeserv
   args.push_back((String)"update");
   args.push_back(filename);
 
-  update = format("%llu:%d:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%lld:%lld:%.2f:%lld:%lld:%.2f:%lld:%lld:%lld:%lld:%lld:%lld:%.2f:%.2f:%.2f",
+  update = format("%llu:%d:%d:%lld:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%lld:%lld:%.2f:%lld:%lld:%.2f:%lld:%lld:%lld:%lld:%lld:%lld:%.2f:%.2f:%.2f",
                   (Llu)rrd_data.timestamp,
                   rrd_data.range_count,
+                  rrd_data.scanner_count,
+                  (Llu)rrd_data.file_count,
                   rrd_data.scan_rate,
                   rrd_data.update_rate,
                   rrd_data.sync_rate,

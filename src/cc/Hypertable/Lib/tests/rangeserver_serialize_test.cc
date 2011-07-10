@@ -31,6 +31,9 @@ int main(int argc, char *argv[]) {
   stats1->set_location("rs1");
 
   stats1->timestamp = Random::number64();
+  stats1->range_count = Random::number32();
+  stats1->scanner_count = Random::number32();
+  stats1->file_count = Random::number64();
   stats1->scan_count = Random::number64();
   stats1->scanned_cells = Random::number64();
   stats1->scanned_bytes = Random::number64();
@@ -75,6 +78,7 @@ int main(int argc, char *argv[]) {
     table_stat.bloom_filter_maybes = Random::number64();
 
     table_stat.range_count = Random::number32() % 2000;
+    table_stat.scanner_count = Random::number32() % 2000;
 
     stats1->tables.push_back(table_stat);
   }
