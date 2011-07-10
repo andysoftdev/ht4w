@@ -97,6 +97,7 @@
     <ClCompile Include="RequestHandlerFetchScanblock.cc" />
     <ClCompile Include="RequestHandlerGetStatistics.cc" />
     <ClCompile Include="RequestHandlerGroupCommit.cc" />
+    <ClCompile Include="RequestHandlerHeapcheck.cc" />
     <ClCompile Include="RequestHandlerLoadRange.cc" />
     <ClCompile Include="RequestHandlerRelinquishRange.cc" />
     <ClCompile Include="RequestHandlerReplayBegin.cc" />
@@ -209,6 +210,7 @@
     <ClInclude Include="RequestHandlerFetchScanblock.h" />
     <ClInclude Include="RequestHandlerGetStatistics.h" />
     <ClInclude Include="RequestHandlerGroupCommit.h" />
+    <ClInclude Include="RequestHandlerHeapcheck.h" />
     <ClInclude Include="RequestHandlerLoadRange.h" />
     <ClInclude Include="RequestHandlerRelinquishRange.h" />
     <ClInclude Include="RequestHandlerReplayBegin.h" />
