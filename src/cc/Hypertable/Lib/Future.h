@@ -147,8 +147,6 @@ namespace Hypertable {
 
     typedef set<TableScannerAsync *> ScannerSet;
     ScannerSet m_scanners_owned;
-    typedef set<TableMutatorAsync *> MutatorSet;
-    MutatorSet m_mutators_owned;
   };
   typedef intrusive_ptr<Future> FuturePtr;
 }

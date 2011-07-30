@@ -33,8 +33,6 @@ Future::~Future() {
   wait_for_completion();
   foreach (TableScannerAsync *scanner, m_scanners_owned)
     intrusive_ptr_release(scanner);
-  foreach (TableMutatorAsync *mutator, m_mutators_owned)
-    intrusive_ptr_release(mutator);
 }
 
 bool Future::get(ResultPtr &result) {
@@ -144,8 +142,6 @@ void Future::register_mutator(TableMutatorAsync *mutator) {
   // XXX: TODO DON"T ASSERT if m_cancelled == true throw an exception
   HT_ASSERT(it == m_mutator_map.end() && !m_cancelled);
   m_mutator_map[addr] = mutator;
-  if (m_mutators_owned.insert(mutator).second)
-    intrusive_ptr_add_ref(mutator);
 }
 
 void Future::deregister_mutator(TableMutatorAsync *mutator) {
