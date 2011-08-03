@@ -121,6 +121,8 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   boost::trim_if(Global::toplevel_dir, boost::is_any_of("/"));
   Global::toplevel_dir = String("/") + Global::toplevel_dir;
 
+  Global::merge_cellstore_run_length_threshold = cfg.get_i32("CellStore.Merge.RunLengthThreshold");
+
   std::vector<int64_t> collector_periods(2);
   int64_t interval = (int64_t)cfg.get_i32("Maintenance.Interval");
   collector_periods[RSStats::STATS_COLLECTOR_MAINTENANCE] = interval;
@@ -868,53 +870,268 @@ void RangeServer::replay_log(CommitLogReaderPtr &log_reader) {
 
 
 void
-RangeServer::compact(ResponseCallback *cb, const TableIdentifier *table,
-                     const RangeSpec *range_spec, uint8_t compaction_type) {
-  int error = Error::OK;
-  String errmsg;
+RangeServer::compact(ResponseCallback *cb, const char *table_id, uint32_t flags) {
+  std::vector<RangePtr> ranges;
   TableInfoPtr table_info;
-  RangePtr range;
-  bool major = false;
+  size_t range_count = 0;
 
-  // Check for major compaction
-  if (compaction_type == 1)
-    major = true;
-
-  HT_INFO_OUT <<"compacting\n"<< *table << *range_spec
-              <<"Compaction type="<< (major ? "major" : "minor") << HT_END;
+  if (*table_id)
+    HT_INFO_OUT << "compacting table ID=" << table_id << HT_END;
+  else
+    HT_INFO_OUT << "compacting ranges FLAGS=" << RangeServerProtocol::compact_flags_to_string(flags) << HT_END;
 
   if (!m_replay_finished) {
-    if (!wait_for_recovery_finish(table, range_spec, cb->get_event()->expiration_time()))
+    if (!RangeServer::wait_for_recovery_finish(cb->get_event()->expiration_time()))
       return;
   }
 
   try {
 
-    if (!m_live_map->get(table->id, table_info)) {
-      cb->error(Error::TABLE_NOT_FOUND, table->id);
-      return;
+    if (*table_id) {
+
+      if (!m_live_map->get(table_id, table_info)) {
+        cb->error(Error::TABLE_NOT_FOUND, table_id);
+        return;
+      }
+
+      ranges.clear();
+      table_info->get_range_vector(ranges);
+
+      for (size_t i=0; i<ranges.size(); i++)
+        ranges[i]->set_needs_compaction(true);
+
+      range_count = ranges.size();
+    }
+    else {
+      std::vector<TableInfoPtr> tables;
+
+      m_live_map->get_all(tables);
+
+      for (size_t i=0; i<tables.size(); i++) {
+
+        if (tables[i]->identifier().is_metadata()) {
+
+          if ((flags & RangeServerProtocol::COMPACT_FLAG_METADATA) ==
+              RangeServerProtocol::COMPACT_FLAG_METADATA) {
+            ranges.clear();
+            tables[i]->get_range_vector(ranges);
+            for (size_t j=0; j<ranges.size(); j++)
+              ranges[j]->set_needs_compaction(true);
+            range_count += ranges.size();
+          }
+          else if ((flags & RangeServerProtocol::COMPACT_FLAG_ROOT) ==
+                   RangeServerProtocol::COMPACT_FLAG_ROOT) {
+            ranges.clear();
+            tables[i]->get_range_vector(ranges);
+            for (size_t j=0; j<ranges.size(); j++) {
+              if (ranges[j]->is_root()) {
+                ranges[j]->set_needs_compaction(true);
+                range_count++;
+                break;
+              }
+            }
+          }
+        }
+
+        if ((flags & RangeServerProtocol::COMPACT_FLAG_SYSTEM) ==
+            RangeServerProtocol::COMPACT_FLAG_SYSTEM && tables[i]->identifier().is_system()) {
+          ranges.clear();
+          tables[i]->get_range_vector(ranges);
+          for (size_t j=0; j<ranges.size(); j++)
+            ranges[j]->set_needs_compaction(true);
+          range_count += ranges.size();
+        }
+
+        if ((flags & RangeServerProtocol::COMPACT_FLAG_USER) ==
+            RangeServerProtocol::COMPACT_FLAG_USER && tables[i]->identifier().is_user()) {
+          ranges.clear();
+          tables[i]->get_range_vector(ranges);
+          for (size_t j=0; j<ranges.size(); j++)
+            ranges[j]->set_needs_compaction(true);
+          range_count += ranges.size();
+        }
+      }
     }
 
-    /**
-     * Fetch range info
-     */
-    if (!table_info->get_range(range_spec, range))
-      HT_THROW(Error::RANGESERVER_RANGE_NOT_FOUND,
-               format("%s[%s..%s]", table->id, range_spec->start_row,
-                      range_spec->end_row));
+    HT_INFOF("Compaction scheduled for %d ranges", (int)range_count);
 
-    /*** FIX ME
-    Global::maintenance_queue->add(new MaintenanceTaskCompaction(range, major));
-    **/
-
-    if ((error = cb->response_ok()) != Error::OK)
-      HT_ERRORF("Problem sending OK response - %s", Error::get_text(error));
-
-    HT_DEBUGF("Compaction (%s) scheduled for table '%s' end row '%s'",
-              (major ? "major" : "minor"), table->id, range_spec->end_row);
+    cb->response_ok();
 
   }
   catch (Hypertable::Exception &e) {
+    int error;
+    HT_ERROR_OUT << e << HT_END;
+    if (cb && (error = cb->error(e.code(), e.what())) != Error::OK) {
+      HT_ERRORF("Problem sending error response - %s", Error::get_text(error));
+    }
+  }
+}
+
+namespace {
+
+  void do_metadata_sync(std::vector<RangePtr> &ranges, TableMutatorPtr &mutator,
+                        const char *table_id, bool do_start_row, bool do_location) {
+    String metadata_key_str;
+    KeySpec key;
+
+    for (size_t i=0; i<ranges.size(); i++) {
+
+      metadata_key_str = String(table_id) + ":" + ranges[i]->end_row();
+      key.row = metadata_key_str.c_str();
+      key.row_len = metadata_key_str.length();
+      key.column_qualifier = 0;
+      key.column_qualifier_len = 0;
+
+      if (do_start_row) {
+        key.column_family = "StartRow";
+        mutator->set(key, ranges[i]->start_row());
+      }
+      if (do_location) {
+        key.column_family = "Location";
+        mutator->set(key, Global::location_initializer->get());
+      }
+    }
+    
+  }
+
+}
+
+
+void
+RangeServer::metadata_sync(ResponseCallback *cb, const char *table_id, uint32_t flags,
+                           std::vector<const char *> columns) {
+  std::vector<RangePtr> ranges;
+  TableInfoPtr table_info;
+  size_t range_count = 0;
+  TableMutatorPtr mutator;
+  bool do_start_row = true;
+  bool do_location = true;
+  String columns_str;
+
+  if (!columns.empty()) {
+    columns_str = String("COLUMNS=") + columns[0];
+    for (size_t i=1; i<columns.size(); i++)
+      columns_str += String(",") + columns[i];
+  }
+
+  if (*table_id)
+    HT_INFO_OUT << "metadata sync table ID=" << table_id << " " << columns_str << HT_END;
+  else
+    HT_INFO_OUT << "metadata sync ranges FLAGS=" << RangeServerProtocol::compact_flags_to_string(flags) 
+                << " " << columns_str << HT_END;
+
+  if (!m_replay_finished) {
+    if (!RangeServer::wait_for_recovery_finish(cb->get_event()->expiration_time()))
+      return;
+  }
+
+  if (!Global::metadata_table) {
+    ScopedLock lock(m_mutex);
+    // double-check locking (works fine on x86 and amd64 but may fail
+    // on other archs without using a memory barrier
+    if (!Global::metadata_table)
+      Global::metadata_table = new Table(m_props, m_conn_manager,
+                                         Global::hyperspace, m_namemap,
+                                         TableIdentifier::METADATA_NAME);
+  }
+
+  if (!columns.empty()) {
+    do_start_row = do_location = false;
+    for (size_t i=0; i<columns.size(); i++) {
+      if (!strcmp(columns[i], "StartRow"))
+        do_start_row = true;
+      else if (!strcmp(columns[i], "Location"))
+        do_location = true;
+      else
+        HT_WARNF("Unsupported METADATA column:  %s", columns[i]);
+    }
+  }
+
+  try {
+
+    if (*table_id) {
+
+      if (!m_live_map->get(table_id, table_info)) {
+        cb->error(Error::TABLE_NOT_FOUND, table_id);
+        return;
+      }
+
+      mutator = Global::metadata_table->create_mutator();
+
+      ranges.clear();
+      table_info->get_range_vector(ranges);
+      
+      do_metadata_sync(ranges, mutator, table_id, do_start_row, do_location);
+      range_count = ranges.size();
+
+    }
+    else {
+      std::vector<TableInfoPtr> tables;
+
+      m_live_map->get_all(tables);
+
+      mutator = Global::metadata_table->create_mutator();
+
+      for (size_t i=0; i<tables.size(); i++) {
+
+        if (tables[i]->identifier().is_metadata()) {
+          std::vector<RangePtr> root_ranges;
+          std::vector<RangePtr> metadata_ranges;
+
+          ranges.clear();
+          tables[i]->get_range_vector(ranges);
+
+          if (!ranges.empty() && ranges[0]->is_root()) {
+            root_ranges.push_back(ranges[0]);
+            for (size_t j=1; j<ranges.size(); j++)
+              metadata_ranges.push_back(ranges[j]);
+          }
+          else
+            metadata_ranges = ranges;
+
+          if (!root_ranges.empty() &&
+              (flags & RangeServerProtocol::COMPACT_FLAG_ROOT) == RangeServerProtocol::COMPACT_FLAG_ROOT) {
+            do_metadata_sync(root_ranges, mutator, table_id, do_start_row, do_location);
+            range_count++;
+          }
+
+          if ((flags & RangeServerProtocol::COMPACT_FLAG_METADATA) ==
+              RangeServerProtocol::COMPACT_FLAG_METADATA) {
+            do_metadata_sync(metadata_ranges, mutator, table_id, do_start_row, do_location);
+            range_count += metadata_ranges.size();
+          }
+        }
+        else if (tables[i]->identifier().is_system()) {
+          if ((flags & RangeServerProtocol::COMPACT_FLAG_SYSTEM) ==
+              RangeServerProtocol::COMPACT_FLAG_SYSTEM) {
+            ranges.clear();
+            tables[i]->get_range_vector(ranges);
+            do_metadata_sync(ranges, mutator, table_id, do_start_row, do_location);
+            range_count += ranges.size();
+          }
+        }
+        else if (tables[i]->identifier().is_user()) {
+          if ((flags & RangeServerProtocol::COMPACT_FLAG_USER) ==
+              RangeServerProtocol::COMPACT_FLAG_USER) {
+            ranges.clear();
+            tables[i]->get_range_vector(ranges);
+            do_metadata_sync(ranges, mutator, table_id, do_start_row, do_location);
+            range_count += ranges.size();
+          }
+        }
+      }
+    }
+
+    if (range_count)
+      mutator->flush();
+
+    HT_INFOF("METADATA sync'd for %d ranges", (int)range_count);
+
+    cb->response_ok();
+
+  }
+  catch (Hypertable::Exception &e) {
+    int error;
     HT_ERROR_OUT << e << HT_END;
     if (cb && (error = cb->error(e.code(), e.what())) != Error::OK) {
       HT_ERRORF("Problem sending error response - %s", Error::get_text(error));
@@ -1452,6 +1669,10 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
 
       if (Global::rsml_writer)
         Global::rsml_writer->record_state( range->metalog_entity() );
+      else {
+        cb->error(Error::SERVER_SHUTTING_DOWN, Global::location_initializer->get());
+        return;
+      }
 
       table_info->add_staged_range(range);
     }
@@ -1525,6 +1746,11 @@ void RangeServer::acknowledge_load(ResponseCallback *cb, const TableIdentifier *
 
     if (Global::rsml_writer)
       Global::rsml_writer->record_state( range->metalog_entity() );
+    else {
+      cb->error(Error::SERVER_SHUTTING_DOWN, Global::location_initializer->get());
+      return;
+    }
+
   }
 
   cb->response_ok();
@@ -2426,6 +2652,10 @@ RangeServer::drop_table(ResponseCallback *cb, const TableIdentifier *table) {
       ScopedLock lock(m_drop_table_mutex);
       Global::rsml_writer->record_removal( range_vector[i]->metalog_entity() );
     }
+    else {
+      cb->error(Error::SERVER_SHUTTING_DOWN, Global::location_initializer->get());
+      return;
+    }
   }
 
   SchemaPtr schema = table_info->get_schema();
@@ -2473,7 +2703,7 @@ void RangeServer::dump(ResponseCallback *cb, const char *outfile,
   RangeStatsVector range_data;
   AccessGroup::MaintenanceData *ag_data;
   RangeStatsGatherer stats_gatherer(m_live_map);
-  String str, ag_name;
+  String str;
 
   HT_INFO("dump");
 
@@ -2482,30 +2712,9 @@ void RangeServer::dump(ResponseCallback *cb, const char *outfile,
 
     stats_gatherer.fetch(range_data);
 
-    AccessGroup::CellStoreMaintenanceData *cs_data;
-    int64_t block_index_memory = 0;
-    int64_t bloom_filter_memory = 0;
-    int64_t shadow_cache_memory = 0;
-
     for (size_t i=0; i<range_data.size(); i++) {
-      for (ag_data = range_data[i]->agdata; ag_data; ag_data = ag_data->next) {
-	for (cs_data = ag_data->csdata; cs_data; cs_data = cs_data->next) {
-	  shadow_cache_memory += cs_data->shadow_cache_size;
-	  block_index_memory += cs_data->index_stats.block_index_memory;
-	  bloom_filter_memory += cs_data->index_stats.bloom_filter_memory;
-	}
-	ag_name = range_data[i]->range->get_name() + "(" + ag_data->ag->get_name() + ")";
-	out << ag_name << "\tecr\t" << ag_data->earliest_cached_revision << "\n";
-	out << ag_name << "\tlsr\t" << ag_data->latest_stored_revision << "\n";
-	out << ag_name << "\tmemory\t" << ag_data->mem_used << "\n";
-	out << ag_name << "\tcached items\t" << ag_data->cached_items << "\n";
-	out << ag_name << "\timmutable items\t" << ag_data->immutable_items << "\n";
-	out << ag_name << "\tdisk\t" << ag_data->disk_estimate << "\n";
-	out << ag_name << "\tscanners\t" << ag_data->outstanding_scanners << "\n";
-	out << ag_name << "\tbindex_mem\t" << block_index_memory << "\n";
-	out << ag_name << "\tbloom_mem\t" << bloom_filter_memory << "\n";
-	out << ag_name << "\tshadow_mem\t" << shadow_cache_memory << "\n";
-      }
+      for (ag_data = range_data[i]->agdata; ag_data; ag_data = ag_data->next)
+        out << *ag_data << "\n";
     }
 
     // dump keys
@@ -2595,6 +2804,8 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
   m_stats->updated_cells = m_server_stats->get_update_cells(collector_id);
   m_stats->updated_bytes = m_server_stats->get_update_bytes(collector_id);
   m_stats->sync_count = m_server_stats->get_sync_count(collector_id);
+  m_stats->tracked_memory = Global::memory_tracker->balance();
+  m_stats->live = m_replay_finished;
 
   if (m_query_cache)
     m_query_cache->get_stats(&m_stats->query_cache_max_memory,

@@ -289,6 +289,9 @@
     <ClCompile Include="RequestHandlerHeapcheck.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RequestHandlerMetadataSync.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -628,6 +631,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RequestHandlerHeapcheck.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellStoreInfo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerMetadataSync.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

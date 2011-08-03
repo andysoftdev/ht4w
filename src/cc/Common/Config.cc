@@ -305,6 +305,19 @@ void DefaultPolicy::init_options() {
         "Top-level hypertable directory name")
     ("Hypertable.Monitoring.Interval", i32()->default_value(30000),
         "Monitoring statistics gathering interval (in milliseconds)")
+    ("Hypertable.LoadBalancer.Enable", boo()->default_value(true),
+        "Enable automatic load balancing")
+    ("Hypertable.LoadBalancer.Interval", i32()->default_value(86400000),
+        "Time interval between LoadBalancer operations")
+    ("Hypertable.LoadBalancer.WindowStart", str()->default_value("00:00:01"),
+        "Time of day at which LoadBalancer balance window starts")
+    ("Hypertable.LoadBalancer.WindowEnd", str()->default_value("00:03:00"),
+        "Time of day at which the LoadBalancer balance window ends")
+    ("Hypertable.LoadBalancer.ServerWaitInterval", i32()->default_value(3000),
+        "Amount of time to wait before running balancer when a new RangeServer is detected")
+    ("Hypertable.LoadBalancer.LoadavgThreshold", f64()->default_value(0.25),
+        "Servers with loadavg above this much above the mean will be considered by the "
+        "load balancer to be overloaded")
     ("Hypertable.HqlInterpreter.Mutator.NoLogSync", boo()->default_value(false),
         "Suspends CommitLog sync operation on updates until command completion")
     ("Hypertable.Mutator.FlushDelay", i32()->default_value(0), "Number of "
@@ -335,7 +348,7 @@ void DefaultPolicy::init_options() {
      i32()->default_value(20), "Perform major compaction when garbage accounts "
      "for this percentage of the data")
     ("Hypertable.RangeServer.MemoryLimit", i64(), "RangeServer memory limit")
-    ("Hypertable.RangeServer.MemoryLimit.Percentage", i32()->default_value(50),
+    ("Hypertable.RangeServer.MemoryLimit.Percentage", i32()->default_value(60),
      "RangeServer memory limit specified as percentage of physical RAM")
     ("Hypertable.RangeServer.LowMemoryLimit.Percentage", i32()->default_value(10),
      "Amount of memory to free in low memory condition as percentage of RangeServer memory limit")
@@ -357,6 +370,8 @@ void DefaultPolicy::init_options() {
     ("Hypertable.RangeServer.CellStore.TargetSize.Window",
         i64()->default_value(30*MiB), "Size window above target minimum for "
         "CellStores in which merges will be considered")
+    ("Hypertable.RangeServer.CellStore.Merge.RunLengthThreshold", i32()->default_value(10),
+        "Trigger a merge if an adjacent run of merge candidate CellStores exceeds this length")
     ("Hypertable.RangeServer.CellStore.DefaultBlockSize",
         i32()->default_value(64*KiB), "Default block size for cell stores")
     ("Hypertable.RangeServer.CellStore.DefaultReplication",
@@ -421,6 +436,8 @@ void DefaultPolicy::init_options() {
         "Limit on number of merging tasks to create per maintenance interval")
     ("Hypertable.RangeServer.Maintenance.MergingCompaction.Delay", i32()->default_value(900000),
         "Millisecond delay before scheduling merging compactions in non-low memory mode")
+    ("Hypertable.RangeServer.Maintenance.MoveCompactionsPerInterval", i32()->default_value(2),
+        "Limit on number of major compactions due to move per maintenance interval")
     ("Hypertable.RangeServer.Monitoring.DataDirectories", str()->default_value("/"),
         "Comma-separated list of directory mount points of disk volumes to monitor")
     ("Hypertable.RangeServer.Workers", i32()->default_value(50),
@@ -446,8 +463,10 @@ void DefaultPolicy::init_options() {
         "Maximum flush interval in milliseconds")
     ("ThriftBroker.Workers", i32()->default_value(50), "Number of "
         "worker threads for thrift broker")
+    ("ThriftBroker.Hyperspace.Session.Reconnect", boo()->default_value(true),
+        "ThriftBroker will reconnect to Hyperspace on session expiry")
 
-#ifdef _WIN32
+ #ifdef _WIN32
 
     ("Hypertable.Service.Name", str()->default_value("Hypertable"), "Service name")
     ("Hypertable.Service.DisplayName", str()->default_value("Hypertable Database Service"), "Service display name")
@@ -457,13 +476,13 @@ void DefaultPolicy::init_options() {
     ("Hypertable.Service.RangeServer", boo()->default_value(true), "Include range server")
     ("Hypertable.Service.ThriftBroker", boo()->default_value(true), "Include thrift broker")
     ("Hypertable.Service.Logging.Directory", str()->default_value("log"), "Logging directory (if relative, it's relative to the Hypertable data directory root)")
-    ("Hypertable.Service.Timeout.StartService", i32()->default_value(30000), "Start service timeout in ms")
-    ("Hypertable.Service.Timeout.StopService", i32()->default_value(60000), "Stop service timeout in ms")
-    ("Hypertable.Service.Timeout.StartServer", i32()->default_value(7500), "Start server timeout in ms")
-    ("Hypertable.Service.Timeout.StopServer", i32()->default_value(7500), "Stop server timeout in ms")
-    ("Hypertable.Service.Timeout.KillServer", i32()->default_value(5000), "Kill server timeout in ms")
+    ("Hypertable.Service.Timeout.StartService", i32()->default_value(60000), "Start service timeout in ms")
+    ("Hypertable.Service.Timeout.StopService", i32()->default_value(90000), "Stop service timeout in ms")
+    ("Hypertable.Service.Timeout.StartServer", i32()->default_value(10000), "Start server timeout in ms")
+    ("Hypertable.Service.Timeout.StopServer", i32()->default_value(10000), "Stop server timeout in ms")
+    ("Hypertable.Service.Timeout.KillServer", i32()->default_value(10000), "Kill server timeout in ms")
     ("Hypertable.Service.Timeout.Connection", i32()->default_value(5000), "Connection timeout in ms")
-    ("Hypertable.Service.MinimumUptimeBeforeRestart", i32()->default_value(30000), "Minumum servers uptime in ms before restart on failure")
+    ("Hypertable.Service.MinimumUptimeBeforeRestart", i32()->default_value(60000), "Minumum servers uptime in ms before restart on failure")
 
 #endif
 

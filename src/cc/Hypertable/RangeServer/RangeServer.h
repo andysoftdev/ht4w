@@ -73,8 +73,7 @@ namespace Hypertable {
     virtual ~RangeServer();
 
     // range server protocol implementations
-    void compact(ResponseCallback *, const TableIdentifier *, const RangeSpec *,
-                 uint8_t compaction_type);
+    void compact(ResponseCallback *, const char *, uint32_t flags);
     void create_scanner(ResponseCallbackCreateScanner *,
                         const TableIdentifier *,
                         const  RangeSpec *, const ScanSpec *,
@@ -109,6 +108,8 @@ namespace Hypertable {
     void relinquish_range(ResponseCallback *, const TableIdentifier *,
                           const RangeSpec *);
     void heapcheck(ResponseCallback *, const char *);
+
+    void metadata_sync(ResponseCallback *, const char *, uint32_t flags, std::vector<const char *> columns);
 
     void close(ResponseCallback *cb);
 

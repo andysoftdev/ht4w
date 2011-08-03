@@ -104,11 +104,14 @@ namespace Hypertable {
               else
                 HT_WARNF("Response expired, wait time %u > timeout %u", wait_ms,
                 m_event_ptr->header.timeout_ms);
+
               return true;
             }
           }
-          else
-            HT_WARNF("CommHeader timeout not set");
+          else {
+            HT_INFO("Changing zero timeout request to 120000 ms");
+            m_event_ptr->header.timeout_ms = 120000;
+          }
       }
       return false;
     }

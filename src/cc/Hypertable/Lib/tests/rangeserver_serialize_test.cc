@@ -49,6 +49,8 @@ int main(int argc, char *argv[]) {
   stats1->block_cache_available_memory = Random::number64();
   stats1->block_cache_accesses = Random::number64();
   stats1->block_cache_hits = Random::number64();
+  stats1->tracked_memory = Random::number64();
+  stats1->live = (Random::number32() % 2) == 0;
 
   stats1->system.refresh();
 

@@ -40,6 +40,7 @@
 #include "Hypertable/Lib/Schema.h"
 
 #include "CellStoreV5.h"
+#include "CellStoreInfo.h"
 #include "CellStoreTrailerV5.h"
 #include "CellStoreScanner.h"
 
@@ -83,8 +84,7 @@ CellStoreV5::~CellStoreV5() {
     HT_ERROR_OUT << e << HT_END;
   }
 
-  if (m_index_stats.bloom_filter_memory + m_index_stats.block_index_memory > 0)
-    Global::memory_tracker->subtract( MemoryTracker::cell_store, m_index_stats.bloom_filter_memory + m_index_stats.block_index_memory );
+  Global::memory_tracker->subtract( MemoryTracker::cell_store, sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.bloom_filter_memory + m_index_stats.block_index_memory );
 
 }
 
@@ -345,7 +345,7 @@ void CellStoreV5::load_bloom_filter() {
     m_bloom_filter->validate(m_filename);
   }
 
-  m_index_stats.bloom_filter_memory = m_bloom_filter->total_size();
+  m_index_stats.bloom_filter_memory = sizeof(BloomFilterWithChecksum) + m_bloom_filter->total_size();
   Global::memory_tracker->add(MemoryTracker::cell_store, m_index_stats.bloom_filter_memory);
 
 }
@@ -359,7 +359,6 @@ uint64_t CellStoreV5::purge_indexes() {
     memory_purged = m_index_stats.bloom_filter_memory;
     delete m_bloom_filter;
     m_bloom_filter = 0;
-    Global::memory_tracker->subtract( MemoryTracker::cell_store, m_index_stats.bloom_filter_memory );
     m_index_stats.bloom_filter_memory = 0;
   }
 
@@ -369,9 +368,10 @@ uint64_t CellStoreV5::purge_indexes() {
       m_index_map64.clear();
     else
       m_index_map32.clear();
-    Global::memory_tracker->subtract( MemoryTracker::cell_store, m_index_stats.block_index_memory );
     m_index_stats.block_index_memory = 0;
   }
+
+  Global::memory_tracker->subtract( MemoryTracker::cell_store, memory_purged );
 
   return memory_purged;
 }
@@ -450,7 +450,7 @@ void CellStoreV5::add(const Key &key, const ByteString value) {
       m_trailer.expiration_time = key.timestamp + m_column_ttl[key.column_family_code];
   }
 
-  if (key.flag <= FLAG_DELETE_CELL)
+  if (key.flag <= FLAG_DELETE_CELL_VERSION)
     m_trailer.delete_count++;
 
   m_buffer.ensure(key_len + value_len);
@@ -531,6 +531,8 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
     m_offset += zlen;
   }
 
+  m_key_compressor = 0;
+
   m_buffer.free();
 
   m_trailer.fix_index_offset = m_offset;
@@ -574,6 +576,9 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
     m_trailer.var_index_offset = m_offset;
     m_compressor->deflate(m_index_builder.variable_buf(), zbuf, header, HT_DIRECT_IO_ALIGNMENT);
   }
+
+  delete m_compressor;
+  m_compressor = 0;
 
   if (!HT_IO_ALIGNED(zbuf.fill())) {
     memset(zbuf.ptr, 0, HT_IO_ALIGNMENT_PADDING(zbuf.fill()));
@@ -724,15 +729,15 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
   else
     m_disk_usage = m_file_length;
 
-  m_index_stats.block_index_memory = sizeof(CellStoreV5) + index_memory;
+  m_index_stats.block_index_memory = index_memory;
 
   if (m_bloom_filter)
-    m_index_stats.bloom_filter_memory = m_bloom_filter->total_size();
+    m_index_stats.bloom_filter_memory = sizeof(BloomFilterWithChecksum) + m_bloom_filter->total_size();
 
   delete [] m_column_ttl;
   m_column_ttl = 0;
 
-  Global::memory_tracker->add( MemoryTracker::cell_store, m_index_stats.block_index_memory + m_index_stats.bloom_filter_memory );
+  Global::memory_tracker->add( MemoryTracker::cell_store, sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.block_index_memory + m_index_stats.bloom_filter_memory );
 }
 
 
@@ -828,12 +833,15 @@ CellStoreV5::open(const String &fname, const String &start_row,
               "length=%llu, file='%s'", (unsigned)m_fd, (Lld)m_trailer.fix_index_offset,
            (Lld)m_trailer.var_index_offset, (Llu)m_file_length, fname.c_str());
 
+  Global::memory_tracker->add( MemoryTracker::cell_store, sizeof(CellStoreV5) + sizeof(CellStoreInfo) );
+
 }
 
 
 void CellStoreV5::load_block_index() {
   int64_t amount, index_amount;
   int64_t len = 0;
+  BlockCompressionCodecPtr compressor;
   BlockCompressionHeader header;
   SerializedKey key;
   bool inflating_fixed=true;
@@ -841,8 +849,7 @@ void CellStoreV5::load_block_index() {
 
   HT_ASSERT(m_index_stats.block_index_memory == 0);
 
-  if (m_compressor == 0)
-    m_compressor = create_block_compression_codec();
+  compressor = create_block_compression_codec();
 
   amount = index_amount = m_trailer.filter_offset - m_trailer.fix_index_offset;
 
@@ -863,7 +870,7 @@ void CellStoreV5::load_block_index() {
                 m_filename.c_str(), (Lld)amount, (Lld)len);
     /** inflate fixed index **/
     buf.ptr += (m_trailer.var_index_offset - m_trailer.fix_index_offset);
-    m_compressor->inflate(buf, m_index_builder.fixed_buf(), header);
+    compressor->inflate(buf, m_index_builder.fixed_buf(), header);
 
     m_bytes_read += m_index_builder.fixed_buf().fill();
 
@@ -878,7 +885,7 @@ void CellStoreV5::load_block_index() {
     vbuf.base = buf.ptr;
     vbuf.ptr = buf.ptr + amount;
 
-    m_compressor->inflate(vbuf, m_index_builder.variable_buf(), header);
+    compressor->inflate(vbuf, m_index_builder.variable_buf(), header);
 
     m_bytes_read += m_index_builder.variable_buf().fill();
 
@@ -911,19 +918,19 @@ void CellStoreV5::load_block_index() {
                        m_index_builder.variable_buf(),
                        m_trailer.fix_index_offset, m_start_row, m_end_row);
     record_split_row( m_index_map64.middle_key() );
+    m_index_stats.block_index_memory = m_index_map64.memory_used();
   }
   else {
     m_index_map32.load(m_index_builder.fixed_buf(),
                        m_index_builder.variable_buf(),
                        m_trailer.fix_index_offset, m_start_row, m_end_row);
     record_split_row( m_index_map32.middle_key() );
+    m_index_stats.block_index_memory = m_index_map32.memory_used();
   }
-
-  m_index_stats.block_index_memory = sizeof(CellStoreV5) + m_index_map32.memory_used();
-  Global::memory_tracker->add( MemoryTracker::cell_store, m_index_stats.block_index_memory );
 
   m_index_builder.release_fixed_buf();
 
+  Global::memory_tracker->add( MemoryTracker::cell_store, m_index_stats.block_index_memory );
 }
 
 

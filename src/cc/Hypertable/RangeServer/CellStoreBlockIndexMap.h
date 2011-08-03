@@ -164,7 +164,14 @@ namespace Hypertable {
 
     const SerializedKey middle_key() { return m_middle_key; }
 
-    size_t memory_used() { return m_keydata.size + (m_map.size() * 32); }
+    size_t memory_used() {
+      return m_keydata.size +
+#ifndef _WIN32
+	(m_map.size() * (sizeof(struct Rb_tree_node_base) + sizeof(ByteString) + sizeof(OffsetT)));
+#else
+	(m_map.size() * (sizeof(MapT::_Node) + sizeof(ByteString) + sizeof(OffsetT)));
+#endif
+    }
 
     int64_t disk_used() { return m_disk_used; }
 

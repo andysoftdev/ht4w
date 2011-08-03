@@ -130,6 +130,7 @@ void OperationBalance::execute() {
 
 
 void OperationBalance::display_state(std::ostream &os) {
+  os << *(m_plan.get());
 }
 
 size_t OperationBalance::encoded_state_length() const {
@@ -155,4 +156,8 @@ const String OperationBalance::name() {
 
 const String OperationBalance::label() {
   return format("Balance (%u moves)", (unsigned)m_plan->moves.size());
+}
+
+const String OperationBalance::get_algorithm() {
+  return m_plan->algorithm;
 }

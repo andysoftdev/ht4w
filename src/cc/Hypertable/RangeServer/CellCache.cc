@@ -39,7 +39,7 @@ using namespace std;
 
 CellCache::CellCache()
   : m_arena(), m_cell_map(std::less<const SerializedKey>(), Alloc(m_arena)),
-    m_deletes(0), m_collisions(0), m_key_bytes(0), m_value_bytes(0), 
+    m_deletes(0), m_collisions(0), m_key_bytes(0), m_value_bytes(0),
     m_frozen(false), m_have_counter_deletes(false) {
   assert(Config::properties); // requires Config::init* first
   m_arena.set_page_size((size_t)
@@ -71,7 +71,7 @@ void CellCache::add(const Key &key, const ByteString value) {
     HT_WARNF("Collision detected key insert (row = %s)", new_key.row());
   }
   else {
-    if (key.flag <= FLAG_DELETE_CELL)
+    if (key.flag <= FLAG_DELETE_CELL_VERSION)
       m_deletes++;
   }
 }
@@ -92,6 +92,8 @@ void CellCache::add_counter(const Key &key, const ByteString value) {
     m_have_counter_deletes = true;
     return;
   }
+
+  HT_ASSERT(*value.ptr == 8);
 
   CellMap::iterator iter = m_cell_map.lower_bound(key.serial);
 
@@ -118,10 +120,12 @@ void CellCache::add_counter(const Key &key, const ByteString value) {
   ByteString old_value;
   old_value.ptr = (*iter).first.ptr + (*iter).second;
 
+  HT_ASSERT(*old_value.ptr == 8 || *old_value.ptr == 9);
+
   /*
-   * Sanity check the old value, if it's a reset just insert the new value
+   * If old value was a reset, just insert the new value
    */
-  if (*old_value.ptr != 8) {
+  if (*old_value.ptr == 9) {
     add(key, value);
     return;
   }

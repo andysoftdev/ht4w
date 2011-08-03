@@ -25,6 +25,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <set>
 
 #include "Common/ByteString.h"
 #include "Common/DynamicBuffer.h"
@@ -149,6 +150,19 @@ namespace Hypertable {
               &&  m_deleted_cell.fill() == len
               && !memcmp(m_deleted_cell.base, key.row, len));
     }
+
+    inline bool matches_deleted_cell_version(const Key& key) const {
+      size_t len = key.len_cell();
+
+      HT_DEBUG_OUT <<"filtering deleted cell version'"
+          << String((char*)m_deleted_cell_version.base, m_deleted_cell_version.fill())
+          <<"' vs '"<< String(key.row, len) <<"'" << HT_END;
+
+      return (m_delete_present && m_deleted_cell_version.fill() > 0
+              &&  m_deleted_cell_version.fill() == len
+              && !memcmp(m_deleted_cell_version.base, key.row, len));
+    }
+
     inline bool matches_counted_key(const Key& key) const {
       size_t len = key.len_cell();
       size_t len_counted_key = m_counted_key.len_cell();
@@ -174,6 +188,7 @@ namespace Hypertable {
         m_skip_remaining_counter = true;
       }
     }
+    void start_count(const Key &key, const ByteString &value);
     void finish_count();
 
     bool          m_done;
@@ -188,6 +203,8 @@ namespace Hypertable {
     int64_t       m_deleted_column_family_timestamp;
     DynamicBuffer m_deleted_cell;
     int64_t       m_deleted_cell_timestamp;
+    DynamicBuffer m_deleted_cell_version;
+    std::set<int64_t> m_deleted_cell_version_set;
     bool          m_return_deletes; // if this is true, return a delete even if
                                     // it doesn't satisfy ScanSpec
                                     // timestamp/version requirement
@@ -195,10 +212,10 @@ namespace Hypertable {
     bool          m_no_forward;
     bool          m_count_present;
     bool          m_skip_remaining_counter;
+    DynamicBuffer m_counted_key_buffer;
     uint64_t      m_count;
     Key           m_counted_key;
     DynamicBuffer m_counted_value;
-    DynamicBuffer m_tmp_count;
 
     bool          m_ag_scanner;
     bool          m_track_io;

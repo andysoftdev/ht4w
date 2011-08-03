@@ -351,6 +351,192 @@ uint32_t ClientService_create_table_presult::read(::apache::thrift::protocol::TP
   return xfer;
 }
 
+uint32_t ClientService_alter_table_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_I64) {
+          xfer += iprot->readI64(this->ns);
+          this->__isset.ns = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->table_name);
+          this->__isset.table_name = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 3:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->schema);
+          this->__isset.schema = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t ClientService_alter_table_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("ClientService_alter_table_args");
+  xfer += oprot->writeFieldBegin("ns", ::apache::thrift::protocol::T_I64, 1);
+  xfer += oprot->writeI64(this->ns);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("table_name", ::apache::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString(this->table_name);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("schema", ::apache::thrift::protocol::T_STRING, 3);
+  xfer += oprot->writeString(this->schema);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t ClientService_alter_table_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("ClientService_alter_table_pargs");
+  xfer += oprot->writeFieldBegin("ns", ::apache::thrift::protocol::T_I64, 1);
+  xfer += oprot->writeI64((*(this->ns)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("table_name", ::apache::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString((*(this->table_name)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("schema", ::apache::thrift::protocol::T_STRING, 3);
+  xfer += oprot->writeString((*(this->schema)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t ClientService_alter_table_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_STRUCT) {
+          xfer += this->e.read(iprot);
+          this->__isset.e = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t ClientService_alter_table_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+
+  uint32_t xfer = 0;
+
+  xfer += oprot->writeStructBegin("ClientService_alter_table_result");
+
+  if (this->__isset.e) {
+    xfer += oprot->writeFieldBegin("e", ::apache::thrift::protocol::T_STRUCT, 1);
+    xfer += this->e.write(oprot);
+    xfer += oprot->writeFieldEnd();
+  }
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t ClientService_alter_table_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_STRUCT) {
+          xfer += this->e.read(iprot);
+          this->__isset.e = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
 uint32_t ClientService_open_namespace_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
@@ -10967,6 +11153,198 @@ uint32_t ClientService_get_schema_str_presult::read(::apache::thrift::protocol::
   return xfer;
 }
 
+uint32_t ClientService_get_schema_str_with_ids_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_I64) {
+          xfer += iprot->readI64(this->ns);
+          this->__isset.ns = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->table_name);
+          this->__isset.table_name = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t ClientService_get_schema_str_with_ids_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("ClientService_get_schema_str_with_ids_args");
+  xfer += oprot->writeFieldBegin("ns", ::apache::thrift::protocol::T_I64, 1);
+  xfer += oprot->writeI64(this->ns);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("table_name", ::apache::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString(this->table_name);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t ClientService_get_schema_str_with_ids_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("ClientService_get_schema_str_with_ids_pargs");
+  xfer += oprot->writeFieldBegin("ns", ::apache::thrift::protocol::T_I64, 1);
+  xfer += oprot->writeI64((*(this->ns)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("table_name", ::apache::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString((*(this->table_name)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t ClientService_get_schema_str_with_ids_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 0:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->success);
+          this->__isset.success = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_STRUCT) {
+          xfer += this->e.read(iprot);
+          this->__isset.e = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t ClientService_get_schema_str_with_ids_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+
+  uint32_t xfer = 0;
+
+  xfer += oprot->writeStructBegin("ClientService_get_schema_str_with_ids_result");
+
+  if (this->__isset.success) {
+    xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_STRING, 0);
+    xfer += oprot->writeString(this->success);
+    xfer += oprot->writeFieldEnd();
+  } else if (this->__isset.e) {
+    xfer += oprot->writeFieldBegin("e", ::apache::thrift::protocol::T_STRUCT, 1);
+    xfer += this->e.write(oprot);
+    xfer += oprot->writeFieldEnd();
+  }
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t ClientService_get_schema_str_with_ids_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 0:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString((*(this->success)));
+          this->__isset.success = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_STRUCT) {
+          xfer += this->e.read(iprot);
+          this->__isset.e = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
 uint32_t ClientService_get_schema_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
@@ -12455,6 +12833,66 @@ void ClientServiceClient::recv_create_table()
     throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::WRONG_METHOD_NAME);
   }
   ClientService_create_table_presult result;
+  result.read(iprot_);
+  iprot_->readMessageEnd();
+  iprot_->getTransport()->readEnd();
+
+  if (result.__isset.e) {
+    throw result.e;
+  }
+  return;
+}
+
+void ClientServiceClient::alter_table(const Namespace ns, const std::string& table_name, const std::string& schema)
+{
+  send_alter_table(ns, table_name, schema);
+  recv_alter_table();
+}
+
+void ClientServiceClient::send_alter_table(const Namespace ns, const std::string& table_name, const std::string& schema)
+{
+  int32_t cseqid = 0;
+  oprot_->writeMessageBegin("alter_table", ::apache::thrift::protocol::T_CALL, cseqid);
+
+  ClientService_alter_table_pargs args;
+  args.ns = &ns;
+  args.table_name = &table_name;
+  args.schema = &schema;
+  args.write(oprot_);
+
+  oprot_->writeMessageEnd();
+  oprot_->getTransport()->flush();
+  oprot_->getTransport()->writeEnd();
+}
+
+void ClientServiceClient::recv_alter_table()
+{
+
+  int32_t rseqid = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TMessageType mtype;
+
+  iprot_->readMessageBegin(fname, mtype, rseqid);
+  if (mtype == ::apache::thrift::protocol::T_EXCEPTION) {
+    ::apache::thrift::TApplicationException x;
+    x.read(iprot_);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw x;
+  }
+  if (mtype != ::apache::thrift::protocol::T_REPLY) {
+    iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
+  }
+  if (fname.compare("alter_table") != 0) {
+    iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::WRONG_METHOD_NAME);
+  }
+  ClientService_alter_table_presult result;
   result.read(iprot_);
   iprot_->readMessageEnd();
   iprot_->getTransport()->readEnd();
@@ -15800,6 +16238,70 @@ void ClientServiceClient::recv_get_schema_str(std::string& _return)
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "get_schema_str failed: unknown result");
 }
 
+void ClientServiceClient::get_schema_str_with_ids(std::string& _return, const Namespace ns, const std::string& table_name)
+{
+  send_get_schema_str_with_ids(ns, table_name);
+  recv_get_schema_str_with_ids(_return);
+}
+
+void ClientServiceClient::send_get_schema_str_with_ids(const Namespace ns, const std::string& table_name)
+{
+  int32_t cseqid = 0;
+  oprot_->writeMessageBegin("get_schema_str_with_ids", ::apache::thrift::protocol::T_CALL, cseqid);
+
+  ClientService_get_schema_str_with_ids_pargs args;
+  args.ns = &ns;
+  args.table_name = &table_name;
+  args.write(oprot_);
+
+  oprot_->writeMessageEnd();
+  oprot_->getTransport()->flush();
+  oprot_->getTransport()->writeEnd();
+}
+
+void ClientServiceClient::recv_get_schema_str_with_ids(std::string& _return)
+{
+
+  int32_t rseqid = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TMessageType mtype;
+
+  iprot_->readMessageBegin(fname, mtype, rseqid);
+  if (mtype == ::apache::thrift::protocol::T_EXCEPTION) {
+    ::apache::thrift::TApplicationException x;
+    x.read(iprot_);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw x;
+  }
+  if (mtype != ::apache::thrift::protocol::T_REPLY) {
+    iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
+  }
+  if (fname.compare("get_schema_str_with_ids") != 0) {
+    iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::WRONG_METHOD_NAME);
+  }
+  ClientService_get_schema_str_with_ids_presult result;
+  result.success = &_return;
+  result.read(iprot_);
+  iprot_->readMessageEnd();
+  iprot_->getTransport()->readEnd();
+
+  if (result.__isset.success) {
+    // _return pointer has now been filled
+    return;
+  }
+  if (result.__isset.e) {
+    throw result.e;
+  }
+  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "get_schema_str_with_ids failed: unknown result");
+}
+
 void ClientServiceClient::get_schema(Schema& _return, const Namespace ns, const std::string& table_name)
 {
   send_get_schema(ns, table_name);
@@ -16332,6 +16834,36 @@ void ClientServiceProcessor::process_create_table(int32_t seqid, ::apache::thrif
   }
 
   oprot->writeMessageBegin("create_table", ::apache::thrift::protocol::T_REPLY, seqid);
+  result.write(oprot);
+  oprot->writeMessageEnd();
+  oprot->getTransport()->flush();
+  oprot->getTransport()->writeEnd();
+}
+
+void ClientServiceProcessor::process_alter_table(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+{
+  ClientService_alter_table_args args;
+  args.read(iprot);
+  iprot->readMessageEnd();
+  iprot->getTransport()->readEnd();
+
+  ClientService_alter_table_result result;
+  try {
+    iface_->alter_table(args.ns, args.table_name, args.schema);
+  } catch (ClientException &e) {
+    result.e = e;
+    result.__isset.e = true;
+  } catch (const std::exception& e) {
+    ::apache::thrift::TApplicationException x(e.what());
+    oprot->writeMessageBegin("alter_table", ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    x.write(oprot);
+    oprot->writeMessageEnd();
+    oprot->getTransport()->flush();
+    oprot->getTransport()->writeEnd();
+    return;
+  }
+
+  oprot->writeMessageBegin("alter_table", ::apache::thrift::protocol::T_REPLY, seqid);
   result.write(oprot);
   oprot->writeMessageEnd();
   oprot->getTransport()->flush();
@@ -17979,6 +18511,37 @@ void ClientServiceProcessor::process_get_schema_str(int32_t seqid, ::apache::thr
   }
 
   oprot->writeMessageBegin("get_schema_str", ::apache::thrift::protocol::T_REPLY, seqid);
+  result.write(oprot);
+  oprot->writeMessageEnd();
+  oprot->getTransport()->flush();
+  oprot->getTransport()->writeEnd();
+}
+
+void ClientServiceProcessor::process_get_schema_str_with_ids(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+{
+  ClientService_get_schema_str_with_ids_args args;
+  args.read(iprot);
+  iprot->readMessageEnd();
+  iprot->getTransport()->readEnd();
+
+  ClientService_get_schema_str_with_ids_result result;
+  try {
+    iface_->get_schema_str_with_ids(result.success, args.ns, args.table_name);
+    result.__isset.success = true;
+  } catch (ClientException &e) {
+    result.e = e;
+    result.__isset.e = true;
+  } catch (const std::exception& e) {
+    ::apache::thrift::TApplicationException x(e.what());
+    oprot->writeMessageBegin("get_schema_str_with_ids", ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    x.write(oprot);
+    oprot->writeMessageEnd();
+    oprot->getTransport()->flush();
+    oprot->getTransport()->writeEnd();
+    return;
+  }
+
+  oprot->writeMessageBegin("get_schema_str_with_ids", ::apache::thrift::protocol::T_REPLY, seqid);
   result.write(oprot);
   oprot->writeMessageEnd();
   oprot->getTransport()->flush();

@@ -35,12 +35,6 @@
 
 
 namespace Hypertable {
-
-  static const uint32_t FLAG_DELETE_ROW            = 0x00;
-  static const uint32_t FLAG_DELETE_COLUMN_FAMILY  = 0x01;
-  static const uint32_t FLAG_DELETE_CELL           = 0x02;
-  static const uint32_t FLAG_INSERT                = 0xFF;
-
   /** Provides access to internal components of opaque key.
    */
   class Key {
@@ -123,7 +117,7 @@ namespace Hypertable {
     }
 
     SerializedKey  serial;
-    uint32_t       length;
+    uint32_t       length;  // length of serialized key
     uint8_t        flag;
     uint8_t        control;
     uint8_t        column_family_code;
@@ -166,7 +160,7 @@ namespace Hypertable {
    * <p>
    * [rowkey][column-family][column-qualifier][flag][~BIGENDIAN(timestamp)]
    * <p>
-   * @param flag DELETE_ROW, DELETE_CELL, or INSERT
+   * @param flag DELETE_ROW, DELETE_COLUMN_FAMILY, DELETE_CELL, DELETE_CELL_VERSION or INSERT
    * @param row NUL-terminated row key
    * @param column_family_code column family
    * @param column_qualifier NUL-terminated column qualifier

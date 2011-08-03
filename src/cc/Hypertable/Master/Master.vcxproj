@@ -32,6 +32,8 @@
     <ClCompile Include="GcWorker.cc" />
     <ClCompile Include="LoadBalancer.cc" />
     <ClCompile Include="LoadBalancerBasic.cc" />
+    <ClCompile Include="LoadBalancerBasicDistributeLoad.cc" />
+    <ClCompile Include="LoadBalancerBasicDistributeTableRanges.cc" />
     <ClCompile Include="MetaLogDefinitionMaster.cc" />
     <ClCompile Include="MetaLogEntityOperation.cc" />
     <ClCompile Include="Monitoring.cc" />
@@ -46,6 +48,7 @@
     <ClCompile Include="OperationGatherStatistics.cc" />
     <ClCompile Include="OperationGetSchema.cc" />
     <ClCompile Include="OperationInitialize.cc" />
+    <ClCompile Include="OperationLoadBalancer.cc" />
     <ClCompile Include="OperationMoveRange.cc" />
     <ClCompile Include="OperationProcessor.cc" />
     <ClCompile Include="OperationRecoverServer.cc" />
@@ -55,8 +58,11 @@
     <ClCompile Include="OperationStatus.cc" />
     <ClCompile Include="OperationSystemUpgrade.cc" />
     <ClCompile Include="OperationWaitForServers.cc" />
+    <ClCompile Include="RangeMetrics.cc" />
     <ClCompile Include="RangeServerConnection.cc" />
     <ClCompile Include="ResponseManager.cc" />
+    <ClCompile Include="RSMetrics.cc" />
+    <ClCompile Include="ServerMetrics.cc" />
     <ClCompile Include="Utility.cc" />
   </ItemGroup>
   <ItemGroup>
@@ -69,6 +75,8 @@
     <ClInclude Include="GcWorker.h" />
     <ClInclude Include="LoadBalancer.h" />
     <ClInclude Include="LoadBalancerBasic.h" />
+    <ClInclude Include="LoadBalancerBasicDistributeLoad.h" />
+    <ClInclude Include="LoadBalancerBasicDistributeTableRanges.h" />
     <ClInclude Include="MetaLogDefinitionMaster.h" />
     <ClInclude Include="MetaLogEntityOperation.h" />
     <ClInclude Include="Monitoring.h" />
@@ -83,6 +91,7 @@
     <ClInclude Include="OperationGatherStatistics.h" />
     <ClInclude Include="OperationGetSchema.h" />
     <ClInclude Include="OperationInitialize.h" />
+    <ClInclude Include="OperationLoadBalancer.h" />
     <ClInclude Include="OperationMoveRange.h" />
     <ClInclude Include="OperationProcessor.h" />
     <ClInclude Include="OperationRecoverServer.h" />
@@ -92,10 +101,13 @@
     <ClInclude Include="OperationStatus.h" />
     <ClInclude Include="OperationSystemUpgrade.h" />
     <ClInclude Include="OperationWaitForServers.h" />
+    <ClInclude Include="RangeMetrics.h" />
     <ClInclude Include="RangeServerConnection.h" />
     <ClInclude Include="RangeServerState.h" />
     <ClInclude Include="RangeServerStatistics.h" />
     <ClInclude Include="ResponseManager.h" />
+    <ClInclude Include="RSMetrics.h" />
+    <ClInclude Include="ServerMetrics.h" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

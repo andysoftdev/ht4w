@@ -35,12 +35,12 @@ using namespace Hypertable;
 MergeScanner::MergeScanner(ScanContextPtr &scan_ctx, bool return_deletes, bool ag_scanner,
     bool debug) : CellListScanner(scan_ctx), m_done(false), m_initialized(false),
     m_scanners(), m_queue(), m_delete_present(false), m_deleted_row(0),
-    m_deleted_column_family(0), m_deleted_cell(0), m_return_deletes(return_deletes),
+    m_deleted_column_family(0), m_deleted_cell(0), m_deleted_cell_version(0),
+    m_return_deletes(return_deletes),
     m_no_forward(false), m_count_present(false), m_skip_remaining_counter(false),
-    m_counted_value(12), m_tmp_count(8), m_ag_scanner(ag_scanner),
-    m_row_count(0), m_row_limit(0), m_cell_count(0), m_cell_limit(0), m_revs_count(0),
-    m_revs_limit(0), m_cell_cutoff(0), m_bytes_input(0), m_bytes_output(0),
-    m_cells_input(0), m_cells_output(0),
+    m_counted_value(12), m_ag_scanner(ag_scanner), m_row_count(0), m_row_limit(0),
+    m_cell_count(0), m_cell_limit(0), m_revs_count(0), m_revs_limit(0), m_cell_cutoff(0),
+    m_bytes_input(0), m_bytes_output(0), m_cells_input(0), m_cells_output(0),
     m_cur_bytes(0), m_prev_key(0), m_prev_cf(-1), m_debug(debug) {
 
   if (scan_ctx->spec != 0) {
@@ -193,14 +193,41 @@ void MergeScanner::forward() {
         if (m_return_deletes)
           break;
       }
+      else if (sstate.key.flag == FLAG_DELETE_CELL_VERSION) {
+        len = sstate.key.len_cell();
+        if (matches_deleted_cell_version(sstate.key))
+          m_deleted_cell_version_set.insert(sstate.key.timestamp);
+        else {
+          m_deleted_cell_version.clear();
+          m_deleted_cell_version_set.clear();
+          m_deleted_cell_version.ensure(len);
+          memcpy(m_deleted_cell_version.base, sstate.key.row, len);
+          m_deleted_cell_version.ptr = m_deleted_cell_version.base + len;
+          m_deleted_cell_version_set.insert(sstate.key.timestamp);
+          m_delete_present = true;
+        }
+        if (m_return_deletes)
+          break;
+      }
       else {
         // this cell is not a delete and it is within the requested time interval.
         if (m_delete_present) {
+          if (m_deleted_cell_version.fill() > 0) {
+            if(!matches_deleted_cell_version(sstate.key)) {
+              // we wont see the previously seen deleted cell version again
+              m_deleted_cell_version.clear();
+              m_deleted_cell_version_set.clear();
+            }
+            else if (m_deleted_cell_version_set.find(sstate.key.timestamp) !=
+                     m_deleted_cell_version_set.end())
+              // apply previously seen delete cell version to this cell
+              continue;
+          }
           if (m_deleted_cell.fill() > 0) {
             if(!matches_deleted_cell(sstate.key))
               // we wont see the previously seen deleted cell again
               m_deleted_cell.clear();
-            else if (sstate.key.timestamp < m_deleted_cell_timestamp)
+            else if (sstate.key.timestamp <= m_deleted_cell_timestamp)
               // apply previously seen delete cell to this cell
               continue;
           }
@@ -208,7 +235,7 @@ void MergeScanner::forward() {
             if(!matches_deleted_column_family(sstate.key))
               // we wont see the previously seen deleted column family again
               m_deleted_column_family.clear();
-            else if (sstate.key.timestamp < m_deleted_column_family_timestamp)
+            else if (sstate.key.timestamp <= m_deleted_column_family_timestamp)
               // apply previously seen delete column family to this cell
               continue;
           }
@@ -216,12 +243,12 @@ void MergeScanner::forward() {
             if(!matches_deleted_row(sstate.key))
               // we wont see the previously seen deleted row family again
               m_deleted_row.clear();
-            else if (sstate.key.timestamp < m_deleted_row_timestamp)
+            else if (sstate.key.timestamp <= m_deleted_row_timestamp)
               // apply previously seen delete row family to this cell
               continue;
           }
-          if (m_deleted_cell.fill() == 0 && m_deleted_column_family.fill() == 0
-              && m_deleted_row.fill() == 0)
+          if (m_deleted_cell_version.fill() == 0 && m_deleted_cell.fill() == 0 &&
+              m_deleted_column_family.fill() == 0 && m_deleted_row.fill() == 0)
             m_delete_present = false;
         }
 
@@ -343,10 +370,7 @@ void MergeScanner::forward() {
       }
 
       // start new count and loop
-      m_count_present = true;
-      m_count = 0;
-      m_counted_key.load(sstate.key.serial);
-      increment_count(sstate.key, sstate.value);
+      start_count(sstate.key, sstate.value);
       continue;
     }
 
@@ -401,17 +425,31 @@ bool MergeScanner::get(Key &key, ByteString &value) {
 }
 
 void MergeScanner::finish_count() {
-  m_tmp_count.clear();
-  m_counted_value.clear();
-  Serialization::encode_i64(&m_tmp_count.ptr, m_count);
-  append_as_byte_string(m_counted_value, m_tmp_count.base, 8);
+  uint8_t *ptr = m_counted_value.base;
+
+  *ptr++ = 8;  // length
+  Serialization::encode_i64(&ptr, m_count);
 
   m_prev_key.set(m_counted_key.row, m_counted_key.len_cell());
   m_prev_cf = m_counted_key.column_family_code;
   m_cell_count = 0;
   m_no_forward = true;
   m_count_present = false;
-  m_skip_remaining_counter = false;
+}
+
+void MergeScanner::start_count(const Key &key, const ByteString &value) {
+  SerializedKey serial;
+
+  m_count_present = true;
+  m_count = 0;
+
+  m_counted_key_buffer.clear();
+  m_counted_key_buffer.ensure(key.length);
+  memcpy(m_counted_key_buffer.base, key.serial.ptr, key.length);
+  serial.ptr = m_counted_key_buffer.base;
+
+  m_counted_key.load(serial);
+  increment_count(key, value);
 
 }
 
@@ -493,6 +531,20 @@ void MergeScanner::initialize() {
       memcpy(m_deleted_cell.base, sstate.key.row, len);
       m_deleted_cell.ptr = m_deleted_cell.base + len;
       m_deleted_cell_timestamp = sstate.key.timestamp;
+      m_delete_present = true;
+      if (!m_return_deletes) {
+        forward();
+        m_initialized = true;
+        return;
+      }
+    }
+    else if (sstate.key.flag == FLAG_DELETE_CELL_VERSION) {
+      size_t len = sstate.key.len_cell();
+      m_deleted_cell_version.clear();
+      m_deleted_cell_version.ensure(len);
+      memcpy(m_deleted_cell_version.base, sstate.key.row, len);
+      m_deleted_cell_version.ptr = m_deleted_cell_version.base + len;
+      m_deleted_cell_version_set.insert(sstate.key.timestamp);
       m_delete_present = true;
       if (!m_return_deletes) {
         forward();
@@ -611,10 +663,7 @@ void MergeScanner::initialize() {
       // if counter then keep incrementing till we are ready with 1st kv pair
       if (counter) {
         // new counter
-        m_count_present = true;
-        m_count = 0;
-        m_counted_key.load(sstate.key.serial);
-        increment_count(sstate.key, sstate.value);
+        start_count(sstate.key, sstate.value);
         forward();
         m_initialized = true;
         return;

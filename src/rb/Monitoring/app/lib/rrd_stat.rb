@@ -56,17 +56,17 @@ class RRDStat
     json = StatsJson.new(:file => 'rangeserver_summary.json',:data => '/opt/hypertable/current/run/monitoring/')
     range_servers = json.parse_stats_file
     range_servers['RangeServerSummary']['servers'].each do |server|
-      @server_ip_list[:"#{server['location']}"] = server['ip']
+      @server_ip_list[:"#{server['location']}"] = server['hostname']
     end
     @server_ip_list                  
   end
 
   def get_stat_types
   [ "scan_rate",
-    "cell_read_rate",
-    "byte_read_rate",
     "update_rate",
+    "cell_read_rate",
     "cell_write_rate",
+    "byte_read_rate",
     "byte_write_rate",
     "sync_rate",
     "disk_read_iops",
@@ -82,6 +82,11 @@ class RRDStat
     "disk_used_pct",
     "vm_size",
     "vm_resident",
+    "page_in",
+    "page_out",
+    "heap_size",
+    "heap_slack",
+    "tracked_memory",
     "bcache_fill",
     "bcache_hit_pct",
     "bcache_max_mem",
@@ -92,12 +97,12 @@ class RRDStat
 
   def get_table_stat_types
   [ "scan_rate",
-    "cell_read_rate",
-    "byte_read_rate",
-    "disk_read_rate",
     "update_rate",
+    "cell_read_rate",
     "cell_write_rate",
+    "byte_read_rate",
     "byte_write_rate",
+    "disk_read_rate",
     "scanner_count",
     "range_count",
     "disk_used",

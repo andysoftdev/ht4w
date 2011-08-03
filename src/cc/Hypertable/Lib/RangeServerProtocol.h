@@ -59,7 +59,8 @@ namespace Hypertable {
     static const uint64_t COMMAND_ACKNOWLEDGE_LOAD     = 20;
     static const uint64_t COMMAND_RELINQUISH_RANGE     = 21;
     static const uint64_t COMMAND_HEAPCHECK            = 22;
-    static const uint64_t COMMAND_MAX                  = 23;
+    static const uint64_t COMMAND_METADATA_SYNC        = 23;
+    static const uint64_t COMMAND_MAX                  = 24;
 
     static const char *m_command_strings[];
 
@@ -76,6 +77,35 @@ namespace Hypertable {
       UPDATE_FLAG_NO_LOG_SYNC        = 0x0001,
       UPDATE_FLAG_IGNORE_UNKNOWN_CFS = 0x0002
     };
+
+    // Flags for 
+    enum {
+      COMPACT_FLAG_ROOT     = 0x0001,
+      COMPACT_FLAG_METADATA = 0x0002,
+      COMPACT_FLAG_SYSTEM   = 0x0004,
+      COMPACT_FLAG_USER     = 0x0008,
+      COMPACT_FLAG_ALL      = 0x000F
+    };
+
+    static String compact_flags_to_string(uint32_t flags);
+
+    /** Creates a "compact" request message
+     *
+     * @param table_id table identifier
+     * @param flags compact flags
+     * @return protocol message
+     */
+    static CommBuf *create_request_compact(const String &table_id, uint32_t flags);
+
+    /** Creates a "metadata_sync" request message
+     *
+     * @param table_id table identifier
+     * @param flags metadata_sync flags
+     * @param columns names of columns to sync
+     * @return protocol message
+     */
+    static CommBuf *create_request_metadata_sync(const String &table_id, uint32_t flags,
+                                                 std::vector<String> &columns);
 
     /** Creates a "load range" request message
      *

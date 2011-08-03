@@ -35,6 +35,10 @@ extern "C" {
 #include <stdlib.h>
 }
 
+#if defined(TCMALLOC) || defined(TCMALLOC_MINIMAL)
+#include <google/malloc_extension.h>
+#endif
+
 #define HT_FIELD_NOTIMPL(_field_) (_field_ == (uint64_t)-1)
 
 using namespace Hypertable;
@@ -164,7 +168,9 @@ bool ProcStat::operator==(const ProcStat &other) const {
       Serialization::equal(vm_share, other.vm_share) &&
       minor_faults == other.minor_faults &&
       major_faults == other.major_faults &&
-      page_faults == other.page_faults)
+      page_faults == other.page_faults &&
+      heap_size == other.heap_size &&
+      heap_slack == other.heap_slack)
     return true;
   return false;
 }
@@ -513,6 +519,10 @@ DiskStat &DiskStat::refresh(const char *dir_prefix) {
   return *this;
 }
 
+SwapStat::~SwapStat() {
+  delete (sigar_swap_t *)prev_stat;
+}
+
 SwapStat &SwapStat::refresh() {
   ScopedRecLock lock(_mutex);
   sigar_swap_t s;
@@ -522,8 +532,18 @@ SwapStat &SwapStat::refresh() {
   total = s.total / MiB;
   used = s.used / MiB;
   free = s.free / MiB;
-  page_in = s.page_in;
-  page_out = s.page_out;
+
+  if (prev_stat) {
+    page_in = s.page_in - ((sigar_swap_t *)prev_stat)->page_in;
+    page_out = s.page_out - ((sigar_swap_t *)prev_stat)->page_out;
+  }
+  else {
+    prev_stat = new sigar_swap_t();
+    page_in = s.page_in;
+    page_out = s.page_out;
+  }
+
+  *((sigar_swap_t *)prev_stat) = s;
 
   return *this;
 }
@@ -642,10 +662,11 @@ NetStat &NetStat::refresh() {
         HT_DEBUGF("curr_net_stat: rx_bytes=%llu, tx_bytes=%llu",
                   (Llu)curr.rx_bytes, (Llu)curr.tx_bytes);
 
-        rx_rate = (curr.rx_bytes - _prev_net_stat.rx_bytes) / elapsed / KiB;
-        tx_rate = (curr.tx_bytes - _prev_net_stat.tx_bytes) / elapsed / KiB;
+        rx_rate = (curr.rx_bytes - _prev_net_stat.rx_bytes) / elapsed;
+        tx_rate = (curr.tx_bytes - _prev_net_stat.tx_bytes) / elapsed;
 
         _prev_net_stat = curr;
+        _net_stat_stopwatch.reset();
         _net_stat_stopwatch.start();
       }
     }
@@ -697,6 +718,13 @@ ProcStat &ProcStat::refresh() {
   minor_faults = HT_FIELD_NOTIMPL(m.minor_faults) ? 0 : m.minor_faults;
   major_faults = HT_FIELD_NOTIMPL(m.major_faults) ? 0 : m.major_faults;
   page_faults = HT_FIELD_NOTIMPL(m.page_faults) ? 0 : m.page_faults;;
+#if defined(TCMALLOC) || defined(TCMALLOC_MINIMAL)
+  size_t tmp_heap_size, tmp_heap_slack;
+  MallocExtension::instance()->GetNumericProperty("generic.heap_size", &tmp_heap_size);
+  heap_size = tmp_heap_size;
+  MallocExtension::instance()->GetNumericProperty("tcmalloc.slack_bytes", &tmp_heap_slack);
+  heap_slack = tmp_heap_slack;
+#endif
 
   return *this;
 }
@@ -842,6 +870,7 @@ std::ostream &operator<<(std::ostream &out, const ProcStat &s) {
       <<"\n vm_size="<< s.vm_size <<" vm_resident="<< s.vm_resident
       <<" vm_share="<< s.vm_share <<"\n major_faults="<< s.major_faults
       <<" minor_faults="<< s.minor_faults <<" page_faults="<< s.page_faults
+      <<" heap_size="<< s.heap_size <<" heap_slack="<< s.heap_slack
       <<'}';
   return out;
 }

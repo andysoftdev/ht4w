@@ -121,6 +121,16 @@ SELECT * FROM test WHERE ('a' < ROW <= 'c' or ROW = 'g' or ROW = 'c');
 SELECT * FROM test WHERE (ROW < 'c' or ROW > 'd');
 SELECT * FROM test WHERE (ROW < 'b' or ROW =^ 'b');
 SELECT * FROM test WHERE (ROW =^'a' or 'd' < ROW < 'b' or ROW =^ 'b');
+INSERT INTO test values ('2010-01-01 00:00:01', 'r1', 'b:q1', 'v1'), ('2010-01-01 00:00:02', 'r1', 'b:q1', 'v2'), ('2010-01-01 00:00:03', 'r1', 'b:q1', 'v3'), ('2010-01-01 00:00:00', 'r1', 'b:q', 'v4'),('2010-01-01 00:00:05', 'r1', 'b:q1', 'v5') ;
+SELECT * from test WHERE ROW="r1" DISPLAY_TIMESTAMPS;
+DELETE "b:q1" FROM test WHERE ROW="r1" VERSION "2010-01-01 00:00:02";
+SELECT * FROM test WHERE ROW="r1" DISPLAY_TIMESTAMPS;
+DELETE "b:q1" FROM test WHERE ROW="r1" TIMESTAMP "2010-01-01 00:00:02";
+SELECT * FROM test WHERE ROW="r1" DISPLAY_TIMESTAMPS;
+DELETE * FROM test WHERE ROW="r1" TIMESTAMP "2010-01-01 00:00:02";
+SELECT * FROM test WHERE ROW="r1" DISPLAY_TIMESTAMPS;
+DELETE "b:q1" FROM test WHERE ROW="r1" VERSION "2010-01-01 00:00:03";
+SELECT * FROM test WHERE ROW="r1" RETURN_DELETES DISPLAY_TIMESTAMPS;
 DROP TABLE IF EXISTS test;
 CREATE TABLE test ( tag );
 INSERT INTO test VALUES("how", "tag:A", "n");
@@ -487,6 +497,7 @@ SELECT col2:"bird",col2:/mail/ from RegexpTest WHERE ROW REGEXP "http://.*";
 SELECT col1:/^w[^a-zA-Z]*$/ from RegexpTest WHERE ROW REGEXP "m.*\s\S";
 SELECT CELLS col1:/^w[^a-zA-Z]*$/ from RegexpTest WHERE ROW REGEXP "^\D+" AND VALUE REGEXP "l.*e";
 SELECT CELLS col1:/^w/, col2:/^[em].*/ from RegexpTest WHERE VALUE REGEXP "i.*a";
+SELECT CELLS col1:/^w/, col2:/^[em].*/ from RegexpTest WHERE VALUE REGEXP "i.*a" KEYS_ONLY;
 
 # test empty qualifier filtering
 INSERT INTO RegexpTest VALUES('http://yahoo.com', 'col2', 'swiss');

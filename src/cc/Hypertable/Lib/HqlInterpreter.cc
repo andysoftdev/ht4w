@@ -431,6 +431,10 @@ cmd_select(NamespacePtr &ns, ConnectionManagerPtr &conn_manager,
         fout.write(unescaped_buf, unescaped_len);
         fout << "\tDELETE CELL\n";
         break;
+      case FLAG_DELETE_CELL_VERSION:
+        fout.write(unescaped_buf, unescaped_len);
+        fout << "\tDELETE CELL VERSION\n";
+        break;
       default:
         fout << "\tBAD KEY FLAG\n";
       }
@@ -603,7 +607,7 @@ cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
 
   lds = LoadDataSourceFactory::create(dfs_client, state.input_file, state.input_file_src,
       state.header_file, state.header_file_src,
-      state.key_columns, state.timestamp_column,
+      state.columns, state.timestamp_column,
       state.row_uniquify_chars, state.load_flags);
 
   cb.file_size = lds->get_source_size();
@@ -744,13 +748,20 @@ cmd_delete(NamespacePtr &ns, ParserState &state, HqlInterpreter::Callback &cb) {
   key.row = state.delete_row.c_str();
   key.row_len = state.delete_row.length();
 
-  if (state.delete_time != 0)
-    key.timestamp = ++state.delete_time;
+  if (state.delete_version_time) {
+    key.flag = FLAG_DELETE_CELL_VERSION;
+    key.timestamp = state.delete_version_time;
+  }
+  else if (state.delete_time) {
+    key.flag = FLAG_DELETE_CELL;
+    key.timestamp = state.delete_time;
+  }
   else
     key.timestamp = AUTO_ASSIGN;
 
   if (state.delete_all_columns) {
     try {
+      key.flag = FLAG_DELETE_ROW;
       mutator->set_delete(key);
     }
     catch (Exception &e) {
@@ -767,10 +778,13 @@ cmd_delete(NamespacePtr &ns, ParserState &state, HqlInterpreter::Callback &cb) {
         *column_qualifier++ = 0;
         key.column_qualifier = column_qualifier;
         key.column_qualifier_len = strlen(column_qualifier);
+        if (key.flag != FLAG_DELETE_CELL_VERSION)
+          key.flag = FLAG_DELETE_CELL;
       }
       else {
         key.column_qualifier = 0;
         key.column_qualifier_len = 0;
+        key.flag = FLAG_DELETE_COLUMN_FAMILY;
       }
       try {
         mutator->set_delete(key);

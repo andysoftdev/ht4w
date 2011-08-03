@@ -47,6 +47,7 @@
 #include "OperationRelinquishAcknowledge.h"
 #include "OperationRenameTable.h"
 #include "OperationStatus.h"
+#include "OperationLoadBalancer.h"
 #include "RangeServerConnection.h"
 
 
@@ -126,7 +127,14 @@ void ConnectionHandler::handle(EventPtr &event) {
         operation = new OperationRelinquishAcknowledge(m_context, event);
         break;
       case MasterProtocol::COMMAND_BALANCE:
-        operation = new OperationBalance(m_context, event);
+        {
+          OperationBalancePtr operation_balance = new OperationBalance(m_context, event);
+          String algorithm = operation_balance->get_algorithm();
+          if (algorithm.size() != 0)
+            operation = new OperationLoadBalancer(m_context, algorithm);
+          else
+            operation = operation_balance;
+        }
         break;
       case MasterProtocol::COMMAND_SHUTDOWN:
         HT_INFO("Received shutdown command");
@@ -165,7 +173,7 @@ void ConnectionHandler::handle(EventPtr &event) {
       }
       else {
         ResponseCallback cb(m_context->comm, event);
-        cb.error(Error::PROTOCOL_ERROR, 
+        cb.error(Error::PROTOCOL_ERROR,
                  format("Unimplemented command (%llu)", (Llu)event->header.command));
       }
     }
@@ -205,6 +213,8 @@ void ConnectionHandler::handle(EventPtr &event) {
         m_context->op->add_operation(operation);
         m_context->next_gc_time = now + (m_context->gc_interval/1000) - 1;
       }
+      operation = new OperationLoadBalancer(m_context);
+      m_context->op->add_operation(operation);
     }
     catch (Exception &e) {
       if (e.code() == Error::MASTER_OPERATION_IN_PROGRESS)

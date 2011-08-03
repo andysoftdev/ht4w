@@ -339,12 +339,18 @@ void generate_update_load(PropertiesPtr &props, String &tablename, bool flush,
     for (DataGenerator::iterator iter = dg.begin(); iter != dg.end(); total_bytes+=iter.last_data_size(),++iter) {
       if (delete_pct != 0 && (::random() % 100) < delete_pct) {
         KeySpec key;
+        key.flag = FLAG_DELETE_ROW;
         key.row = (*iter).row_key;
         key.row_len = strlen((const char *)key.row);
         key.column_family = (*iter).column_family;
+        if (key.column_family != 0)
+          key.flag = FLAG_DELETE_COLUMN_FAMILY;
         key.column_qualifier = (*iter).column_qualifier;
-        if (key.column_qualifier != 0)
+        if (key.column_qualifier != 0) {
           key.column_qualifier_len = strlen(key.column_qualifier);
+          if (key.column_qualifier_len != 0)
+            key.flag = FLAG_DELETE_CELL;
+        }
         key.timestamp = (*iter).timestamp;
         key.revision = (*iter).revision;
         if (flush)

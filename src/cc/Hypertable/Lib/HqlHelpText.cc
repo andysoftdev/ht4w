@@ -60,11 +60,13 @@ namespace {
 
   const char *help_text_rsclient_contents[] = {
     "",
+    "COMPACT ............... Schedules range compactions",
     "CREATE SCANNER ........ Creates a scanner and displays first block of results",
     "DESTROY SCANNER ....... Destroys a scanner",
     "DROP RANGE ............ Drop a range",
     "FETCH SCANBLOCK ....... Fetch the next block results of a scan",
     "LOAD RANGE ............ Load a range",
+    "METADATA SYNC ......... Sync METADATA table with RSML data",
     "REPLAY START .......... Start replay",
     "REPLAY LOG ............ Replay a commit log",
     "REPLAY COMMIT ......... Commit replay",
@@ -89,6 +91,61 @@ namespace {
     "",
     0
   };
+
+  const char *help_text_compact[] = {
+    "",
+    "COMPACT TABLE table_name",
+    "COMPACT RANGES range_type ['|' range_type ...]",
+    "",
+    "range_type:",
+    "    ALL",
+    "    | ROOT",
+    "    | METADATA",
+    "    | SYSTEM",
+    "    | USER",
+    "",
+    "This command schedules a major compaction for each range specified",
+    "in the command.  The TABLE version of the command will schedule",
+    "a major compaction for each range in the given table.  The RANGES",
+    "version of the command will schedule compactions for all the ranges",
+    "of the given type(s), regardless of what table they belong to.",
+    "",
+    "NOTE:  Compactions scheduled by this command are spread out over time.",
+    "During each maintenance interval, which by default happens once every",
+    "60 seconds, a limited number of these compactions will get scheduled",
+    "as controlled by the following property:",
+    "",
+    "  Hypertable.RangeServer.Maintenance.MoveCompactionsPerInterval",
+    "",
+    "The default value for this property is 2.",
+    "",
+    0
+  };
+
+  const char *help_text_metadata_sync[] = {
+    "",
+    "METADATA SYNC TABLE table_name [options_spec]",
+    "METADATA SYNC RANGES range_type ['|' range_type ...] [options_spec]",
+    "",
+    "range_type:",
+    "    ALL",
+    "    | ROOT",
+    "    | METADATA",
+    "    | SYSTEM",
+    "    | USER",
+    "",
+    "options_spec:",
+    "    COLUMNS=<columns>",
+    "",
+    "This command re-writes columns of the METADATA table, for a set of",
+    "ranges, using data from the RSML.  The TABLE version of the command",
+    "re-writes METADATA for the ranges in the given table.  The RANGES",
+    "version of the command re-writes METADATA for all ranges of the",
+    "given type(s), regardless of what table they belong to.",
+    "",
+    0
+  };
+
 
   const char *help_text_create_scanner[] = {
     "",
@@ -1387,7 +1444,7 @@ namespace {
     "    DELETE ('*' | column [',' column ...])",
     "      FROM table_name",
     "      WHERE ROW '=' row_key",
-    "      [TIMESTAMP timestamp]",
+    "      [(TIMESTAMP timestamp | VERSION timestamp)]",
     "",
     "    column:",
     "      column_family [':' column_qualifier]",
@@ -1407,17 +1464,27 @@ namespace {
     "shown below.  Assume that we're starting with a table that contains the",
     "following:",
     "",
-    "  hypertable> SELECT * FROM crawldb;",
-    "  org.hypertable.www      status-code     200",
-    "  org.hypertable.www      status-code     200",
-    "  org.hypertable.www      anchor:http://www.news.com/     Hypertable",
-    "  org.hypertable.www      anchor:http://www.news.com/     Hypertable",
-    "  org.hypertable.www      anchor:http://www.opensource.org/       Hypertable.org",
-    "  org.hypertable.www      anchor:http://www.opensource.org/       Hypertable.org",
-    "  org.hypertable.www      checksum        822828699",
-    "  org.hypertable.www      checksum        2921728",
+    "  hypertable> SELECT * FROM crawldb DISPLAY_TIMESTAMPS;",
+    "2010-01-01 00:00:02.00000000    org.hypertable.www      status-code     200",
+    "2010-01-01 00:00:01.00000000    org.hypertable.www      status-code     200",
+    "2010-01-01 00:00:04.00000000    org.hypertable.www      anchor:http://www.news.com/     Hypertable",
+    "2010-01-01 00:00:03.00000000    org.hypertable.www      anchor:http://www.news.com/     Hypertable",
+    "2010-01-01 00:00:06.00000000    org.hypertable.www      anchor:http://www.opensource.org/       Hypertable.org",
+    "2010-01-01 00:00:05.00000000    org.hypertable.www      anchor:http://www.opensource.org/       Hypertable.org",
+    "2010-01-01 00:00:08.00000000    org.hypertable.www      checksum        822828699",
+    "2010-01-01 00:00:07.00000000    org.hypertable.www      checksum        2921728",
     "",
-    "The first example shows how to delete the cells in the column",
+    "The first example shows how to delete one specific version of a cells in the column",
+    "anchor:http://www.opensource.org/ of the row \"org.hypertable.www\".",
+    "",
+    "  hypertable> DELETE \"anchor:http://www.opensource.org/\" FROM crawldb WHERE",
+    "  ROW='org.hypertable.www' VERSION \"2010-01-01 00:00:06\";",
+    "  hypertable> select \"anchor\" from crawldb DISPLAY_TIMESTAMPS;",
+    "  2010-01-01 00:00:04.00000000    org.hypertable.www      anchor:http://www.news.com/     Hypertable",
+    "  2010-01-01 00:00:03.00000000    org.hypertable.www      anchor:http://www.news.com/     Hypertable",
+    "  2010-01-01 00:00:05.00000000    org.hypertable.www      anchor:http://www.opensource.org/       Hypertable.org",
+    "",
+    "This example shows how to delete the cells in the column",
     "anchor:http://www.opensource.org/ of the row \"org.hypertable.www\".",
     "",
     "  hypertable> DELETE \"anchor:http://www.opensource.org/\" FROM crawldb WHERE",
@@ -1442,7 +1509,7 @@ namespace {
     "  org.hypertable.www      anchor:http://www.news.com/     Hypertable",
     "  org.hypertable.www      anchor:http://www.news.com/     Hypertable",
     "",
-    "And finally, here's how to delete all of the cells in the row",
+    "Here's how to delete all of the cells in the row",
     "\"org.hypertable.www\".",
     "",
     "  hypertable> DELETE * FROM crawldb WHERE ROW=\"org.hypertable.www\";",
@@ -1721,6 +1788,9 @@ const char **HqlHelpText::get(const String &subject) {
 void HqlHelpText::install_range_server_client_text() {
   text_map.clear();
   text_map[""] = help_text_rsclient_contents;
+  text_map["compact"] = help_text_compact;
+  text_map["compact table"] = help_text_compact;
+  text_map["compact ranges"] = help_text_compact;
   text_map["contents"] = help_text_rsclient_contents;
   text_map["select"] = help_text_select;
   text_map["create"] = help_text_create_scanner;
@@ -1732,6 +1802,8 @@ void HqlHelpText::install_range_server_client_text() {
   text_map["fetch scanblock"] = help_text_fetch_scanblock;
   text_map["load"] = help_text_load_range;
   text_map["load range"] = help_text_load_range;
+  text_map["metadata"] = help_text_metadata_sync;
+  text_map["metadata sync"] = help_text_metadata_sync;
   text_map["update"] = help_text_update;
   text_map["replay start"] = help_text_replay_start;
   text_map["replay log"] = help_text_replay_log;

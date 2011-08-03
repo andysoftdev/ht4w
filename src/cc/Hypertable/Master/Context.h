@@ -22,6 +22,8 @@
 #ifndef HYPERTABLE_CONTEXT_H
 #define HYPERTABLE_CONTEXT_H
 
+#include <set>
+
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
@@ -82,6 +84,7 @@ namespace Hypertable {
     MonitoringPtr monitoring;
     ResponseManager *response_manager;
     TablePtr metadata_table;
+    TablePtr rs_metrics_table;
     uint64_t range_split_size;
     time_t request_timeout;
     uint32_t timer_interval;
@@ -93,6 +96,7 @@ namespace Hypertable {
     bool test_mode;
     OperationProcessor *op;
     std::set<int64_t> in_progress_ops;
+    std::set<int64_t> unacknowledged_moves;
     String location_hash;
 
     void add_server(RangeServerConnectionPtr &rsc);
@@ -114,6 +118,9 @@ namespace Hypertable {
     bool add_in_progress(Operation *operation);
     void remove_in_progress(Operation *operation);
     void clear_in_progress();
+    void add_unacknowledged_move(int64_t hash);
+    bool exists_unacknowledged_move(int64_t hash);
+    void acknowledge_move(int64_t hash);
 
   private:
 
@@ -155,7 +162,7 @@ namespace Hypertable {
     typedef ServerList::nth_index<2>::type HostnameIndex;
     typedef ServerList::nth_index<3>::type PublicAddrIndex;
     typedef ServerList::nth_index<4>::type LocalAddrIndex;
-    
+
     ServerList m_server_list;
     ServerList::iterator m_server_list_iter;
   };

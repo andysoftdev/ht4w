@@ -536,12 +536,12 @@ void AccessGroup::run_compaction(int maintenance_flags) {
       HT_INFOF("Starting InMemory Compaction of %s(%s)",
                m_range_name.c_str(), m_name.c_str());
     }
-    else if (MaintenanceFlag::major_compaction(maintenance_flags)) {
-      HT_INFOF("Trying MAJOR compaction for %s(%s)",
-               m_range_name.c_str(), m_name.c_str());
+    else if (MaintenanceFlag::major_compaction(maintenance_flags) ||
+             MaintenanceFlag::move_compaction(maintenance_flags)) {
       if ((!m_immutable_cache || m_immutable_cache->empty()) &&
           m_stores.size() <= (size_t)1 &&
-          !MaintenanceFlag::split(maintenance_flags))
+          (!MaintenanceFlag::split(maintenance_flags) &&
+           !MaintenanceFlag::move_compaction(maintenance_flags)))
         break;
       major = true;
       HT_INFOF("Starting Major Compaction of %s(%s)",
@@ -748,7 +748,7 @@ void AccessGroup::run_compaction(int maintenance_flags) {
          */
         if (cellstore->get_total_entries() > 0) {
           m_stores.push_back( CellStoreInfo(cellstore, shadow_cache, m_earliest_cached_revision_saved) );
-          check_for_needs_merging();
+          m_needs_merging = needs_merging();
           m_garbage_tracker.accumulate_expirable( m_stores.back().expirable_data );
           added_file = cellstore->get_filename();
         }
@@ -1053,9 +1053,16 @@ bool AccessGroup::find_merge_run(size_t *indexp, size_t *lenp) {
     running_total += m_stores[i].cs->disk_usage();
 
     if (running_total >= Global::cellstore_target_size_max) {
-      index = i;
-      count = 1;
-      running_total = m_stores[i].cs->disk_usage();
+      if (count > (size_t)Global::merge_cellstore_run_length_threshold) {
+        if (indexp)
+          *indexp = index;
+        if (lenp)
+           *lenp = count-1;
+        return true;
+      }
+      index = i+1;
+      count = 0;
+      running_total = 0;
     }
     else if (running_total >= Global::cellstore_target_size_min &&
              count > 1) {
@@ -1068,33 +1075,70 @@ bool AccessGroup::find_merge_run(size_t *indexp, size_t *lenp) {
     i++;
   } while (i < m_stores.size());
 
+  if (count > (size_t)Global::merge_cellstore_run_length_threshold) {
+    if (indexp)
+      *indexp = index;
+    if (lenp)
+      *lenp = count;
+    return true;
+  }
+
   return false;
 }
 
 
-void AccessGroup::check_for_needs_merging() {
+bool AccessGroup::needs_merging() {
   size_t count = 0;
+  int i = 0;
   int64_t running_total = 0;
 
-  if (m_in_memory || m_needs_merging == true)
-    return;
-  
-  for (int i = m_stores.size()-1; i>=0; i--) {
+  if (m_in_memory || m_stores.size() == 0)
+    return false;
+
+  for (i = m_stores.size()-1; i>=0; i--) {
     count++;
     running_total += m_stores[i].cs->disk_usage();
     if (running_total >= Global::cellstore_target_size_max)
-      return;
-    else if (running_total >= Global::cellstore_target_size_min &&
-             (m_stores.size() - (size_t)i) > 1) {
-      m_needs_merging = true;
       break;
-    }
+    else if (running_total >= Global::cellstore_target_size_min &&
+             (m_stores.size() - i) > 1)
+      return true;
   }
+
+  if (i < 0 && count > (size_t)Global::merge_cellstore_run_length_threshold)
+    return true;
+
+  /** Search from the beginning **/
+
+  i = 0;
+  count = 0;
+  running_total = 0;
+  do {
+    count++;
+    running_total += m_stores[i].cs->disk_usage();
+
+    if (running_total >= Global::cellstore_target_size_max) {
+      if (count > (size_t)Global::merge_cellstore_run_length_threshold)
+        return true;
+      count = 0;
+      running_total = 0;
+    }
+    else if (running_total >= Global::cellstore_target_size_min &&
+             count > 1) {
+      return true;
+    }
+    i++;
+  } while (i < (int)m_stores.size());
+
+  if (count > (size_t)Global::merge_cellstore_run_length_threshold)
+    return true;
+
+  return false;
 }
 
 namespace {
   struct LtCellStoreInfoTimestamp {
-    bool operator()(const AccessGroup::CellStoreInfo &x, const AccessGroup::CellStoreInfo &y) const {
+    bool operator()(const CellStoreInfo &x, const CellStoreInfo &y) const {
       return x.timestamp_min < y.timestamp_min;
     }
   };
