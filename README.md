@@ -34,7 +34,7 @@ Building Hypertable for Windows from source requires Microsoft Visual Studio 201
 
 * Download the latest berkeley db from [Oracle](http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html).
 
-* Unpack the package content (*e.g.* below db-5.1.25\\) into ht4w\\deps\\db\\ and run:
+* Unpack the package content (*e.g.* below db-5.2.28\\) into ht4w\\deps\\db\\ and run:
 
 		cd ht4w\deps\db
 		cscript libdb.js
