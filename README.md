@@ -1,16 +1,15 @@
 HOW TO BUILD HYPERTABLE FOR WINDOWS
 ===================================
 
-Building Hypertable for Windows from source requires Microsoft Visual Studio 2010 Professional or better.
+Building Hypertable for Windows from source requires at least Microsoft Visual Studio 2010 Professional.
 
-###Browse or get the source###
+###Browse through or download the ht4w source###
 
-* Browse or download the source at [github](http://github.com/andysoftdev/ht4w).
-  Download the latest sources by pressing the Downloads button and choosing
-  Download.tar.gz or Download.zip.
+* Browse through or download the ht4w source from [github](http://github.com/andysoftdev/ht4w).
+  To download the latest sources press the 'Downloads' button and choose one of the following files, either the
+  Download.tar.gz or the Download.zip.
   
-* Or get the source from the repository, create a projects folder (the path must not
-  contain any spaces) and use:
+* Alternatively, get the source from the repository, create a projects folder (the path must not contain any spaces) and use:
 
 		mkdir hypertable
 		cd hypertable
@@ -19,36 +18,34 @@ Building Hypertable for Windows from source requires Microsoft Visual Studio 201
 
 ###Download and install boost###
 
-* Download the latest boost version from [boost](http://www.boost.org/users/download/)
-  or [sourceforge](http://sourceforge.net/projects/boost/files/boost/).
+* Download the latest boost version either from [boost](http://www.boost.org/users/download/)
+  or from [sourceforge](http://sourceforge.net/projects/boost/files/boost/).
 
-* Unpack the package content (*e.g.* below boost\_1\_44\_0\\) into ht4w\\deps\\boost\\ and run:
+* Unpack the content of the package (i.e. the content of the root folder, e.g. of the boost_1_44_0\) into ht4w\deps\boost\ and run:
 
 		cd ht4w\deps\boost
 		build-win32.bat
 		build-x64.bat
-  After successful build the intermediate files located in ht4w\\build\\deps\\boost could be deleted.
+  When the build is successfully completed the intermediate files located in ht4w\build\deps\boost can be deleted.
 
 
-###Download and install berkeley db###
+###Download and install Berkeley DB###
 
-* Download the latest berkeley db from [Oracle](http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html).
+* Download the latest Berkeley DB from [Oracle](http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html).
 
-* Unpack the package content (*e.g.* below db-5.2.28\\) into ht4w\\deps\\db\\ and run:
+* Unpack the content of the package (i.e. the content of the root folder, e.g. of the db-5.2.28\) into ht4w\deps\db\ and run:
 
 		cd ht4w\deps\db
 		cscript libdb.js
-  libdb will be built within the regular ht4w solution or msbuild script.
 
 
 ###Build Hypertable servers, clients and tools###
 
-* Open the ht4w solution (ht4w\\ht4w.sln) with Microsoft Visual Studio 2010 and build the solution configuration(s) or
-  run Visual Studio Command Prompt and run:
+* Open the ht4w solution (ht4w\ht4w.sln) with Microsoft Visual Studio 2010 and build its configurations. Alternatively, open the Visual Studio command prompt and type:
 
 		cd ht4w
 		msbuild ht4w.buildproj
-  or for a complete rebuild
+  or, for a complete rebuild, type
 
 		cd ht4w
 		msbuild ht4w.buildproj /t:Clean;Make
@@ -57,22 +54,19 @@ Building Hypertable for Windows from source requires Microsoft Visual Studio 201
 MANAGE HYPERTABLE SERVERS
 =========================
 
-Use Hypertable.Service.exe (ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage Hypertable servers. For a complete list
-of available options and configuration settings run:
+Use Hypertable.Service.exe (ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage the Hypertable servers. For a complete list
+of all available options and configuration settings run:
 
 		Hypertable.Service.exe [--help|--help-config]
 
 Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) from ht4w\\conf to ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]\\conf.
 
-Using the default configuration the database data root directory (Hypertable.DataDirectory configuration parameter) will be ProgrammData\\Hypertable
-or All Users\\Application Data\\Hypertable
 
-
-###Run Hypertable servers as Windows service###
+###Run Hypertable servers as a Windows service###
 
 Hypertable.Service.exe will ask for elevation if running on Windows Vista or Windows 7 with UAC enabled:
 
-* Install Hypertable service (the additional arguments will be passed to the servers on service startup):
+* Install Hypertable as a Windows service (the additional arguments will be passed to the Hypertable servers on service startup):
 
 		Hypertable.Service --install-service [--service-name] [additional arguments]
 
@@ -91,7 +85,7 @@ Hypertable.Service.exe will ask for elevation if running on Windows Vista or Win
 
 ###Run Hypertable servers in foreground###
 
-The servers will run under the logged on windows account.
+The servers will run under the logged-on user account.
 
 * Start servers in command shell (use ctrl+c to stop the servers):
 
@@ -126,6 +120,6 @@ The servers will run under the logged on windows account.
 REDISTRIBUTE HYPERTABLE FOR WINDOWS
 ===================================
 
-* Install the Microsoft Visual C++ 2010 Redistributable Package [x86|x64] on the target machine.
+* Install the Microsoft Visual C++ 2010 redistributable package [x86|x64] on the target machine.
 
 * Install the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) to [hypertable install directory]\\conf.
