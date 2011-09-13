@@ -48,6 +48,7 @@ void FutureCallback::register_scanner(TableScannerAsync *scanner) {
   m_scanner_set.insert(scanner);
   if (m_scanners_owned.insert(scanner).second)
     intrusive_ptr_add_ref(scanner);
+  m_cancelled = false;
 }
 
 void FutureCallback::deregister_scanner(TableScannerAsync *scanner) {
@@ -60,6 +61,7 @@ void FutureCallback::deregister_scanner(TableScannerAsync *scanner) {
 void FutureCallback::register_mutator(TableMutatorAsync *mutator) {
   ScopedRecLock lock(m_outstanding_mutex);
   m_mutator_set.insert(mutator);
+  m_cancelled = false;
 }
 
 void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
