@@ -79,7 +79,7 @@
     cout << hires_ts <<" API "<< __func__ <<": result: "; \
   if (Logger::logger->isDebugEnabled()) \
     cout << _res_; \
-  else { \
+  else if (m_log_api) { \
     if (_res_.__isset.results) \
       cout <<"results.size=" << _res_.results.size(); \
     if (_res_.__isset.cells) \
@@ -1577,7 +1577,10 @@ public:
   void _set_cells_async(const MutatorAsync mutator, const vector<CellT> &cells) {
     Hypertable::Cells hcells;
     convert_cells(cells, hcells);
-    get_mutator_async(mutator)->set_cells(hcells);
+    TableMutatorAsyncPtr mutator_async = get_mutator_async(mutator);
+    if (mutator_async->needs_flush())
+      mutator_async->flush();
+    mutator_async->set_cells(hcells);
   }
 
   template <class CellT>
@@ -1586,10 +1589,13 @@ public:
     Hypertable::Cell hcell;
     convert_cell(cell, hcell);
     cb.add(hcell, false);
-    get_mutator_async(mutator)->set_cells(cb.get());
+    TableMutatorAsyncPtr mutator_async = get_mutator_async(mutator);
+    if (mutator_async->needs_flush())
+      mutator_async->flush();
+    mutator_async->set_cells(cb.get());
   }
 
-  FuturePtr& get_future(::int64_t id) {
+  FuturePtr get_future(::int64_t id) {
     ScopedLock lock(m_future_mutex);
     FutureMap::iterator it = m_future_map.find(id);
 
@@ -1603,7 +1609,7 @@ public:
   }
 
 
-  NamespacePtr& get_namespace(::int64_t id) {
+  NamespacePtr get_namespace(::int64_t id) {
     ScopedLock lock(m_namespace_mutex);
     NamespaceMap::iterator it = m_namespace_map.find(id);
 
