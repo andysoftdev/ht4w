@@ -102,6 +102,10 @@ struct BasicTest : HqlServiceIf {
     client->close_scanner(scanner);
   }
 
+  void cancel_scanner_async(const ScannerAsync scanner_async) {
+    client->cancel_scanner_async(scanner_async);
+  }
+
   void close_scanner_async(const ScannerAsync scanner_async) {
     client->close_scanner_async(scanner_async);
   }
@@ -216,13 +220,17 @@ struct BasicTest : HqlServiceIf {
     return client->open_mutator(ns, table, flags, flush_interval);
   }
 
-  void close_mutator(const Mutator mutator, const bool flush) {
-    client->close_mutator(mutator, flush);
+  void close_mutator(const Mutator mutator) {
+    client->close_mutator(mutator);
   }
 
   MutatorAsync open_mutator_async(const Namespace ns, const std::string& table,
                                   Future ff, int32_t flags) {
     return client->open_mutator_async(ns, table, ff, flags);
+  }
+
+  void cancel_mutator_async(const MutatorAsync mutator) {
+    client->cancel_mutator_async(mutator);
   }
 
   void close_mutator_async(const MutatorAsync mutator) {
@@ -360,13 +368,21 @@ struct BasicTest : HqlServiceIf {
   void run() {
     try {
       std::ostream &out = std::cout;
+      out << "running test_hql" << std::endl;
       test_hql(out);
+      out << "running test_schema" << std::endl;
       test_schema(out);
+      out << "running test_scan" << std::endl;
       test_scan(out);
+      out << "running test_set" << std::endl;
       test_set();
+      out << "running test_put" << std::endl;
       test_put();
+      out << "running test_scan" << std::endl;
       test_scan(out);
+      out << "running test_async" << std::endl;
       test_async(out);
+      out << "running test_rename_alter" << std::endl;
       test_rename_alter(out);
     }
     catch (ClientException &e) {
@@ -379,6 +395,8 @@ struct BasicTest : HqlServiceIf {
     out << "Rename and alter" << std::endl;
     Namespace ns = open_namespace("test");
     HqlResult result;
+    hql_query(result, ns, "drop table if exists foo");
+    hql_query(result, ns, "drop table if exists foo_renamed");
     hql_query(result, ns, "create table foo('bar')");
     rename_table(ns, "foo", "foo_renamed");
     String str = (String)"<Schema generation=\"2\">" +
@@ -470,7 +488,7 @@ struct BasicTest : HqlServiceIf {
     cells.push_back(make_cell("k3", "col", 0, "", "2008-11-11 22:22:22", 0,
                               ThriftGen::KeyFlag::DELETE_ROW));
     set_cells(m, cells);
-    close_mutator(m, true);
+    close_mutator(m);
     close_namespace(ns);
   }
 
@@ -520,6 +538,9 @@ struct BasicTest : HqlServiceIf {
     int num_expected_results = 6;
     int num_results = 0;
     HqlResult hql_result;
+    hql_query(hql_result, ns, "drop table if exists FruitColor");
+    hql_query(hql_result, ns, "drop table if exists FruitLocation");
+    hql_query(hql_result, ns, "drop table if exists FruitEnergy");
     hql_query(hql_result, ns, "create table FruitColor(data)");
     hql_query(hql_result, ns, "create table FruitLocation(data)");
     hql_query(hql_result, ns, "create table FruitEnergy(data)");

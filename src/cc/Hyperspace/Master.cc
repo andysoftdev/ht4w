@@ -368,7 +368,7 @@ void Master::initialize_session(uint64_t session_id, const String &name) {
     txn.commit(0);
     session_data->set_name(name);
   }
-  HT_BDBTXN_END();
+  HT_BDBTXN_END(BOOST_PP_EMPTY());
 
   HT_INFOF("Initialized session %llu (%s)", (Llu)session_id, name.c_str());
 }
@@ -500,7 +500,7 @@ void Master::remove_expired_sessions() {
       commited = true;
       expired_sessions.push_back(session_data->get_id());
     }
-    HT_BDBTXN_END();
+    HT_BDBTXN_END(BOOST_PP_EMPTY());
     // keep this outside the BDB txn since
     if (commited)
       session_data->expire();
@@ -523,7 +523,7 @@ void Master::remove_expired_sessions() {
       }
       txn.commit(0);
     }
-    HT_BDBTXN_END();
+    HT_BDBTXN_END(BOOST_PP_EMPTY());
   }
 }
 
@@ -552,12 +552,14 @@ Master::mkdir(ResponseCallback *cb, uint64_t session_id, const char *name) {
     HT_INFOF("mkdir(session_id=%llu, name=%s)", (Llu)session_id, name);
   }
 
-  if (!find_parent_node(name, parent_node, child_name)) {
+  if (!find_parent_node(name, parent_node, child_name) || strlen(name)==0) {
     cb->error(Error::HYPERSPACE_FILE_EXISTS, "directory '/' exists");
     return;
   }
 
-  HT_ASSERT(name[0] == '/' && name[strlen(name)-1] != '/');
+  if (name[0] != '/' || name[strlen(name)-1] == '/') {
+    cb->error(Error::HYPERSPACE_BAD_PATHNAME, (String)"directory '" + name + "' bad");
+  }
 
   HT_BDBTXN_BEGIN() {
     // make sure parent node data is setup
@@ -2399,7 +2401,7 @@ void Master::get_generation_number() {
                             m_generation);
     txn.commit(0);
   }
-  HT_BDBTXN_END();
+  HT_BDBTXN_END(BOOST_PP_EMPTY());
 }
 
 /**

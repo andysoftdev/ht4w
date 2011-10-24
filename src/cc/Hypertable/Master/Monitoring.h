@@ -94,6 +94,8 @@ namespace Hypertable {
       double net_rx_rate;
       double net_tx_rate;
       double load_average;
+      double cpu_user;
+      double cpu_sys;
     };
 
     struct table_rrd_data {
@@ -134,6 +136,7 @@ namespace Hypertable {
     void create_rangeserver_rrd(const String &filename);
     void update_rangeserver_rrd(const String &filename, struct rangeserver_rrd_data &rrd_data);
     void dump_rangeserver_summary_json(std::vector<RangeServerStatistics> &stats);
+    void dump_master_summary_json();
 
     void create_table_rrd(const String &filename);
     void update_table_rrd(const String &filename, struct table_rrd_data &rrd_data);
@@ -156,6 +159,8 @@ namespace Hypertable {
     String m_monitoring_rs_dir;
     int32_t m_monitoring_interval;
     int32_t m_allowable_skew;
+    int32_t m_last_server_count;
+    unsigned char m_last_server_set_digest[16];
     uint64_t table_stats_timestamp;
     NameIdMapperPtr m_namemap_ptr;
   };

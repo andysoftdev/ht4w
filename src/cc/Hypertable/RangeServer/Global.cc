@@ -31,6 +31,7 @@ using namespace Hyperspace;
 
 namespace Hypertable {
 
+  Mutex                  Global::mutex;
   SessionPtr             Global::hyperspace = 0;
   FilesystemPtr          Global::dfs;
   FilesystemPtr          Global::log_dfs;
@@ -68,4 +69,5 @@ namespace Hypertable {
   std::string            Global::toplevel_dir;
   int32_t                Global::metrics_interval = 0;
   int32_t                Global::merge_cellstore_run_length_threshold = 0;
+  bool                   Global::ignore_clock_skew_errors = false;
 }

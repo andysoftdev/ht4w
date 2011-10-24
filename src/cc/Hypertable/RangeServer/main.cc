@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
   ServerLaunchEvent server_launch_event;
   #endif
 
-  ReactorRunner::record_arrival_clocks = true;
+  ReactorRunner::record_arrival_time = true;
 
   try {
     init_with_policies<Policies>(argc, argv);

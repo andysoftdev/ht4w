@@ -22,11 +22,14 @@
 #define HYPERTABLE_FDUTILS_H
 
 extern "C" {
+#include <dirent.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 }
 
 #include "Common/String.h"
+
+#include <vector>
 
 namespace Hypertable {
 
@@ -65,6 +68,10 @@ namespace Hypertable {
 
     static char *file_to_buffer(const String &fname, size_t *lenp);
     static String file_to_string(const String &fname);
+
+#ifndef _WIN32
+    static void *mmap(const String &fname, off_t *lenp);
+#endif
     static bool mkdirs(const String &dirname);
     static bool exists(const String &fname);
     static bool unlink(const String &fname);
@@ -73,6 +80,12 @@ namespace Hypertable {
     static off_t length(const String &fname);
     static void add_trailing_slash(String &path);
     static bool expand_tilde(String &fname);
+
+#ifndef _WIN32
+    static void readdir(const String &dirname, const String &fname_regex,
+			std::vector<struct dirent> &listing);
+#endif
+
 #ifdef HT_XATTR_ENABLED
     static int
     getxattr(const String &path, const String &name, void *value, size_t size);

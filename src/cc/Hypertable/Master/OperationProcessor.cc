@@ -30,13 +30,15 @@
 #include "OperationInitialize.h"
 #include "OperationProcessor.h"
 
+#include "RemovalManager.h"
+
 using namespace Hypertable;
 using namespace boost;
 
 
 OperationProcessor::ThreadContext::ThreadContext(ContextPtr &mctx)
-  : master_context(mctx), busy_count(0), need_order_recompute(false),
-    shutdown(false), paused(false) {
+  : master_context(mctx), current_blocked(0), busy_count(0),
+    need_order_recompute(false), shutdown(false), paused(false) {
   current_iter = current.end();
   execution_order_iter = execution_order.end();
 }
@@ -60,14 +62,16 @@ void OperationProcessor::add_operation(OperationPtr &operation) {
 
   //HT_INFOF("Adding operation %s", operation->label().c_str());
 
-  if (operation->is_complete() && !operation->is_perpetual())
-    m_context.master_context->response_manager->add_operation(operation);
-  else {
+  if (!operation->is_complete() || operation->is_perpetual()) {
     add_operation_internal(operation);
     m_context.need_order_recompute = true;
     m_context.current_iter = m_context.current.end();
     m_context.cond.notify_all();
   }
+  else if (operation->remove_explicitly())
+    m_context.master_context->removal_manager->approve_removal(operation);
+  else
+    m_context.master_context->response_manager->add_operation(operation);
 
 }
 
@@ -76,11 +80,15 @@ void OperationProcessor::add_operations(std::vector<OperationPtr> &operations) {
   bool added = false;
 
   for (size_t i=0; i<operations.size(); i++) {
+
     //HT_INFOF("Adding operation %s", operations[i]->label().c_str());
-    if (!operations[i]->is_complete()) {
+
+    if (!operations[i]->is_complete() || operations[i]->is_perpetual()) {
       add_operation_internal(operations[i]);
       added = true;
     }
+    else if (operations[i]->remove_explicitly())
+      m_context.master_context->removal_manager->approve_removal(operations[i]);
     else
       m_context.master_context->response_manager->add_operation(operations[i]);
   }
@@ -164,12 +172,29 @@ void OperationProcessor::wake_up() {
 void OperationProcessor::unblock(const String &name) {
   ScopedLock lock(m_context.mutex);
   std::pair<DependencyIndex::iterator, DependencyIndex::iterator> bound;
+  bool unblocked_something = false;
 
   for (bound = m_context.obstruction_index.equal_range(name);
        bound.first != bound.second; ++bound.first)
-    m_context.ops[bound.first->second]->unblock();
-  m_context.need_order_recompute = true;
-  m_context.cond.notify_all();
+    if (m_context.ops[bound.first->second]->unblock())
+      unblocked_something = true;
+
+  for (bound = m_context.exclusivity_index.equal_range(name);
+       bound.first != bound.second; ++bound.first)
+    if (m_context.ops[bound.first->second]->unblock())
+      unblocked_something = true;
+
+  for (bound = m_context.dependency_index.equal_range(name);
+       bound.first != bound.second; ++bound.first)
+    if (m_context.ops[bound.first->second]->unblock())
+      unblocked_something = true;
+
+  if (unblocked_something) {
+    m_context.current_blocked = 0;
+    m_context.need_order_recompute = true;
+    m_context.cond.notify_all();
+  }
+
 }
 
 /**
@@ -225,7 +250,10 @@ void OperationProcessor::Worker::operator()() {
       }
 
       try {
-        operation->execute();
+
+        if (!operation->is_blocked())
+          operation->execute();
+
         {
           ScopedLock lock(m_context.mutex);
           m_context.busy[vertex] = false;
@@ -481,11 +509,16 @@ void OperationProcessor::Worker::retire_operation(Vertex v, OperationPtr &operat
   if (operation->exclusive())
     m_context.exclusive_ops.erase(operation->name());
   //HT_INFOF("Retiring op %p vertex %p", operation.get(), v);
+
   if (operation->is_perpetual())
     m_context.perpetual_ops.insert(operation);
-  else
-    m_context.master_context->response_manager->add_operation(operation);
-  m_context.master_context->remove_in_progress(operation.get());
+  else {
+    if (operation->remove_explicitly())
+      m_context.master_context->removal_manager->approve_removal(operation);
+    else
+      m_context.master_context->response_manager->add_operation(operation);
+  }
+
 }
 
 

@@ -36,6 +36,7 @@ extern "C" {
 #include "Common/FailureInducer.h"
 #include "Common/FileUtils.h"
 #include "Common/md5.h"
+#include "Common/Random.h"
 #include "Common/StringExt.h"
 
 #include "Hypertable/Lib/CommitLog.h"
@@ -43,7 +44,7 @@ extern "C" {
 
 #include "CellStoreFactory.h"
 #include "Global.h"
-#include "MergeScanner.h"
+#include "MergeScannerRange.h"
 #include "MetadataNormal.h"
 #include "MetadataRoot.h"
 #include "Range.h"
@@ -62,7 +63,7 @@ Range::Range(MasterClientPtr &master_client,
     m_schema(schema), m_revision(TIMESTAMP_MIN), m_latest_revision(TIMESTAMP_MIN),
     m_split_off_high(false), m_added_inserts(0), m_range_set(range_set),
     m_error(Error::OK), m_dropped(false), m_capacity_exceeded_throttle(false),
-    m_relinquish(false), m_maintenance_generation(0),
+    m_relinquish(false), m_removed_from_working_set(false), m_maintenance_generation(0),
     m_load_metrics(identifier->id, range->start_row, range->end_row) {
   m_metalog_entity = new MetaLog::EntityRange(*identifier, *range, *state, needs_compaction);
   initialize();
@@ -74,9 +75,9 @@ Range::Range(MasterClientPtr &master_client, SchemaPtr &schema,
     m_updates(0), m_bytes_scanned(0), m_bytes_returned(0), m_bytes_written(0),
     m_disk_bytes_read(0), m_master_client(master_client), m_metalog_entity(range_entity),
     m_schema(schema), m_revision(TIMESTAMP_MIN), m_latest_revision(TIMESTAMP_MIN),
-    m_split_off_high(false), m_added_inserts(0), m_range_set(range_set),
+    m_split_threshold(0), m_split_off_high(false), m_added_inserts(0), m_range_set(range_set),
     m_error(Error::OK), m_dropped(false), m_capacity_exceeded_throttle(false),
-    m_relinquish(false), m_maintenance_generation(0),
+    m_relinquish(false), m_removed_from_working_set(false), m_maintenance_generation(0),
     m_load_metrics(range_entity->table.id, range_entity->spec.start_row, range_entity->spec.end_row) {
   initialize();
 }
@@ -86,8 +87,19 @@ void Range::initialize() {
 
   memset(m_added_deletes, 0, 3*sizeof(int64_t));
 
-  if (m_metalog_entity->state.soft_limit == 0 || m_metalog_entity->state.soft_limit > (uint64_t)Global::range_split_size)
-    m_metalog_entity->state.soft_limit = Global::range_split_size;
+  if (m_metalog_entity->table.is_metadata()) {
+    if (m_metalog_entity->state.soft_limit == 0)
+      m_metalog_entity->state.soft_limit = Global::range_metadata_split_size;
+    m_split_threshold = m_metalog_entity->state.soft_limit;
+  }
+  else {
+    if (m_metalog_entity->state.soft_limit == 0 || m_metalog_entity->state.soft_limit > (uint64_t)Global::range_split_size)
+      m_metalog_entity->state.soft_limit = Global::range_split_size;
+    {
+      ScopedLock lock(Global::mutex);
+      m_split_threshold = m_metalog_entity->state.soft_limit + (Random::number64() % m_metalog_entity->state.soft_limit);
+    }
+  }
 
   /**
    * Determine split side
@@ -359,8 +371,7 @@ void Range::add(const Key &key, const ByteString value) {
 
 
 CellListScanner *Range::create_scanner(ScanContextPtr &scan_ctx) {
-  bool return_deletes = scan_ctx->spec ? scan_ctx->spec->return_deletes : false;
-  MergeScanner *mscanner = new MergeScanner(scan_ctx, return_deletes);
+  MergeScanner *mscanner = new MergeScannerRange(scan_ctx);
   AccessGroupVector  ag_vector(0);
 
   {
@@ -405,14 +416,8 @@ bool Range::need_maintenance() {
     if (mem >= Global::access_group_max_mem)
       needed = true;
   }
-  if (m_metalog_entity->table.is_metadata()) {
-    if (Global::range_metadata_split_size != 0 &&
-        disk_total >= (int64_t)Global::range_metadata_split_size)
-      needed = true;
-  }
-  else if (disk_total >= Global::range_split_size) {
+  if (disk_total >= m_split_threshold)
     needed = true;
-  }
   return needed;
 }
 
@@ -427,7 +432,7 @@ Range::MaintenanceData *Range::get_maintenance_data(ByteArena &arena, time_t now
   MaintenanceData *mdata = (MaintenanceData *)arena.alloc( sizeof(MaintenanceData) );
   AccessGroup::MaintenanceData **tailp = 0;
   AccessGroupVector  ag_vector(0);
-  uint64_t size=0;
+  int64_t size=0;
   int64_t starting_maintenance_generation;
 
   memset(mdata, 0, sizeof(MaintenanceData));
@@ -496,7 +501,10 @@ Range::MaintenanceData *Range::get_maintenance_data(ByteArena &arena, time_t now
   if (tailp)
     (*tailp)->next = 0;
 
-  if (size > (uint64_t)Global::range_maximum_size) {
+  if (size >= m_split_threshold)
+    mdata->needs_split = true;
+
+  if (size > Global::range_maximum_size) {
     ScopedLock lock(m_mutex);
     if (starting_maintenance_generation == m_maintenance_generation)
       m_capacity_exceeded_throttle = true;
@@ -601,7 +609,8 @@ void Range::relinquish_install_log() {
   {
     Barrier::ScopedActivator block_updates(m_update_barrier);
     ScopedLock lock(m_mutex);
-    m_transfer_log = new CommitLog(Global::dfs, m_metalog_entity->state.transfer_log);
+    m_transfer_log = new CommitLog(Global::dfs, m_metalog_entity->state.transfer_log,
+                                   !m_metalog_entity->table.is_user());
     for (size_t i=0; i<ag_vector.size(); i++)
       ag_vector[i]->stage_compaction();
   }
@@ -610,56 +619,61 @@ void Range::relinquish_install_log() {
 
 
 void Range::relinquish_compact_and_finish() {
-  AccessGroupVector ag_vector(0);
 
-  {
-    ScopedLock lock(m_schema_mutex);
-    ag_vector = m_access_group_vector;
-  }
+  if (!m_removed_from_working_set) {
+    AccessGroupVector ag_vector(0);
 
-  if (cancel_maintenance())
-    HT_THROW(Error::CANCELLED, "");
-
-  /**
-   * Perform minor compactions
-   */
-  for (size_t i=0; i<ag_vector.size(); i++)
-    ag_vector[i]->run_compaction(MaintenanceFlag::COMPACT_MINOR);
-
-  // VERIFY
-  // update the latest generation, this should probably be protected
-  {
-    ScopedLock lock(m_schema_mutex);
-    m_metalog_entity->table.generation = m_schema->get_generation();
-  }
-
-  // Record "move" in sys/RS_METRICS
-  if (Global::rs_metrics_table) {
-    TableMutatorPtr mutator = Global::rs_metrics_table->create_mutator();
-    KeySpec key;
-    String row = Global::location_initializer->get() + ":" + m_metalog_entity->table.id;
-    key.row = row.c_str();
-    key.row_len = row.length();
-    key.column_family = "range_move";
-    key.column_qualifier = m_metalog_entity->spec.end_row;
-    key.column_qualifier_len = strlen(m_metalog_entity->spec.end_row);
-    try {
-      mutator->set(key, 0, 0);
-      mutator->flush();
+    {
+      ScopedLock lock(m_schema_mutex);
+      ag_vector = m_access_group_vector;
     }
-    catch (Exception &e) {
-      HT_ERROR_OUT << "Problem updating sys/RS_METRICS - " << e << HT_END;
+
+    if (cancel_maintenance())
+      HT_THROW(Error::CANCELLED, "");
+
+    /**
+     * Perform minor compactions
+     */
+    for (size_t i=0; i<ag_vector.size(); i++)
+      ag_vector[i]->run_compaction(MaintenanceFlag::COMPACT_MINOR);
+
+    // VERIFY
+    // update the latest generation, this should probably be protected
+    {
+      ScopedLock lock(m_schema_mutex);
+      m_metalog_entity->table.generation = m_schema->get_generation();
     }
-  }
 
-  // Remove range from the system
-  {
-    Barrier::ScopedActivator block_updates(m_update_barrier);
-    Barrier::ScopedActivator block_scans(m_scan_barrier);
+    // Record "move" in sys/RS_METRICS
+    if (Global::rs_metrics_table) {
+      TableMutatorPtr mutator = Global::rs_metrics_table->create_mutator();
+      KeySpec key;
+      String row = Global::location_initializer->get() + ":" + m_metalog_entity->table.id;
+      key.row = row.c_str();
+      key.row_len = row.length();
+      key.column_family = "range_move";
+      key.column_qualifier = m_metalog_entity->spec.end_row;
+      key.column_qualifier_len = strlen(m_metalog_entity->spec.end_row);
+      try {
+	mutator->set(key, 0, 0);
+	mutator->flush();
+      }
+      catch (Exception &e) {
+	HT_ERROR_OUT << "Problem updating sys/RS_METRICS - " << e << HT_END;
+      }
+    }
 
-    if (!m_range_set->remove(m_metalog_entity->spec.end_row)) {
-      HT_ERROR_OUT << "Problem removing range " << m_name << HT_END;
-      HT_ABORT;
+    // Remove range from the system
+    {
+      Barrier::ScopedActivator block_updates(m_update_barrier);
+      Barrier::ScopedActivator block_scans(m_scan_barrier);
+
+      if (!m_range_set->remove(m_metalog_entity->spec.start_row,
+            m_metalog_entity->spec.end_row)) {
+        HT_ERROR_OUT << "Problem removing range " << m_name << HT_END;
+        HT_ABORT;
+      }
+      m_removed_from_working_set = true;
     }
   }
 
@@ -698,6 +712,9 @@ void Range::relinquish_compact_and_finish() {
   catch (Exception &e) {
     HT_ERROR_OUT << "Master::relinquish_acknowledge() error - " << e << HT_END;
   }
+
+  // disables any further maintenance
+  m_maintenance_guard.disable();
 
 }
 
@@ -873,7 +890,8 @@ void Range::split_install_log() {
     ScopedLock lock(m_mutex);
     for (size_t i=0; i<ag_vector.size(); i++)
       ag_vector[i]->stage_compaction();
-    m_transfer_log = new CommitLog(Global::dfs, m_metalog_entity->state.transfer_log);
+    m_transfer_log = new CommitLog(Global::dfs, m_metalog_entity->state.transfer_log,
+                                   !m_metalog_entity->table.is_user() );
   }
 
   HT_MAYBE_FAIL("split-1");
@@ -977,8 +995,15 @@ void Range::split_compact_and_shrink() {
 
     // Shrink access groups
     if (m_split_off_high) {
-      if (!m_range_set->change_end_row(m_metalog_entity->spec.end_row, m_metalog_entity->state.split_point)) {
+      if (!m_range_set->change_end_row(m_metalog_entity->spec.start_row, m_metalog_entity->spec.end_row, m_metalog_entity->state.split_point)) {
         HT_ERROR_OUT << "Problem changing end row of range " << m_name
+                     << " to " << m_metalog_entity->state.split_point << HT_END;
+        HT_ABORT;
+      }
+    }
+    else {
+      if (!m_range_set->change_start_row(m_metalog_entity->spec.start_row, m_metalog_entity->state.split_point, m_metalog_entity->spec.end_row)) {
+        HT_ERROR_OUT << "Problem changing start row of range " << m_name
                      << " to " << m_metalog_entity->state.split_point << HT_END;
         HT_ABORT;
       }
@@ -1087,7 +1112,7 @@ void Range::split_notify_master() {
   HT_INFOF("Reporting newly split off range %s[%s..%s] to Master",
            m_metalog_entity->table.id, range.start_row, range.end_row);
 
-  if (soft_limit < Global::range_split_size) {
+  if (!m_metalog_entity->table.is_metadata() && soft_limit < Global::range_split_size) {
     soft_limit *= 2;
     if (soft_limit > Global::range_split_size)
       soft_limit = Global::range_split_size;
@@ -1259,7 +1284,8 @@ void Range::recovery_finalize() {
 
     commit_log_reader = 0;
 
-    m_transfer_log = new CommitLog(Global::dfs, m_metalog_entity->state.transfer_log);
+    m_transfer_log = new CommitLog(Global::dfs, m_metalog_entity->state.transfer_log,
+                                   !m_metalog_entity->table.is_user());
 
     // re-initiate compaction
     for (size_t i=0; i<m_access_group_vector.size(); i++)
@@ -1411,5 +1437,7 @@ std::ostream &Hypertable::operator<<(std::ostream &os, const Range::MaintenanceD
   os << "is_metadata=" << (mdata.is_metadata ? "true" : "false") << "\n";
   os << "is_system=" << (mdata.is_system ? "true" : "false") << "\n";
   os << "relinquish=" << (mdata.relinquish ? "true" : "false") << "\n";
+  os << "needs_major_compaction=" << (mdata.needs_major_compaction ? "true" : "false") << "\n";
+  os << "needs_split=" << (mdata.needs_split ? "true" : "false") << "\n";
   return os;
 }

@@ -23,6 +23,8 @@
 #include "Common/FileUtils.h"
 #include "Common/Logger.h"
 #include "Common/Path.h"
+#include "Common/md5.h"
+#include "Common/version.h"
 
 #include <algorithm>
 #include <cctype>
@@ -42,7 +44,7 @@ extern "C" {
 using namespace Hypertable;
 using namespace std;
 
-Monitoring::Monitoring(PropertiesPtr &props,NameIdMapperPtr &m_namemap) {
+Monitoring::Monitoring(PropertiesPtr &props,NameIdMapperPtr &m_namemap) : m_last_server_count(0) {
 
   /**
    * Create dir for storing monitoring stats
@@ -58,6 +60,9 @@ Monitoring::Monitoring(PropertiesPtr &props,NameIdMapperPtr &m_namemap) {
   create_dir(m_monitoring_rs_dir);
   m_allowable_skew = props->get_i32("Hypertable.RangeServer.ClockSkew.Max");
   this->m_namemap_ptr = m_namemap;
+
+  memset(m_last_server_set_digest, 0, 16);
+
 }
 
 void Monitoring::create_dir(const String &dir) {
@@ -113,6 +118,11 @@ namespace {
 void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
   ScopedLock lock(m_mutex);
   RangeServerMap::iterator iter;
+  int32_t server_count = 0;
+  md5_context md5_ctx;
+
+  md5_starts(&md5_ctx);
+  
   //to keep track max timestamp across rangeserver
   //this value is used to update table rrds
   table_stats_timestamp = 0;
@@ -123,10 +133,15 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
 #ifndef _WIN32
   struct rangeserver_rrd_data rrd_data;
   double numerator, denominator;
+#endif
 
   for (size_t i=0; i<stats.size(); i++) {
 
+#ifndef _WIN32
+
     memset(&rrd_data, 0, sizeof(rrd_data));
+
+#endif
 
     iter = m_server_map.find(stats[i].location);
     if (iter == m_server_map.end()) {
@@ -135,12 +150,19 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
       continue;
     }
 
-    if (stats[i].fetch_error != 0) {
+    if (stats[i].fetch_error != Error::OK) {
       (*iter).second->fetch_error = stats[i].fetch_error;
       (*iter).second->fetch_error_msg = stats[i].fetch_error_msg;
       (*iter).second->fetch_timestamp = stats[i].fetch_timestamp;
       continue;
     }
+    else {
+      server_count++;
+      md5_update(&md5_ctx, (const unsigned char *)stats[i].location.c_str(),
+		 stats[i].location.length());
+    }
+
+#ifndef _WIN32
 
     if ((*iter).second->stats) {
 
@@ -207,6 +229,8 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
     rrd_data.net_rx_rate = (int64_t)stats[i].stats->system.net_stat.rx_rate;
     rrd_data.net_tx_rate = (int64_t)stats[i].stats->system.net_stat.tx_rate;
     rrd_data.load_average = stats[i].stats->system.loadavg_stat.loadavg[0];
+    rrd_data.cpu_user = stats[i].stats->cpu_user;
+    rrd_data.cpu_sys = stats[i].stats->cpu_sys;
 
     compute_clock_skew(stats[i].stats->timestamp, &stats[i]);
 
@@ -219,6 +243,9 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
       table_stats_timestamp = rrd_data.timestamp;
     }
     update_rangeserver_rrd(rrd_file, rrd_data);
+
+#endif
+
     add_table_stats(stats[i].stats->tables,stats[i].fetch_timestamp);
 
     (*iter).second->stats = stats[i].stats;
@@ -228,7 +255,9 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
 
   }
 
-#endif
+  // Calculate "server set" MD5 digest
+  unsigned char server_set_digest[16];
+  md5_finish(&md5_ctx, server_set_digest);
 
   // calcualte read rates from previous table stats map
 
@@ -267,16 +296,31 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
     // calculate read rates and write rates
     prev_iter = m_prev_table_stat_map.find(ts_iter->first);
     if (prev_iter != m_prev_table_stat_map.end()) {
-      double elapsed_time = (double)(ts_iter->second.fetch_timestamp - prev_iter->second.fetch_timestamp)/1000000000.0;
-      ts_iter->second.scan_rate = (ts_iter->second.scans - prev_iter->second.scans)/elapsed_time;
-      ts_iter->second.update_rate = (ts_iter->second.updates - prev_iter->second.updates)/elapsed_time;
-      ts_iter->second.cell_read_rate = (ts_iter->second.cells_read - prev_iter->second.cells_read)/elapsed_time;
-      ts_iter->second.cell_write_rate = (ts_iter->second.cells_written - prev_iter->second.cells_written)/elapsed_time;
-      ts_iter->second.byte_read_rate = (ts_iter->second.bytes_read - prev_iter->second.bytes_read)/elapsed_time;
-      ts_iter->second.byte_write_rate = (ts_iter->second.bytes_written - prev_iter->second.bytes_written)/elapsed_time;
-      ts_iter->second.disk_read_rate = (ts_iter->second.disk_bytes_read - prev_iter->second.disk_bytes_read)/elapsed_time;
-      //HT_INFOF("cell_write_rate %.2f",ts_iter->second.cell_write_rate);
+      if (server_count != m_last_server_count ||
+	  !memcmp(m_last_server_set_digest, server_set_digest, 16)) {
+	HT_INFO("Statistics server set mismatch, using previous statistics");
+	ts_iter->second.scan_rate = prev_iter->second.scan_rate;
+	ts_iter->second.update_rate = prev_iter->second.update_rate;
+	ts_iter->second.cell_read_rate = prev_iter->second.cell_read_rate;
+	ts_iter->second.cell_write_rate = prev_iter->second.cell_write_rate;
+	ts_iter->second.byte_read_rate = prev_iter->second.byte_read_rate;
+	ts_iter->second.byte_write_rate = prev_iter->second.byte_write_rate;
+	ts_iter->second.disk_read_rate = prev_iter->second.disk_read_rate;
+	memcpy(m_last_server_set_digest, server_set_digest, 16);
+      }
+      else {
+	double elapsed_time = (double)(ts_iter->second.fetch_timestamp - prev_iter->second.fetch_timestamp)/1000000000.0;
+	ts_iter->second.scan_rate = (ts_iter->second.scans - prev_iter->second.scans)/elapsed_time;
+	ts_iter->second.update_rate = (ts_iter->second.updates - prev_iter->second.updates)/elapsed_time;
+	ts_iter->second.cell_read_rate = (ts_iter->second.cells_read - prev_iter->second.cells_read)/elapsed_time;
+	ts_iter->second.cell_write_rate = (ts_iter->second.cells_written - prev_iter->second.cells_written)/elapsed_time;
+	ts_iter->second.byte_read_rate = (ts_iter->second.bytes_read - prev_iter->second.bytes_read)/elapsed_time;
+	ts_iter->second.byte_write_rate = (ts_iter->second.bytes_written - prev_iter->second.bytes_written)/elapsed_time;
+	ts_iter->second.disk_read_rate = (ts_iter->second.disk_bytes_read - prev_iter->second.disk_bytes_read)/elapsed_time;
+      }
     }
+
+#ifndef _WIN32
 
     String table_file_name = ts_iter->first;
     String rrd_file = m_monitoring_table_dir + "/" + table_file_name + "_table_stats_v0.rrd";
@@ -296,8 +340,15 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
         create_table_rrd(rrd_file);
     }
     update_table_rrd(rrd_file,ts_iter->second);
+
+#endif
+
   }
   dump_table_summary_json();
+
+  dump_master_summary_json();
+
+  m_last_server_count = server_count;
 
 }
 
@@ -420,6 +471,8 @@ void Monitoring::create_rangeserver_rrd(const String &filename) {
   args.push_back((String)"DS:net_rx_rate:GAUGE:600:0:U");
   args.push_back((String)"DS:net_tx_rate:GAUGE:600:0:U");
   args.push_back((String)"DS:loadavg:GAUGE:600:0:U");
+  args.push_back((String)"DS:cpu_user:GAUGE:600:0:U");
+  args.push_back((String)"DS:cpu_sys:GAUGE:600:0:U");
 
   args.push_back((String)"RRA:AVERAGE:.5:1:2880"); // higherst res (30s) has 2880 samples(1 day)
   args.push_back((String)"RRA:AVERAGE:.5:10:2880"); // 5min res for 10 days
@@ -580,7 +633,7 @@ void Monitoring::update_rangeserver_rrd(const String &filename, struct rangeserv
   args.push_back((String)"update");
   args.push_back(filename);
 
-  update = format("%llu:%d:%d:%lld:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%lld:%lld:%.2f:%lld:%lld:%.2f:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%.2f:%.2f:%.2f",
+  update = format("%llu:%d:%d:%lld:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f:%lld:%lld:%.2f:%lld:%lld:%.2f:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%.2f:%.2f:%.2f:%.2f:%.2f",
                   (Llu)rrd_data.timestamp,
                   rrd_data.range_count,
                   rrd_data.scanner_count,
@@ -612,7 +665,9 @@ void Monitoring::update_rangeserver_rrd(const String &filename, struct rangeserv
                   (Lld)rrd_data.tracked_memory,
                   rrd_data.net_rx_rate,
                   rrd_data.net_tx_rate,
-                  rrd_data.load_average);
+                  rrd_data.load_average,
+                  rrd_data.cpu_user,
+                  rrd_data.cpu_sys);
 
   HT_INFOF("update=\"%s\"", update.c_str());
 
@@ -640,18 +695,28 @@ namespace {
   const char *rs_json_header = "{\"RangeServerSummary\": {\n  \"servers\": [\n";
   const char *rs_json_footer= "\n  ]\n}}\n";
   const char *rs_entry_format =
-    "{\"order\": \"%d\", \"location\": \"%s\", \"hostname\": \"%s\", \"ip\": \"%s\", \"arch\": \"%s\","
+    "{\"order\": \"%d\", \"location\": \"%s\", \"version\": \"%s\", \"hostname\": \"%s\", \"ip\": \"%s\", \"arch\": \"%s\","
     " \"cores\": \"%d\", \"skew\": \"%d\", \"os\": \"%s\", \"osVersion\": \"%s\","
     " \"vendor\": \"%s\", \"vendorVersion\": \"%s\", \"ram\": \"%.2f\","
     " \"disk\": \"%.2f\", \"diskUsePct\": \"%u\", \"rangeCount\": \"%llu\","
     " \"lastContact\": \"%s\", \"lastError\": \"%s\"}";
 
+  const char *master_json = "{\"MasterSummary\": {\"version\": \"%s\"}}\n";
 
   const char *table_json_header = "{\"TableSummary\": {\n  \"tables\": [\n";
   const char *table_json_footer= "\n  ]\n}}\n";
   const char *table_entry_format =
     "{\"id\": \"%s\",\"name\": \"%s\",\"rangecount\": \"%u\", \"cellcount\": \"%llu\", \"filecount\": \"%llu\", \"disk\": \"%llu\","
     " \"memory\": \"%llu\", \"average_key_size\": \"%.1f\", \"average_value_size\": \"%.1f\", \"compression_ratio\": \"%.3f\"}";
+}
+
+void Monitoring::dump_master_summary_json() {
+  String contents = format(master_json, version_string());
+  String tmp_filename = m_monitoring_dir + "/master_summary.tmp";
+  String json_filename = m_monitoring_dir + "/master_summary.json";
+  if (FileUtils::write(tmp_filename, contents) == -1)
+    return;
+  FileUtils::rename(tmp_filename, json_filename);
 }
 
 void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics> &stats) {
@@ -663,6 +728,7 @@ void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics
   String error_str;
   String contact_time;
   uint64_t range_count;
+  const char *version_string = "";
 
   for (size_t i=0; i<stats.size(); i++) {
     if (stats[i].stats) {
@@ -673,9 +739,9 @@ void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics
       for (size_t j=0; j<stats[i].stats->system.fs_stat.size(); j++) {
         numerator += stats[i].stats->system.fs_stat[j].used;
         denominator += stats[i].stats->system.fs_stat[j].total;
-        disk += stats[i].stats->system.fs_stat[j].total;
+        disk += stats[i].stats->system.fs_stat[j].total; // already in KB
       }
-      disk /= 1000000000.0;
+      disk /= 1000000.0;
       disk_use_pct = (unsigned)((numerator/denominator)*100.0);
       time_t contact = (time_t)(stats[i].fetch_timestamp / 1000000000LL);
       char buf[64];
@@ -683,6 +749,7 @@ void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics
       contact_time = buf;
       boost::trim(contact_time);
       range_count = stats[i].stats->range_count;
+      version_string = stats[i].stats->version.c_str();
     }
     else {
       ram = 0.0;
@@ -700,6 +767,7 @@ void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics
     entry = format(rs_entry_format,
                    i,
                    stats[i].location.c_str(),
+                   version_string,
                    stats[i].system_info->net_info.host_name.c_str(),
                    stats[i].system_info->net_info.primary_addr.c_str(),
                    stats[i].system_info->os_info.arch.c_str(),

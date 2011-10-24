@@ -292,6 +292,15 @@
     <ClCompile Include="RequestHandlerMetadataSync.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MergeScannerAccessGroup.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UpdateThread.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MergeScannerRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -637,6 +646,18 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RequestHandlerMetadataSync.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellStoreBlockIndexArray.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MergeScannerAccessGroup.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateThread.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MergeScannerRange.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

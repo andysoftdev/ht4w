@@ -160,7 +160,10 @@ struct CellInterval {
  *   <dd>Specifies the names of the columns to return</dd>
  *
  *   <dt>cell_limit</dt>
- *   <dd>Specifies max number of cells to return per column family per row</dd>
+ *   <dd>Specifies max number of cells to return</dd>
+ *
+ *   <dt>cell_limit_per_family</dt>
+ *   <dd>Specifies max number of cells to return per column family</dd>
  *
  *   <dt>row_regexp</dt>
  *   <dd>Specifies a regexp used to filter by rowkey</dd>
@@ -182,7 +185,8 @@ struct ScanSpec {
   7: optional i64 end_time
   8: optional list<string> columns
   9: optional bool keys_only = 0
-  10:optional i32 cell_limit = 0 
+  14:optional i32 cell_limit = 0 
+  10:optional i32 cell_limit_per_family = 0 
   11:optional string row_regexp
   12:optional string value_regexp
   13:optional bool scan_and_filter_rows = 0
@@ -706,6 +710,13 @@ service ClientService {
   void close_scanner(1:Scanner scanner) throws (1:ClientException e),
   
   /**
+   * Cancel a table scanner
+   *
+   * @param scanner - scanner id to close
+   */
+  void cancel_scanner_async(1:ScannerAsync scanner) throws (1:ClientException e),
+
+  /**
    * Close a table scanner
    *
    * @param scanner - scanner id to close
@@ -912,9 +923,17 @@ service ClientService {
    *
    * @param mutator - mutator id to close
    */
-  void close_mutator(1:Mutator mutator, 2:bool flush = 1)
+  void close_mutator(1:Mutator mutator)
       throws (1:ClientException e),
   
+  /**
+   * Cancel an asynchronous table mutator
+   *
+   * @param mutator -  mutator id to cancel 
+   */
+  void cancel_mutator_async(1:MutatorAsync mutator) 
+      throws (1:ClientException e),
+
   /**
    * Close an asynchronous table mutator
    *

@@ -36,7 +36,7 @@
 using namespace Hypertable;
 using namespace Serialization;
 
-LocationInitializer::LocationInitializer(PropertiesPtr &props) 
+LocationInitializer::LocationInitializer(PropertiesPtr &props)
   : m_props(props), m_location_persisted(false) {
 
   Path data_dir = m_props->get_str("Hypertable.DataDirectory");
@@ -66,7 +66,7 @@ LocationInitializer::LocationInitializer(PropertiesPtr &props)
       boost::trim(m_location);
     }
   }
-  
+
 }
 
 CommBuf *LocationInitializer::create_initialization_request() {
@@ -74,9 +74,24 @@ CommBuf *LocationInitializer::create_initialization_request() {
   StatsSystem stats;
   const char *base, *ptr;
   String datadirs = m_props->get_str("Hypertable.RangeServer.Monitoring.DataDirectories");
+
+#ifdef _WIN32
+  boost::trim(datadirs);
+  boost::trim_right_if(datadirs, boost::is_any_of("/\\"));
+  if (datadirs.empty()) {
+    Path data_dir = Config::properties->get_str("Hypertable.DataDirectory");
+    if (data_dir.is_complete() && data_dir.has_root_path()) {
+      datadirs = data_dir.root_path().string();
+      boost::trim_right_if(datadirs, boost::is_any_of("/\\"));
+    }
+  }
+#endif
+
   uint16_t port = m_props->get_i16("Hypertable.RangeServer.Port");
   String dir;
   std::vector<String> dirs;
+
+  boost::trim_if(datadirs, boost::is_any_of(" \t\"'"));
 
   base = datadirs.c_str();
   while ((ptr = strchr(base, ',')) != 0) {
@@ -92,11 +107,8 @@ CommBuf *LocationInitializer::create_initialization_request() {
   stats.add_categories(StatsSystem::CPUINFO|StatsSystem::NETINFO|
                        StatsSystem::OSINFO|StatsSystem::PROCINFO, dirs);
 
-  CommHeader header(MasterProtocol::COMMAND_REGISTER_SERVER);
-  CommBuf *cbuf = new CommBuf(header, encoded_length_vstr(m_location) + 2 + stats.encoded_length());
-  cbuf->append_vstr(m_location);
-  cbuf->append_i16(port);
-  stats.encode(cbuf->get_data_ptr_address());
+  CommBuf *cbuf = MasterProtocol::create_register_server_request(m_location, port, stats);
+
   return cbuf;
 }
 

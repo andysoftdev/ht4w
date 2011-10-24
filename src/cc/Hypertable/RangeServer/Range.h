@@ -98,6 +98,7 @@ namespace Hypertable {
       bool     is_system;
       bool     relinquish;
       bool     needs_major_compaction;
+      bool     needs_split;
     };
 
     typedef std::map<String, AccessGroup *> AccessGroupMap;
@@ -167,6 +168,7 @@ namespace Hypertable {
     void purge_memory(MaintenanceFlag::Map &subtask_map);
 
     void schedule_relinquish() { m_relinquish = true; }
+    bool get_relinquish() const { return m_relinquish; }
 
     void recovery_initialize() {
       ScopedLock lock(m_mutex);
@@ -344,6 +346,7 @@ namespace Hypertable {
     RangeMaintenanceGuard m_maintenance_guard;
     int64_t          m_revision;
     int64_t          m_latest_revision;
+    int64_t          m_split_threshold;
     String           m_split_row;
     CommitLogPtr     m_transfer_log;
     bool             m_split_off_high;
@@ -357,6 +360,7 @@ namespace Hypertable {
     bool             m_dropped;
     bool             m_capacity_exceeded_throttle;
     bool             m_relinquish;
+    bool             m_removed_from_working_set;
     int64_t          m_maintenance_generation;
     LoadMetricsRange m_load_metrics;
   };

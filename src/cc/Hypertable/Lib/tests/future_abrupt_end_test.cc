@@ -157,14 +157,14 @@ int main(int argc, char **argv) {
   }
   catch (Hypertable::Exception &e) {
     cerr << e << endl;
-    exit(1);
+    _exit(1);
   }
 
   if (ii != num_cells) {
     cout << "Expected " << num_cells << " cells, received " << ii << endl;
-    exit(1);
+    _exit(1);
   }
   cout << "Test passed"<< endl;
 
-  exit(0);
+  _exit(0);
 }

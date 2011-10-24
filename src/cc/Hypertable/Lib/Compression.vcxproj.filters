@@ -9,10 +9,10 @@
       <UniqueIdentifier>{33d04587-9501-4061-a611-6185f15d2c10}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\lzo">
-      <UniqueIdentifier>{2d39d0f7-c015-40cc-bda9-e9352a106d4e}</UniqueIdentifier>
+      <UniqueIdentifier>{4824467c-cf4d-4c9b-bc17-7d288135bb1b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\quicklz">
-      <UniqueIdentifier>{1315969e-1f65-411d-8235-e14c9cb365fd}</UniqueIdentifier>
+      <UniqueIdentifier>{1de94caa-4d06-474d-a70e-9f1fa98b4658}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -46,14 +46,17 @@
     <ClCompile Include="bmz\bmz.c">
       <Filter>Source Files\bmz</Filter>
     </ClCompile>
-    <ClCompile Include="lzo\minilzo.c">
-      <Filter>Source Files\lzo</Filter>
-    </ClCompile>
-    <ClCompile Include="quicklz\quicklz.cc">
-      <Filter>Source Files\quicklz</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\stdafx.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockCompressionCodecSnappy.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\lzo\minilzo.c">
+      <Filter>Source Files\lzo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\quicklz\quicklz.cc">
+      <Filter>Source Files\quicklz</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -90,16 +93,19 @@
     <ClInclude Include="bmz\bmz-internal.h">
       <Filter>Source Files\bmz</Filter>
     </ClInclude>
-    <ClInclude Include="lzo\lzoconf.h">
+    <ClInclude Include="BlockCompressionCodecSnappy.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\ThirdParty\lzo\lzoconf.h">
       <Filter>Source Files\lzo</Filter>
     </ClInclude>
-    <ClInclude Include="lzo\lzodefs.h">
+    <ClInclude Include="..\..\ThirdParty\lzo\lzodefs.h">
       <Filter>Source Files\lzo</Filter>
     </ClInclude>
-    <ClInclude Include="lzo\minilzo.h">
+    <ClInclude Include="..\..\ThirdParty\lzo\minilzo.h">
       <Filter>Source Files\lzo</Filter>
     </ClInclude>
-    <ClInclude Include="quicklz\quicklz.h">
+    <ClInclude Include="..\..\ThirdParty\quicklz\quicklz.h">
       <Filter>Source Files\quicklz</Filter>
     </ClInclude>
   </ItemGroup>

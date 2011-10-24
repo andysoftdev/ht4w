@@ -1,7 +1,7 @@
 set :source_machine, "mothercompiler"
 set :install_dir,  "/opt/hypertable"
-set :hypertable_version, "0.9.5.0"
-set :default_pkg, "/tmp/hypertable-0.9.5.0-linux-x86_64.deb"
+set :hypertable_version, "0.9.5.1"
+set :default_pkg, "/tmp/hypertable-0.9.5.1-linux-x86_64.deb"
 set :default_dfs, "hadoop"
 set :default_config, "/opt/hypertable/dev-hypertable.cfg"
 set :default_additional_args, ""
@@ -458,7 +458,7 @@ end
 desc "Stops test."
 task :stop_test, :roles => [:test_client, :test_dispatcher] do
   run <<-CMD
-  #{install_dir}/current/bin/stop-servers.sh --no-hyperspace --no-master --no-rangeserver #{stop_test_args}
+  #{install_dir}/current/bin/stop-servers.sh --no-hyperspace --no-dfsbroker --no-master --no-rangeserver #{stop_test_args}
   CMD
 end
 

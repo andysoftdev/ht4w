@@ -1,4 +1,4 @@
-# Copyright (C) 2009  Luke Lu (llu@hypertable.org)
+# Copyright (C) 2011 Hypertable, Inc.
 #
 # This file is part of Hypertable.
 #
@@ -63,15 +63,18 @@ macro(HT_INSTALL_LIBS dest)
 endmacro()
 
 # Dependent libraries
-HT_INSTALL_LIBS(lib ${BOOST_LIBS} ${BDB_LIBRARIES} ${Thrift_LIBS}
+HT_INSTALL_LIBS(lib ${BOOST_LIBS} ${Thrift_LIBS}
                 ${Kfs_LIBRARIES} ${LibEvent_LIB} ${Log4cpp_LIBRARIES}
-                ${READLINE_LIBRARIES} ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES}
-                ${ZLIB_LIBRARIES} ${SIGAR_LIBRARY} ${Tcmalloc_LIBRARIES}
-                ${Jemalloc_LIBRARIES} ${Ceph_LIBRARIES} ${RRD_LIBRARIES}
-                ${RE2_LIBRARIES})
+                ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES}
+                ${ZLIB_LIBRARIES} ${SNAPPY_LIBRARY} ${SIGAR_LIBRARY} ${Tcmalloc_LIBRARIES}
+                ${Jemalloc_LIBRARIES} ${Ceph_LIBRARIES} ${RE2_LIBRARIES} ${READLINE_LIBRARIES})
+
+if (NOT PACKAGE_THRIFTBROKER)
+  HT_INSTALL_LIBS(lib ${BDB_LIBRARIES} ${RRD_LIBRARIES})
+endif ()
 
 # Need to include some "system" libraries as well
-exec_program(${CMAKE_SOURCE_DIR}/bin/ldd.sh
+exec_program(${CMAKE_INSTALL_PREFIX}/bin/ldd.sh
              ARGS ${CMAKE_BINARY_DIR}/CMakeFiles/CompilerIdCXX/a.out
              OUTPUT_VARIABLE LDD_OUT RETURN_VALUE LDD_RETURN)
 
@@ -90,8 +93,65 @@ if (LDD_RETURN STREQUAL "0")
 endif ()
 
 # Include other RRDTool dependencies found in Hypertable.Master
-exec_program(${CMAKE_SOURCE_DIR}/bin/ldd.sh
-             ARGS ${CMAKE_BINARY_DIR}/src/cc/Hypertable/Master/Hypertable.Master
+if (NOT PACKAGE_THRIFTBROKER)
+  exec_program(${CMAKE_INSTALL_PREFIX}/bin/ldd.sh
+               ARGS ${CMAKE_BINARY_DIR}/src/cc/Hypertable/Master/Hypertable.Master
+               OUTPUT_VARIABLE LDD_OUT RETURN_VALUE LDD_RETURN)
+
+  if (HT_CMAKE_DEBUG)
+    message("ldd.sh output: ${LDD_OUT}")
+  endif ()
+
+  if (LDD_RETURN STREQUAL "0")
+    string(REGEX MATCH "[ \t](/[^ ]+/libdirectfb-[^ \n]+)" dummy ${LDD_OUT})
+    set(directfb_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libfusion-[^ \n]+)" dummy ${LDD_OUT})
+    set(fusion_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libdirect-[^ \n]+)" dummy ${LDD_OUT})
+    set(direct_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libxcb-render\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(xcb_render_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libxcb-render-util[^ \n]+)" dummy ${LDD_OUT})
+    set(xcb_render_util_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libpangocairo-[^ \n]+)" dummy ${LDD_OUT})
+    set(pangocairo_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libpango-[^ \n]+)" dummy ${LDD_OUT})
+    set(pango_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libcairo\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(cairo_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libfontconfig\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(fontconfig_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libXrender\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(Xrender_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libX11\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(X11_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libxml2\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(xml2_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libpixman-[^ \n]+)" dummy ${LDD_OUT})
+    set(pixman_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libgobject-[^ \n]+)" dummy ${LDD_OUT})
+    set(gobject_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libgmodule-[^ \n]+)" dummy ${LDD_OUT})
+    set(gmodule_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libglib-[^ \n]+)" dummy ${LDD_OUT})
+    set(glib_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libpangoft2-[^ \n]+)" dummy ${LDD_OUT})
+    set(pangoft2_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libxcb-xlib\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(xcb_xlib_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libxcb\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(xcb_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libpcre\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(pcre_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libXau\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(Xau_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/libXdmcp\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(Xdmcp_lib ${CMAKE_MATCH_1})
+  endif ()
+endif ()
+
+exec_program(${CMAKE_INSTALL_PREFIX}/bin/ldd.sh
+             ARGS ${CMAKE_BINARY_DIR}/src/cc/ThriftBroker/ThriftBroker
              OUTPUT_VARIABLE LDD_OUT RETURN_VALUE LDD_RETURN)
 
 if (HT_CMAKE_DEBUG)
@@ -99,47 +159,31 @@ if (HT_CMAKE_DEBUG)
 endif ()
 
 if (LDD_RETURN STREQUAL "0")
-  string(REGEX MATCH "[ \t](/[^ ]+/libpangocairo-[^ \n]+)" dummy ${LDD_OUT})
-  set(pangocairo_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libpango-[^ \n]+)" dummy ${LDD_OUT})
-  set(pango_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libcairo\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(cairo_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libfontconfig\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(fontconfig_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libXrender\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(Xrender_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libX11\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(X11_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libxml2\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(xml2_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libpixman-[^ \n]+)" dummy ${LDD_OUT})
-  set(pixman_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libgobject-[^ \n]+)" dummy ${LDD_OUT})
-  set(gobject_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libgmodule-[^ \n]+)" dummy ${LDD_OUT})
-  set(gmodule_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libglib-[^ \n]+)" dummy ${LDD_OUT})
-  set(glib_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libpangoft2-[^ \n]+)" dummy ${LDD_OUT})
-  set(pangoft2_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libxcb-xlib\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(xcb_xlib_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libxcb\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(xcb_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libpcre\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(pcre_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libXau\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(Xau_lib ${CMAKE_MATCH_1})
-  string(REGEX MATCH "[ \t](/[^ ]+/libXdmcp\\.[^ \n]+)" dummy ${LDD_OUT})
-  set(Xdmcp_lib ${CMAKE_MATCH_1})
-  HT_INSTALL_LIBS(lib ${pangocairo_lib} ${pango_lib} ${cairo_lib}
-                  ${fontconfig_lib} ${Xrender_lib} ${X11_lib} ${xml2_lib}
-		  ${pixman_lib} ${gobject_lib} ${gmodule_lib} ${glib_lib}
-		  ${pangoft2_lib} ${xcb_xlib_lib} ${xcb_lib} ${pcre_lib}
-		  ${Xau_lib} ${Xdmcp_lib})
+  string(REGEX MATCH "[ \t](/[^ ]+/libssl\\.[^ \n]+)" dummy ${LDD_OUT})
+  set(ssl_lib ${CMAKE_MATCH_1})
+  string(REGEX MATCH "[ \t](/[^ ]+/libgssapi_krb5\\.[^ \n]+)" dummy ${LDD_OUT})
+  set(gssapi_krb5_lib ${CMAKE_MATCH_1})
+  string(REGEX MATCH "[ \t](/[^ ]+/libkrb5\\.[^ \n]+)" dummy ${LDD_OUT})
+  set(krb5_lib ${CMAKE_MATCH_1})
+  string(REGEX MATCH "[ \t](/[^ ]+/libcom_err\\.[^ \n]+)" dummy ${LDD_OUT})
+  set(com_err_lib ${CMAKE_MATCH_1})
+  string(REGEX MATCH "[ \t](/[^ ]+/libk5crypto\\.[^ \n]+)" dummy ${LDD_OUT})
+  set(k5crypto_lib ${CMAKE_MATCH_1})
+  string(REGEX MATCH "[ \t](/[^ ]+/libcrypto\\.[^ \n]+)" dummy ${LDD_OUT})
+  set(crypto_lib ${CMAKE_MATCH_1})
+  string(REGEX MATCH "[ \t](/[^ ]+/libkrb5support\\.[^ \n]+)" dummy ${LDD_OUT})
+  set(krb5support_lib ${CMAKE_MATCH_1})
 endif ()
 
+HT_INSTALL_LIBS(lib ${directfb_lib} ${fusion_lib} ${direct_lib}
+                ${xcb_render_util_lib} ${xcb_render_lib}
+                ${pangocairo_lib} ${pango_lib} ${cairo_lib}
+                ${fontconfig_lib} ${Xrender_lib} ${X11_lib} ${xml2_lib}
+                ${pixman_lib} ${gobject_lib} ${gmodule_lib} ${glib_lib}
+                ${pangoft2_lib} ${xcb_xlib_lib} ${xcb_lib} ${pcre_lib}
+                ${Xau_lib} ${Xdmcp_lib} ${ssl_lib} ${gssapi_krb5_lib}
+                ${krb5_lib} ${com_err_lib} ${k5crypto_lib} ${crypto_lib}
+                ${krb5support_lib})
 
 # General package variables
 if (NOT CPACK_PACKAGE_NAME)
@@ -175,8 +219,13 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY ${CMAKE_INSTALL_PREFIX})
 # packaging expecting i386 instead of i686 etc.
 string(REGEX REPLACE "i[3-6]86" i386 MACH ${CMAKE_SYSTEM_PROCESSOR})
 
-string(TOLOWER "${CPACK_PACKAGE_NAME}-${VERSION}-${CMAKE_SYSTEM_NAME}-${MACH}"
-       CPACK_PACKAGE_FILE_NAME)
+if (PACKAGE_OS_SPECIFIC)
+  string(TOLOWER "${CPACK_PACKAGE_NAME}-${VERSION}-${OS_VERSION}-${MACH}"
+         CPACK_PACKAGE_FILE_NAME)
+else ()
+  string(TOLOWER "${CPACK_PACKAGE_NAME}-${VERSION}-${CMAKE_SYSTEM_NAME}-${MACH}"
+         CPACK_PACKAGE_FILE_NAME)
+endif ()
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
   string(TOLOWER "${CPACK_PACKAGE_FILE_NAME}-${CMAKE_BUILD_TYPE}"

@@ -30,6 +30,8 @@
 #define HS_DEBUG(str)
 #endif
 
+#include <boost/spirit/include/classic_confix.hpp>
+#include <boost/spirit/include/classic_escape_char.hpp>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -75,6 +77,8 @@ namespace Hyperspace {
       COMMAND_READDIRATTR,
       COMMAND_ATTRINCR,
       COMMAND_READPATHATTR,
+      COMMAND_DUMP,
+      COMMAND_MKDIRS,
       COMMAND_MAX
     };
 
@@ -86,7 +90,7 @@ namespace Hyperspace {
     class ParserState {
     public:
       ParserState() : open_flag(0), event_mask(0), command(0),
-          lock_mode(0), last_attr_size(0), locate_type(0), recursive(false) { }
+          lock_mode(0), last_attr_size(0), locate_type(0), recursive(false), as_commands(false) { }
       String file_name;
       String dir_name;
       String node_name;
@@ -94,6 +98,7 @@ namespace Hyperspace {
       String last_attr_value;
       String str;
       String help_str;
+      String outfile;
       std::vector<Attribute> attrs;
       hash_map<String,String> attr_map;
       int open_flag;
@@ -103,6 +108,7 @@ namespace Hyperspace {
       int last_attr_size;
       int locate_type;
       bool recursive;
+      bool as_commands;
     };
 
     struct set_command {
@@ -119,6 +125,23 @@ namespace Hyperspace {
       set_file_name(ParserState &state_) : state(state_) { }
       void operator()(char const *str, char const *end) const {
         state.file_name = String(str, end-str);
+      }
+      ParserState &state;
+    };
+
+    struct set_as_commands {
+      set_as_commands(ParserState &state_) : state(state_) { }
+      void operator()(char const *str, char const *end) const {
+        state.as_commands = true;
+      }
+      ParserState &state;
+    };
+
+    struct set_outfile {
+      set_outfile(ParserState &state_) : state(state_) { }
+      void operator()(char const *str, char const *end) const {
+        state.outfile = String(str, end-str);
+        trim_if(state.outfile, is_any_of("'\""));
       }
       ParserState &state;
     };
@@ -190,8 +213,16 @@ namespace Hyperspace {
     struct set_last_attr_value {
       set_last_attr_value(ParserState &state_) : state(state_) { }
       void operator()(char const *str, char const *end) const {
+        String escaped_double_quote("\\\"");
+        String unescaped_double_quote(1, '"');
+        String escaped_single_quote("\\\'");
+        String unescaped_single_quote("'");
+
         state.last_attr_value = String(str, end-str);
         boost::trim_if(state.last_attr_value, is_any_of("'\""));
+        boost::algorithm::replace_all(state.last_attr_value, escaped_double_quote, unescaped_double_quote);
+        boost::algorithm::replace_all(state.last_attr_value, escaped_single_quote, unescaped_single_quote);
+
         HS_DEBUG("set_last_attr_value" << state.last_attr_value);
       }
       ParserState &state;
@@ -301,6 +332,7 @@ namespace Hyperspace {
            */
           typedef inhibit_case<strlit<> > Token;
           Token C_MKDIR                = as_lower_d["mkdir"];
+          Token C_MKDIRS               = as_lower_d["mkdirs"];
           Token C_DELETE               = as_lower_d["delete"];
           Token C_OPEN                 = as_lower_d["open"];
           Token C_CREATE               = as_lower_d["create"];
@@ -315,6 +347,7 @@ namespace Hyperspace {
           Token C_READDIR              = as_lower_d["readdir"];
           Token C_READDIRATTR          = as_lower_d["readdirattr"];
           Token C_READPATHATTR         = as_lower_d["readpathattr"];
+          Token C_DUMP                 = as_lower_d["dump"];
           Token C_LOCK                 = as_lower_d["lock"];
           Token C_TRYLOCK              = as_lower_d["trylock"];
           Token C_RELEASE              = as_lower_d["release"];
@@ -325,6 +358,7 @@ namespace Hyperspace {
 
           Token ESC_HELP               = as_lower_d["\\h"];
 
+          Token AS_COMMANDS          = as_lower_d["as_commands"];
           Token FLAGS                = as_lower_d["flags"];
           Token EVENTMASK            = as_lower_d["event-mask"];
           Token O_READ               = as_lower_d["read"];
@@ -368,12 +402,10 @@ namespace Hyperspace {
             ;
 
           single_string_literal
-            = lexeme_d[SINGLEQUOTE >> +(anychar_p-chlit<>('\''))
-                >> SINGLEQUOTE];
+            = confix_p(SINGLEQUOTE, *lex_escape_ch_p, SINGLEQUOTE);
 
           double_string_literal
-            = lexeme_d[DOUBLEQUOTE >> +(anychar_p-chlit<>('"'))
-                >> DOUBLEQUOTE];
+            = confix_p(DOUBLEQUOTE, *lex_escape_ch_p, DOUBLEQUOTE);
 
           user_identifier
             = identifier
@@ -381,7 +413,8 @@ namespace Hyperspace {
             ;
 
           statement
-            = mkdir_statement[set_command(self.state, COMMAND_MKDIR)]
+            = mkdirs_statement[set_command(self.state, COMMAND_MKDIRS)]
+            | mkdir_statement[set_command(self.state, COMMAND_MKDIR)]
             | delete_statement[set_command(self.state, COMMAND_DELETE)]
             | open_statement[set_command(self.state, COMMAND_OPEN)]
             | create_statement[set_command(self.state, COMMAND_CREATE)]
@@ -397,6 +430,7 @@ namespace Hyperspace {
             | readdir_statement[set_command(self.state, COMMAND_READDIR)]
             | readdirattr_statement[set_command(self.state, COMMAND_READDIRATTR)]
             | readpathattr_statement[set_command(self.state, COMMAND_READPATHATTR)]
+            | dump_statement[set_command(self.state, COMMAND_DUMP)]
             | lock_statement[set_command(self.state, COMMAND_LOCK)]
             | trylock_statement[set_command(self.state, COMMAND_TRYLOCK)]
             | release_statement[set_command(self.state, COMMAND_RELEASE)]
@@ -407,6 +441,10 @@ namespace Hyperspace {
 
           mkdir_statement
             = C_MKDIR >> node_name[set_dir_name(self.state)]
+            ;
+
+          mkdirs_statement
+            = C_MKDIRS >> node_name[set_dir_name(self.state)]
             ;
 
           delete_statement
@@ -472,6 +510,13 @@ namespace Hyperspace {
             = C_READPATHATTR >> node_name[set_dir_name(self.state)]
             >> user_identifier[set_last_attr_name(self.state)]
             ;
+
+          dump_statement
+            = C_DUMP >> node_name[set_dir_name(self.state)]
+            >> !(AS_COMMANDS[set_as_commands(self.state)])
+            >> !(string_literal[set_outfile(self.state)])
+            ;
+
 
           lock_statement
             = C_LOCK >> node_name[set_node_name(self.state)] >> lock_mode;
@@ -589,6 +634,7 @@ namespace Hyperspace {
           BOOST_SPIRIT_DEBUG_RULE(user_identifier);
           BOOST_SPIRIT_DEBUG_RULE(statement);
           BOOST_SPIRIT_DEBUG_RULE(mkdir_statement);
+          BOOST_SPIRIT_DEBUG_RULE(mkdirs_statement);
           BOOST_SPIRIT_DEBUG_RULE(delete_statement);
           BOOST_SPIRIT_DEBUG_RULE(open_statement);
           BOOST_SPIRIT_DEBUG_RULE(create_statement);
@@ -605,6 +651,7 @@ namespace Hyperspace {
           BOOST_SPIRIT_DEBUG_RULE(readdir_statement);
           BOOST_SPIRIT_DEBUG_RULE(readdirattr_statement);
           BOOST_SPIRIT_DEBUG_RULE(readpathattr_statement);
+          BOOST_SPIRIT_DEBUG_RULE(dump_statement);
           BOOST_SPIRIT_DEBUG_RULE(lock_statement);
           BOOST_SPIRIT_DEBUG_RULE(trylock_statement);
           BOOST_SPIRIT_DEBUG_RULE(release_statement);
@@ -633,12 +680,12 @@ namespace Hyperspace {
 
         rule<Scanner> identifier, string_literal, any_string,
           single_string_literal, double_string_literal, user_identifier,
-          statement, mkdir_statement, delete_statement, open_statement,
+          statement, mkdir_statement, mkdirs_statement, delete_statement, open_statement,
           create_statement, close_statement, help_statement, locate_statement,
           attrset_statement, attrget_statement, attrincr_statement,
           attrexists_statement,  attrdel_statement,
-          attrlist_statement, exists_statement,
-          readdir_statement, readdirattr_statement, readpathattr_statement, lock_statement,
+          attrlist_statement, exists_statement, readdir_statement,
+          readdirattr_statement, readpathattr_statement, dump_statement, lock_statement,
           trylock_statement, release_statement, getseq_statement, echo_statement,
           one_open_flag_value, open_flag_value, one_open_event_mask_value,
           open_event_mask_value, one_create_flag_value, create_flag_value,

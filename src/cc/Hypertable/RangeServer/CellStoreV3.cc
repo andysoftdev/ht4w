@@ -113,14 +113,14 @@ CellListScanner *CellStoreV3::create_scanner(ScanContextPtr &scan_ctx) {
   }
 
   if (m_64bit_index)
-    return new CellStoreScanner<CellStoreBlockIndexMap<int64_t> >(this, scan_ctx, need_index ? &m_index_map64 : 0);
-  return new CellStoreScanner<CellStoreBlockIndexMap<uint32_t> >(this, scan_ctx, need_index ? &m_index_map32 : 0);
+    return new CellStoreScanner<CellStoreBlockIndexArray<int64_t> >(this, scan_ctx, need_index ? &m_index_map64 : 0);
+  return new CellStoreScanner<CellStoreBlockIndexArray<uint32_t> >(this, scan_ctx, need_index ? &m_index_map32 : 0);
 }
 
 
 void
 CellStoreV3::create(const char *fname, size_t max_entries,
-                    PropertiesPtr &props) {
+                    PropertiesPtr &props, const TableIdentifier *table_id) {
   int32_t replication = props->get_i32("replication", int32_t(-1));
   int64_t blocksize = props->get("blocksize", uint32_t(0));
   String compressor = props->get("compressor", String());
@@ -271,7 +271,7 @@ void CellStoreV3::load_bloom_filter() {
   amount = (m_file_length - m_trailer.size()) - m_trailer.filter_offset;
 
   HT_ASSERT(amount == m_bloom_filter->size());
-  
+
   if (amount > 0) {
     len = m_filesys->pread(m_fd, m_bloom_filter->ptr(), amount,
                            m_trailer.filter_offset);
@@ -372,7 +372,7 @@ void CellStoreV3::add(const Key &key, const ByteString value) {
   }
 
   m_key_compressor->add(key);
-  
+
   size_t key_len = m_key_compressor->length();
   size_t value_len = value.length();
 

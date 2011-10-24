@@ -24,9 +24,9 @@
 
 #include <string>
 
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 
+#include "Common/Mutex.h"
 #include "Common/Properties.h"
 #include "Common/Filesystem.h"
 
@@ -53,6 +53,7 @@ namespace Hypertable {
 
   class Global {
   public:
+    static Mutex          mutex;
     static Hyperspace::SessionPtr hyperspace;
     static Hypertable::FilesystemPtr dfs;
     static Hypertable::FilesystemPtr log_dfs;
@@ -94,6 +95,7 @@ namespace Hypertable {
     static std::string    toplevel_dir;
     static int32_t        metrics_interval;
     static int32_t        merge_cellstore_run_length_threshold;
+    static bool           ignore_clock_skew_errors;
   };
 
 } // namespace Hypertable

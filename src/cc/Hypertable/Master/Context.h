@@ -56,13 +56,15 @@ namespace Hypertable {
   class LoadBalancer;
   class Operation;
   class OperationProcessor;
+  class OperationBalance;
   class ResponseManager;
+  class RemovalManager;
 
   class Context : public ReferenceCount {
   public:
     Context() : timer_interval(0), monitoring_interval(0), gc_interval(0),
                 next_monitoring_time(0), next_gc_time(0), conn_count(0),
-                test_mode(false) {
+                test_mode(false), in_operation(false) {
       m_server_list_iter = m_server_list.end();
       master_file_handle = 0;
     }
@@ -83,6 +85,7 @@ namespace Hypertable {
     LoadBalancer *balancer;
     MonitoringPtr monitoring;
     ResponseManager *response_manager;
+    RemovalManager *removal_manager;
     TablePtr metadata_table;
     TablePtr rs_metrics_table;
     uint64_t range_split_size;
@@ -95,9 +98,10 @@ namespace Hypertable {
     size_t conn_count;
     bool test_mode;
     OperationProcessor *op;
-    std::set<int64_t> in_progress_ops;
-    std::set<int64_t> unacknowledged_moves;
+    OperationBalance *op_balance;
     String location_hash;
+    int32_t max_allowable_skew;
+    bool in_operation;
 
     void add_server(RangeServerConnectionPtr &rsc);
     bool connect_server(RangeServerConnectionPtr &rsc, const String &hostname, InetAddr local_addr, InetAddr public_addr);
@@ -111,16 +115,12 @@ namespace Hypertable {
     bool next_available_server(RangeServerConnectionPtr &rsc);
     bool reassigned(TableIdentifier *table, RangeSpec &range, String &location);
     bool is_connected(const String &location);
+    void get_unbalanced_servers(const std::vector<String> &locations,
+        std::vector<RangeServerConnectionPtr> &unbalanced);
+    void set_servers_balanced(const std::vector<RangeServerConnectionPtr> &servers);
     size_t connection_count() { ScopedLock lock(mutex); return conn_count; }
     size_t server_count() { ScopedLock lock(mutex); return m_server_list.size(); }
     void get_servers(std::vector<RangeServerConnectionPtr> &servers);
-    bool in_progress(Operation *operation);
-    bool add_in_progress(Operation *operation);
-    void remove_in_progress(Operation *operation);
-    void clear_in_progress();
-    void add_unacknowledged_move(int64_t hash);
-    bool exists_unacknowledged_move(int64_t hash);
-    void acknowledge_move(int64_t hash);
 
   private:
 
@@ -133,7 +133,7 @@ namespace Hypertable {
       InetAddr public_addr() const { return rsc->public_addr(); }
       InetAddr local_addr() const { return rsc->local_addr(); }
       bool connected() const { return rsc->connected(); }
-      bool removed() const { return rsc->removed(); }
+      bool removed() const { return rsc->get_removed(); }
     };
 
     struct InetAddrHash {

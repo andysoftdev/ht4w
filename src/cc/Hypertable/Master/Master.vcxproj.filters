@@ -127,6 +127,9 @@
     <ClCompile Include="ServerMetrics.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RemovalManager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -256,6 +259,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ServerMetrics.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RemovalManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

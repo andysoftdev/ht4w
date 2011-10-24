@@ -38,24 +38,25 @@
 
 namespace Hypertable {
 
-  namespace RangeServerConnectionState {
+  namespace RangeServerConnectionFlags {
     enum {
-      REGISTERED=0,
-      PARTICIPATING=1,
-      REMOVED=2
+      BALANCED = 0x01,
+      REMOVED  = 0x02
     };
   }
 
   class RangeServerConnection : public MetaLog::Entity {
   public:
     RangeServerConnection(MetaLog::WriterPtr &mml_writer, const String &location,
-                          const String &hostname, InetAddr public_addr);
+                          const String &hostname, InetAddr public_addr, bool balanced=false);
     RangeServerConnection(MetaLog::WriterPtr &mml_writer, const MetaLog::EntityHeader &header_);
     virtual ~RangeServerConnection() { }
 
     bool connected() { ScopedLock lock(m_mutex); return m_connected; }
-    void remove();
-    bool removed();
+    bool get_removed();
+    void set_removed();
+    bool get_balanced();
+    bool set_balanced(bool val=true);
     bool wait_for_connection();
     CommAddress get_comm_address();
 
@@ -65,11 +66,12 @@ namespace Hypertable {
     const String hostname() const { return m_hostname; }
     InetAddr local_addr() const { return m_local_addr; }
     InetAddr public_addr() const { return m_public_addr; }
-    
+
     virtual void display(std::ostream &os);
     virtual size_t encoded_length() const;
     virtual void encode(uint8_t **bufp) const;
     virtual void decode(const uint8_t **bufp, size_t *remainp);
+    virtual void set_mml_writer(MetaLog::WriterPtr &mml_writer);
 
     friend class Context;
 

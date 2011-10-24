@@ -47,6 +47,8 @@ extern "C" {
 #include "OperationRecoverServer.h"
 #include "OperationSystemUpgrade.h"
 #include "OperationWaitForServers.h"
+#include "OperationBalance.h"
+#include "RemovalManager.h"
 #include "ResponseManager.h"
 
 #ifdef _WIN32
@@ -128,7 +130,7 @@ int main(int argc, char **argv) {
       md5_string(format("%s:%u", System::net_info().host_name.c_str(), port).c_str(), location_hash);
       context->location_hash = String(location_hash).substr(0, 8);
     }
-
+    context->max_allowable_skew = context->props->get_i32("Hypertable.RangeServer.ClockSkew.Max");
     context->monitoring_interval = context->props->get_i32("Hypertable.Monitoring.Interval");
     context->gc_interval = context->props->get_i32("Hypertable.Master.Gc.Interval");
     context->timer_interval = std::min(context->monitoring_interval, context->gc_interval);
@@ -146,7 +148,6 @@ int main(int argc, char **argv) {
       FailureInducer::instance->parse_option(get_str("induce-failure"));
     }
 
-
     /**
      * Read/load MML
      */
@@ -162,16 +163,15 @@ int main(int argc, char **argv) {
     context->mml_writer = new MetaLog::Writer(context->dfs, context->mml_definition,
                                               log_dir, entities);
 
-    /**
-     * Create Response Manager
-     */
+    context->removal_manager = new RemovalManager(context->mml_writer);
+
+    /** Response Manager */
     ResponseManagerContext *rmctx = new ResponseManagerContext(context->mml_writer);
     context->response_manager = new ResponseManager(rmctx);
     Thread response_manager_thread(*context->response_manager);
 
     int worker_count  = get_i32("workers");
     context->op = new OperationProcessor(context, worker_count);
-
     context->balancer = new LoadBalancerBasic(context);
 
     // First do System Upgrade
@@ -180,25 +180,36 @@ int main(int argc, char **argv) {
     context->op->wait_for_empty();
 
     // Then reconstruct state and start execution
+    context->op_balance = NULL;
     for (size_t i=0; i<entities.size(); i++) {
       operation = dynamic_cast<Operation *>(entities[i].get());
-      if (operation)
+      if (operation) {
+        if (operation->remove_explicitly())
+          context->removal_manager->add_operation(operation);
+        if (dynamic_cast<OperationBalance *>(operation.get())) {
+          // there should be only one OPERATION_BALANCE
+          HT_ASSERT(context->op_balance == NULL);
+          context->op_balance = dynamic_cast<OperationBalance *>(operation.get());
+        }
         operations.push_back(operation);
+      }
       else {
         rsc = dynamic_cast<RangeServerConnection *>(entities[i].get());
+        rsc->set_mml_writer(context->mml_writer);
         context->add_server(rsc);
         HT_ASSERT(rsc);
         operations.push_back( new OperationRecoverServer(context, rsc) );
       }
     }
-
     if (operations.empty()) {
       OperationInitializePtr init_op = new OperationInitialize(context);
       if (context->namemap->exists_mapping("/sys/METADATA", 0))
 	init_op->set_state(OperationState::CREATE_RS_METRICS);
+      context->removal_manager->add_operation(init_op.get());
       operations.push_back( init_op );
     }
     else {
+      context->in_operation = true;
       if (context->metadata_table == 0)
         context->metadata_table = new Table(context->props, context->conn_manager,
                                             context->hyperspace, context->namemap,
@@ -213,6 +224,11 @@ int main(int argc, char **argv) {
     // Add PERPETUAL operations
     operation = new OperationWaitForServers(context);
     operations.push_back(operation);
+    if (!context->op_balance) {
+      operation = new OperationBalance(context);
+      context->op_balance = dynamic_cast<OperationBalance *>(operation.get());
+      operations.push_back(operation);
+    }
 
     context->op->add_operations(operations);
 
@@ -232,6 +248,9 @@ int main(int argc, char **argv) {
     response_manager_thread.join();
     delete rmctx;
     delete context->response_manager;
+
+    context->removal_manager->shutdown();
+    delete context->removal_manager;
 
     context = 0;
 

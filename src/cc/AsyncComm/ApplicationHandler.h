@@ -86,32 +86,35 @@ namespace Hypertable {
 
     bool expired() {
       if (m_event_ptr && m_event_ptr->type == Event::MESSAGE &&
-        ReactorRunner::record_arrival_clocks &&
-        (m_event_ptr->header.flags & CommHeader::FLAGS_BIT_REQUEST)) {
-          if (m_event_ptr->header.timeout_ms) {
-            uint32_t wait_ms = 0;
-            if (m_event_ptr->arrival_time != 0)
-              wait_ms = uint32_t((time(0) - m_event_ptr->arrival_time) * 1000);
-            else if (m_event_ptr->arrival_clocks != 0) {
-              clock_t clock_diff = std::clock() - m_event_ptr->arrival_clocks;
-              wait_ms = (clock_diff * 1000) / CLOCKS_PER_SEC;
-            }
+          ReactorRunner::record_arrival_time &&
+          (m_event_ptr->header.flags & CommHeader::FLAGS_BIT_REQUEST)) {
+        uint32_t wait_ms;
+	time_t now = time(0);
+	HT_ASSERT(now != (time_t)-1);
+	if (now < m_event_ptr->arrival_time) {
+	  HT_WARNF("time() returned %ld which is less than the arrival time of %ld",
+		   (long int)now, (long int)m_event_ptr->arrival_time);
+	  wait_ms = 0;
+	}
+	else
+	  wait_ms = (now - m_event_ptr->arrival_time) * 1000;
+        if (wait_ms >= m_event_ptr->header.timeout_ms) {
+          if (m_event_ptr->header.flags & CommHeader::FLAGS_BIT_REQUEST)
+            HT_WARNF("Request expired, wait time %u > timeout %u (now=%ld, arrival_time=%ld)",
+		     (unsigned)wait_ms, m_event_ptr->header.timeout_ms,
+		     (long int)now, (long int)m_event_ptr->arrival_time);
+          else
+            HT_WARNF("Response expired, wait time %u > timeout %u", (unsigned)wait_ms,
+                 m_event_ptr->header.timeout_ms);
 
-            if (wait_ms > m_event_ptr->header.timeout_ms) {
-              if (m_event_ptr->header.flags & CommHeader::FLAGS_BIT_REQUEST)
-                HT_WARNF("Request expired, wait time %u > timeout %u", wait_ms,
-                m_event_ptr->header.timeout_ms);
-              else
-                HT_WARNF("Response expired, wait time %u > timeout %u", wait_ms,
-                m_event_ptr->header.timeout_ms);
-
-              return true;
-            }
-          }
-          else {
+          if (m_event_ptr->header.timeout_ms == 0) {
             HT_INFO("Changing zero timeout request to 120000 ms");
             m_event_ptr->header.timeout_ms = 120000;
+            return false;
           }
+
+          return true;
+        }
       }
       return false;
     }

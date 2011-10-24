@@ -60,6 +60,7 @@
     <ClCompile Include="OperationWaitForServers.cc" />
     <ClCompile Include="RangeMetrics.cc" />
     <ClCompile Include="RangeServerConnection.cc" />
+    <ClCompile Include="RemovalManager.cc" />
     <ClCompile Include="ResponseManager.cc" />
     <ClCompile Include="RSMetrics.cc" />
     <ClCompile Include="ServerMetrics.cc" />
@@ -105,6 +106,7 @@
     <ClInclude Include="RangeServerConnection.h" />
     <ClInclude Include="RangeServerState.h" />
     <ClInclude Include="RangeServerStatistics.h" />
+    <ClInclude Include="RemovalManager.h" />
     <ClInclude Include="ResponseManager.h" />
     <ClInclude Include="RSMetrics.h" />
     <ClInclude Include="ServerMetrics.h" />

@@ -49,6 +49,7 @@
 #include "OperationStatus.h"
 #include "OperationLoadBalancer.h"
 #include "RangeServerConnection.h"
+#include "RemovalManager.h"
 
 
 using namespace Hypertable;
@@ -115,8 +116,7 @@ void ConnectionHandler::handle(EventPtr &event) {
         return;
       case MasterProtocol::COMMAND_MOVE_RANGE:
         operation = new OperationMoveRange(m_context, event);
-        if (m_context->response_manager->operation_complete(operation->hash_code()) ||
-            !m_context->add_in_progress(operation.get())) {
+	if (!m_context->removal_manager->add_operation(operation)) {
           HT_INFOF("Skipping %s because already in progress", operation->label().c_str());
           send_error_response(event, Error::MASTER_OPERATION_IN_PROGRESS, "");
           return;
@@ -127,14 +127,7 @@ void ConnectionHandler::handle(EventPtr &event) {
         operation = new OperationRelinquishAcknowledge(m_context, event);
         break;
       case MasterProtocol::COMMAND_BALANCE:
-        {
-          OperationBalancePtr operation_balance = new OperationBalance(m_context, event);
-          String algorithm = operation_balance->get_algorithm();
-          if (algorithm.size() != 0)
-            operation = new OperationLoadBalancer(m_context, algorithm);
-          else
-            operation = operation_balance;
-        }
+        operation = new OperationLoadBalancer(m_context, event);
         break;
       case MasterProtocol::COMMAND_SHUTDOWN:
         HT_INFO("Received shutdown command");

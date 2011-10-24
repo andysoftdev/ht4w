@@ -313,7 +313,7 @@ void DefaultPolicy::init_options() {
         "Time of day at which LoadBalancer balance window starts")
     ("Hypertable.LoadBalancer.WindowEnd", str()->default_value("00:03:00"),
         "Time of day at which the LoadBalancer balance window ends")
-    ("Hypertable.LoadBalancer.ServerWaitInterval", i32()->default_value(3000),
+    ("Hypertable.LoadBalancer.ServerWaitInterval", i32()->default_value(300000),
         "Amount of time to wait before running balancer when a new RangeServer is detected")
     ("Hypertable.LoadBalancer.LoadavgThreshold", f64()->default_value(0.25),
         "Servers with loadavg above this much above the mean will be considered by the "
@@ -344,6 +344,8 @@ void DefaultPolicy::init_options() {
         "Garbage collection interval in milliseconds by Master")
     ("Hypertable.Master.Locations.IncludeMasterHash", boo()->default_value(false),
         "Includes master hash (host:port) in RangeServer location id")
+    ("Hypertable.Master.Split.SoftLimitEnabled", boo()->default_value(true),
+        "Enable aggressive splitting of tables with little data to spread out ranges")
     ("Hypertable.RangeServer.AccessGroup.GarbageThreshold.Percentage",
      i32()->default_value(20), "Perform major compaction when garbage accounts "
      "for this percentage of the data")
@@ -374,14 +376,16 @@ void DefaultPolicy::init_options() {
         "Trigger a merge if an adjacent run of merge candidate CellStores exceeds this length")
     ("Hypertable.RangeServer.CellStore.DefaultBlockSize",
         i32()->default_value(64*KiB), "Default block size for cell stores")
-    ("Hypertable.RangeServer.CellStore.DefaultReplication",
-        i32(), "Default replication for cell stores")
+    ("Hypertable.RangeServer.Data.DefaultReplication",
+        i32()->default_value(-1), "Default replication for data")
     ("Hypertable.RangeServer.CellStore.DefaultCompressor",
-        str()->default_value("lzo"), "Default compressor for cell stores")
+        str()->default_value("snappy"), "Default compressor for cell stores")
     ("Hypertable.RangeServer.CellStore.DefaultBloomFilter",
         str()->default_value("rows"), "Default bloom filter for cell stores")
     ("Hypertable.RangeServer.CellStore.SkipNotFound",
         boo()->default_value(false), "Skip over cell stores that are non-existent")
+    ("Hypertable.RangeServer.IgnoreClockSkewErrors",
+        boo()->default_value(false), "Ignore clock skew errors")
     ("Hypertable.RangeServer.CommitInterval", i32()->default_value(50),
      "Default minimum group commit interval in milliseconds")
     ("Hypertable.RangeServer.BlockCache.MinMemory", i64()->default_value(150*M),
@@ -415,13 +419,15 @@ void DefaultPolicy::init_options() {
         "Roll commit log after this many bytes")
     ("Hypertable.RangeServer.CommitLog.Compressor",
         str()->default_value("quicklz"),
-        "Commit log compressor to use (zlib, lzo, quicklz, bmz, none)")
-    ("Hypertable.CommitLog.Replication", i32(),
+        "Commit log compressor to use (zlib, lzo, quicklz, snappy, bmz, none)")
+    ("Hypertable.RangeServer.UpdateCoalesceLimit", i64()->default_value(5*M),
+        "Amount of update data to coalesce into single commit log sync")
+    ("Hypertable.Metadata.Replication", i32()->default_value(-1),
         "Replication factor for commit log files")
     ("Hypertable.CommitLog.RollLimit", i64()->default_value(100*M),
         "Roll commit log after this many bytes")
     ("Hypertable.CommitLog.Compressor", str()->default_value("quicklz"),
-        "Commit log compressor to use (zlib, lzo, quicklz, bmz, none)")
+        "Commit log compressor to use (zlib, lzo, quicklz, snappy, bmz, none)")
     ("Hypertable.CommitLog.SkipErrors", boo()->default_value(false),
         "Skip over any corruption encountered in the commit log")
     ("Hypertable.RangeServer.Scanner.Ttl", i32()->default_value(1800*K),
@@ -514,7 +520,7 @@ void parse_args(int argc, char *argv[]) {
   }
 
   if (has("version")) {
-    std::cout << version() << std::endl;
+    std::cout << version_string() << std::endl;
     _exit(0);
   }
 
@@ -621,7 +627,7 @@ void DefaultPolicy::init() {
     _exit(0);
   }
   if (verbose) {
-    HT_NOTICE_OUT <<"Initializing "<< System::exe_name <<" ("<< version()
+    HT_NOTICE_OUT <<"Initializing "<< System::exe_name <<" (Hypertable "<< version_string()
                   <<")..." << HT_END;
   }
 }

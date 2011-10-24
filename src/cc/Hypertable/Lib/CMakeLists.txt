@@ -26,6 +26,7 @@ BlockCompressionCodecLzo.cc
 BlockCompressionCodecNone.cc
 BlockCompressionCodecQuicklz.cc
 BlockCompressionCodecZlib.cc
+BlockCompressionCodecSnappy.cc
 BlockCompressionHeader.cc
 BlockCompressionHeaderCommitLog.cc
 Cell.cc
@@ -112,13 +113,11 @@ old/RangeServerMetaLogEntries.cc
 old/RangeServerMetaLogEntryFactory.cc
 old/RangeServerMetaLogReader.cc
 bmz/bmz.c
-lzo/minilzo.c
-quicklz/quicklz.cc
 )
 
 add_library(Hypertable ${Hypertable_SRCS})
 add_dependencies(Hypertable HyperComm Hyperspace HyperCommon)
-target_link_libraries(Hypertable ${EXPAT_LIBRARIES} ${RRD_LIBRARIES} Hyperspace HyperDfsBroker ${MALLOC_LIBRARY})
+target_link_libraries(Hypertable ${EXPAT_LIBRARIES} Hyperspace HyperDfsBroker ${MALLOC_LIBRARY} HyperThirdParty)
 
 # generate_test_data
 add_executable(generate_test_data generate_test_data.cc)
@@ -271,6 +270,7 @@ add_test(BlockCompressor-LZO compressor_test lzo)
 add_test(BlockCompressor-NONE compressor_test none)
 add_test(BlockCompressor-QUICKLZ compressor_test quicklz)
 add_test(BlockCompressor-ZLIB compressor_test zlib)
+add_test(BlockCompressor-SNAPPY compressor_test snappy)
 add_test(CommitLog commit_log_test)
 add_test(MetaLog metalog_test)
 add_test(Client-large-block large_insert_test)

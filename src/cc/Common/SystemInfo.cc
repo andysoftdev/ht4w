@@ -35,6 +35,11 @@ extern "C" {
 #include <stdlib.h>
 }
 
+#ifdef _WIN32
+#include <boost/algorithm/string.hpp>
+#include "Common/Path.h"
+#endif
+
 #if defined(TCMALLOC) || defined(TCMALLOC_MINIMAL)
 #include <google/malloc_extension.h>
 #endif
@@ -258,13 +263,28 @@ sigar_file_system_list_t &fs_list() {
 bool compute_disk_usage(const char *prefix, sigar_disk_usage_t &u) {
   sigar_disk_usage_t t;
   sigar_file_system_t *fs = fs_list().data, *fs_end = fs + fs_list().number;
+#ifndef _WIN32
   size_t prefix_len = strlen(prefix);
+#else
+  Path prefix_path(prefix);
+  std::string prefix_root;
+  if (prefix_path.is_complete() && prefix_path.has_root_path())
+    prefix_root = prefix_path.root_path().string();
+  else
+    prefix_root = prefix;
+  boost::trim_right_if(prefix_root, boost::is_any_of("/\\"));
+#endif
   u.reads = u.writes = u.write_bytes = u.read_bytes = 0;
   size_t num_found = 0;
 
   for (; fs < fs_end; ++fs) {
+#ifndef _WIN32
     if (strncmp(prefix, fs->dir_name, prefix_len) == 0
         && sigar_disk_usage_get(sigar(), fs->dir_name, &t) == SIGAR_OK) {
+#else
+    if (strnicmp(prefix_root.c_str(), fs->dir_name, prefix_root.length()) == 0
+        && sigar_disk_usage_get(sigar(), fs->dir_name, &t) == SIGAR_OK) {
+#endif
       u.reads += t.reads;
       u.writes += t.writes;
       u.read_bytes += t.read_bytes;
@@ -281,14 +301,29 @@ bool compute_disk_usage(const char *prefix, sigar_disk_usage_t &u) {
 bool compute_fs_usage(const char *prefix, sigar_file_system_usage_t &u) {
   sigar_file_system_usage_t t;
   sigar_file_system_t *fs = fs_list().data, *fs_end = fs + fs_list().number;
+#ifndef _WIN32
   size_t prefix_len = strlen(prefix);
+#else
+  Path prefix_path(prefix);
+  std::string prefix_root;
+  if (prefix_path.is_complete() && prefix_path.has_root_path())
+    prefix_root = prefix_path.root_path().string();
+  else
+    prefix_root = prefix;
+  boost::trim_right_if(prefix_root, boost::is_any_of("/\\"));
+#endif
   u.use_percent = 0.;
   u.total = u.free = u.used = u.avail = u.files = u.free_files = 0;
   size_t num_found = 0;
 
   for (; fs < fs_end; ++fs) {
+#ifndef _WIN32
     if (strncmp(prefix, fs->dir_name, prefix_len) == 0
         && sigar_file_system_usage_get(sigar(), fs->dir_name, &t) == SIGAR_OK) {
+#else
+    if (strnicmp(prefix_root.c_str(), fs->dir_name, prefix_root.length()) == 0
+        && sigar_file_system_usage_get(sigar(), fs->dir_name, &t) == SIGAR_OK) {
+#endif
 
       u.use_percent += t.use_percent * t.total; // for weighted mean;
       u.total += t.total;

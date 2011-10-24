@@ -266,10 +266,11 @@ void OperationInitialize::decode_result(const uint8_t **bufp, size_t *remainp) {
   // We need to do this here because we don't know the
   // state until we're decoding and if the state is COMPLETE,
   // this method is called instead of decode_state
-  if (m_context && is_complete())
+  if (m_context) {
     m_context->metadata_table = new Table(m_context->props, m_context->conn_manager,
                                           m_context->hyperspace, m_context->namemap,
                                           TableIdentifier::METADATA_NAME);
+  }
   Operation::decode_result(bufp, remainp);
 }
 

@@ -55,7 +55,7 @@ using namespace std;
 #ifndef _WIN32
 
 bool
-IOHandlerAccept::handle_event(struct pollfd *event, clock_t arrival_clocks, time_t arival_time) {
+IOHandlerAccept::handle_event(struct pollfd *event, time_t arival_time) {
   if (event->revents & POLLIN)
     return handle_incoming_connection();
   return true;
@@ -67,26 +67,26 @@ IOHandlerAccept::handle_event(struct pollfd *event, clock_t arrival_clocks, time
  *
  */
 #if defined(__APPLE__) || defined(__FreeBSD__)
-bool IOHandlerAccept::handle_event(struct kevent *event, clock_t, time_t) {
+bool IOHandlerAccept::handle_event(struct kevent *event, time_t) {
   //DisplayEvent(event);
   if (event->filter == EVFILT_READ)
     return handle_incoming_connection();
   return true;
 }
 #elif defined(__linux__)
-bool IOHandlerAccept::handle_event(struct epoll_event *event, clock_t, time_t) {
+bool IOHandlerAccept::handle_event(struct epoll_event *event, time_t) {
   //DisplayEvent(event);
   return handle_incoming_connection();
 }
 #elif defined(__sun__)
-bool IOHandlerAccept::handle_event(port_event_t *event, clock_t, time_t) {
+bool IOHandlerAccept::handle_event(port_event_t *event, time_t) {
   if (event->portev_events == POLLIN)
     return handle_incoming_connection();
   return true;
 }
 #elif defined(_WIN32)
 
-bool IOHandlerAccept::handle_event(IOOP *pol, clock_t, time_t) {
+bool IOHandlerAccept::handle_event(IOOP *pol, time_t) {
   const socket_t sd = pol->sd;
   const int one = 1;
 
@@ -161,7 +161,7 @@ bool IOHandlerAccept::async_accept() {
     }
   }
   else {
-    handle_event(pol, 0, 0);
+    handle_event(pol, 0);
     delete pol;
   }
   return true;

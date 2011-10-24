@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
     scanner = 0;
     if (ii != num_cells) {
       cout << "Expected " << num_cells << " cells, received " << ii << endl;
-      exit(1);
+      _exit(1);
     }
   }
   catch (Hypertable::Exception &e) {
@@ -106,5 +106,5 @@ int main(int argc, char **argv) {
 
   cout << "Test passed"<< endl;
 
-  exit(0);
+  _exit(0);
 }

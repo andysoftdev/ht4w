@@ -74,6 +74,7 @@ void IntervalScannerAsync::init(const ScanSpec &scan_spec) {
   m_scan_spec_builder.clear();
   m_scan_spec_builder.set_row_limit(scan_spec.row_limit);
   m_scan_spec_builder.set_cell_limit(scan_spec.cell_limit);
+  m_scan_spec_builder.set_cell_limit_per_family(scan_spec.cell_limit_per_family);
   m_scan_spec_builder.set_max_versions(scan_spec.max_versions);
   m_scan_spec_builder.set_row_regexp(scan_spec.row_regexp);
   m_scan_spec_builder.set_value_regexp(scan_spec.value_regexp);
@@ -184,10 +185,15 @@ void IntervalScannerAsync::init(const ScanSpec &scan_spec) {
 }
 
 IntervalScannerAsync::~IntervalScannerAsync() {
-  HT_ASSERT(!has_outstanding_requests());
-  // destroy dangling scanner
-  if (m_cur_scanner_id && !m_cur_scanner_finished)
-    m_range_server.destroy_scanner(m_range_info.addr, m_cur_scanner_id, 0);
+  try {
+    HT_ASSERT(!has_outstanding_requests());
+    // destroy dangling scanner
+    if (m_cur_scanner_id && !m_cur_scanner_finished)
+      m_range_server.destroy_scanner(m_range_info.addr, m_cur_scanner_id, 0);
+  }
+  catch(Exception &e) {
+    HT_ERROR_OUT << e << HT_END;
+  }
 }
 
 // caller is responsible for state of m_create_timer

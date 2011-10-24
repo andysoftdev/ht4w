@@ -111,24 +111,24 @@ INSERT INTO hypertable VALUES ('2008-06-28 01:00:03', 'k1', 'a', 'a22');
 SELECT * FROM hypertable WHERE ROW = 'k1' AND TIMESTAMP < '2008-06-28 01:00:01' DISPLAY_TIMESTAMPS;
 2008-06-28 01:00:00.000000000	k1	a	a11
 2008-06-28 01:00:00.000000000	k1	b	b11
-SELECT a FROM hypertable WHERE ROW="k1" AND TIMESTAMP < '2008-06-28 01:00:01' DISPLAY_TIMESTAMPS CELL_LIMIT 1;
+SELECT a FROM hypertable WHERE ROW="k1" AND TIMESTAMP < '2008-06-28 01:00:01' DISPLAY_TIMESTAMPS CELL_LIMIT_PER_FAMILY 1;
 2008-06-28 01:00:00.000000000	k1	a	a11
-SELECT * FROM hypertable CELL_LIMIT=1 LIMIT=1;
+SELECT * FROM hypertable CELL_LIMIT_PER_FAMILY=1 LIMIT=1;
 k1	a	a22
 k1	b	b11
-SELECT * FROM hypertable CELL_LIMIT=1 REVS=2;
+SELECT * FROM hypertable CELL_LIMIT_PER_FAMILY=1 REVS=2;
 k1	a	a22
 k1	b	b11
 k2	a	a21
 k2	b	b22
-SELECT * FROM hypertable CELL_LIMIT=2 REVS=2;
+SELECT * FROM hypertable CELL_LIMIT_PER_FAMILY=2 REVS=2;
 k1	a	a22
 k1	a	a11
 k1	b	b11
 k2	a	a21
 k2	b	b22
 k2	b	b21
-SELECT * FROM hypertable CELL_LIMIT=1;
+SELECT * FROM hypertable CELL_LIMIT_PER_FAMILY=1;
 k1	a	a22
 k1	b	b11
 k2	a	a21
@@ -136,6 +136,12 @@ k2	b	b22
 SELECT * FROM hypertable LIMIT=1 REVS=2;
 k1	a	a22
 k1	a	a11
+k1	b	b11
+SELECT * FROM hypertable CELL_LIMIT 2;
+k1	a	a22
+k1	a	a11
+SELECT * FROM hypertable CELL_LIMIT 2 CELL_LIMIT_PER_FAMILY 1;
+k1	a	a22
 k1	b	b11
 DROP TABLE IF EXISTS hypertable;
 CREATE TABLE hypertable ( TestColumnFamily );
@@ -2495,7 +2501,7 @@ row1	cf1	17
 row1	cf1:cq1	13
 row1	cf2:cq1	Foo1
 row2	cf2	Foo2
-SELECT * from CounterTest WHERE CELL > 'row0','cf1:cq2' LIMIT=2 CELL_LIMIT=1 MAX_VERSIONS=2;
+SELECT * from CounterTest WHERE CELL > 'row0','cf1:cq2' LIMIT=2 CELL_LIMIT_PER_FAMILY=1 MAX_VERSIONS=2;
 row0	cf3:cq1	World
 row0	cf4:cq1	6
 row1	cf1	17
@@ -2552,6 +2558,8 @@ http://yahoo.com	col2:bird	pheasant
 http://yahoo.com	col2:mailto	bodhi2sattva17
 SELECT col1:/^w[^a-zA-Z]*$/ from RegexpTest WHERE ROW REGEXP "m.*\s\S";
 moss berry	col1:w1234	giants
+SELECT col1 from RegexpTest WHERE VALUE REGEXP "^clone$";
+orange marmalade	col1:w1234	clone
 SELECT CELLS col1:/^w[^a-zA-Z]*$/ from RegexpTest WHERE ROW REGEXP "^\D+" AND VALUE REGEXP "l.*e";
 orange marmalade	col1:w1234	clone
 SELECT CELLS col1:/^w/, col2:/^[em].*/ from RegexpTest WHERE VALUE REGEXP "i.*a";

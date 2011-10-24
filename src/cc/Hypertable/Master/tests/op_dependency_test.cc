@@ -33,6 +33,7 @@
 #include "Hypertable/Master/Context.h"
 #include "Hypertable/Master/MetaLogDefinitionMaster.h"
 #include "Hypertable/Master/OperationProcessor.h"
+#include "Hypertable/Master/RemovalManager.h"
 #include "Hypertable/Master/ResponseManager.h"
 
 #include "OperationTest.h"
@@ -142,6 +143,8 @@ int main(int argc, char **argv) {
     ResponseManagerContext *rmctx = new ResponseManagerContext(context->mml_writer);
     context->response_manager = new ResponseManager(rmctx);
     Thread response_manager_thread(*context->response_manager);
+
+    context->removal_manager = new RemovalManager(context->mml_writer);
 
     context->op = new OperationProcessor(context, 4);
 
@@ -316,28 +319,30 @@ int main(int argc, char **argv) {
     }
 
     /**
-     *  TEST 3 (test BLOCKED state)
+     *  TEST 3 (test blocked state)
      */
 
-    OperationTestPtr operation_foo = new OperationTest(context, results, "foo", OperationState::BLOCKED);
-    OperationTestPtr operation_bar = new OperationTest(context, results, "bar", OperationState::BLOCKED);
+    OperationTestPtr operation_foo = new OperationTest(context, results, "foo", OperationState::STARTED);
+    OperationTestPtr operation_bar = new OperationTest(context, results, "bar", OperationState::STARTED);
 
     operations.clear();
+    operation_foo->block();
     operations.push_back(operation_foo);
+    operation_bar->block();
     operations.push_back(operation_bar);
     context->op->add_operations(operations);
     context->op->wait_for_idle();
 
     HT_ASSERT(context->op->size() == 2);
 
-    operation_foo->set_state(OperationState::STARTED);
+    operation_foo->unblock();
     context->op->wake_up();
     poll(0, 0, 1000);
     context->op->wait_for_idle();
     
     HT_ASSERT(context->op->size() == 1);
 
-    operation_bar->set_state(OperationState::STARTED);
+    operation_bar->unblock();
     context->op->wake_up();
     context->op->wait_for_empty();
 
@@ -375,6 +380,9 @@ int main(int argc, char **argv) {
     response_manager_thread.join();
     delete rmctx;
     delete context->response_manager;
+
+    context->removal_manager->shutdown();
+    delete context->removal_manager;
 
   }
   catch (Exception &e) {

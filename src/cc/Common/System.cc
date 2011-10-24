@@ -25,10 +25,18 @@
 #include <boost/filesystem.hpp>
 
 #include <iostream>
+#include <vector>
 
+#include "Common/FileUtils.h"
 #include "Common/Logger.h"
 #include "Common/Path.h"
 #include "Common/SystemInfo.h"
+
+#ifdef _WIN32
+#include <winioctl.h>
+#include <shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
+#endif
 
 using namespace Hypertable;
 using namespace std;
@@ -93,6 +101,89 @@ void System::_init(const String &install_directory) {
 
 int32_t System::get_processor_count() {
   return cpu_info().total_cores;
+}
+
+namespace {
+  int32_t drive_count = 0;
+}
+
+int32_t System::get_drive_count() {
+
+  if (drive_count > 0)
+    return drive_count;
+
+#ifndef _WIN32
+
+#if defined(__linux__)
+  String device_regex = "sd[a-z][a-z]?|hd[a-z][a-z]?";
+#elif defined(__APPLE__)
+  String device_regex = "disk[0-9][0-9]?";
+#else
+  ImplementMe;
+#endif
+
+  vector<struct dirent> listing;
+
+  FileUtils::readdir("/dev", device_regex, listing);
+
+  drive_count = listing.size();
+
+#else
+
+  char deviceName[MAX_PATH];
+  HANDLE dev;
+  DISK_GEOMETRY driveInfo;
+  DWORD dwResult;
+  for (int i = 0; i < 64; i++) {
+    _snprintf(deviceName, sizeof(deviceName), "\\\\.\\PhysicalDrive%d", i);
+    dev = CreateFileA(deviceName, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+    if (dev != INVALID_HANDLE_VALUE) {
+      if (DeviceIoControl(dev, IOCTL_DISK_GET_DRIVE_GEOMETRY, 0, 0, &driveInfo, sizeof(driveInfo), &dwResult, 0)) {
+        if (driveInfo.MediaType == FixedMedia)
+          ++drive_count;
+      }
+      CloseHandle(dev);
+    }
+  }
+
+	// check volumes if there are no physical drives
+	if (drive_count == 0) {
+		char volumeName[MAX_PATH];
+		HANDLE fh = FindFirstVolumeA(volumeName, ARRAYSIZE(volumeName));
+		if (fh != INVALID_HANDLE_VALUE) {
+			do {
+				if (GetDriveTypeA(volumeName) == DRIVE_FIXED) {
+					PathRemoveBackslashA(volumeName);
+					// is USB device
+					dev = CreateFileA(volumeName, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+					if (dev != INVALID_HANDLE_VALUE) {
+						DWORD dwOutBytes = 0;
+						STORAGE_PROPERTY_QUERY query;
+						query.PropertyId = StorageDeviceProperty;
+						query.QueryType = PropertyStandardQuery;
+
+						char outBuf[1024];
+						PSTORAGE_DEVICE_DESCRIPTOR pDevDesc = (PSTORAGE_DEVICE_DESCRIPTOR)outBuf;
+						pDevDesc->Size = sizeof(outBuf);
+						if (DeviceIoControl(dev, IOCTL_STORAGE_QUERY_PROPERTY, &query, sizeof(query), pDevDesc, pDevDesc->Size, &dwOutBytes, 0)) {
+							if (pDevDesc->BusType != BusTypeUsb) 
+								++drive_count;
+						}
+						else {
+							++drive_count; // assume none USB
+						}
+					}
+					CloseHandle(dev);
+				}
+			}
+			while (FindNextVolumeA(fh, volumeName, ARRAYSIZE(volumeName)));
+			FindVolumeClose(fh);
+		}
+	}
+
+#endif
+
+  return drive_count;
 }
 
 int32_t System::get_pid() {

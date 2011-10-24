@@ -28,26 +28,27 @@
 #define HT_VERSION_MAJOR        0
 #define HT_VERSION_MINOR        9
 #define HT_VERSION_MICRO        5
-#define HT_VERSION_PATCH        0
-#define HT_VERSION              "0.9.5.0"
+#define HT_VERSION_PATCH        2
 #define HT_VERSION_MISC_SUFFIX  ""
+#define HT_VERSION_STRING       "0.9.5.2"
 
 namespace Hypertable {
   extern const int version_major;
   extern const int version_minor;
   extern const int version_micro;
   extern const int version_patch;
-
-  extern const char *version();
+  extern const std::string version_misc_suffix;
+  extern const char *version_string();
 
   // must be inlined for version check
   inline void check_version() {
     if (version_major != HT_VERSION_MAJOR ||
         version_minor != HT_VERSION_MINOR ||
         version_micro != HT_VERSION_MICRO ||
-        version_patch != HT_VERSION_PATCH) {
+        version_patch != HT_VERSION_PATCH ||
+        version_misc_suffix != HT_VERSION_MISC_SUFFIX) {
       std::fprintf(stderr, "Hypertable header/library version mismatch:\n"
-                   " header: %s\nlibrary: %s\n", HT_VERSION, version());
+                   " header: %s\nlibrary: %s\n", HT_VERSION_STRING, version_string());
       exit(1);
     }
   }

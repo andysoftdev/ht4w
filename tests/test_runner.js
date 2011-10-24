@@ -370,6 +370,13 @@ function container_test(logfile, testName) {
     return run_target(logfile, testName, "--components smalldeque smallvector bigdeque bigvector");
 }
 
+function failure_inducer_test(logfile, testName) {
+    prepare_target(testName, ["failure_inducer_test.golden"]);
+    var status = run_target(logfile, testName);
+    files_delete(["failure_inducer_test*"]);
+    return status;
+}
+
 function fileblock_cache_test(logfile, testName) {
     return run_target(logfile, testName, "--total-memory=10000000");
 }
@@ -603,6 +610,7 @@ all_tests.add("container_test", container_test);
 all_tests.add("escape_test", run_target);
 all_tests.add("escaper_test", run_target);
 all_tests.add("exception_test", run_target);
+all_tests.add("failure_inducer_test", failure_inducer_test);
 all_tests.add("fileblock_cache_test", fileblock_cache_test);
 all_tests.add("future_abrupt_end_test", future_abrupt_end_test);
 all_tests.add("future_mutator_cancel_test", future_mutator_cancel_test);

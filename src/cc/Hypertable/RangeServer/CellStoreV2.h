@@ -32,7 +32,7 @@
 #include <ext/hash_set>
 #endif
 
-#include "CellStoreBlockIndexMap.h"
+#include "CellStoreBlockIndexArray.h"
 
 #include "AsyncComm/DispatchHandlerSynchronizer.h"
 #include "Common/DynamicBuffer.h"
@@ -79,7 +79,8 @@ namespace Hypertable {
     CellStoreV2(Filesystem *filesys);
     virtual ~CellStoreV2();
 
-    virtual void create(const char *fname, size_t max_entries, PropertiesPtr &);
+    virtual void create(const char *fname, size_t max_entries, PropertiesPtr &,
+                        const TableIdentifier *table_identifier=0);
     virtual void add(const Key &key, const ByteString value);
     virtual void finalize(TableIdentifier *table_identifier);
     virtual void open(const String &fname, const String &start_row,
@@ -140,8 +141,8 @@ namespace Hypertable {
     Filesystem            *m_filesys;
     int32_t                m_fd;
     std::string            m_filename;
-    CellStoreBlockIndexMap<uint32_t> m_index_map32;
-    CellStoreBlockIndexMap<int64_t> m_index_map64;
+    CellStoreBlockIndexArray<uint32_t> m_index_map32;
+    CellStoreBlockIndexArray<int64_t> m_index_map64;
     bool                   m_64bit_index;
     CellStoreTrailerV2     m_trailer;
     BlockCompressionCodec *m_compressor;

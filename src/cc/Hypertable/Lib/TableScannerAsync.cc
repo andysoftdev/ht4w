@@ -140,8 +140,13 @@ TableScannerAsync::TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue,
 }
 
 TableScannerAsync::~TableScannerAsync() {
-  cancel();
-  wait_for_completion();
+  try {
+    cancel();
+    wait_for_completion();
+  }
+  catch (Exception &e) {
+    HT_ERROR_OUT << e << HT_END;
+  }
 }
 
 void TableScannerAsync::cancel() {
@@ -187,7 +192,7 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
         break;
       case(Error::RANGESERVER_INVALID_SCANNER_ID):
         abort = !(m_interval_scanners[scanner_id]->is_destroyed_scanner(is_create));
-        next = true;
+        next = !m_interval_scanners[scanner_id]->has_outstanding_requests();
         break;
       case(Error::RANGESERVER_RANGE_NOT_FOUND):
       case(Error::COMM_NOT_CONNECTED):

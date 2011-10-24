@@ -49,7 +49,7 @@ using namespace std;
 #ifndef _WIN32
 
 bool 
-IOHandlerDatagram::handle_event(struct pollfd *event, clock_t, time_t) {
+IOHandlerDatagram::handle_event(struct pollfd *event, time_t) {
   int error;
 
   //DisplayEvent(event);
@@ -108,7 +108,7 @@ IOHandlerDatagram::handle_event(struct pollfd *event, clock_t, time_t) {
 
 #if defined(__linux__)
 
-bool IOHandlerDatagram::handle_event(struct epoll_event *event, clock_t, time_t) {
+bool IOHandlerDatagram::handle_event(struct epoll_event *event, time_t) {
   int error;
 
   //DisplayEvent(event);
@@ -169,7 +169,7 @@ bool IOHandlerDatagram::handle_event(struct epoll_event *event, clock_t, time_t)
 }
 
 #elif defined(__sun__)
-bool IOHandlerDatagram::handle_event(port_event_t *event, clock_t, time_t) {
+bool IOHandlerDatagram::handle_event(port_event_t *event, time_t) {
   int error;
 
   //DisplayEvent(event);
@@ -241,7 +241,7 @@ bool IOHandlerDatagram::handle_event(port_event_t *event, clock_t, time_t) {
 /**
  *
  */
-bool IOHandlerDatagram::handle_event(struct kevent *event, clock_t, time_t) {
+bool IOHandlerDatagram::handle_event(struct kevent *event, time_t) {
   int error;
 
   //DisplayEvent(event);
@@ -320,7 +320,7 @@ bool IOHandlerDatagram::async_recvfrom() {
 /**
  *
  */
-bool IOHandlerDatagram::handle_event(IOOP *pol, clock_t, time_t) {
+bool IOHandlerDatagram::handle_event(IOOP *pol, time_t) {
   if (pol->op == IOOP::RECVFROM) {
     if (pol->err != NOERROR) {
       HT_INFOF("IOOP::RECVFROM - %s", winapi_strerror(pol->err));

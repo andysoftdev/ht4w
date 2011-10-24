@@ -46,8 +46,13 @@ void LoadBalancerBasic::balance(const String &algorithm) {
   try {
     calculate_balance_plan(algorithm, plan);
     if (plan->moves.size()>0) {
-      OperationPtr operation = new OperationBalance(m_context, plan);
-      m_context->op->add_operation(operation);
+      m_context->op_balance->register_plan(plan);
+      if (m_unbalanced_servers.size() > 0) {
+        set_balanced();
+        m_unbalanced_servers.clear();
+      }
+      ptime now = second_clock::local_time();
+      m_last_balance_time = now;
     }
     else
       HT_DEBUG_OUT << "No balance plan created, nothing to do" << HT_END;
@@ -66,42 +71,63 @@ void LoadBalancerBasic::transfer_monitoring_data(vector<RangeServerStatistics> &
   m_range_server_stats.swap(stats);
 }
 
-void LoadBalancerBasic::calculate_balance_plan(String algorithm, BalancePlanPtr &balance_plan) {
-
+void LoadBalancerBasic::calculate_balance_plan(const String &algo, BalancePlanPtr &balance_plan) {
+  String algorithm(algo);
   vector <RangeServerStatistics> range_server_stats;
   uint32_t mode = BALANCE_MODE_DISTRIBUTE_LOAD;
   ptime now = second_clock::local_time();
 
+  {
+    time_duration td = now - m_last_balance_time;
+    if (td.total_milliseconds() < m_balance_wait) {
+      HT_INFO_OUT << "now=" << now << ", last balance issued at " << m_last_balance_time
+          << ", wait for " << m_balance_wait << " before checking whether balance is "
+          << "needed" << HT_END;
+      return;
+    }
+    ScopedLock lock(m_data_mutex);
+    range_server_stats = m_range_server_stats;
+  }
+
   boost::to_upper(algorithm);
   if (algorithm.size() == 0) {
+    foreach(const RangeServerStatistics &server_stats, range_server_stats) {
+      if (!server_stats.stats->live) {
+        HT_INFO_OUT << "Found non-live server " << server_stats.location
+                    << " wait till all servers are live before trying balance" << HT_END;
+        return;
+      }
+    }
     // determine which balancer to use
     mode = BALANCE_MODE_DISTRIBUTE_LOAD;
-    {
-      ScopedLock lock(m_data_mutex);
-      range_server_stats.swap(m_range_server_stats);
-    }
 
-    // when we see a new server wait for next maintenance interval to balance
+    // when we see a new server wait for some time before scheduling a balance balance
     if (!m_waiting_for_servers) {
+      size_t total_ranges = 0;
+      get_unbalanced_servers(range_server_stats);
+      size_t num_unbalanced_servers=m_unbalanced_servers.size();
       foreach(const RangeServerStatistics &server_stats, range_server_stats) {
-        if (server_stats.stats->live && server_stats.stats->range_count == 0) {
-          mode = BALANCE_MODE_DISTRIBUTE_TABLE_RANGES;
-          range_server_stats.swap(m_range_server_stats);
-          m_wait_time_start = now;
-          m_waiting_for_servers = true;
-          break;
-        }
+        total_ranges += server_stats.stats->range_count;
+      }
+      // 3 ranges shd always be in the system (2 metadata, 1 rs_metrics)
+      if (num_unbalanced_servers > 0 && total_ranges > 3 + range_server_stats.size()) {
+        HT_INFO_OUT << "Found " << num_unbalanced_servers << " new/unbalanced servers, "
+            << "total ranges =" << total_ranges << ", total rangeservers="
+            << range_server_stats.size() << HT_END;
+        mode = BALANCE_MODE_DISTRIBUTE_TABLE_RANGES;
+        m_wait_time_start = now;
+        m_waiting_for_servers = true;
       }
     }
     else
       mode = BALANCE_MODE_DISTRIBUTE_TABLE_RANGES;
   }
   else {
-    if (algorithm == "TABLE_RANGES") {
+    if (algorithm.compare("TABLE_RANGES")==0) {
       mode = BALANCE_MODE_DISTRIBUTE_TABLE_RANGES;
       m_waiting_for_servers = false;
     }
-    else if (algorithm == "LOAD")
+    else if (algorithm.compare("LOAD")==0)
       mode = BALANCE_MODE_DISTRIBUTE_LOAD;
     else
       HT_THROW(Error::NOT_IMPLEMENTED, (String)"Unknown LoadBalancer algorithm '" + algorithm
@@ -122,13 +148,14 @@ void LoadBalancerBasic::calculate_balance_plan(String algorithm, BalancePlanPtr 
   }
 
   if (balance_plan->moves.size()) {
+    get_unbalanced_servers(range_server_stats);
     if (mode == BALANCE_MODE_DISTRIBUTE_LOAD) {
       HT_INFO_OUT << "LoadBalancerBasic mode=BALANCE_MODE_DISTRIBUTE_LOAD" << HT_END;
-      m_last_balance_time = now;
     }
     else
       HT_INFO_OUT << "LoadBalancerBasic mode=BALANCE_MODE_DISTRIBUTE_TABLE_RANGES" << HT_END;
-    HT_INFO_OUT << "BalancePlan = " << *balance_plan << HT_END;
+    HT_INFO_OUT << "BalancePlan created, move " << balance_plan->moves.size() << " ranges"
+                << HT_END;
   }
 }
 
@@ -157,4 +184,12 @@ void LoadBalancerBasic::distribute_table_ranges(vector<RangeServerStatistics> &r
   LoadBalancerBasicDistributeTableRanges  planner(m_context->metadata_table);
   planner.compute_plan(range_server_stats, balance_plan);
   return;
+}
+
+void LoadBalancerBasic::get_unbalanced_servers(const vector<RangeServerStatistics> &range_server_stats) {
+  m_unbalanced_servers.clear();
+  vector<String> servers;
+  foreach(const RangeServerStatistics &server_stats, range_server_stats)
+    servers.push_back(server_stats.location);
+  m_context->get_unbalanced_servers(servers, m_unbalanced_servers);
 }

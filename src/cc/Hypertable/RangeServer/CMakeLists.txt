@@ -73,6 +73,8 @@ MaintenanceTaskMemoryPurge.cc
 MaintenanceTaskRelinquish.cc
 MaintenanceTaskSplit.cc
 MergeScanner.cc
+MergeScannerRange.cc
+MergeScannerAccessGroup.cc
 MetaLogEntityRange.cc
 MetaLogDefinitionRangeServer.cc
 MetadataNormal.cc
@@ -116,6 +118,7 @@ TableIdCache.cc
 TableInfo.cc
 TableInfoMap.cc
 TimerHandler.cc
+UpdateThread.cc
 )
 
 if (USE_TCMALLOC)

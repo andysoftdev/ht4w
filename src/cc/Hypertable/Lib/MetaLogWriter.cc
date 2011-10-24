@@ -38,7 +38,6 @@ using namespace Hypertable::MetaLog;
 
 namespace {
   const int32_t DFS_BUFFER_SIZE = -1;
-  const int32_t DFS_NUM_REPLICAS = -1;
   const int64_t DFS_BLOCK_SIZE = -1;
 }
 
@@ -75,10 +74,12 @@ Writer::Writer(FilesystemPtr &fs, DefinitionPtr &definition, const String &path,
 
   purge_old_log_files(file_ids, 10);
 
+  // get replication
+  int replication = Config::properties->get_i32("Hypertable.Metadata.Replication");
+
   // Open DFS file
   m_filename = m_path + "/" + next_id;
-  m_fd = m_fs->create(m_filename, 0, DFS_BUFFER_SIZE,
-                      DFS_NUM_REPLICAS, DFS_BLOCK_SIZE);
+  m_fd = m_fs->create(m_filename, 0, DFS_BUFFER_SIZE, replication, DFS_BLOCK_SIZE);
 
   // Open backup file
   m_backup_filename = m_backup_path + "/" + next_id;
@@ -254,7 +255,7 @@ void Writer::record_removal(std::vector<Entity *> &entities) {
 
     HT_ASSERT((ptr-buf.base) == (ptrdiff_t)buf.size);
     memcpy(backup_buf.get(), buf.base, buf.size);
-    
+
     m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
     FileUtils::write(m_backup_fd, backup_buf.get(), buf.size);
     m_offset += buf.size;

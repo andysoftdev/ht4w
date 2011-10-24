@@ -24,6 +24,8 @@
 #include "Context.h"
 #include "LoadBalancer.h"
 #include "Operation.h"
+#include "OperationBalance.h"
+#include "RemovalManager.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -41,7 +43,7 @@ void Context::add_server(RangeServerConnectionPtr &rsc) {
   pair<Sequence::iterator, bool> insert_result = m_server_list.push_back( RangeServerConnectionEntry(rsc) );
   if (!insert_result.second) {
     HT_INFOF("Tried to insert %s host=%s local=%s public=%s", rsc->location().c_str(),
-             rsc->hostname().c_str(), rsc->local_addr().format().c_str(), 
+             rsc->hostname().c_str(), rsc->local_addr().format().c_str(),
              rsc->public_addr().format().c_str());
     for (Sequence::iterator iter = m_server_list.begin(); iter != m_server_list.end(); ++iter) {
       HT_INFOF("Contains %s host=%s local=%s public=%s", iter->location().c_str(),
@@ -71,10 +73,10 @@ bool Context::connect_server(RangeServerConnectionPtr &rsc, const String &hostna
     retval = true;
   }
 
-  if (m_server_list_iter != m_server_list.end() && 
+  if (m_server_list_iter != m_server_list.end() &&
       m_server_list_iter->location() == rsc->location())
     ++m_server_list_iter;
-  
+
   // Remove this connection if already exists
   iter = hash_index.find(rsc->location());
   if (iter != hash_index.end())
@@ -214,44 +216,25 @@ void Context::get_servers(std::vector<RangeServerConnectionPtr> &servers) {
   }
 }
 
-bool Context::in_progress(Operation *operation) {
+void Context::get_unbalanced_servers(const std::vector<String> &locations,
+    std::vector<RangeServerConnectionPtr> &unbalanced) {
   ScopedLock lock(mutex);
-  return in_progress_ops.count(operation->hash_code()) > 0;
+  LocationIndex &hash_index = m_server_list.get<1>();
+  LocationIndex::iterator lookup_iter;
+  RangeServerConnectionPtr rsc;
+
+  foreach(const String &location, locations) {
+    if ((lookup_iter = hash_index.find(location)) == hash_index.end())
+      continue;
+    rsc = lookup_iter->rsc;
+    if (!rsc->get_removed() && !rsc->get_balanced())
+      unbalanced.push_back(rsc);
+  }
 }
 
-bool Context::add_in_progress(Operation *operation) {
+void Context::set_servers_balanced(const std::vector<RangeServerConnectionPtr> &unbalanced) {
   ScopedLock lock(mutex);
-  if (in_progress_ops.count(operation->hash_code()) > 0)
-    return false;
-  in_progress_ops.insert(operation->hash_code());
-  return true;
-}
-
-
-void Context::remove_in_progress(Operation *operation) {
-  ScopedLock lock(mutex);
-  if (in_progress_ops.count(operation->hash_code()) > 0)
-    in_progress_ops.erase(operation->hash_code());
-}
-
-void Context::clear_in_progress() {
-  ScopedLock lock(mutex);
-  in_progress_ops.clear();
-}
-
-
-void Context::add_unacknowledged_move(int64_t hash) {
-  ScopedLock lock(mutex);  
-  unacknowledged_moves.insert(hash);
-}
-
-bool Context::exists_unacknowledged_move(int64_t hash) {
-  ScopedLock lock(mutex);  
-  return unacknowledged_moves.count(hash) > 0;
-}
-
-void Context::acknowledge_move(int64_t hash) {
-  ScopedLock lock(mutex);
-  if (unacknowledged_moves.count(hash) > 0)
-    unacknowledged_moves.erase(hash);
+  foreach( const RangeServerConnectionPtr rsc, unbalanced) {
+    rsc->set_balanced();
+  }
 }

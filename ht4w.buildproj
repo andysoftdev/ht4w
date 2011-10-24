@@ -3,9 +3,9 @@
 
 	<PropertyGroup>
 		<!-- Version and ProductCode (x86/x64), change for each version (update also src\wix\hypertable-msi.wixproj) -->
-		<Version>0.9.5.0</Version>
-		<ProductCode_x86>2A319B06-F775-475C-8362-C7DCA58DE419</ProductCode_x86>
-		<ProductCode_x64>AAC09B7F-F852-456A-BD09-3E780132E7EF</ProductCode_x64>
+		<Version>0.9.5.2</Version>
+		<ProductCode_x86>1B6451F5-3CFB-466E-AFCA-262EA4E2AA65</ProductCode_x86>
+		<ProductCode_x64>0E5FB338-65EF-4B53-BCD5-456A8E210C1B</ProductCode_x64>
 
 		<!-- Master files to make -->
 		<MasterServers_x86>dist\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
@@ -41,21 +41,29 @@
 		<HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
 	</PropertyGroup>
 
+	<!-- Make configuration Debug or Release -->
+	<PropertyGroup>
+		<Debug>false</Debug>
+		<Debug Condition="'$(Configuration)' == '' Or '$(Configuration)' == 'Debug'">true</Debug>
+		<Release>false</Release>
+		<Release Condition="'$(Configuration)' == '' Or '$(Configuration)' == 'Release'">true</Release>
+	</PropertyGroup>
+
 	<!-- Configuration group -->
 	<ItemGroup>
-		<MakeConfiguration Include="." >
+		<MakeConfiguration Include="." Condition="$(Debug) == true" >
 			<Configuration>Debug</Configuration>
 			<Platform>Win32</Platform>
 		</MakeConfiguration>
-		<MakeConfiguration Include="." >
+		<MakeConfiguration Include="." Condition="$(Release) == true" >
 			<Configuration>Release</Configuration>
 			<Platform>Win32</Platform>
 		</MakeConfiguration>
-		<MakeConfiguration Include="." Condition="$(Is64Bit) == true" >
+		<MakeConfiguration Include="." Condition="$(Is64Bit) == true And $(Debug) == true" >
 			<Configuration>Debug</Configuration>
 			<Platform>x64</Platform>
 		</MakeConfiguration>
-		<MakeConfiguration Include="." Condition="$(Is64Bit) == true" >
+		<MakeConfiguration Include="." Condition="$(Is64Bit) == true And $(Release) == true" >
 			<Configuration>Release</Configuration>
 			<Platform>x64</Platform>
 		</MakeConfiguration>

@@ -69,7 +69,7 @@ bool Future::get(ResultPtr &result) {
       TableMutatorAsync *mutator = result->get_mutator();
       // check if alive mutator has been cancelled
       if (!mutator || m_mutator_map.find((uint64_t)mutator) == m_mutator_map.end() ||
-          !mutator->is_cancelled())
+        !mutator->is_cancelled())
         break;
     }
   }
@@ -78,6 +78,7 @@ bool Future::get(ResultPtr &result) {
 
 bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
   ScopedRecLock lock(m_outstanding_mutex);
+
   size_t mem_result=0;
   timed_out = false;
 
@@ -116,7 +117,7 @@ bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
       TableMutatorAsync *mutator = result->get_mutator();
       // check if alive mutator has been cancelled
       if (!mutator || m_mutator_map.find((uint64_t)mutator) == m_mutator_map.end() ||
-          !mutator->is_cancelled())
+        !mutator->is_cancelled())
         break;
     }
   }

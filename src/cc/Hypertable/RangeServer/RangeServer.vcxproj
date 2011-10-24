@@ -76,6 +76,8 @@
     <ClCompile Include="MaintenanceTaskRelinquish.cc" />
     <ClCompile Include="MaintenanceTaskSplit.cc" />
     <ClCompile Include="MergeScanner.cc" />
+    <ClCompile Include="MergeScannerAccessGroup.cc" />
+    <ClCompile Include="MergeScannerRange.cc" />
     <ClCompile Include="MetadataNormal.cc" />
     <ClCompile Include="MetadataRoot.cc" />
     <ClCompile Include="MetaLogDefinitionRangeServer.cc" />
@@ -119,6 +121,7 @@
     <ClCompile Include="TableInfo.cc" />
     <ClCompile Include="TableInfoMap.cc" />
     <ClCompile Include="TimerHandler.cc" />
+    <ClCompile Include="UpdateThread.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Lib\CommitLog.h" />
@@ -133,6 +136,7 @@
     <ClInclude Include="CellList.h" />
     <ClInclude Include="CellListScanner.h" />
     <ClInclude Include="CellStore.h" />
+    <ClInclude Include="CellStoreBlockIndexArray.h" />
     <ClInclude Include="CellStoreBlockIndexMap.h" />
     <ClInclude Include="CellStoreFactory.h" />
     <ClInclude Include="CellStoreInfo.h" />
@@ -187,6 +191,8 @@
     <ClInclude Include="MaintenanceTaskSplit.h" />
     <ClInclude Include="MemoryTracker.h" />
     <ClInclude Include="MergeScanner.h" />
+    <ClInclude Include="MergeScannerAccessGroup.h" />
+    <ClInclude Include="MergeScannerRange.h" />
     <ClInclude Include="Metadata.h" />
     <ClInclude Include="MetadataNormal.h" />
     <ClInclude Include="MetadataRoot.h" />
@@ -236,6 +242,7 @@
     <ClInclude Include="TableInfoMap.h" />
     <ClInclude Include="TimerHandler.h" />
     <ClInclude Include="TimerInterface.h" />
+    <ClInclude Include="UpdateThread.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C0147FE1-7A8D-4BB8-AA22-DEE968B5CD07}</ProjectGuid>
