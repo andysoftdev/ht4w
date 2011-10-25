@@ -30,14 +30,18 @@
 #define HS_DEBUG(str)
 #endif
 
+#include <boost/algorithm/string.hpp>
+#include <boost/spirit/include/classic_core.hpp>
+#include <boost/spirit/include/classic_grammar.hpp>
+#include <boost/spirit/include/classic_symbols.hpp>
 #include <boost/spirit/include/classic_confix.hpp>
 #include <boost/spirit/include/classic_escape_char.hpp>
+
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
-#include "Common/SpiritParser.h"
 #include "Common/Error.h"
 #include "Common/FileUtils.h"
 #include "Common/Logger.h"
