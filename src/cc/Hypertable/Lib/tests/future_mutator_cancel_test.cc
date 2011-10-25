@@ -150,6 +150,8 @@ int main(int argc, char **argv) {
       Future ff;
       vector<TableMutatorAsyncPtr> mutator_ptrs;
       set<TableMutatorAsyncPtr> cancelled_mutator_ptrs;
+      ns->drop_table("FutureTest", true);
+      ns->create_table("FutureTest", schema);
       table_ptr = ns->open_table("FutureTest");
 
       for(size_t ii=0; ii<num_mutators; ++ii)
