@@ -41,14 +41,17 @@ bool Future::get(ResultPtr &result) {
 
   while (true) {
     // wait till we have results to serve
-    while(_is_empty() && !is_done() && !is_cancelled()) {
+    while(_is_empty() && !is_done() && !_is_cancelled()) {
       m_outstanding_cond.wait(lock);
     }
 
-    if (is_cancelled())
+    if (_is_cancelled())
       return false;
-    if (_is_empty() && is_done())
+    if (_is_empty() && is_done()) {
+      if (m_memory_used)
+        HT_WARNF("Memory used > 0 (%lld)", (int64_t)m_memory_used);
       return false;
+    }
     result = m_queue.front();
     mem_result = result->memory_used();
     m_queue.pop_front();
@@ -88,15 +91,18 @@ bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
 
   while (true) {
     // wait till we have results to serve
-    while(_is_empty() && !is_done() && !is_cancelled()) {
+    while(_is_empty() && !is_done() && !_is_cancelled()) {
       timed_out = m_outstanding_cond.timed_wait(lock, wait_time);
       if (timed_out)
         return is_done();
     }
-    if (is_cancelled())
+    if (_is_cancelled())
       return false;
-    if (_is_empty() && is_done())
+    if (_is_empty() && is_done()) {
+      if (m_memory_used)
+        HT_WARNF("Memory used > 0 (%lld)", (int64_t)m_memory_used);
       return false;
+    }
     result = m_queue.front();
     mem_result = result->memory_used();
     m_queue.pop_front();
@@ -127,8 +133,10 @@ bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
 }
 
 void Future::scan_ok(TableScannerAsync *scanner, ScanCellsPtr &cells) {
-  ResultPtr result = new Result(scanner, cells);
-  enqueue(result);
+  if (!scanner->is_cancelled()) {
+    ResultPtr result = new Result(scanner, cells);
+    enqueue(result);
+  }
 }
 
 void Future::enqueue(ResultPtr &result) {
@@ -137,7 +145,7 @@ void Future::enqueue(ResultPtr &result) {
   while (!has_remaining_capacity() && !is_cancelled()) {
     m_outstanding_cond.wait(lock);
   }
-  if (!is_cancelled()) {
+  if (!_is_cancelled()) {
     m_queue.push_back(result);
     m_memory_used += mem_result;
   }
@@ -151,8 +159,10 @@ void Future::scan_error(TableScannerAsync *scanner, int error, const String &err
 }
 
 void Future::update_ok(TableMutatorAsync *mutator) {
-  ResultPtr result = new Result(mutator);
-  enqueue(result);
+  if (!mutator->is_cancelled()) {
+    ResultPtr result = new Result(mutator);
+    enqueue(result);
+  }
 }
 
 void Future::update_error(TableMutatorAsync *mutator, int error, FailedMutations &failures) {
