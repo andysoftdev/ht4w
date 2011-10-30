@@ -1505,7 +1505,7 @@ public:
       }
     }
     else {
-      HT_THROW(Error::NOT_IMPLEMENTED, "Support for asynchronous mutators not yet implemented");
+      //HT_THROW(Error::NOT_IMPLEMENTED, "Support for asynchronous mutators not yet implemented");
     }
   }
 
