@@ -476,7 +476,7 @@ public:
     m_client = new Hypertable::Client();
     m_next_namespace_id = 1;
     m_next_future_id = 1;
-    m_future_queue_size = Config::get_i32("ThriftBroker.Future.QueueSize");
+    m_future_queue_capacity = Config::get_i32("ThriftBroker.Future.Capacity");
   }
 
   virtual void
@@ -887,14 +887,14 @@ public:
     LOG_API_FINISH_E(" cell.size="<< cell.size());
   }
 
-  virtual ThriftGen::Future open_future(const int _queue_size) {
+  virtual ThriftGen::Future open_future(const int _queue_capacity) {
     ThriftGen::Future id;
-    LOG_API_START("queue_size=" << _queue_size);
+    LOG_API_START("queue_capacity=" << _queue_capacity);
     try {
-      int queue_size = (_queue_size <= 0) ? m_future_queue_size : _queue_size;
-      FuturePtr future_ptr = new Hypertable::Future(queue_size);
+      int queue_capacity = (_queue_capacity <= 0) ? m_future_queue_capacity : _queue_capacity;
+      FuturePtr future_ptr = new Hypertable::Future(queue_capacity);
       id = get_future_id(&future_ptr);
-    } RETHROW("queue_size=" << _queue_size)
+    } RETHROW("queue_capacity=" << _queue_capacity)
     LOG_API_FINISH_E(" future=" << id);
     return id;
   }
@@ -1951,7 +1951,7 @@ private:
   ::int64_t        m_next_future_id;
   FutureMap        m_future_map;
   Mutex            m_future_mutex;
-  ::int32_t        m_future_queue_size;
+  ::int32_t        m_future_queue_capacity;
   SharedMutatorMap m_shared_mutator_map;
   ::int32_t        m_next_threshold;
   ClientPtr        m_client;
