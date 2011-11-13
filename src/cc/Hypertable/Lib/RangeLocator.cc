@@ -182,7 +182,7 @@ void RangeLocator::initialize() {
     }
     catch (Exception &) {
       if (timer.expired()) {
-	m_hyperspace->close(handle);
+        m_hyperspace->close(handle);
         throw;
       }
       poll(0, 0, 3000);

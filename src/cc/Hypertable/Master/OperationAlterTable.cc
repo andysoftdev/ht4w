@@ -191,15 +191,9 @@ void OperationAlterTable::execute() {
 
   case OperationState::UPDATE_HYPERSPACE:
     {
-      uint64_t handle = 0;
       String filename = m_context->toplevel_dir + "/tables/" + m_id;
-
-      HT_ON_SCOPE_EXIT(&Hyperspace::close_handle_ptr, m_context->hyperspace, &handle);
-
-      handle = m_context->hyperspace->open(filename,
-                   OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_LOCK_EXCLUSIVE);
-      m_context->hyperspace->attr_set(handle, "schema", m_schema.c_str(),
-                                      m_schema.length());
+      m_context->hyperspace->attr_set(filename, OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_LOCK_EXCLUSIVE,
+                                      "schema", m_schema.c_str(), m_schema.length());
     }
     complete_ok();
     break;
