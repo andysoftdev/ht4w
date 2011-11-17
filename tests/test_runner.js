@@ -67,7 +67,7 @@ function file_exists(file) {
  function file_copy(src, dst) {
     throw_if_null(src);
     throw_if_null(dst);
-    throw_if_null(fso);    
+    throw_if_null(fso);
     try {
         fso.CopyFile(src, dst, true); // Overwrite existing
     }
@@ -195,6 +195,7 @@ function clean_target() {
     system("rd /S /Q fs");
     system("rd /S /Q run");
     system("rd /S /Q log");
+    system("rd /S /Q conf");
 }
 
 function run_target(logfile, testName, args, noclean) {
@@ -228,11 +229,15 @@ function run_servers(args) {
     system("rd /S /Q fs");
     system("rd /S /Q run");
     system("rd /S /Q log");
+    system("rd /S /Q conf");
     var status = system("..\\hypertable.service --start-servers " + args);
     if (status != 0) {
         throw "Unable to start servers [" + args +"]";
     }
     file_copy(targetDir + "\\..\\conf\\hypertable.cfg", targetDir);
+    fso.CreateFolder("conf");
+    file_copy(targetDir + "\\..\\conf\\metadata.xml", targetDir + "\\conf\\");
+    file_copy(targetDir + "\\..\\conf\\rs_metrics.xml", targetDir + "\\conf\\");
 }
 
 
@@ -526,6 +531,41 @@ function op_dependency_test(logfile, testName) {
     return run_target(logfile, testName, "--config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
 }
 
+function op_test_driver(logfile, testName) {
+    run_servers("--no-hypertable --no-rangeserver --no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
+    var status = run_target(logfile, testName, "initialize --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "system_upgrade --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "create_namespace --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "drop_namespace --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "create_table --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "rename_table --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    return run_target(logfile, testName, "move_range --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
+}
+
 function periodic_flush_test(logfile, testName) {
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
     return run_target(logfile, testName, "--config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
@@ -631,6 +671,7 @@ all_tests.add("mutator_nolog_sync_test", mutator_nolog_sync_test);
 all_tests.add("mutex_test", run_target);
 all_tests.add("name_id_mapper_test", name_id_mapper_test);
 all_tests.add("op_dependency_test", op_dependency_test);
+all_tests.add("op_test_driver", op_test_driver);
 all_tests.add("pagearena_test", run_target);
 all_tests.add("periodic_flush_test", periodic_flush_test);
 all_tests.add("properties_test", properties_test);
