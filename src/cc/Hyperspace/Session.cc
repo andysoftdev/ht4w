@@ -562,7 +562,7 @@ Session::attr_get(const std::string &name, const std::string &attr,
 {
   attr_exists = false;
   try {
-      attr_get(name, attr, attr_exists, value, timer);
+      attr_get(name, attr, value, timer);
       attr_exists = true;
     }
     catch (Exception &e) {

@@ -2342,7 +2342,7 @@ bool Master::get_handle_node(CommandContext &ctx, uint64_t handle, const char* a
   }
 
   if (!m_bdb_fs->handle_exists(txn, handle)) {
-    ctx.set_error(Error::HYPERSPACE_INVALID_HANDLE, format("handle=", (Llu)ctx.session_id));
+    ctx.set_error(Error::HYPERSPACE_INVALID_HANDLE, format("Session %llu, handle=%llu", (Llu)ctx.session_id, (Llu)handle));
     return false;
   }
 

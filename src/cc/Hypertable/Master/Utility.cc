@@ -130,8 +130,14 @@ void verify_table_name_availability(ContextPtr &context, const String &name, Str
 
   String tablefile = context->toplevel_dir + "/tables/" + id;
 
-  if (context->hyperspace->attr_exists(tablefile, "x"))
-    HT_THROW(Error::MASTER_TABLE_EXISTS, name);
+  try {
+    if (context->hyperspace->attr_exists(tablefile, "x"))
+      HT_THROW(Error::MASTER_TABLE_EXISTS, name);
+  }
+  catch (Exception &e) {
+    if (e.code() != Error::HYPERSPACE_FILE_NOT_FOUND)
+      HT_THROW2(e.code(), e, id);
+  }
 }
 
 
@@ -172,11 +178,11 @@ void create_table_in_hyperspace(ContextPtr &context, const String &name,
   String tablefile = context->toplevel_dir + "/tables/" + table_id;
   int oflags = OPEN_FLAG_READ|OPEN_FLAG_WRITE|OPEN_FLAG_CREATE;
 
-  HT_MAYBE_FAIL("Utility-create-table-in-hyperspace-2");
-
   // Write schema attribute
   context->hyperspace->attr_set(tablefile, oflags, "schema", finalschema.c_str(),
                          finalschema.length());
+
+  HT_MAYBE_FAIL("Utility-create-table-in-hyperspace-2");
 
   // Create /hypertable/tables/&lt;table&gt;/&lt;accessGroup&gt; directories
   // for this table in DFS
