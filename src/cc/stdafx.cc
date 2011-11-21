@@ -39,6 +39,9 @@
 #elif defined(_USE_HOARD)
 #pragma comment( lib, "hoard.lib" )
 #pragma comment( linker, "/INCLUDE:__hoardmalloc")
+#elif defined(_USE_JEMALLOC)
+#pragma comment( lib, "jemalloc.lib" )
+#pragma comment( linker, "/INCLUDE:__jemalloc")
 #endif
 
 #endif
