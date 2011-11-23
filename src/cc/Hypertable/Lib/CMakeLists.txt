@@ -117,7 +117,7 @@ bmz/bmz.c
 
 add_library(Hypertable ${Hypertable_SRCS})
 add_dependencies(Hypertable HyperComm Hyperspace HyperCommon)
-target_link_libraries(Hypertable ${EXPAT_LIBRARIES} Hyperspace HyperDfsBroker ${MALLOC_LIBRARY} HyperThirdParty)
+target_link_libraries(Hypertable ${EXPAT_LIBRARIES} Hyperspace HyperAppHelper HyperDfsBroker ${MALLOC_LIBRARY} HyperThirdParty)
 
 # generate_test_data
 add_executable(generate_test_data generate_test_data.cc)
@@ -189,6 +189,10 @@ target_link_libraries(future_mutator_cancel_test Hypertable)
 # future_test 
 add_executable(future_test tests/future_test.cc)
 target_link_libraries(future_test Hypertable)
+
+# scan_spec_test
+add_executable(scan_spec_test tests/scan_spec_test.cc)
+target_link_libraries(scan_spec_test Hypertable)
 
 # row_delete_test
 add_executable(row_delete_test tests/row_delete_test.cc)
@@ -280,6 +284,7 @@ add_test(Client-row-delete row_delete_test)
 add_test(Client-periodic-flush periodic_flush_test)
 add_test(NameIdMapper name_id_mapper_test --config=${DST_DIR}/name_id_mapper_test.cfg)
 add_test(StatsRangeServer-serialize rangeserver_serialize_test)
+add_test(ScenSpec-basic-tests scan_spec_test)
 
 if (NOT HT_COMPONENT_INSTALL)
   file(GLOB HEADERS *.h)

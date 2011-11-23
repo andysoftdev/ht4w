@@ -473,7 +473,7 @@ function hypertable_ldi_select_test(logfile, testName) {
 function hypertable_test(logfile, testName) {
     file_copy(solutionDir + "\\gzip.exe", targetDir);
     file_copy(solutionDir + "\\sed.exe", targetDir);
-    prepare_target(testName, ["hypertable_test.hql", "hypertable_test.golden", "hypertable_select_gz_test.golden", "*.tsv"]);
+    prepare_target(testName, ["hypertable_test.hql", "hypertable_test.golden", "offset_test.*", "timeorder_test.*", "hypertable_select_gz_test.golden", "*.tsv"]);
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
     var status = run_target(logfile, testName);
     files_delete(["gzip.exe", "sed.exe"]);
@@ -628,6 +628,11 @@ function schema_test(logfile, testName) {
     return run_target(logfile, testName);
 }
 
+function unique_test(logfile, testName) {
+    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
+    return run_target(logfile, testName);
+}
+
 
 // all tests
 var all_tests = new ActiveXObject("Scripting.Dictionary");
@@ -679,6 +684,7 @@ all_tests.add("query_cache_test", run_target);
 all_tests.add("random_read_test", random_read_test);
 all_tests.add("rangeserver_serialize_test", run_target);
 all_tests.add("row_delete_test", row_delete_test);
+all_tests.add("scan_spec_test", run_target);
 all_tests.add("scanner_abrupt_end_test", scanner_abrupt_end_test);
 all_tests.add("schema_test", schema_test);
 all_tests.add("scope_guard_test", run_target);
@@ -687,6 +693,7 @@ all_tests.add("stats_serialize_test", run_target);
 all_tests.add("string_compressor_test", run_target);
 all_tests.add("tableid_cache_test", run_target);
 all_tests.add("timeinline_test", run_target);
+all_tests.add("unique_test", unique_test);
 
 // globals
 var wshshell = new ActiveXObject("WScript.Shell");

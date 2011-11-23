@@ -54,7 +54,7 @@ endif ()
 
 # ThriftBroker
 add_executable(ThriftBroker ${ThriftBroker_SRCS})
-target_link_libraries(ThriftBroker HyperThriftConfig ${THRIFT_MALLOC_LIBRARY})
+target_link_libraries(ThriftBroker HyperThriftConfig HyperAppHelper ${THRIFT_MALLOC_LIBRARY})
 
 # Basic regression test
 add_executable(client_test tests/client_test.cc)
@@ -68,6 +68,7 @@ if (NOT HT_COMPONENT_INSTALL OR PACKAGE_THRIFTBROKER)
           ARCHIVE DESTINATION lib)
   install(FILES Client.h ThriftHelper.h Client.thrift Hql.thrift
           DESTINATION include/ThriftBroker)
+  install(DIRECTORY gen-cpp DESTINATION lib/cpp)
 endif ()
 
 if (PACKAGE_THRIFTBROKER)

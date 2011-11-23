@@ -20,9 +20,6 @@
  */
 
 #include "Common/Compat.h"
-#ifdef _WIN32
-#include <boost/algorithm/string.hpp>
-#endif
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
 #include <algorithm>
@@ -822,7 +819,8 @@ Master::attr_set(ResponseCallback *cb, uint64_t session_id, uint64_t handle,
     else {
       bool created;
       uint64_t lock_generation;
-      open(ctx, name, oflags, 0, std::vector<Attribute>(), opened_handle, created, lock_generation);
+      std::vector<Attribute> none;
+      open(ctx, name, oflags, 0, none, opened_handle, created, lock_generation);
       if (!ctx.aborted) {
         attr_set(ctx, opened_handle, 0, attrs);
         close(ctx, opened_handle);
@@ -2220,11 +2218,11 @@ void Master::exists(CommandContext& ctx, const char *name, bool& file_exists) {
 
   HT_ASSERT(ctx.txn);
   BDbTxn &txn = *ctx.txn;
-  
+
   if (m_verbose)
     HT_INFOF("exists(session_id=%llu, name=%s)", (Llu)ctx.session_id, name);
 
-  HT_ASSERT(name[0] == '/' && name[strlen(name)-1] != '/');
+  HT_ASSERT(name[0] == '/' && (name[1] == '\0' || name[strlen(name)-1] != '/'));
   file_exists = m_bdb_fs->exists(txn, name);
 
   if (m_verbose)
@@ -2324,13 +2322,14 @@ bool Master::get_handle_node(CommandContext &ctx, uint64_t handle, const char* a
     }
   }
 
-  if (m_verbose)
+  if (m_verbose) {
     if (attr && *attr)
       HT_INFOF("%s(session=%llu(%s), handle=%llu, attr=%s)", ctx.friendly_name,
                (Llu)ctx.session_id, ctx.session_data->get_name(), (Llu)handle, attr);
     else
       HT_INFOF("%s(session=%llu(%s), handle=%llu)", ctx.friendly_name,
                (Llu)ctx.session_id, ctx.session_data->get_name(), (Llu)handle);
+  }
 
   HT_ASSERT(ctx.txn);
   BDbTxn &txn = *ctx.txn;
@@ -2342,7 +2341,8 @@ bool Master::get_handle_node(CommandContext &ctx, uint64_t handle, const char* a
   }
 
   if (!m_bdb_fs->handle_exists(txn, handle)) {
-    ctx.set_error(Error::HYPERSPACE_INVALID_HANDLE, format("Session %llu, handle=%llu", (Llu)ctx.session_id, (Llu)handle));
+    ctx.set_error(Error::HYPERSPACE_INVALID_HANDLE,
+                  format("Session %llu, handle=%llu", (Llu)ctx.session_id, (Llu)handle));
     return false;
   }
 
@@ -2361,13 +2361,14 @@ bool Master::get_named_node(CommandContext &ctx, const char *name, const char* a
     }
   }
 
-  if (m_verbose)
+  if (m_verbose) {
     if (attr && *attr)
       HT_INFOF("%s(session=%llu(%s), name=%s, attr=%s)", ctx.friendly_name,
                  (Llu)ctx.session_id, ctx.session_data->get_name(), name, attr);
     else
       HT_INFOF("%s(session=%llu(%s), name=%s)", ctx.friendly_name,
                  (Llu)ctx.session_id, ctx.session_data->get_name(), name);
+  }
 
   HT_ASSERT(ctx.txn);
   BDbTxn &txn = *ctx.txn;

@@ -130,6 +130,9 @@
     <ClCompile Include="RemovalManager.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LoadBalancerBasicOffloadServers.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -262,6 +265,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RemovalManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadBalancerBasicOffloadServers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

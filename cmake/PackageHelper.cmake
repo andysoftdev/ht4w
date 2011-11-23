@@ -67,7 +67,8 @@ HT_INSTALL_LIBS(lib ${BOOST_LIBS} ${Thrift_LIBS}
                 ${Kfs_LIBRARIES} ${LibEvent_LIB} ${Log4cpp_LIBRARIES}
                 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES}
                 ${ZLIB_LIBRARIES} ${SNAPPY_LIBRARY} ${SIGAR_LIBRARY} ${Tcmalloc_LIBRARIES}
-                ${Jemalloc_LIBRARIES} ${Ceph_LIBRARIES} ${RE2_LIBRARIES} ${READLINE_LIBRARIES})
+                ${Jemalloc_LIBRARIES} ${Ceph_LIBRARIES} ${RE2_LIBRARIES}
+                 ${READLINE_LIBRARIES})
 
 if (NOT PACKAGE_THRIFTBROKER)
   HT_INSTALL_LIBS(lib ${BDB_LIBRARIES} ${RRD_LIBRARIES})
@@ -147,6 +148,8 @@ if (NOT PACKAGE_THRIFTBROKER)
     set(Xau_lib ${CMAKE_MATCH_1})
     string(REGEX MATCH "[ \t](/[^ ]+/libXdmcp\\.[^ \n]+)" dummy ${LDD_OUT})
     set(Xdmcp_lib ${CMAKE_MATCH_1})
+    string(REGEX MATCH "[ \t](/[^ ]+/librrd\\.[^ \n]+)" dummy ${LDD_OUT})
+    set(rrd_lib ${CMAKE_MATCH_1})
   endif ()
 endif ()
 
@@ -183,7 +186,7 @@ HT_INSTALL_LIBS(lib ${directfb_lib} ${fusion_lib} ${direct_lib}
                 ${pangoft2_lib} ${xcb_xlib_lib} ${xcb_lib} ${pcre_lib}
                 ${Xau_lib} ${Xdmcp_lib} ${ssl_lib} ${gssapi_krb5_lib}
                 ${krb5_lib} ${com_err_lib} ${k5crypto_lib} ${crypto_lib}
-                ${krb5support_lib})
+                ${krb5support_lib} ${Xrender_lib} ${rrd_lib})
 
 # General package variables
 if (NOT CPACK_PACKAGE_NAME)
@@ -223,7 +226,20 @@ if (PACKAGE_OS_SPECIFIC)
   string(TOLOWER "${CPACK_PACKAGE_NAME}-${VERSION}-${OS_VERSION}-${MACH}"
          CPACK_PACKAGE_FILE_NAME)
 else ()
-  string(TOLOWER "${CPACK_PACKAGE_NAME}-${VERSION}-${CMAKE_SYSTEM_NAME}-${MACH}"
+  if (APPLE)
+    string(REGEX MATCH "^([0-9]+)\\." dummy ${CMAKE_SYSTEM_VERSION})
+    set(darwin_version ${CMAKE_MATCH_1})
+    if (${darwin_version} EQUAL 10)
+      set(system_name "osx_10.6")
+    elseif (${darwin_version} EQUAL 11)
+      set(system_name "osx_10.7")
+    else ()
+      message(FATAL_ERROR "Unknown OSX version (${CMAKE_SYSTEM})")
+    endif ()
+  else ()
+    set(system_name ${CMAKE_SYSTEM_NAME})
+  endif ()
+  string(TOLOWER "${CPACK_PACKAGE_NAME}-${VERSION}-${system_name}-${MACH}"
          CPACK_PACKAGE_FILE_NAME)
 endif ()
 

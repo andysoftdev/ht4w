@@ -34,6 +34,7 @@
     <ClCompile Include="LoadBalancerBasic.cc" />
     <ClCompile Include="LoadBalancerBasicDistributeLoad.cc" />
     <ClCompile Include="LoadBalancerBasicDistributeTableRanges.cc" />
+    <ClCompile Include="LoadBalancerBasicOffloadServers.cc" />
     <ClCompile Include="MetaLogDefinitionMaster.cc" />
     <ClCompile Include="MetaLogEntityOperation.cc" />
     <ClCompile Include="Monitoring.cc" />
@@ -78,6 +79,7 @@
     <ClInclude Include="LoadBalancerBasic.h" />
     <ClInclude Include="LoadBalancerBasicDistributeLoad.h" />
     <ClInclude Include="LoadBalancerBasicDistributeTableRanges.h" />
+    <ClInclude Include="LoadBalancerBasicOffloadServers.h" />
     <ClInclude Include="MetaLogDefinitionMaster.h" />
     <ClInclude Include="MetaLogEntityOperation.h" />
     <ClInclude Include="Monitoring.h" />

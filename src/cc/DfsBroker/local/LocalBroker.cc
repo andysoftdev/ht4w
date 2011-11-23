@@ -125,7 +125,7 @@ LocalBroker::LocalBroker(PropertiesPtr &cfg) {
     root = data_dir / root;
   }
 
-  m_rootdir = root.directory_string();
+  m_rootdir = root.string();
 #ifdef _WIN32
   boost::trim_right_if(m_rootdir, boost::is_any_of("/\\"));
 #endif

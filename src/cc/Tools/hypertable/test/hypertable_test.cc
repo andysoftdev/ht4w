@@ -47,6 +47,10 @@ namespace {
     "./hypertable_test.golden",
     "./hypertable_select_gz_test.golden",
     "./hypertable_test.tsv",
+    "./offset_test.hql",
+    "./offset_test.golden",
+    "./timeorder_test.hql",
+    "./timeorder_test.golden",
     0
   };
 }
@@ -77,11 +81,11 @@ int main(int argc, char **argv) {
   cmd_str = "..\\hypertable.exe --test-mode --config hypertable.cfg "
       "< hypertable_test.hql > hypertable_test.output 2>&1";
   if (system(cmd_str.c_str()) != 0)
-    return 1;
+    _exit(1);
 
   cmd_str = "sed.exe -e s/hypertable.exe/hypertable/ig hypertable_test.output > hypertable_test.sed.output";
   if (system(cmd_str.c_str()) != 0)
-    return 1;
+    _exit(1);
 
   cmd_str = "fc hypertable_test.sed.output hypertable_test.golden";
 #endif
@@ -100,6 +104,56 @@ int main(int argc, char **argv) {
   cmd_str = "diff hypertable_select_gz_test.output hypertable_select_gz_test.golden";
 #else
   cmd_str = "fc hypertable_select_gz_test.output hypertable_select_gz_test.golden";
+#endif
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  /**
+   *  offset-test
+   */
+#ifndef _WIN32
+  cmd_str = "./hypertable --test-mode --config hypertable.cfg "
+      "< offset_test.hql > offset_test.output 2>&1";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "diff offset_test.output offset_test.golden";
+#else
+  cmd_str = "..\\hypertable.exe --test-mode --config hypertable.cfg "
+      "< offset_test.hql > offset_test.output 2>&1";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/ig offset_test.output > offset_test.sed.output";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "fc offset_test.sed.output offset_test.golden";
+#endif
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  /**
+   *  TIME_ORDER tests
+   */
+#ifndef _WIN32
+  cmd_str = "./hypertable --test-mode --config hypertable.cfg "
+      "< timeorder_test.hql > timeorder_test.output 2>&1";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "diff timeorder_test.output timeorder_test.golden";
+#else
+  cmd_str = "..\\hypertable.exe --test-mode --config hypertable.cfg "
+      "< timeorder_test.hql > timeorder_test.output 2>&1";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/ig timeorder_test.output > timeorder_test.sed.output";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "fc timeorder_test.sed.output timeorder_test.golden";
 #endif
   if (system(cmd_str.c_str()) != 0)
     _exit(1);
