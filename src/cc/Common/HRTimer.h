@@ -51,9 +51,8 @@ class HRTimer {
     }
 
     inline ~HRTimer() {
-      if (!msg.empty()) {
-        HT_INFO_OUT << peek_ms() << "ms" << std::endl << HT_END;
-      }
+      if (!msg.empty())
+        HT_NOTICE_OUT << "[" << ::GetCurrentThreadId() << "] " << msg.c_str() << " " << peek_ms() << "ms" << HT_END;
     }
 
 private:
