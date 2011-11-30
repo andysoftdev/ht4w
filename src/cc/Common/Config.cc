@@ -163,7 +163,8 @@ void DefaultPolicy::init_options() {
   // default config file in the current directory.
   if (System::install_dir == boost::filesystem::current_path().string()) {
     Path exe(System::proc_info().exe);
-    default_config = exe.parent_path() == System::install_dir
+    default_config = exe.parent_path() == System::install_dir &&
+          FileUtils::exists((exe.parent_path() / "hypertable.cfg").string())
         ? "hypertable.cfg" : "conf/hypertable.cfg";
   }
   else {
