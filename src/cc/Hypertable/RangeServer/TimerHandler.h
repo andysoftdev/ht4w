@@ -65,6 +65,8 @@ namespace Hypertable {
     bool          m_moderate_low_memory;
     boost::xtime  m_last_maintenance;
     bool          m_maintenance_outstanding;
+    int32_t       m_maintenance_queue_workers;
+    int32_t       m_app_queue_paused_ticks;
     #ifdef _WIN32
     HRTimer      *m_hrtimer;
     #endif
