@@ -881,6 +881,7 @@ Master::attr_get(ResponseCallbackAttrGet *cb, uint64_t session_id,
   CommandContext ctx("attrget", session_id);
   HT_BDBTXN_BEGIN() {
     ctx.reset(&txn);
+    dbufs.clear();
     if (attrs.size() == 1) { // if only one attr it might return HYPERSPACE_ATTR_NOT_FOUND
       dbufs.push_back(new DynamicBuffer());
       attr_get(ctx, handle, name, attrs.front().c_str(), *dbufs.back());
