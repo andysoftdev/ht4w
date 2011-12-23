@@ -78,6 +78,7 @@ const char* cfg_stop_server_timeout      = "Hypertable.Service.Timeout.StopServe
 const char* cfg_kill_server_timeout      = "Hypertable.Service.Timeout.KillServer";
 const char* cfg_connection_timeout       = "Hypertable.Service.Timeout.Connection";
 const char* cfg_minuptime_before_restart = "Hypertable.Service.MinimumUptimeBeforeRestart";
+const char* cfg_priority_class           = "Hypertable.Service.Priority";
 
 void init(int argc, char **argv) {
   typedef Meta::list<ServicePolicy, DefaultServerPolicy > Policies;
@@ -227,6 +228,17 @@ int32_t minuptime_before_restart() {
   return get_i32(cfg_minuptime_before_restart);
 }
 
+uint32_t priority_class() {
+  String priority_class = get_str(cfg_priority_class);
+  if (stricmp(priority_class.c_str(), "AboveNormal") == 0) {
+		return ABOVE_NORMAL_PRIORITY_CLASS;
+	}
+	else if (stricmp(priority_class.c_str(), "High") == 0) {
+		return HIGH_PRIORITY_CLASS;
+	}
+	return NORMAL_PRIORITY_CLASS;
+}
+
 bool silent() {
   return get_bool("silent");
 }
@@ -287,6 +299,7 @@ String server_args() {
     cfg_kill_server_timeout,
     cfg_connection_timeout,
     cfg_minuptime_before_restart,
+    cfg_priority_class,
     0
   };
 

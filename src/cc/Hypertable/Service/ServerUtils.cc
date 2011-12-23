@@ -244,8 +244,14 @@ bool ServerUtils::start(server_t server, const char* args, launched_server_t& la
   else
     HT_INFO("Creating new console");
 
-  if (ProcessUtils::create(cmd.c_str(), Config::create_console() ? CREATE_NEW_CONSOLE : CREATE_NEW_PROCESS_GROUP|DETACHED_PROCESS,
-                           si, logfile.c_str(), true, launched_server.pi, launched_server.logfile)) {
+  if (ProcessUtils::create(cmd.c_str(),
+                           Config::priority_class()|(Config::create_console() ? CREATE_NEW_CONSOLE : CREATE_NEW_PROCESS_GROUP|DETACHED_PROCESS),
+                           si,
+                           logfile.c_str(),
+                           true,
+                           launched_server.pi,
+                           launched_server.logfile)) {
+
     ServerLaunchEvent server_launch_event(launched_server.pi.dwProcessId);
     bool timed_out;
     if (!(launched = server_launch_event.wait(Config::start_server_timeout(), timed_out))) {
