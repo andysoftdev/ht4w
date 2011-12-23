@@ -260,6 +260,17 @@ void DefaultPolicy::init_options() {
         "Number of local broker worker threads created")
     ("DfsBroker.Local.Reactors", i32(),
         "Number of local broker communication reactor threads created")
+
+ #ifdef _WIN32
+
+    ("DfsBroker.Local.Embedded", boo()->default_value(false),
+        "If true the hypertable master and range server use the embedded local filesystem,"
+        "otherwise they use the DFS broker specified")
+    ("DfsBroker.Local.Embedded.AsyncIO", boo()->default_value(false),
+        "Indicates whether the embedded local filesystem uses asynchronous i/o or not.")
+
+#endif
+
     ("DfsBroker.Host", str()->default_value("localhost"),
         "Host on which the DFS broker is running (read by clients only)")
     ("DfsBroker.Port", i16()->default_value(38030),
@@ -409,6 +420,14 @@ void DefaultPolicy::init_options() {
         "Host of DFS Broker to use for Commit Log")
     ("Hypertable.RangeServer.CommitLog.DfsBroker.Port", i16(),
         "Port of DFS Broker to use for Commit Log")
+
+#ifdef _WIN32
+
+    ("Hypertable.RangeServer.CommitLog.DfsBroker.Local.Embedded", boo()->default_value(false),
+        "If true the range server use the embedded local filesystem for the commit log")
+
+#endif
+
     ("Hypertable.RangeServer.CommitLog.PruneThreshold.Min", i64()->default_value(1*G),
         "Lower threshold for amount of outstanding commit log before pruning")
     ("Hypertable.RangeServer.CommitLog.PruneThreshold.Max", i64(),

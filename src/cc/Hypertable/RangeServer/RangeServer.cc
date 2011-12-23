@@ -62,6 +62,7 @@ extern "C" {
 #include "Hypertable/Lib/old/RangeServerMetaLogEntries.h"
 
 #include "DfsBroker/Lib/Client.h"
+#include "DfsBroker/Lib/EmbeddedFilesystem.h"
 
 #include "FillScanBlock.h"
 #include "Global.h"
@@ -251,18 +252,29 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   Global::protocol = new Hypertable::RangeServerProtocol();
 
-  DfsBroker::Client *dfsclient = new DfsBroker::Client(conn_mgr, props);
-
   int dfs_timeout;
   if (props->has("DfsBroker.Timeout"))
     dfs_timeout = props->get_i32("DfsBroker.Timeout");
   else
     dfs_timeout = props->get_i32("Hypertable.Request.Timeout");
 
+#ifdef _WIN32
+  bool dfsBrokerLocalEmbedded = props->get_bool("DfsBroker.Local.Embedded");
+  if (!dfsBrokerLocalEmbedded) {
+#endif
+
+  DfsBroker::Client *dfsclient = new DfsBroker::Client(conn_mgr, props);
+
   if (!dfsclient->wait_for_connection(dfs_timeout))
     HT_THROW(Error::REQUEST_TIMEOUT, "connecting to DFS Broker");
 
   Global::dfs = dfsclient;
+
+#ifdef _WIN32
+  }
+  else
+    Global::dfs = new DfsBroker::EmbeddedFilesystem(props);
+#endif
 
   m_log_roll_limit = cfg.get_i64("CommitLog.RollLimit");
 
@@ -276,13 +288,18 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     uint16_t logport = cfg.get_i16("CommitLog.DfsBroker.Port");
     InetAddr addr(loghost, logport);
 
-    dfsclient = new DfsBroker::Client(conn_mgr, addr, dfs_timeout);
+    DfsBroker::Client *log_dfsclient = new DfsBroker::Client(conn_mgr, addr, dfs_timeout);
 
-    if (!dfsclient->wait_for_connection(30000))
+    if (!log_dfsclient->wait_for_connection(30000))
       HT_THROW(Error::REQUEST_TIMEOUT, "connecting to commit log DFS broker");
 
-    Global::log_dfs = dfsclient;
+    Global::log_dfs = log_dfsclient;
   }
+#ifdef _WIN32
+  else if (!dfsBrokerLocalEmbedded &&
+           cfg.get_bool("CommitLog.DfsBroker.Local.Embedded"))
+    Global::log_dfs = new DfsBroker::EmbeddedFilesystem(props);
+#endif
   else
     Global::log_dfs = Global::dfs;
 

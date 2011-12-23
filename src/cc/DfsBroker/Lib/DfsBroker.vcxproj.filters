@@ -97,6 +97,9 @@
     <ClCompile Include="ResponseCallbackReaddir.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="EmbeddedFilesystem.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Broker.h">
@@ -193,6 +196,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ResponseCallbackReaddir.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EmbeddedFilesystem.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

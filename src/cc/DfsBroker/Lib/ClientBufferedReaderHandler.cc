@@ -33,7 +33,7 @@ using namespace DfsBroker;
  *
  */
 ClientBufferedReaderHandler::ClientBufferedReaderHandler(
-    DfsBroker::Client *client, uint32_t fd, uint32_t buf_size,
+    Filesystem *client, uint32_t fd, uint32_t buf_size,
     uint32_t outstanding, uint64_t start_offset, uint64_t end_offset) :
     m_client(client), m_fd(fd), m_read_size(buf_size), m_eof(false),
     m_error(Error::OK) {

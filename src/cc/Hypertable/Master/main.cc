@@ -37,6 +37,7 @@ extern "C" {
 #include "Hypertable/Lib/Config.h"
 #include "Hypertable/Lib/MetaLogReader.h"
 #include "DfsBroker/Lib/Client.h"
+#include "DfsBroker/Lib/EmbeddedFilesystem.h"
 
 #include "ConnectionHandler.h"
 #include "Context.h"
@@ -119,7 +120,14 @@ int main(int argc, char **argv) {
 
     context->namemap = new NameIdMapper(context->hyperspace, context->toplevel_dir);
     context->range_split_size = context->props->get_i64("Hypertable.RangeServer.Range.SplitSize");
+#ifndef _WIN32
     context->dfs = new DfsBroker::Client(context->conn_manager, context->props);
+#else
+    if (context->props->get_bool("DfsBroker.Local.Embedded"))
+      context->dfs = new DfsBroker::EmbeddedFilesystem(context->props);
+    else
+      context->dfs = new DfsBroker::Client(context->conn_manager, context->props);
+#endif
     context->mml_definition =
         new MetaLog::DefinitionMaster(context, format("%s_%u", "master", port).c_str());
     context->monitoring = new Monitoring(properties, context->namemap);

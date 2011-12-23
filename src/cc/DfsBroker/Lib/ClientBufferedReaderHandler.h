@@ -27,6 +27,7 @@
 
 #include "Common/Mutex.h"
 #include "Common/String.h"
+#include "Common/Filesystem.h"
 #include "AsyncComm/DispatchHandler.h"
 
 namespace Hypertable {
@@ -38,7 +39,7 @@ namespace Hypertable {
   class ClientBufferedReaderHandler : public DispatchHandler {
 
   public:
-    ClientBufferedReaderHandler(DfsBroker::Client *client, uint32_t fd,
+    ClientBufferedReaderHandler(Filesystem *client, uint32_t fd,
         uint32_t buf_size, uint32_t outstanding, uint64_t start_offset,
         uint64_t end_offset);
 
@@ -55,7 +56,7 @@ namespace Hypertable {
     Mutex                m_mutex;
     boost::condition     m_cond;
     std::queue<EventPtr> m_queue;
-    DfsBroker::Client   *m_client;
+    Filesystem          *m_client;
     uint32_t             m_fd;
     uint32_t             m_max_outstanding;
     uint32_t             m_read_size;

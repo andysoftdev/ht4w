@@ -30,6 +30,7 @@
     <ClCompile Include="Config.cc" />
     <ClCompile Include="ConnectionHandler.cc" />
     <ClCompile Include="FileDevice.cc" />
+    <ClCompile Include="EmbeddedFilesystem.cc" />
     <ClCompile Include="Protocol.cc" />
     <ClCompile Include="RequestHandlerAppend.cc" />
     <ClCompile Include="RequestHandlerClose.cc" />
@@ -63,6 +64,7 @@
     <ClInclude Include="ConnectionHandler.h" />
     <ClInclude Include="ConnectionHandlerFactory.h" />
     <ClInclude Include="FileDevice.h" />
+    <ClInclude Include="EmbeddedFilesystem.h" />
     <ClInclude Include="OpenFileMap.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="RequestHandlerAppend.h" />
