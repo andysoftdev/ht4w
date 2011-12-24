@@ -64,7 +64,7 @@ endmacro()
 
 # Dependent libraries
 HT_INSTALL_LIBS(lib ${BOOST_LIBS} ${Thrift_LIBS}
-                ${Kfs_LIBRARIES} ${LibEvent_LIB} ${Log4cpp_LIBRARIES}
+                ${Kfs_LIBRARIES} ${Mapr_LIBRARIES} ${LibEvent_LIB} ${Log4cpp_LIBRARIES}
                 ${EXPAT_LIBRARIES} ${BZIP2_LIBRARIES}
                 ${ZLIB_LIBRARIES} ${SNAPPY_LIBRARY} ${SIGAR_LIBRARY} ${Tcmalloc_LIBRARIES}
                 ${Jemalloc_LIBRARIES} ${Ceph_LIBRARIES} ${RE2_LIBRARIES}
@@ -187,6 +187,11 @@ HT_INSTALL_LIBS(lib ${directfb_lib} ${fusion_lib} ${direct_lib}
                 ${Xau_lib} ${Xdmcp_lib} ${ssl_lib} ${gssapi_krb5_lib}
                 ${krb5_lib} ${com_err_lib} ${k5crypto_lib} ${crypto_lib}
                 ${krb5support_lib} ${Xrender_lib} ${rrd_lib})
+
+# Hack for issue 745
+if (APPLE AND EXISTS "/opt/local/lib/libintl.8.dylib")
+  HT_INSTALL_LIBS(lib "/opt/local/lib/libintl.8.dylib")
+endif ()
 
 # General package variables
 if (NOT CPACK_PACKAGE_NAME)

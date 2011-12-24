@@ -28,6 +28,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/lexical_cast.hpp>
 
 #ifdef _WIN32
 #include <Objbase.h>
@@ -38,12 +39,15 @@ namespace Hypertable { namespace HyperAppHelper {
 
 String generate_guid()
 {
-  boost::uuids::uuid u;
   #ifdef _WIN32
   #ifdef _DEBUG
   HT_ASSERT(sizeof(GUID) == boost::uuids::uuid::static_size());
   #endif
+  boost::uuids::uuid u;
   (void)::CoCreateGuid( (GUID*)&u.data );
+  #else
+  boost::uuids::random_generator gen;
+  boost::uuids::uuid u(gen());
   #endif
   return boost::lexical_cast<string>(u);
 }

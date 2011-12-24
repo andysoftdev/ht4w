@@ -240,6 +240,10 @@ void DefaultPolicy::init_options() {
     ("HdfsBroker.fs.default.name", str(), "Hadoop Filesystem "
         "default name, same as fs.default.name property in Hadoop config "
         "(e.g. hdfs://localhost:9000)")
+    ("DfsBroker.Hdfs.NameNode.Host", str()->default_value("default"),
+        "Name of host on which HDFS NameNode is running")
+    ("DfsBroker.Hdfs.NameNode.Port", i16()->default_value(0),
+        "Port number on which HDFS NameNode is running")
     ("HdfsBroker.Workers", i32(),
         "Number of HDFS broker worker threads created")
     ("HdfsBroker.Reactors", i32(),
@@ -479,8 +483,8 @@ void DefaultPolicy::init_options() {
     ("ThriftBroker.Timeout", i32(), "Timeout (ms) for thrift broker")
     ("ThriftBroker.Port", i16()->default_value(38080), "Port number for "
         "thrift broker")
-    ("ThriftBroker.Future.Capacity", i32()->default_value(0), "Capacity "
-        "of result queue for Future objects. Default is an unbound queue.")
+    ("ThriftBroker.Future.Capacity", i32()->default_value(50*M), "Capacity "
+        "of result queue (in bytes) for Future objects")
     ("ThriftBroker.NextThreshold", i32()->default_value(128*K), "Total size  "
         "threshold for (size of cell data) for thrift broker next calls")
     ("ThriftBroker.API.Logging", boo()->default_value(false), "Enable or "

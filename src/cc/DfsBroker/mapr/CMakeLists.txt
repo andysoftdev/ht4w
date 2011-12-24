@@ -17,20 +17,10 @@
 # 02110-1301, USA.
 #
 
-add_subdirectory(dfsclient)
-add_subdirectory(dumplog)
-add_subdirectory(generate_error_code_doc)
-add_subdirectory(hyperspace)
-add_subdirectory(hypertable)
-add_subdirectory(master_client)
-add_subdirectory(merge_diff)
-add_subdirectory(metalog_dump)
-add_subdirectory(prepend_md5)
-add_subdirectory(prune_tsv)
-add_subdirectory(rsclient)
-add_subdirectory(rsstat)
-add_subdirectory(serverup)
-add_subdirectory(Lib)
-add_subdirectory(load_generator)
-add_subdirectory(get_property)
-add_subdirectory(balance_plan_generator)
+include_directories(${Mapr_INCLUDE_DIR} ${Jni_INCLUDE_DIR})
+
+# maprBroker
+add_executable(maprBroker main.cc MaprBroker.cc)
+target_link_libraries(maprBroker HyperDfsBroker ${Mapr_LIBRARIES} ${MALLOC_LIBRARY})
+
+install(TARGETS maprBroker RUNTIME DESTINATION bin)

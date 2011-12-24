@@ -163,8 +163,8 @@ std::ostream &operator<<(std::ostream &out, const ScanSpec &ss) {
   if (ss.__isset.cell_limit_per_family)
     out <<" cell_limit_per_family="<< ss.cell_limit_per_family;
 
-  if (ss.__isset.revs)
-    out <<" revs="<< ss.revs;
+  if (ss.__isset.versions)
+    out <<" versions="<< ss.versions;
 
   if (ss.__isset.return_deletes)
     out <<" return_deletes="<< ss.return_deletes;
@@ -222,6 +222,30 @@ std::ostream &operator<<(std::ostream &out, const HqlResult &hr) {
 
 std::ostream &operator<<(std::ostream &out, const HqlResult2 &hr) {
   out <<"{HqlResult2:";
+
+  if (hr.__isset.results) {
+    out <<" results=[";
+    foreach(const std::string &s, hr.results)
+      out <<"  '"<< s <<"'\n";
+    out <<"  ]\n";
+  }
+  if (hr.__isset.cells) {
+    out <<" cells=[\n";
+    foreach(const CellAsArray &cell, hr.cells)
+      out <<"  "<< cell <<"\n";
+    out <<"  ]\n";
+  }
+  if (hr.__isset.scanner)
+    out <<" scanner="<< hr.scanner;
+
+  if (hr.__isset.mutator)
+    out <<" mutator="<< hr.mutator;
+
+  return out <<'}';
+}
+
+std::ostream &operator<<(std::ostream &out, const HqlResultAsArrays &hr) {
+  out <<"{HqlResultAsArrays:";
 
   if (hr.__isset.results) {
     out <<" results=[";

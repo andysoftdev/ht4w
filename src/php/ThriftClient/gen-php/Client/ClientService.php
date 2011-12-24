@@ -9,31 +9,53 @@ include_once $GLOBALS['THRIFT_ROOT'].'/Thrift.php';
 include_once $GLOBALS['THRIFT_ROOT'].'/packages/Client/Client_types.php';
 
 interface ClientServiceIf {
+  public function namespace_create($ns);
   public function create_namespace($ns);
   public function create_table($ns, $table_name, $schema);
+  public function table_create($ns, $table_name, $schema);
   public function alter_table($ns, $table_name, $schema);
+  public function table_alter($ns, $table_name, $schema);
+  public function namespace_open($ns);
   public function open_namespace($ns);
+  public function namespace_close($ns);
   public function close_namespace($ns);
-  public function open_future($queue_size);
+  public function future_open($capacity);
+  public function open_future($capacity);
+  public function future_cancel($ff);
   public function cancel_future($ff);
-  public function get_future_result($ff);
-  public function get_future_result_as_arrays($ff);
-  public function get_future_result_serialized($ff);
+  public function future_get_result($ff, $timeout_millis);
+  public function get_future_result($ff, $timeout_millis);
+  public function future_get_result_as_arrays($ff, $timeout_millis);
+  public function get_future_result_as_arrays($ff, $timeout_millis);
+  public function future_get_result_serialized($ff, $timeout_millis);
+  public function get_future_result_serialized($ff, $timeout_millis);
   public function future_is_empty($ff);
   public function future_is_full($ff);
   public function future_is_cancelled($ff);
   public function future_has_outstanding($ff);
+  public function future_close($ff);
   public function close_future($ff);
+  public function scanner_open($ns, $table_name, $scan_spec);
   public function open_scanner($ns, $table_name, $scan_spec);
+  public function async_scanner_open($ns, $table_name, $future, $scan_spec);
   public function open_scanner_async($ns, $table_name, $future, $scan_spec);
+  public function scanner_close($scanner);
   public function close_scanner($scanner);
+  public function async_scanner_cancel($scanner);
   public function cancel_scanner_async($scanner);
+  public function async_scanner_close($scanner);
   public function close_scanner_async($scanner);
+  public function scanner_get_cells($scanner);
   public function next_cells($scanner);
+  public function scanner_get_cells_as_arrays($scanner);
   public function next_cells_as_arrays($scanner);
+  public function scanner_get_cells_serialized($scanner);
   public function next_cells_serialized($scanner);
+  public function scanner_get_row($scanner);
   public function next_row($scanner);
+  public function scanner_get_row_as_arrays($scanner);
   public function next_row_as_arrays($scanner);
+  public function scanner_get_row_serialized($scanner);
   public function next_row_serialized($scanner);
   public function get_row($ns, $table_name, $row);
   public function get_row_as_arrays($ns, $name, $row);
@@ -42,40 +64,73 @@ interface ClientServiceIf {
   public function get_cells($ns, $table_name, $scan_spec);
   public function get_cells_as_arrays($ns, $name, $scan_spec);
   public function get_cells_serialized($ns, $name, $scan_spec);
+  public function shared_mutator_refresh($ns, $table_name, $mutate_spec);
   public function refresh_shared_mutator($ns, $table_name, $mutate_spec);
+  public function shared_mutator_set_cells($ns, $table_name, $mutate_spec, $cells);
   public function offer_cells($ns, $table_name, $mutate_spec, $cells);
+  public function shared_mutator_set_cells_as_arrays($ns, $table_name, $mutate_spec, $cells);
   public function offer_cells_as_arrays($ns, $table_name, $mutate_spec, $cells);
+  public function shared_mutator_set_cell($ns, $table_name, $mutate_spec, $cell);
   public function offer_cell($ns, $table_name, $mutate_spec, $cell);
+  public function shared_mutator_set_cell_as_array($ns, $table_name, $mutate_spec, $cell);
   public function offer_cell_as_array($ns, $table_name, $mutate_spec, $cell);
+  public function mutator_open($ns, $table_name, $flags, $flush_interval);
   public function open_mutator($ns, $table_name, $flags, $flush_interval);
+  public function async_mutator_open($ns, $table_name, $future, $flags);
   public function open_mutator_async($ns, $table_name, $future, $flags);
+  public function mutator_close($mutator);
   public function close_mutator($mutator);
+  public function async_mutator_cancel($mutator);
   public function cancel_mutator_async($mutator);
+  public function async_mutator_close($mutator);
   public function close_mutator_async($mutator);
-  public function set_cell($mutator, $cell);
-  public function set_cell_as_array($mutator, $cell);
-  public function set_cells($mutator, $cells);
-  public function set_cells_as_arrays($mutator, $cells);
-  public function set_cells_serialized($mutator, $cells, $flush);
+  public function mutator_set_cell($mutator, $cell);
+  public function set_cell($ns, $table_name, $cell);
+  public function mutator_set_cell_as_array($mutator, $cell);
+  public function set_cell_as_array($ns, $table_name, $cell);
+  public function mutator_set_cells($mutator, $cells);
+  public function set_cells($ns, $table_name, $cells);
+  public function mutator_set_cells_as_arrays($mutator, $cells);
+  public function set_cells_as_arrays($ns, $table_name, $cells);
+  public function mutator_set_cells_serialized($mutator, $cells, $flush);
+  public function set_cells_serialized($ns, $table_name, $cells);
+  public function mutator_flush($mutator);
   public function flush_mutator($mutator);
+  public function async_mutator_set_cell($mutator, $cell);
   public function set_cell_async($mutator, $cell);
+  public function async_mutator_set_cell_as_array($mutator, $cell);
   public function set_cell_as_array_async($mutator, $cell);
+  public function async_mutator_set_cells($mutator, $cells);
   public function set_cells_async($mutator, $cells);
+  public function async_mutator_set_cells_as_arrays($mutator, $cells);
   public function set_cells_as_arrays_async($mutator, $cells);
+  public function async_mutator_set_cells_serialized($mutator, $cells, $flush);
   public function set_cells_serialized_async($mutator, $cells, $flush);
+  public function async_mutator_flush($mutator);
   public function flush_mutator_async($mutator);
+  public function namespace_exists($ns);
   public function exists_namespace($ns);
   public function exists_table($ns, $name);
+  public function table_exists($ns, $name);
+  public function table_get_id($ns, $table_name);
   public function get_table_id($ns, $table_name);
+  public function table_get_schema_str($ns, $table_name);
   public function get_schema_str($ns, $table_name);
+  public function table_get_schema_str_with_ids($ns, $table_name);
   public function get_schema_str_with_ids($ns, $table_name);
+  public function table_get_schema($ns, $table_name);
   public function get_schema($ns, $table_name);
   public function get_tables($ns);
+  public function namespace_get_listing($ns);
   public function get_listing($ns);
+  public function table_get_splits($ns, $table_name);
   public function get_table_splits($ns, $table_name);
+  public function namespace_drop($ns, $if_exists);
   public function drop_namespace($ns, $if_exists);
   public function rename_table($ns, $name, $new_name);
+  public function table_rename($ns, $name, $new_name);
   public function drop_table($ns, $name, $if_exists);
+  public function table_drop($ns, $name, $if_exists);
   public function generate_guid();
   public function create_cell_unique($ns, $table_name, $key, $value);
 }
@@ -89,6 +144,57 @@ class ClientServiceClient implements ClientServiceIf {
   public function __construct($input, $output=null) {
     $this->input_ = $input;
     $this->output_ = $output ? $output : $input;
+  }
+
+  public function namespace_create($ns)
+  {
+    $this->send_namespace_create($ns);
+    $this->recv_namespace_create();
+  }
+
+  public function send_namespace_create($ns)
+  {
+    $args = new ClientService_namespace_create_args();
+    $args->ns = $ns;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'namespace_create', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('namespace_create', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_namespace_create()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_namespace_create_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_namespace_create_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
   }
 
   public function create_namespace($ns)
@@ -195,6 +301,59 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function table_create($ns, $table_name, $schema)
+  {
+    $this->send_table_create($ns, $table_name, $schema);
+    $this->recv_table_create();
+  }
+
+  public function send_table_create($ns, $table_name, $schema)
+  {
+    $args = new ClientService_table_create_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->schema = $schema;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_create', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_create', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_create()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_create_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_create_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function alter_table($ns, $table_name, $schema)
   {
     $this->send_alter_table($ns, $table_name, $schema);
@@ -246,6 +405,113 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     return;
+  }
+
+  public function table_alter($ns, $table_name, $schema)
+  {
+    $this->send_table_alter($ns, $table_name, $schema);
+    $this->recv_table_alter();
+  }
+
+  public function send_table_alter($ns, $table_name, $schema)
+  {
+    $args = new ClientService_table_alter_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->schema = $schema;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_alter', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_alter', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_alter()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_alter_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_alter_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function namespace_open($ns)
+  {
+    $this->send_namespace_open($ns);
+    return $this->recv_namespace_open();
+  }
+
+  public function send_namespace_open($ns)
+  {
+    $args = new ClientService_namespace_open_args();
+    $args->ns = $ns;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'namespace_open', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('namespace_open', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_namespace_open()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_namespace_open_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_namespace_open_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("namespace_open failed: unknown result");
   }
 
   public function open_namespace($ns)
@@ -302,6 +568,57 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("open_namespace failed: unknown result");
   }
 
+  public function namespace_close($ns)
+  {
+    $this->send_namespace_close($ns);
+    $this->recv_namespace_close();
+  }
+
+  public function send_namespace_close($ns)
+  {
+    $args = new ClientService_namespace_close_args();
+    $args->ns = $ns;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'namespace_close', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('namespace_close', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_namespace_close()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_namespace_close_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_namespace_close_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function close_namespace($ns)
   {
     $this->send_close_namespace($ns);
@@ -353,16 +670,70 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
-  public function open_future($queue_size)
+  public function future_open($capacity)
   {
-    $this->send_open_future($queue_size);
+    $this->send_future_open($capacity);
+    return $this->recv_future_open();
+  }
+
+  public function send_future_open($capacity)
+  {
+    $args = new ClientService_future_open_args();
+    $args->capacity = $capacity;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'future_open', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('future_open', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_future_open()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_future_open_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_future_open_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("future_open failed: unknown result");
+  }
+
+  public function open_future($capacity)
+  {
+    $this->send_open_future($capacity);
     return $this->recv_open_future();
   }
 
-  public function send_open_future($queue_size)
+  public function send_open_future($capacity)
   {
     $args = new ClientService_open_future_args();
-    $args->queue_size = $queue_size;
+    $args->capacity = $capacity;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -405,6 +776,57 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     throw new Exception("open_future failed: unknown result");
+  }
+
+  public function future_cancel($ff)
+  {
+    $this->send_future_cancel($ff);
+    $this->recv_future_cancel();
+  }
+
+  public function send_future_cancel($ff)
+  {
+    $args = new ClientService_future_cancel_args();
+    $args->ff = $ff;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'future_cancel', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('future_cancel', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_future_cancel()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_future_cancel_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_future_cancel_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
   }
 
   public function cancel_future($ff)
@@ -458,16 +880,72 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
-  public function get_future_result($ff)
+  public function future_get_result($ff, $timeout_millis)
   {
-    $this->send_get_future_result($ff);
+    $this->send_future_get_result($ff, $timeout_millis);
+    return $this->recv_future_get_result();
+  }
+
+  public function send_future_get_result($ff, $timeout_millis)
+  {
+    $args = new ClientService_future_get_result_args();
+    $args->ff = $ff;
+    $args->timeout_millis = $timeout_millis;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'future_get_result', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('future_get_result', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_future_get_result()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_future_get_result_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_future_get_result_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("future_get_result failed: unknown result");
+  }
+
+  public function get_future_result($ff, $timeout_millis)
+  {
+    $this->send_get_future_result($ff, $timeout_millis);
     return $this->recv_get_future_result();
   }
 
-  public function send_get_future_result($ff)
+  public function send_get_future_result($ff, $timeout_millis)
   {
     $args = new ClientService_get_future_result_args();
     $args->ff = $ff;
+    $args->timeout_millis = $timeout_millis;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -512,16 +990,72 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("get_future_result failed: unknown result");
   }
 
-  public function get_future_result_as_arrays($ff)
+  public function future_get_result_as_arrays($ff, $timeout_millis)
   {
-    $this->send_get_future_result_as_arrays($ff);
+    $this->send_future_get_result_as_arrays($ff, $timeout_millis);
+    return $this->recv_future_get_result_as_arrays();
+  }
+
+  public function send_future_get_result_as_arrays($ff, $timeout_millis)
+  {
+    $args = new ClientService_future_get_result_as_arrays_args();
+    $args->ff = $ff;
+    $args->timeout_millis = $timeout_millis;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'future_get_result_as_arrays', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('future_get_result_as_arrays', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_future_get_result_as_arrays()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_future_get_result_as_arrays_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_future_get_result_as_arrays_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("future_get_result_as_arrays failed: unknown result");
+  }
+
+  public function get_future_result_as_arrays($ff, $timeout_millis)
+  {
+    $this->send_get_future_result_as_arrays($ff, $timeout_millis);
     return $this->recv_get_future_result_as_arrays();
   }
 
-  public function send_get_future_result_as_arrays($ff)
+  public function send_get_future_result_as_arrays($ff, $timeout_millis)
   {
     $args = new ClientService_get_future_result_as_arrays_args();
     $args->ff = $ff;
+    $args->timeout_millis = $timeout_millis;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -566,16 +1100,72 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("get_future_result_as_arrays failed: unknown result");
   }
 
-  public function get_future_result_serialized($ff)
+  public function future_get_result_serialized($ff, $timeout_millis)
   {
-    $this->send_get_future_result_serialized($ff);
+    $this->send_future_get_result_serialized($ff, $timeout_millis);
+    return $this->recv_future_get_result_serialized();
+  }
+
+  public function send_future_get_result_serialized($ff, $timeout_millis)
+  {
+    $args = new ClientService_future_get_result_serialized_args();
+    $args->ff = $ff;
+    $args->timeout_millis = $timeout_millis;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'future_get_result_serialized', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('future_get_result_serialized', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_future_get_result_serialized()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_future_get_result_serialized_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_future_get_result_serialized_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("future_get_result_serialized failed: unknown result");
+  }
+
+  public function get_future_result_serialized($ff, $timeout_millis)
+  {
+    $this->send_get_future_result_serialized($ff, $timeout_millis);
     return $this->recv_get_future_result_serialized();
   }
 
-  public function send_get_future_result_serialized($ff)
+  public function send_get_future_result_serialized($ff, $timeout_millis)
   {
     $args = new ClientService_get_future_result_serialized_args();
     $args->ff = $ff;
+    $args->timeout_millis = $timeout_millis;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -836,6 +1426,57 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("future_has_outstanding failed: unknown result");
   }
 
+  public function future_close($ff)
+  {
+    $this->send_future_close($ff);
+    $this->recv_future_close();
+  }
+
+  public function send_future_close($ff)
+  {
+    $args = new ClientService_future_close_args();
+    $args->ff = $ff;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'future_close', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('future_close', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_future_close()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_future_close_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_future_close_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function close_future($ff)
   {
     $this->send_close_future($ff);
@@ -885,6 +1526,62 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     return;
+  }
+
+  public function scanner_open($ns, $table_name, $scan_spec)
+  {
+    $this->send_scanner_open($ns, $table_name, $scan_spec);
+    return $this->recv_scanner_open();
+  }
+
+  public function send_scanner_open($ns, $table_name, $scan_spec)
+  {
+    $args = new ClientService_scanner_open_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->scan_spec = $scan_spec;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'scanner_open', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('scanner_open', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_scanner_open()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_scanner_open_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_scanner_open_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("scanner_open failed: unknown result");
   }
 
   public function open_scanner($ns, $table_name, $scan_spec)
@@ -941,6 +1638,63 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     throw new Exception("open_scanner failed: unknown result");
+  }
+
+  public function async_scanner_open($ns, $table_name, $future, $scan_spec)
+  {
+    $this->send_async_scanner_open($ns, $table_name, $future, $scan_spec);
+    return $this->recv_async_scanner_open();
+  }
+
+  public function send_async_scanner_open($ns, $table_name, $future, $scan_spec)
+  {
+    $args = new ClientService_async_scanner_open_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->future = $future;
+    $args->scan_spec = $scan_spec;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_scanner_open', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_scanner_open', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_scanner_open()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_scanner_open_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_scanner_open_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("async_scanner_open failed: unknown result");
   }
 
   public function open_scanner_async($ns, $table_name, $future, $scan_spec)
@@ -1000,6 +1754,57 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("open_scanner_async failed: unknown result");
   }
 
+  public function scanner_close($scanner)
+  {
+    $this->send_scanner_close($scanner);
+    $this->recv_scanner_close();
+  }
+
+  public function send_scanner_close($scanner)
+  {
+    $args = new ClientService_scanner_close_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'scanner_close', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('scanner_close', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_scanner_close()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_scanner_close_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_scanner_close_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function close_scanner($scanner)
   {
     $this->send_close_scanner($scanner);
@@ -1042,6 +1847,57 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_close_scanner_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function async_scanner_cancel($scanner)
+  {
+    $this->send_async_scanner_cancel($scanner);
+    $this->recv_async_scanner_cancel();
+  }
+
+  public function send_async_scanner_cancel($scanner)
+  {
+    $args = new ClientService_async_scanner_cancel_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_scanner_cancel', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_scanner_cancel', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_scanner_cancel()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_scanner_cancel_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_scanner_cancel_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -1102,6 +1958,57 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function async_scanner_close($scanner)
+  {
+    $this->send_async_scanner_close($scanner);
+    $this->recv_async_scanner_close();
+  }
+
+  public function send_async_scanner_close($scanner)
+  {
+    $args = new ClientService_async_scanner_close_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_scanner_close', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_scanner_close', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_scanner_close()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_scanner_close_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_scanner_close_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function close_scanner_async($scanner)
   {
     $this->send_close_scanner_async($scanner);
@@ -1151,6 +2058,60 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     return;
+  }
+
+  public function scanner_get_cells($scanner)
+  {
+    $this->send_scanner_get_cells($scanner);
+    return $this->recv_scanner_get_cells();
+  }
+
+  public function send_scanner_get_cells($scanner)
+  {
+    $args = new ClientService_scanner_get_cells_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'scanner_get_cells', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('scanner_get_cells', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_scanner_get_cells()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_scanner_get_cells_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_scanner_get_cells_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("scanner_get_cells failed: unknown result");
   }
 
   public function next_cells($scanner)
@@ -1207,6 +2168,60 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("next_cells failed: unknown result");
   }
 
+  public function scanner_get_cells_as_arrays($scanner)
+  {
+    $this->send_scanner_get_cells_as_arrays($scanner);
+    return $this->recv_scanner_get_cells_as_arrays();
+  }
+
+  public function send_scanner_get_cells_as_arrays($scanner)
+  {
+    $args = new ClientService_scanner_get_cells_as_arrays_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'scanner_get_cells_as_arrays', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('scanner_get_cells_as_arrays', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_scanner_get_cells_as_arrays()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_scanner_get_cells_as_arrays_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_scanner_get_cells_as_arrays_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("scanner_get_cells_as_arrays failed: unknown result");
+  }
+
   public function next_cells_as_arrays($scanner)
   {
     $this->send_next_cells_as_arrays($scanner);
@@ -1261,6 +2276,60 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("next_cells_as_arrays failed: unknown result");
   }
 
+  public function scanner_get_cells_serialized($scanner)
+  {
+    $this->send_scanner_get_cells_serialized($scanner);
+    return $this->recv_scanner_get_cells_serialized();
+  }
+
+  public function send_scanner_get_cells_serialized($scanner)
+  {
+    $args = new ClientService_scanner_get_cells_serialized_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'scanner_get_cells_serialized', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('scanner_get_cells_serialized', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_scanner_get_cells_serialized()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_scanner_get_cells_serialized_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_scanner_get_cells_serialized_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("scanner_get_cells_serialized failed: unknown result");
+  }
+
   public function next_cells_serialized($scanner)
   {
     $this->send_next_cells_serialized($scanner);
@@ -1309,7 +2378,64 @@ class ClientServiceClient implements ClientServiceIf {
     if ($result->success !== null) {
       return $result->success;
     }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
     throw new Exception("next_cells_serialized failed: unknown result");
+  }
+
+  public function scanner_get_row($scanner)
+  {
+    $this->send_scanner_get_row($scanner);
+    return $this->recv_scanner_get_row();
+  }
+
+  public function send_scanner_get_row($scanner)
+  {
+    $args = new ClientService_scanner_get_row_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'scanner_get_row', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('scanner_get_row', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_scanner_get_row()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_scanner_get_row_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_scanner_get_row_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("scanner_get_row failed: unknown result");
   }
 
   public function next_row($scanner)
@@ -1366,6 +2492,60 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("next_row failed: unknown result");
   }
 
+  public function scanner_get_row_as_arrays($scanner)
+  {
+    $this->send_scanner_get_row_as_arrays($scanner);
+    return $this->recv_scanner_get_row_as_arrays();
+  }
+
+  public function send_scanner_get_row_as_arrays($scanner)
+  {
+    $args = new ClientService_scanner_get_row_as_arrays_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'scanner_get_row_as_arrays', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('scanner_get_row_as_arrays', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_scanner_get_row_as_arrays()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_scanner_get_row_as_arrays_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_scanner_get_row_as_arrays_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("scanner_get_row_as_arrays failed: unknown result");
+  }
+
   public function next_row_as_arrays($scanner)
   {
     $this->send_next_row_as_arrays($scanner);
@@ -1418,6 +2598,60 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     throw new Exception("next_row_as_arrays failed: unknown result");
+  }
+
+  public function scanner_get_row_serialized($scanner)
+  {
+    $this->send_scanner_get_row_serialized($scanner);
+    return $this->recv_scanner_get_row_serialized();
+  }
+
+  public function send_scanner_get_row_serialized($scanner)
+  {
+    $args = new ClientService_scanner_get_row_serialized_args();
+    $args->scanner = $scanner;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'scanner_get_row_serialized', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('scanner_get_row_serialized', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_scanner_get_row_serialized()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_scanner_get_row_serialized_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_scanner_get_row_serialized_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("scanner_get_row_serialized failed: unknown result");
   }
 
   public function next_row_serialized($scanner)
@@ -1867,6 +3101,59 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("get_cells_serialized failed: unknown result");
   }
 
+  public function shared_mutator_refresh($ns, $table_name, $mutate_spec)
+  {
+    $this->send_shared_mutator_refresh($ns, $table_name, $mutate_spec);
+    $this->recv_shared_mutator_refresh();
+  }
+
+  public function send_shared_mutator_refresh($ns, $table_name, $mutate_spec)
+  {
+    $args = new ClientService_shared_mutator_refresh_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->mutate_spec = $mutate_spec;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'shared_mutator_refresh', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('shared_mutator_refresh', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_shared_mutator_refresh()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_shared_mutator_refresh_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_shared_mutator_refresh_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function refresh_shared_mutator($ns, $table_name, $mutate_spec)
   {
     $this->send_refresh_shared_mutator($ns, $table_name, $mutate_spec);
@@ -1911,6 +3198,60 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_refresh_shared_mutator_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function shared_mutator_set_cells($ns, $table_name, $mutate_spec, $cells)
+  {
+    $this->send_shared_mutator_set_cells($ns, $table_name, $mutate_spec, $cells);
+    $this->recv_shared_mutator_set_cells();
+  }
+
+  public function send_shared_mutator_set_cells($ns, $table_name, $mutate_spec, $cells)
+  {
+    $args = new ClientService_shared_mutator_set_cells_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->mutate_spec = $mutate_spec;
+    $args->cells = $cells;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'shared_mutator_set_cells', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('shared_mutator_set_cells', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_shared_mutator_set_cells()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_shared_mutator_set_cells_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_shared_mutator_set_cells_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -1974,6 +3315,60 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function shared_mutator_set_cells_as_arrays($ns, $table_name, $mutate_spec, $cells)
+  {
+    $this->send_shared_mutator_set_cells_as_arrays($ns, $table_name, $mutate_spec, $cells);
+    $this->recv_shared_mutator_set_cells_as_arrays();
+  }
+
+  public function send_shared_mutator_set_cells_as_arrays($ns, $table_name, $mutate_spec, $cells)
+  {
+    $args = new ClientService_shared_mutator_set_cells_as_arrays_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->mutate_spec = $mutate_spec;
+    $args->cells = $cells;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'shared_mutator_set_cells_as_arrays', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('shared_mutator_set_cells_as_arrays', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_shared_mutator_set_cells_as_arrays()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_shared_mutator_set_cells_as_arrays_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_shared_mutator_set_cells_as_arrays_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function offer_cells_as_arrays($ns, $table_name, $mutate_spec, $cells)
   {
     $this->send_offer_cells_as_arrays($ns, $table_name, $mutate_spec, $cells);
@@ -2019,6 +3414,60 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_offer_cells_as_arrays_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function shared_mutator_set_cell($ns, $table_name, $mutate_spec, $cell)
+  {
+    $this->send_shared_mutator_set_cell($ns, $table_name, $mutate_spec, $cell);
+    $this->recv_shared_mutator_set_cell();
+  }
+
+  public function send_shared_mutator_set_cell($ns, $table_name, $mutate_spec, $cell)
+  {
+    $args = new ClientService_shared_mutator_set_cell_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->mutate_spec = $mutate_spec;
+    $args->cell = $cell;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'shared_mutator_set_cell', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('shared_mutator_set_cell', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_shared_mutator_set_cell()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_shared_mutator_set_cell_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_shared_mutator_set_cell_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -2082,6 +3531,60 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function shared_mutator_set_cell_as_array($ns, $table_name, $mutate_spec, $cell)
+  {
+    $this->send_shared_mutator_set_cell_as_array($ns, $table_name, $mutate_spec, $cell);
+    $this->recv_shared_mutator_set_cell_as_array();
+  }
+
+  public function send_shared_mutator_set_cell_as_array($ns, $table_name, $mutate_spec, $cell)
+  {
+    $args = new ClientService_shared_mutator_set_cell_as_array_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->mutate_spec = $mutate_spec;
+    $args->cell = $cell;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'shared_mutator_set_cell_as_array', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('shared_mutator_set_cell_as_array', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_shared_mutator_set_cell_as_array()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_shared_mutator_set_cell_as_array_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_shared_mutator_set_cell_as_array_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function offer_cell_as_array($ns, $table_name, $mutate_spec, $cell)
   {
     $this->send_offer_cell_as_array($ns, $table_name, $mutate_spec, $cell);
@@ -2134,6 +3637,63 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     return;
+  }
+
+  public function mutator_open($ns, $table_name, $flags, $flush_interval)
+  {
+    $this->send_mutator_open($ns, $table_name, $flags, $flush_interval);
+    return $this->recv_mutator_open();
+  }
+
+  public function send_mutator_open($ns, $table_name, $flags, $flush_interval)
+  {
+    $args = new ClientService_mutator_open_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->flags = $flags;
+    $args->flush_interval = $flush_interval;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'mutator_open', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('mutator_open', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_mutator_open()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_mutator_open_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_mutator_open_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("mutator_open failed: unknown result");
   }
 
   public function open_mutator($ns, $table_name, $flags, $flush_interval)
@@ -2193,6 +3753,63 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("open_mutator failed: unknown result");
   }
 
+  public function async_mutator_open($ns, $table_name, $future, $flags)
+  {
+    $this->send_async_mutator_open($ns, $table_name, $future, $flags);
+    return $this->recv_async_mutator_open();
+  }
+
+  public function send_async_mutator_open($ns, $table_name, $future, $flags)
+  {
+    $args = new ClientService_async_mutator_open_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->future = $future;
+    $args->flags = $flags;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_open', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_open', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_open()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_open_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_open_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("async_mutator_open failed: unknown result");
+  }
+
   public function open_mutator_async($ns, $table_name, $future, $flags)
   {
     $this->send_open_mutator_async($ns, $table_name, $future, $flags);
@@ -2250,6 +3867,57 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("open_mutator_async failed: unknown result");
   }
 
+  public function mutator_close($mutator)
+  {
+    $this->send_mutator_close($mutator);
+    $this->recv_mutator_close();
+  }
+
+  public function send_mutator_close($mutator)
+  {
+    $args = new ClientService_mutator_close_args();
+    $args->mutator = $mutator;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'mutator_close', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('mutator_close', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_mutator_close()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_mutator_close_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_mutator_close_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function close_mutator($mutator)
   {
     $this->send_close_mutator($mutator);
@@ -2292,6 +3960,57 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_close_mutator_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function async_mutator_cancel($mutator)
+  {
+    $this->send_async_mutator_cancel($mutator);
+    $this->recv_async_mutator_cancel();
+  }
+
+  public function send_async_mutator_cancel($mutator)
+  {
+    $args = new ClientService_async_mutator_cancel_args();
+    $args->mutator = $mutator;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_cancel', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_cancel', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_cancel()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_cancel_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_cancel_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -2352,6 +4071,57 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function async_mutator_close($mutator)
+  {
+    $this->send_async_mutator_close($mutator);
+    $this->recv_async_mutator_close();
+  }
+
+  public function send_async_mutator_close($mutator)
+  {
+    $args = new ClientService_async_mutator_close_args();
+    $args->mutator = $mutator;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_close', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_close', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_close()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_close_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_close_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function close_mutator_async($mutator)
   {
     $this->send_close_mutator_async($mutator);
@@ -2403,16 +4173,69 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
-  public function set_cell($mutator, $cell)
+  public function mutator_set_cell($mutator, $cell)
   {
-    $this->send_set_cell($mutator, $cell);
+    $this->send_mutator_set_cell($mutator, $cell);
+    $this->recv_mutator_set_cell();
+  }
+
+  public function send_mutator_set_cell($mutator, $cell)
+  {
+    $args = new ClientService_mutator_set_cell_args();
+    $args->mutator = $mutator;
+    $args->cell = $cell;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'mutator_set_cell', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('mutator_set_cell', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_mutator_set_cell()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_mutator_set_cell_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_mutator_set_cell_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function set_cell($ns, $table_name, $cell)
+  {
+    $this->send_set_cell($ns, $table_name, $cell);
     $this->recv_set_cell();
   }
 
-  public function send_set_cell($mutator, $cell)
+  public function send_set_cell($ns, $table_name, $cell)
   {
     $args = new ClientService_set_cell_args();
-    $args->mutator = $mutator;
+    $args->ns = $ns;
+    $args->table_name = $table_name;
     $args->cell = $cell;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
@@ -2455,16 +4278,69 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
-  public function set_cell_as_array($mutator, $cell)
+  public function mutator_set_cell_as_array($mutator, $cell)
   {
-    $this->send_set_cell_as_array($mutator, $cell);
+    $this->send_mutator_set_cell_as_array($mutator, $cell);
+    $this->recv_mutator_set_cell_as_array();
+  }
+
+  public function send_mutator_set_cell_as_array($mutator, $cell)
+  {
+    $args = new ClientService_mutator_set_cell_as_array_args();
+    $args->mutator = $mutator;
+    $args->cell = $cell;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'mutator_set_cell_as_array', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('mutator_set_cell_as_array', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_mutator_set_cell_as_array()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_mutator_set_cell_as_array_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_mutator_set_cell_as_array_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function set_cell_as_array($ns, $table_name, $cell)
+  {
+    $this->send_set_cell_as_array($ns, $table_name, $cell);
     $this->recv_set_cell_as_array();
   }
 
-  public function send_set_cell_as_array($mutator, $cell)
+  public function send_set_cell_as_array($ns, $table_name, $cell)
   {
     $args = new ClientService_set_cell_as_array_args();
-    $args->mutator = $mutator;
+    $args->ns = $ns;
+    $args->table_name = $table_name;
     $args->cell = $cell;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
@@ -2507,16 +4383,69 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
-  public function set_cells($mutator, $cells)
+  public function mutator_set_cells($mutator, $cells)
   {
-    $this->send_set_cells($mutator, $cells);
+    $this->send_mutator_set_cells($mutator, $cells);
+    $this->recv_mutator_set_cells();
+  }
+
+  public function send_mutator_set_cells($mutator, $cells)
+  {
+    $args = new ClientService_mutator_set_cells_args();
+    $args->mutator = $mutator;
+    $args->cells = $cells;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'mutator_set_cells', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('mutator_set_cells', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_mutator_set_cells()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_mutator_set_cells_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_mutator_set_cells_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function set_cells($ns, $table_name, $cells)
+  {
+    $this->send_set_cells($ns, $table_name, $cells);
     $this->recv_set_cells();
   }
 
-  public function send_set_cells($mutator, $cells)
+  public function send_set_cells($ns, $table_name, $cells)
   {
     $args = new ClientService_set_cells_args();
-    $args->mutator = $mutator;
+    $args->ns = $ns;
+    $args->table_name = $table_name;
     $args->cells = $cells;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
@@ -2559,16 +4488,69 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
-  public function set_cells_as_arrays($mutator, $cells)
+  public function mutator_set_cells_as_arrays($mutator, $cells)
   {
-    $this->send_set_cells_as_arrays($mutator, $cells);
+    $this->send_mutator_set_cells_as_arrays($mutator, $cells);
+    $this->recv_mutator_set_cells_as_arrays();
+  }
+
+  public function send_mutator_set_cells_as_arrays($mutator, $cells)
+  {
+    $args = new ClientService_mutator_set_cells_as_arrays_args();
+    $args->mutator = $mutator;
+    $args->cells = $cells;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'mutator_set_cells_as_arrays', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('mutator_set_cells_as_arrays', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_mutator_set_cells_as_arrays()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_mutator_set_cells_as_arrays_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_mutator_set_cells_as_arrays_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function set_cells_as_arrays($ns, $table_name, $cells)
+  {
+    $this->send_set_cells_as_arrays($ns, $table_name, $cells);
     $this->recv_set_cells_as_arrays();
   }
 
-  public function send_set_cells_as_arrays($mutator, $cells)
+  public function send_set_cells_as_arrays($ns, $table_name, $cells)
   {
     $args = new ClientService_set_cells_as_arrays_args();
-    $args->mutator = $mutator;
+    $args->ns = $ns;
+    $args->table_name = $table_name;
     $args->cells = $cells;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
@@ -2611,18 +4593,71 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
-  public function set_cells_serialized($mutator, $cells, $flush)
+  public function mutator_set_cells_serialized($mutator, $cells, $flush)
   {
-    $this->send_set_cells_serialized($mutator, $cells, $flush);
-    $this->recv_set_cells_serialized();
+    $this->send_mutator_set_cells_serialized($mutator, $cells, $flush);
+    $this->recv_mutator_set_cells_serialized();
   }
 
-  public function send_set_cells_serialized($mutator, $cells, $flush)
+  public function send_mutator_set_cells_serialized($mutator, $cells, $flush)
   {
-    $args = new ClientService_set_cells_serialized_args();
+    $args = new ClientService_mutator_set_cells_serialized_args();
     $args->mutator = $mutator;
     $args->cells = $cells;
     $args->flush = $flush;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'mutator_set_cells_serialized', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('mutator_set_cells_serialized', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_mutator_set_cells_serialized()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_mutator_set_cells_serialized_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_mutator_set_cells_serialized_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function set_cells_serialized($ns, $table_name, $cells)
+  {
+    $this->send_set_cells_serialized($ns, $table_name, $cells);
+    $this->recv_set_cells_serialized();
+  }
+
+  public function send_set_cells_serialized($ns, $table_name, $cells)
+  {
+    $args = new ClientService_set_cells_serialized_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $args->cells = $cells;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -2655,6 +4690,57 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_set_cells_serialized_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function mutator_flush($mutator)
+  {
+    $this->send_mutator_flush($mutator);
+    $this->recv_mutator_flush();
+  }
+
+  public function send_mutator_flush($mutator)
+  {
+    $args = new ClientService_mutator_flush_args();
+    $args->mutator = $mutator;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'mutator_flush', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('mutator_flush', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_mutator_flush()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_mutator_flush_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_mutator_flush_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -2706,6 +4792,58 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_flush_mutator_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function async_mutator_set_cell($mutator, $cell)
+  {
+    $this->send_async_mutator_set_cell($mutator, $cell);
+    $this->recv_async_mutator_set_cell();
+  }
+
+  public function send_async_mutator_set_cell($mutator, $cell)
+  {
+    $args = new ClientService_async_mutator_set_cell_args();
+    $args->mutator = $mutator;
+    $args->cell = $cell;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_set_cell', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_set_cell', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_set_cell()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_set_cell_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_set_cell_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -2767,6 +4905,58 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function async_mutator_set_cell_as_array($mutator, $cell)
+  {
+    $this->send_async_mutator_set_cell_as_array($mutator, $cell);
+    $this->recv_async_mutator_set_cell_as_array();
+  }
+
+  public function send_async_mutator_set_cell_as_array($mutator, $cell)
+  {
+    $args = new ClientService_async_mutator_set_cell_as_array_args();
+    $args->mutator = $mutator;
+    $args->cell = $cell;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_set_cell_as_array', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_set_cell_as_array', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_set_cell_as_array()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_set_cell_as_array_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_set_cell_as_array_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function set_cell_as_array_async($mutator, $cell)
   {
     $this->send_set_cell_as_array_async($mutator, $cell);
@@ -2810,6 +5000,58 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_set_cell_as_array_async_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function async_mutator_set_cells($mutator, $cells)
+  {
+    $this->send_async_mutator_set_cells($mutator, $cells);
+    $this->recv_async_mutator_set_cells();
+  }
+
+  public function send_async_mutator_set_cells($mutator, $cells)
+  {
+    $args = new ClientService_async_mutator_set_cells_args();
+    $args->mutator = $mutator;
+    $args->cells = $cells;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_set_cells', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_set_cells', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_set_cells()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_set_cells_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_set_cells_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -2871,6 +5113,58 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function async_mutator_set_cells_as_arrays($mutator, $cells)
+  {
+    $this->send_async_mutator_set_cells_as_arrays($mutator, $cells);
+    $this->recv_async_mutator_set_cells_as_arrays();
+  }
+
+  public function send_async_mutator_set_cells_as_arrays($mutator, $cells)
+  {
+    $args = new ClientService_async_mutator_set_cells_as_arrays_args();
+    $args->mutator = $mutator;
+    $args->cells = $cells;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_set_cells_as_arrays', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_set_cells_as_arrays', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_set_cells_as_arrays()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_set_cells_as_arrays_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_set_cells_as_arrays_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function set_cells_as_arrays_async($mutator, $cells)
   {
     $this->send_set_cells_as_arrays_async($mutator, $cells);
@@ -2914,6 +5208,59 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_set_cells_as_arrays_async_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function async_mutator_set_cells_serialized($mutator, $cells, $flush)
+  {
+    $this->send_async_mutator_set_cells_serialized($mutator, $cells, $flush);
+    $this->recv_async_mutator_set_cells_serialized();
+  }
+
+  public function send_async_mutator_set_cells_serialized($mutator, $cells, $flush)
+  {
+    $args = new ClientService_async_mutator_set_cells_serialized_args();
+    $args->mutator = $mutator;
+    $args->cells = $cells;
+    $args->flush = $flush;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_set_cells_serialized', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_set_cells_serialized', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_set_cells_serialized()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_set_cells_serialized_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_set_cells_serialized_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -2976,6 +5323,57 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function async_mutator_flush($mutator)
+  {
+    $this->send_async_mutator_flush($mutator);
+    $this->recv_async_mutator_flush();
+  }
+
+  public function send_async_mutator_flush($mutator)
+  {
+    $args = new ClientService_async_mutator_flush_args();
+    $args->mutator = $mutator;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'async_mutator_flush', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('async_mutator_flush', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_async_mutator_flush()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_async_mutator_flush_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_async_mutator_flush_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function flush_mutator_async($mutator)
   {
     $this->send_flush_mutator_async($mutator);
@@ -3025,6 +5423,60 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     return;
+  }
+
+  public function namespace_exists($ns)
+  {
+    $this->send_namespace_exists($ns);
+    return $this->recv_namespace_exists();
+  }
+
+  public function send_namespace_exists($ns)
+  {
+    $args = new ClientService_namespace_exists_args();
+    $args->ns = $ns;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'namespace_exists', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('namespace_exists', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_namespace_exists()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_namespace_exists_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_namespace_exists_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("namespace_exists failed: unknown result");
   }
 
   public function exists_namespace($ns)
@@ -3136,6 +5588,116 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("exists_table failed: unknown result");
   }
 
+  public function table_exists($ns, $name)
+  {
+    $this->send_table_exists($ns, $name);
+    return $this->recv_table_exists();
+  }
+
+  public function send_table_exists($ns, $name)
+  {
+    $args = new ClientService_table_exists_args();
+    $args->ns = $ns;
+    $args->name = $name;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_exists', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_exists', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_exists()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_exists_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_exists_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("table_exists failed: unknown result");
+  }
+
+  public function table_get_id($ns, $table_name)
+  {
+    $this->send_table_get_id($ns, $table_name);
+    return $this->recv_table_get_id();
+  }
+
+  public function send_table_get_id($ns, $table_name)
+  {
+    $args = new ClientService_table_get_id_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_get_id', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_get_id', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_get_id()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_get_id_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_get_id_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("table_get_id failed: unknown result");
+  }
+
   public function get_table_id($ns, $table_name)
   {
     $this->send_get_table_id($ns, $table_name);
@@ -3189,6 +5751,61 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     throw new Exception("get_table_id failed: unknown result");
+  }
+
+  public function table_get_schema_str($ns, $table_name)
+  {
+    $this->send_table_get_schema_str($ns, $table_name);
+    return $this->recv_table_get_schema_str();
+  }
+
+  public function send_table_get_schema_str($ns, $table_name)
+  {
+    $args = new ClientService_table_get_schema_str_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_get_schema_str', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_get_schema_str', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_get_schema_str()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_get_schema_str_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_get_schema_str_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("table_get_schema_str failed: unknown result");
   }
 
   public function get_schema_str($ns, $table_name)
@@ -3246,6 +5863,61 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("get_schema_str failed: unknown result");
   }
 
+  public function table_get_schema_str_with_ids($ns, $table_name)
+  {
+    $this->send_table_get_schema_str_with_ids($ns, $table_name);
+    return $this->recv_table_get_schema_str_with_ids();
+  }
+
+  public function send_table_get_schema_str_with_ids($ns, $table_name)
+  {
+    $args = new ClientService_table_get_schema_str_with_ids_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_get_schema_str_with_ids', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_get_schema_str_with_ids', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_get_schema_str_with_ids()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_get_schema_str_with_ids_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_get_schema_str_with_ids_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("table_get_schema_str_with_ids failed: unknown result");
+  }
+
   public function get_schema_str_with_ids($ns, $table_name)
   {
     $this->send_get_schema_str_with_ids($ns, $table_name);
@@ -3299,6 +5971,61 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     throw new Exception("get_schema_str_with_ids failed: unknown result");
+  }
+
+  public function table_get_schema($ns, $table_name)
+  {
+    $this->send_table_get_schema($ns, $table_name);
+    return $this->recv_table_get_schema();
+  }
+
+  public function send_table_get_schema($ns, $table_name)
+  {
+    $args = new ClientService_table_get_schema_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_get_schema', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_get_schema', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_get_schema()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_get_schema_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_get_schema_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("table_get_schema failed: unknown result");
   }
 
   public function get_schema($ns, $table_name)
@@ -3410,6 +6137,60 @@ class ClientServiceClient implements ClientServiceIf {
     throw new Exception("get_tables failed: unknown result");
   }
 
+  public function namespace_get_listing($ns)
+  {
+    $this->send_namespace_get_listing($ns);
+    return $this->recv_namespace_get_listing();
+  }
+
+  public function send_namespace_get_listing($ns)
+  {
+    $args = new ClientService_namespace_get_listing_args();
+    $args->ns = $ns;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'namespace_get_listing', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('namespace_get_listing', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_namespace_get_listing()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_namespace_get_listing_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_namespace_get_listing_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("namespace_get_listing failed: unknown result");
+  }
+
   public function get_listing($ns)
   {
     $this->send_get_listing($ns);
@@ -3462,6 +6243,61 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     throw new Exception("get_listing failed: unknown result");
+  }
+
+  public function table_get_splits($ns, $table_name)
+  {
+    $this->send_table_get_splits($ns, $table_name);
+    return $this->recv_table_get_splits();
+  }
+
+  public function send_table_get_splits($ns, $table_name)
+  {
+    $args = new ClientService_table_get_splits_args();
+    $args->ns = $ns;
+    $args->table_name = $table_name;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_get_splits', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_get_splits', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_get_splits()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_get_splits_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_get_splits_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->success !== null) {
+      return $result->success;
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    throw new Exception("table_get_splits failed: unknown result");
   }
 
   public function get_table_splits($ns, $table_name)
@@ -3517,6 +6353,58 @@ class ClientServiceClient implements ClientServiceIf {
       throw $result->e;
     }
     throw new Exception("get_table_splits failed: unknown result");
+  }
+
+  public function namespace_drop($ns, $if_exists)
+  {
+    $this->send_namespace_drop($ns, $if_exists);
+    $this->recv_namespace_drop();
+  }
+
+  public function send_namespace_drop($ns, $if_exists)
+  {
+    $args = new ClientService_namespace_drop_args();
+    $args->ns = $ns;
+    $args->if_exists = $if_exists;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'namespace_drop', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('namespace_drop', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_namespace_drop()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_namespace_drop_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_namespace_drop_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
   }
 
   public function drop_namespace($ns, $if_exists)
@@ -3624,6 +6512,59 @@ class ClientServiceClient implements ClientServiceIf {
     return;
   }
 
+  public function table_rename($ns, $name, $new_name)
+  {
+    $this->send_table_rename($ns, $name, $new_name);
+    $this->recv_table_rename();
+  }
+
+  public function send_table_rename($ns, $name, $new_name)
+  {
+    $args = new ClientService_table_rename_args();
+    $args->ns = $ns;
+    $args->name = $name;
+    $args->new_name = $new_name;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_rename', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_rename', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_rename()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_rename_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_rename_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
   public function drop_table($ns, $name, $if_exists)
   {
     $this->send_drop_table($ns, $name, $if_exists);
@@ -3668,6 +6609,59 @@ class ClientServiceClient implements ClientServiceIf {
         throw $x;
       }
       $result = new ClientService_drop_table_result();
+      $result->read($this->input_);
+      $this->input_->readMessageEnd();
+    }
+    if ($result->e !== null) {
+      throw $result->e;
+    }
+    return;
+  }
+
+  public function table_drop($ns, $name, $if_exists)
+  {
+    $this->send_table_drop($ns, $name, $if_exists);
+    $this->recv_table_drop();
+  }
+
+  public function send_table_drop($ns, $name, $if_exists)
+  {
+    $args = new ClientService_table_drop_args();
+    $args->ns = $ns;
+    $args->name = $name;
+    $args->if_exists = $if_exists;
+    $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
+    if ($bin_accel)
+    {
+      thrift_protocol_write_binary($this->output_, 'table_drop', TMessageType::CALL, $args, $this->seqid_, $this->output_->isStrictWrite());
+    }
+    else
+    {
+      $this->output_->writeMessageBegin('table_drop', TMessageType::CALL, $this->seqid_);
+      $args->write($this->output_);
+      $this->output_->writeMessageEnd();
+      $this->output_->getTransport()->flush();
+    }
+  }
+
+  public function recv_table_drop()
+  {
+    $bin_accel = ($this->input_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_read_binary');
+    if ($bin_accel) $result = thrift_protocol_read_binary($this->input_, 'ClientService_table_drop_result', $this->input_->isStrictRead());
+    else
+    {
+      $rseqid = 0;
+      $fname = null;
+      $mtype = 0;
+
+      $this->input_->readMessageBegin($fname, $mtype, $rseqid);
+      if ($mtype == TMessageType::EXCEPTION) {
+        $x = new TApplicationException();
+        $x->read($this->input_);
+        $this->input_->readMessageEnd();
+        throw $x;
+      }
+      $result = new ClientService_table_drop_result();
       $result->read($this->input_);
       $this->input_->readMessageEnd();
     }
@@ -3787,6 +6781,152 @@ class ClientServiceClient implements ClientServiceIf {
 }
 
 // HELPER FUNCTIONS AND STRUCTURES
+
+class ClientService_namespace_create_args {
+  static $_TSPEC;
+
+  public $ns = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_create_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_create_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::STRING, 1);
+      $xfer += $output->writeString($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_create_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_create_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_create_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
 
 class ClientService_create_namespace_args {
   static $_TSPEC;
@@ -4120,6 +7260,192 @@ class ClientService_create_table_result {
 
 }
 
+class ClientService_table_create_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $schema = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'schema',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['schema'])) {
+        $this->schema = $vals['schema'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_create_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->schema);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_create_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->schema !== null) {
+      $xfer += $output->writeFieldBegin('schema', TType::STRING, 3);
+      $xfer += $output->writeString($this->schema);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_create_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_create_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_create_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_alter_table_args {
   static $_TSPEC;
 
@@ -4306,6 +7632,358 @@ class ClientService_alter_table_result {
 
 }
 
+class ClientService_table_alter_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $schema = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'schema',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['schema'])) {
+        $this->schema = $vals['schema'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_alter_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->schema);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_alter_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->schema !== null) {
+      $xfer += $output->writeFieldBegin('schema', TType::STRING, 3);
+      $xfer += $output->writeString($this->schema);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_alter_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_alter_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_alter_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_open_args {
+  static $_TSPEC;
+
+  public $ns = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_open_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_open_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::STRING, 1);
+      $xfer += $output->writeString($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_open_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::I64,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_open_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_open_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::I64, 0);
+      $xfer += $output->writeI64($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_open_namespace_args {
   static $_TSPEC;
 
@@ -4472,6 +8150,152 @@ class ClientService_open_namespace_result {
 
 }
 
+class ClientService_namespace_close_args {
+  static $_TSPEC;
+
+  public $ns = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_close_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_close_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_close_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_close_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_close_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_close_namespace_args {
   static $_TSPEC;
 
@@ -4618,23 +8442,189 @@ class ClientService_close_namespace_result {
 
 }
 
-class ClientService_open_future_args {
+class ClientService_future_open_args {
   static $_TSPEC;
 
-  public $queue_size = 0;
+  public $capacity = 0;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
         1 => array(
-          'var' => 'queue_size',
+          'var' => 'capacity',
           'type' => TType::I32,
           ),
         );
     }
     if (is_array($vals)) {
-      if (isset($vals['queue_size'])) {
-        $this->queue_size = $vals['queue_size'];
+      if (isset($vals['capacity'])) {
+        $this->capacity = $vals['capacity'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_open_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->capacity);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_open_args');
+    if ($this->capacity !== null) {
+      $xfer += $output->writeFieldBegin('capacity', TType::I32, 1);
+      $xfer += $output->writeI32($this->capacity);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_future_open_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::I64,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_open_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_open_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::I64, 0);
+      $xfer += $output->writeI64($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_open_future_args {
+  static $_TSPEC;
+
+  public $capacity = 0;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'capacity',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['capacity'])) {
+        $this->capacity = $vals['capacity'];
       }
     }
   }
@@ -4660,7 +8650,7 @@ class ClientService_open_future_args {
       {
         case 1:
           if ($ftype == TType::I32) {
-            $xfer += $input->readI32($this->queue_size);
+            $xfer += $input->readI32($this->capacity);
           } else {
             $xfer += $input->skip($ftype);
           }
@@ -4678,9 +8668,9 @@ class ClientService_open_future_args {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_open_future_args');
-    if ($this->queue_size !== null) {
-      $xfer += $output->writeFieldBegin('queue_size', TType::I32, 1);
-      $xfer += $output->writeI32($this->queue_size);
+    if ($this->capacity !== null) {
+      $xfer += $output->writeFieldBegin('capacity', TType::I32, 1);
+      $xfer += $output->writeI32($this->capacity);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -4772,6 +8762,152 @@ class ClientService_open_future_result {
       $xfer += $output->writeI64($this->success);
       $xfer += $output->writeFieldEnd();
     }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_future_cancel_args {
+  static $_TSPEC;
+
+  public $ff = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ff',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ff'])) {
+        $this->ff = $vals['ff'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_cancel_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ff);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_cancel_args');
+    if ($this->ff !== null) {
+      $xfer += $output->writeFieldBegin('ff', TType::I64, 1);
+      $xfer += $output->writeI64($this->ff);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_future_cancel_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_cancel_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_cancel_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -4930,10 +9066,11 @@ class ClientService_cancel_future_result {
 
 }
 
-class ClientService_get_future_result_args {
+class ClientService_future_get_result_args {
   static $_TSPEC;
 
   public $ff = null;
+  public $timeout_millis = 0;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
@@ -4942,11 +9079,209 @@ class ClientService_get_future_result_args {
           'var' => 'ff',
           'type' => TType::I64,
           ),
+        2 => array(
+          'var' => 'timeout_millis',
+          'type' => TType::I32,
+          ),
         );
     }
     if (is_array($vals)) {
       if (isset($vals['ff'])) {
         $this->ff = $vals['ff'];
+      }
+      if (isset($vals['timeout_millis'])) {
+        $this->timeout_millis = $vals['timeout_millis'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_get_result_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ff);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->timeout_millis);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_get_result_args');
+    if ($this->ff !== null) {
+      $xfer += $output->writeFieldBegin('ff', TType::I64, 1);
+      $xfer += $output->writeI64($this->ff);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->timeout_millis !== null) {
+      $xfer += $output->writeFieldBegin('timeout_millis', TType::I32, 2);
+      $xfer += $output->writeI32($this->timeout_millis);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_future_get_result_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => 'Result',
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_get_result_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new Result();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_get_result_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_get_future_result_args {
+  static $_TSPEC;
+
+  public $ff = null;
+  public $timeout_millis = 0;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ff',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'timeout_millis',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ff'])) {
+        $this->ff = $vals['ff'];
+      }
+      if (isset($vals['timeout_millis'])) {
+        $this->timeout_millis = $vals['timeout_millis'];
       }
     }
   }
@@ -4977,6 +9312,13 @@ class ClientService_get_future_result_args {
             $xfer += $input->skip($ftype);
           }
           break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->timeout_millis);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
         default:
           $xfer += $input->skip($ftype);
           break;
@@ -4993,6 +9335,11 @@ class ClientService_get_future_result_args {
     if ($this->ff !== null) {
       $xfer += $output->writeFieldBegin('ff', TType::I64, 1);
       $xfer += $output->writeI64($this->ff);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->timeout_millis !== null) {
+      $xfer += $output->writeFieldBegin('timeout_millis', TType::I32, 2);
+      $xfer += $output->writeI32($this->timeout_millis);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -5101,10 +9448,11 @@ class ClientService_get_future_result_result {
 
 }
 
-class ClientService_get_future_result_as_arrays_args {
+class ClientService_future_get_result_as_arrays_args {
   static $_TSPEC;
 
   public $ff = null;
+  public $timeout_millis = 0;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
@@ -5113,11 +9461,209 @@ class ClientService_get_future_result_as_arrays_args {
           'var' => 'ff',
           'type' => TType::I64,
           ),
+        2 => array(
+          'var' => 'timeout_millis',
+          'type' => TType::I32,
+          ),
         );
     }
     if (is_array($vals)) {
       if (isset($vals['ff'])) {
         $this->ff = $vals['ff'];
+      }
+      if (isset($vals['timeout_millis'])) {
+        $this->timeout_millis = $vals['timeout_millis'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_get_result_as_arrays_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ff);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->timeout_millis);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_get_result_as_arrays_args');
+    if ($this->ff !== null) {
+      $xfer += $output->writeFieldBegin('ff', TType::I64, 1);
+      $xfer += $output->writeI64($this->ff);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->timeout_millis !== null) {
+      $xfer += $output->writeFieldBegin('timeout_millis', TType::I32, 2);
+      $xfer += $output->writeI32($this->timeout_millis);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_future_get_result_as_arrays_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => 'ResultAsArrays',
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_get_result_as_arrays_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new ResultAsArrays();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_get_result_as_arrays_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_get_future_result_as_arrays_args {
+  static $_TSPEC;
+
+  public $ff = null;
+  public $timeout_millis = 0;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ff',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'timeout_millis',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ff'])) {
+        $this->ff = $vals['ff'];
+      }
+      if (isset($vals['timeout_millis'])) {
+        $this->timeout_millis = $vals['timeout_millis'];
       }
     }
   }
@@ -5148,6 +9694,13 @@ class ClientService_get_future_result_as_arrays_args {
             $xfer += $input->skip($ftype);
           }
           break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->timeout_millis);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
         default:
           $xfer += $input->skip($ftype);
           break;
@@ -5164,6 +9717,11 @@ class ClientService_get_future_result_as_arrays_args {
     if ($this->ff !== null) {
       $xfer += $output->writeFieldBegin('ff', TType::I64, 1);
       $xfer += $output->writeI64($this->ff);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->timeout_millis !== null) {
+      $xfer += $output->writeFieldBegin('timeout_millis', TType::I32, 2);
+      $xfer += $output->writeI32($this->timeout_millis);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -5272,10 +9830,11 @@ class ClientService_get_future_result_as_arrays_result {
 
 }
 
-class ClientService_get_future_result_serialized_args {
+class ClientService_future_get_result_serialized_args {
   static $_TSPEC;
 
   public $ff = null;
+  public $timeout_millis = 0;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
@@ -5284,11 +9843,209 @@ class ClientService_get_future_result_serialized_args {
           'var' => 'ff',
           'type' => TType::I64,
           ),
+        2 => array(
+          'var' => 'timeout_millis',
+          'type' => TType::I32,
+          ),
         );
     }
     if (is_array($vals)) {
       if (isset($vals['ff'])) {
         $this->ff = $vals['ff'];
+      }
+      if (isset($vals['timeout_millis'])) {
+        $this->timeout_millis = $vals['timeout_millis'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_get_result_serialized_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ff);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->timeout_millis);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_get_result_serialized_args');
+    if ($this->ff !== null) {
+      $xfer += $output->writeFieldBegin('ff', TType::I64, 1);
+      $xfer += $output->writeI64($this->ff);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->timeout_millis !== null) {
+      $xfer += $output->writeFieldBegin('timeout_millis', TType::I32, 2);
+      $xfer += $output->writeI32($this->timeout_millis);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_future_get_result_serialized_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => 'ResultSerialized',
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_get_result_serialized_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new ResultSerialized();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_get_result_serialized_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_get_future_result_serialized_args {
+  static $_TSPEC;
+
+  public $ff = null;
+  public $timeout_millis = 0;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ff',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'timeout_millis',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ff'])) {
+        $this->ff = $vals['ff'];
+      }
+      if (isset($vals['timeout_millis'])) {
+        $this->timeout_millis = $vals['timeout_millis'];
       }
     }
   }
@@ -5319,6 +10076,13 @@ class ClientService_get_future_result_serialized_args {
             $xfer += $input->skip($ftype);
           }
           break;
+        case 2:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->timeout_millis);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
         default:
           $xfer += $input->skip($ftype);
           break;
@@ -5335,6 +10099,11 @@ class ClientService_get_future_result_serialized_args {
     if ($this->ff !== null) {
       $xfer += $output->writeFieldBegin('ff', TType::I64, 1);
       $xfer += $output->writeI64($this->ff);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->timeout_millis !== null) {
+      $xfer += $output->writeFieldBegin('timeout_millis', TType::I32, 2);
+      $xfer += $output->writeI32($this->timeout_millis);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -6107,6 +10876,152 @@ class ClientService_future_has_outstanding_result {
 
 }
 
+class ClientService_future_close_args {
+  static $_TSPEC;
+
+  public $ff = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ff',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ff'])) {
+        $this->ff = $vals['ff'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_close_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ff);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_close_args');
+    if ($this->ff !== null) {
+      $xfer += $output->writeFieldBegin('ff', TType::I64, 1);
+      $xfer += $output->writeI64($this->ff);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_future_close_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_future_close_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_future_close_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_close_future_args {
   static $_TSPEC;
 
@@ -6241,6 +11156,217 @@ class ClientService_close_future_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_close_future_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_open_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $scan_spec = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'scan_spec',
+          'type' => TType::STRUCT,
+          'class' => 'ScanSpec',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['scan_spec'])) {
+        $this->scan_spec = $vals['scan_spec'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_open_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRUCT) {
+            $this->scan_spec = new ScanSpec();
+            $xfer += $this->scan_spec->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_open_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->scan_spec !== null) {
+      if (!is_object($this->scan_spec)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('scan_spec', TType::STRUCT, 3);
+      $xfer += $this->scan_spec->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_open_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::I64,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_open_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_open_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::I64, 0);
+      $xfer += $output->writeI64($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -6447,6 +11573,237 @@ class ClientService_open_scanner_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_open_scanner_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::I64, 0);
+      $xfer += $output->writeI64($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_scanner_open_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $future = null;
+  public $scan_spec = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'future',
+          'type' => TType::I64,
+          ),
+        4 => array(
+          'var' => 'scan_spec',
+          'type' => TType::STRUCT,
+          'class' => 'ScanSpec',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['future'])) {
+        $this->future = $vals['future'];
+      }
+      if (isset($vals['scan_spec'])) {
+        $this->scan_spec = $vals['scan_spec'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_scanner_open_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->future);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 4:
+          if ($ftype == TType::STRUCT) {
+            $this->scan_spec = new ScanSpec();
+            $xfer += $this->scan_spec->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_scanner_open_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->future !== null) {
+      $xfer += $output->writeFieldBegin('future', TType::I64, 3);
+      $xfer += $output->writeI64($this->future);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->scan_spec !== null) {
+      if (!is_object($this->scan_spec)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('scan_spec', TType::STRUCT, 4);
+      $xfer += $this->scan_spec->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_scanner_open_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::I64,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_scanner_open_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_scanner_open_result');
     if ($this->success !== null) {
       $xfer += $output->writeFieldBegin('success', TType::I64, 0);
       $xfer += $output->writeI64($this->success);
@@ -6695,6 +12052,152 @@ class ClientService_open_scanner_async_result {
 
 }
 
+class ClientService_scanner_close_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_close_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_close_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_close_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_close_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_close_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_close_scanner_args {
   static $_TSPEC;
 
@@ -6829,6 +12332,152 @@ class ClientService_close_scanner_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_close_scanner_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_scanner_cancel_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_scanner_cancel_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_scanner_cancel_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_scanner_cancel_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_scanner_cancel_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_scanner_cancel_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -6987,6 +12636,152 @@ class ClientService_cancel_scanner_async_result {
 
 }
 
+class ClientService_async_scanner_close_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_scanner_close_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_scanner_close_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_scanner_close_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_scanner_close_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_scanner_close_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_close_scanner_async_args {
   static $_TSPEC;
 
@@ -7133,6 +12928,200 @@ class ClientService_close_scanner_async_result {
 
 }
 
+class ClientService_scanner_get_cells_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_cells_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_cells_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_cells_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::LST,
+          'etype' => TType::STRUCT,
+          'elem' => array(
+            'type' => TType::STRUCT,
+            'class' => 'Cell',
+            ),
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_cells_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::LST) {
+            $this->success = array();
+            $_size67 = 0;
+            $_etype70 = 0;
+            $xfer += $input->readListBegin($_etype70, $_size67);
+            for ($_i71 = 0; $_i71 < $_size67; ++$_i71)
+            {
+              $elem72 = null;
+              $elem72 = new Cell();
+              $xfer += $elem72->read($input);
+              $this->success []= $elem72;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_cells_result');
+    if ($this->success !== null) {
+      if (!is_array($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::LST, 0);
+      {
+        $output->writeListBegin(TType::STRUCT, count($this->success));
+        {
+          foreach ($this->success as $iter73)
+          {
+            $xfer += $iter73->write($output);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_next_cells_args {
   static $_TSPEC;
 
@@ -7262,15 +13251,15 @@ class ClientService_next_cells_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size67 = 0;
-            $_etype70 = 0;
-            $xfer += $input->readListBegin($_etype70, $_size67);
-            for ($_i71 = 0; $_i71 < $_size67; ++$_i71)
+            $_size74 = 0;
+            $_etype77 = 0;
+            $xfer += $input->readListBegin($_etype77, $_size74);
+            for ($_i78 = 0; $_i78 < $_size74; ++$_i78)
             {
-              $elem72 = null;
-              $elem72 = new Cell();
-              $xfer += $elem72->read($input);
-              $this->success []= $elem72;
+              $elem79 = null;
+              $elem79 = new Cell();
+              $xfer += $elem79->read($input);
+              $this->success []= $elem79;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -7306,9 +13295,224 @@ class ClientService_next_cells_result {
       {
         $output->writeListBegin(TType::STRUCT, count($this->success));
         {
-          foreach ($this->success as $iter73)
+          foreach ($this->success as $iter80)
           {
-            $xfer += $iter73->write($output);
+            $xfer += $iter80->write($output);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_cells_as_arrays_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_cells_as_arrays_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_cells_as_arrays_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_cells_as_arrays_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::LST,
+          'etype' => TType::LST,
+          'elem' => array(
+            'type' => TType::LST,
+            'etype' => TType::STRING,
+            'elem' => array(
+              'type' => TType::STRING,
+              ),
+            ),
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_cells_as_arrays_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::LST) {
+            $this->success = array();
+            $_size81 = 0;
+            $_etype84 = 0;
+            $xfer += $input->readListBegin($_etype84, $_size81);
+            for ($_i85 = 0; $_i85 < $_size81; ++$_i85)
+            {
+              $elem86 = null;
+              $elem86 = array();
+              $_size87 = 0;
+              $_etype90 = 0;
+              $xfer += $input->readListBegin($_etype90, $_size87);
+              for ($_i91 = 0; $_i91 < $_size87; ++$_i91)
+              {
+                $elem92 = null;
+                $xfer += $input->readString($elem92);
+                $elem86 []= $elem92;
+              }
+              $xfer += $input->readListEnd();
+              $this->success []= $elem86;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_cells_as_arrays_result');
+    if ($this->success !== null) {
+      if (!is_array($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::LST, 0);
+      {
+        $output->writeListBegin(TType::LST, count($this->success));
+        {
+          foreach ($this->success as $iter93)
+          {
+            {
+              $output->writeListBegin(TType::STRING, count($iter93));
+              {
+                foreach ($iter93 as $iter94)
+                {
+                  $xfer += $output->writeString($iter94);
+                }
+              }
+              $output->writeListEnd();
+            }
           }
         }
         $output->writeListEnd();
@@ -7459,24 +13663,24 @@ class ClientService_next_cells_as_arrays_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size74 = 0;
-            $_etype77 = 0;
-            $xfer += $input->readListBegin($_etype77, $_size74);
-            for ($_i78 = 0; $_i78 < $_size74; ++$_i78)
+            $_size95 = 0;
+            $_etype98 = 0;
+            $xfer += $input->readListBegin($_etype98, $_size95);
+            for ($_i99 = 0; $_i99 < $_size95; ++$_i99)
             {
-              $elem79 = null;
-              $elem79 = array();
-              $_size80 = 0;
-              $_etype83 = 0;
-              $xfer += $input->readListBegin($_etype83, $_size80);
-              for ($_i84 = 0; $_i84 < $_size80; ++$_i84)
+              $elem100 = null;
+              $elem100 = array();
+              $_size101 = 0;
+              $_etype104 = 0;
+              $xfer += $input->readListBegin($_etype104, $_size101);
+              for ($_i105 = 0; $_i105 < $_size101; ++$_i105)
               {
-                $elem85 = null;
-                $xfer += $input->readString($elem85);
-                $elem79 []= $elem85;
+                $elem106 = null;
+                $xfer += $input->readString($elem106);
+                $elem100 []= $elem106;
               }
               $xfer += $input->readListEnd();
-              $this->success []= $elem79;
+              $this->success []= $elem100;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -7512,14 +13716,14 @@ class ClientService_next_cells_as_arrays_result {
       {
         $output->writeListBegin(TType::LST, count($this->success));
         {
-          foreach ($this->success as $iter86)
+          foreach ($this->success as $iter107)
           {
             {
-              $output->writeListBegin(TType::STRING, count($iter86));
+              $output->writeListBegin(TType::STRING, count($iter107));
               {
-                foreach ($iter86 as $iter87)
+                foreach ($iter107 as $iter108)
                 {
-                  $xfer += $output->writeString($iter87);
+                  $xfer += $output->writeString($iter108);
                 }
               }
               $output->writeListEnd();
@@ -7528,6 +13732,172 @@ class ClientService_next_cells_as_arrays_result {
         }
         $output->writeListEnd();
       }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_cells_serialized_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_cells_serialized_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_cells_serialized_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_cells_serialized_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRING,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_cells_serialized_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_cells_serialized_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+      $xfer += $output->writeString($this->success);
       $xfer += $output->writeFieldEnd();
     }
     if ($this->e !== null) {
@@ -7618,6 +13988,7 @@ class ClientService_next_cells_serialized_result {
   static $_TSPEC;
 
   public $success = null;
+  public $e = null;
 
   public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
@@ -7626,11 +13997,19 @@ class ClientService_next_cells_serialized_result {
           'var' => 'success',
           'type' => TType::STRING,
           ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
         );
     }
     if (is_array($vals)) {
       if (isset($vals['success'])) {
         $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
       }
     }
   }
@@ -7661,6 +14040,14 @@ class ClientService_next_cells_serialized_result {
             $xfer += $input->skip($ftype);
           }
           break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
         default:
           $xfer += $input->skip($ftype);
           break;
@@ -7677,6 +14064,205 @@ class ClientService_next_cells_serialized_result {
     if ($this->success !== null) {
       $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
       $xfer += $output->writeString($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_row_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_row_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_row_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_row_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::LST,
+          'etype' => TType::STRUCT,
+          'elem' => array(
+            'type' => TType::STRUCT,
+            'class' => 'Cell',
+            ),
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_row_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::LST) {
+            $this->success = array();
+            $_size109 = 0;
+            $_etype112 = 0;
+            $xfer += $input->readListBegin($_etype112, $_size109);
+            for ($_i113 = 0; $_i113 < $_size109; ++$_i113)
+            {
+              $elem114 = null;
+              $elem114 = new Cell();
+              $xfer += $elem114->read($input);
+              $this->success []= $elem114;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_row_result');
+    if ($this->success !== null) {
+      if (!is_array($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::LST, 0);
+      {
+        $output->writeListBegin(TType::STRUCT, count($this->success));
+        {
+          foreach ($this->success as $iter115)
+          {
+            $xfer += $iter115->write($output);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -7815,15 +14401,15 @@ class ClientService_next_row_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size88 = 0;
-            $_etype91 = 0;
-            $xfer += $input->readListBegin($_etype91, $_size88);
-            for ($_i92 = 0; $_i92 < $_size88; ++$_i92)
+            $_size116 = 0;
+            $_etype119 = 0;
+            $xfer += $input->readListBegin($_etype119, $_size116);
+            for ($_i120 = 0; $_i120 < $_size116; ++$_i120)
             {
-              $elem93 = null;
-              $elem93 = new Cell();
-              $xfer += $elem93->read($input);
-              $this->success []= $elem93;
+              $elem121 = null;
+              $elem121 = new Cell();
+              $xfer += $elem121->read($input);
+              $this->success []= $elem121;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -7859,9 +14445,224 @@ class ClientService_next_row_result {
       {
         $output->writeListBegin(TType::STRUCT, count($this->success));
         {
-          foreach ($this->success as $iter94)
+          foreach ($this->success as $iter122)
           {
-            $xfer += $iter94->write($output);
+            $xfer += $iter122->write($output);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_row_as_arrays_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_row_as_arrays_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_row_as_arrays_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_row_as_arrays_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::LST,
+          'etype' => TType::LST,
+          'elem' => array(
+            'type' => TType::LST,
+            'etype' => TType::STRING,
+            'elem' => array(
+              'type' => TType::STRING,
+              ),
+            ),
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_row_as_arrays_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::LST) {
+            $this->success = array();
+            $_size123 = 0;
+            $_etype126 = 0;
+            $xfer += $input->readListBegin($_etype126, $_size123);
+            for ($_i127 = 0; $_i127 < $_size123; ++$_i127)
+            {
+              $elem128 = null;
+              $elem128 = array();
+              $_size129 = 0;
+              $_etype132 = 0;
+              $xfer += $input->readListBegin($_etype132, $_size129);
+              for ($_i133 = 0; $_i133 < $_size129; ++$_i133)
+              {
+                $elem134 = null;
+                $xfer += $input->readString($elem134);
+                $elem128 []= $elem134;
+              }
+              $xfer += $input->readListEnd();
+              $this->success []= $elem128;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_row_as_arrays_result');
+    if ($this->success !== null) {
+      if (!is_array($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::LST, 0);
+      {
+        $output->writeListBegin(TType::LST, count($this->success));
+        {
+          foreach ($this->success as $iter135)
+          {
+            {
+              $output->writeListBegin(TType::STRING, count($iter135));
+              {
+                foreach ($iter135 as $iter136)
+                {
+                  $xfer += $output->writeString($iter136);
+                }
+              }
+              $output->writeListEnd();
+            }
           }
         }
         $output->writeListEnd();
@@ -8012,24 +14813,24 @@ class ClientService_next_row_as_arrays_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size95 = 0;
-            $_etype98 = 0;
-            $xfer += $input->readListBegin($_etype98, $_size95);
-            for ($_i99 = 0; $_i99 < $_size95; ++$_i99)
+            $_size137 = 0;
+            $_etype140 = 0;
+            $xfer += $input->readListBegin($_etype140, $_size137);
+            for ($_i141 = 0; $_i141 < $_size137; ++$_i141)
             {
-              $elem100 = null;
-              $elem100 = array();
-              $_size101 = 0;
-              $_etype104 = 0;
-              $xfer += $input->readListBegin($_etype104, $_size101);
-              for ($_i105 = 0; $_i105 < $_size101; ++$_i105)
+              $elem142 = null;
+              $elem142 = array();
+              $_size143 = 0;
+              $_etype146 = 0;
+              $xfer += $input->readListBegin($_etype146, $_size143);
+              for ($_i147 = 0; $_i147 < $_size143; ++$_i147)
               {
-                $elem106 = null;
-                $xfer += $input->readString($elem106);
-                $elem100 []= $elem106;
+                $elem148 = null;
+                $xfer += $input->readString($elem148);
+                $elem142 []= $elem148;
               }
               $xfer += $input->readListEnd();
-              $this->success []= $elem100;
+              $this->success []= $elem142;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -8065,14 +14866,14 @@ class ClientService_next_row_as_arrays_result {
       {
         $output->writeListBegin(TType::LST, count($this->success));
         {
-          foreach ($this->success as $iter107)
+          foreach ($this->success as $iter149)
           {
             {
-              $output->writeListBegin(TType::STRING, count($iter107));
+              $output->writeListBegin(TType::STRING, count($iter149));
               {
-                foreach ($iter107 as $iter108)
+                foreach ($iter149 as $iter150)
                 {
-                  $xfer += $output->writeString($iter108);
+                  $xfer += $output->writeString($iter150);
                 }
               }
               $output->writeListEnd();
@@ -8081,6 +14882,172 @@ class ClientService_next_row_as_arrays_result {
         }
         $output->writeListEnd();
       }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_row_serialized_args {
+  static $_TSPEC;
+
+  public $scanner = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'scanner',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['scanner'])) {
+        $this->scanner = $vals['scanner'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_row_serialized_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->scanner);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_row_serialized_args');
+    if ($this->scanner !== null) {
+      $xfer += $output->writeFieldBegin('scanner', TType::I64, 1);
+      $xfer += $output->writeI64($this->scanner);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_scanner_get_row_serialized_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRING,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_scanner_get_row_serialized_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_scanner_get_row_serialized_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+      $xfer += $output->writeString($this->success);
       $xfer += $output->writeFieldEnd();
     }
     if ($this->e !== null) {
@@ -8430,15 +15397,15 @@ class ClientService_get_row_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size109 = 0;
-            $_etype112 = 0;
-            $xfer += $input->readListBegin($_etype112, $_size109);
-            for ($_i113 = 0; $_i113 < $_size109; ++$_i113)
+            $_size151 = 0;
+            $_etype154 = 0;
+            $xfer += $input->readListBegin($_etype154, $_size151);
+            for ($_i155 = 0; $_i155 < $_size151; ++$_i155)
             {
-              $elem114 = null;
-              $elem114 = new Cell();
-              $xfer += $elem114->read($input);
-              $this->success []= $elem114;
+              $elem156 = null;
+              $elem156 = new Cell();
+              $xfer += $elem156->read($input);
+              $this->success []= $elem156;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -8474,9 +15441,9 @@ class ClientService_get_row_result {
       {
         $output->writeListBegin(TType::STRUCT, count($this->success));
         {
-          foreach ($this->success as $iter115)
+          foreach ($this->success as $iter157)
           {
-            $xfer += $iter115->write($output);
+            $xfer += $iter157->write($output);
           }
         }
         $output->writeListEnd();
@@ -8667,24 +15634,24 @@ class ClientService_get_row_as_arrays_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size116 = 0;
-            $_etype119 = 0;
-            $xfer += $input->readListBegin($_etype119, $_size116);
-            for ($_i120 = 0; $_i120 < $_size116; ++$_i120)
+            $_size158 = 0;
+            $_etype161 = 0;
+            $xfer += $input->readListBegin($_etype161, $_size158);
+            for ($_i162 = 0; $_i162 < $_size158; ++$_i162)
             {
-              $elem121 = null;
-              $elem121 = array();
-              $_size122 = 0;
-              $_etype125 = 0;
-              $xfer += $input->readListBegin($_etype125, $_size122);
-              for ($_i126 = 0; $_i126 < $_size122; ++$_i126)
+              $elem163 = null;
+              $elem163 = array();
+              $_size164 = 0;
+              $_etype167 = 0;
+              $xfer += $input->readListBegin($_etype167, $_size164);
+              for ($_i168 = 0; $_i168 < $_size164; ++$_i168)
               {
-                $elem127 = null;
-                $xfer += $input->readString($elem127);
-                $elem121 []= $elem127;
+                $elem169 = null;
+                $xfer += $input->readString($elem169);
+                $elem163 []= $elem169;
               }
               $xfer += $input->readListEnd();
-              $this->success []= $elem121;
+              $this->success []= $elem163;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -8720,14 +15687,14 @@ class ClientService_get_row_as_arrays_result {
       {
         $output->writeListBegin(TType::LST, count($this->success));
         {
-          foreach ($this->success as $iter128)
+          foreach ($this->success as $iter170)
           {
             {
-              $output->writeListBegin(TType::STRING, count($iter128));
+              $output->writeListBegin(TType::STRING, count($iter170));
               {
-                foreach ($iter128 as $iter129)
+                foreach ($iter170 as $iter171)
                 {
-                  $xfer += $output->writeString($iter129);
+                  $xfer += $output->writeString($iter171);
                 }
               }
               $output->writeListEnd();
@@ -9356,15 +16323,15 @@ class ClientService_get_cells_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size130 = 0;
-            $_etype133 = 0;
-            $xfer += $input->readListBegin($_etype133, $_size130);
-            for ($_i134 = 0; $_i134 < $_size130; ++$_i134)
+            $_size172 = 0;
+            $_etype175 = 0;
+            $xfer += $input->readListBegin($_etype175, $_size172);
+            for ($_i176 = 0; $_i176 < $_size172; ++$_i176)
             {
-              $elem135 = null;
-              $elem135 = new Cell();
-              $xfer += $elem135->read($input);
-              $this->success []= $elem135;
+              $elem177 = null;
+              $elem177 = new Cell();
+              $xfer += $elem177->read($input);
+              $this->success []= $elem177;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -9400,9 +16367,9 @@ class ClientService_get_cells_result {
       {
         $output->writeListBegin(TType::STRUCT, count($this->success));
         {
-          foreach ($this->success as $iter136)
+          foreach ($this->success as $iter178)
           {
-            $xfer += $iter136->write($output);
+            $xfer += $iter178->write($output);
           }
         }
         $output->writeListEnd();
@@ -9598,24 +16565,24 @@ class ClientService_get_cells_as_arrays_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size137 = 0;
-            $_etype140 = 0;
-            $xfer += $input->readListBegin($_etype140, $_size137);
-            for ($_i141 = 0; $_i141 < $_size137; ++$_i141)
+            $_size179 = 0;
+            $_etype182 = 0;
+            $xfer += $input->readListBegin($_etype182, $_size179);
+            for ($_i183 = 0; $_i183 < $_size179; ++$_i183)
             {
-              $elem142 = null;
-              $elem142 = array();
-              $_size143 = 0;
-              $_etype146 = 0;
-              $xfer += $input->readListBegin($_etype146, $_size143);
-              for ($_i147 = 0; $_i147 < $_size143; ++$_i147)
+              $elem184 = null;
+              $elem184 = array();
+              $_size185 = 0;
+              $_etype188 = 0;
+              $xfer += $input->readListBegin($_etype188, $_size185);
+              for ($_i189 = 0; $_i189 < $_size185; ++$_i189)
               {
-                $elem148 = null;
-                $xfer += $input->readString($elem148);
-                $elem142 []= $elem148;
+                $elem190 = null;
+                $xfer += $input->readString($elem190);
+                $elem184 []= $elem190;
               }
               $xfer += $input->readListEnd();
-              $this->success []= $elem142;
+              $this->success []= $elem184;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -9651,14 +16618,14 @@ class ClientService_get_cells_as_arrays_result {
       {
         $output->writeListBegin(TType::LST, count($this->success));
         {
-          foreach ($this->success as $iter149)
+          foreach ($this->success as $iter191)
           {
             {
-              $output->writeListBegin(TType::STRING, count($iter149));
+              $output->writeListBegin(TType::STRING, count($iter191));
               {
-                foreach ($iter149 as $iter150)
+                foreach ($iter191 as $iter192)
                 {
-                  $xfer += $output->writeString($iter150);
+                  $xfer += $output->writeString($iter192);
                 }
               }
               $output->writeListEnd();
@@ -9892,6 +16859,197 @@ class ClientService_get_cells_serialized_result {
 
 }
 
+class ClientService_shared_mutator_refresh_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $mutate_spec = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'mutate_spec',
+          'type' => TType::STRUCT,
+          'class' => 'MutateSpec',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['mutate_spec'])) {
+        $this->mutate_spec = $vals['mutate_spec'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_refresh_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRUCT) {
+            $this->mutate_spec = new MutateSpec();
+            $xfer += $this->mutate_spec->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_refresh_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->mutate_spec !== null) {
+      if (!is_object($this->mutate_spec)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('mutate_spec', TType::STRUCT, 3);
+      $xfer += $this->mutate_spec->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_shared_mutator_refresh_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_refresh_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_refresh_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_refresh_shared_mutator_args {
   static $_TSPEC;
 
@@ -10083,6 +17241,245 @@ class ClientService_refresh_shared_mutator_result {
 
 }
 
+class ClientService_shared_mutator_set_cells_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $mutate_spec = null;
+  public $cells = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'mutate_spec',
+          'type' => TType::STRUCT,
+          'class' => 'MutateSpec',
+          ),
+        4 => array(
+          'var' => 'cells',
+          'type' => TType::LST,
+          'etype' => TType::STRUCT,
+          'elem' => array(
+            'type' => TType::STRUCT,
+            'class' => 'Cell',
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['mutate_spec'])) {
+        $this->mutate_spec = $vals['mutate_spec'];
+      }
+      if (isset($vals['cells'])) {
+        $this->cells = $vals['cells'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_set_cells_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRUCT) {
+            $this->mutate_spec = new MutateSpec();
+            $xfer += $this->mutate_spec->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 4:
+          if ($ftype == TType::LST) {
+            $this->cells = array();
+            $_size193 = 0;
+            $_etype196 = 0;
+            $xfer += $input->readListBegin($_etype196, $_size193);
+            for ($_i197 = 0; $_i197 < $_size193; ++$_i197)
+            {
+              $elem198 = null;
+              $elem198 = new Cell();
+              $xfer += $elem198->read($input);
+              $this->cells []= $elem198;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_set_cells_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->mutate_spec !== null) {
+      if (!is_object($this->mutate_spec)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('mutate_spec', TType::STRUCT, 3);
+      $xfer += $this->mutate_spec->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cells !== null) {
+      if (!is_array($this->cells)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cells', TType::LST, 4);
+      {
+        $output->writeListBegin(TType::STRUCT, count($this->cells));
+        {
+          foreach ($this->cells as $iter199)
+          {
+            $xfer += $iter199->write($output);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_shared_mutator_set_cells_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_set_cells_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_set_cells_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_offer_cells_args {
   static $_TSPEC;
 
@@ -10178,15 +17575,15 @@ class ClientService_offer_cells_args {
         case 4:
           if ($ftype == TType::LST) {
             $this->cells = array();
-            $_size151 = 0;
-            $_etype154 = 0;
-            $xfer += $input->readListBegin($_etype154, $_size151);
-            for ($_i155 = 0; $_i155 < $_size151; ++$_i155)
+            $_size200 = 0;
+            $_etype203 = 0;
+            $xfer += $input->readListBegin($_etype203, $_size200);
+            for ($_i204 = 0; $_i204 < $_size200; ++$_i204)
             {
-              $elem156 = null;
-              $elem156 = new Cell();
-              $xfer += $elem156->read($input);
-              $this->cells []= $elem156;
+              $elem205 = null;
+              $elem205 = new Cell();
+              $xfer += $elem205->read($input);
+              $this->cells []= $elem205;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -10232,9 +17629,9 @@ class ClientService_offer_cells_args {
       {
         $output->writeListBegin(TType::STRUCT, count($this->cells));
         {
-          foreach ($this->cells as $iter157)
+          foreach ($this->cells as $iter206)
           {
-            $xfer += $iter157->write($output);
+            $xfer += $iter206->write($output);
           }
         }
         $output->writeListEnd();
@@ -10310,6 +17707,266 @@ class ClientService_offer_cells_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_offer_cells_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_shared_mutator_set_cells_as_arrays_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $mutate_spec = null;
+  public $cells = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'mutate_spec',
+          'type' => TType::STRUCT,
+          'class' => 'MutateSpec',
+          ),
+        4 => array(
+          'var' => 'cells',
+          'type' => TType::LST,
+          'etype' => TType::LST,
+          'elem' => array(
+            'type' => TType::LST,
+            'etype' => TType::STRING,
+            'elem' => array(
+              'type' => TType::STRING,
+              ),
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['mutate_spec'])) {
+        $this->mutate_spec = $vals['mutate_spec'];
+      }
+      if (isset($vals['cells'])) {
+        $this->cells = $vals['cells'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_set_cells_as_arrays_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRUCT) {
+            $this->mutate_spec = new MutateSpec();
+            $xfer += $this->mutate_spec->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 4:
+          if ($ftype == TType::LST) {
+            $this->cells = array();
+            $_size207 = 0;
+            $_etype210 = 0;
+            $xfer += $input->readListBegin($_etype210, $_size207);
+            for ($_i211 = 0; $_i211 < $_size207; ++$_i211)
+            {
+              $elem212 = null;
+              $elem212 = array();
+              $_size213 = 0;
+              $_etype216 = 0;
+              $xfer += $input->readListBegin($_etype216, $_size213);
+              for ($_i217 = 0; $_i217 < $_size213; ++$_i217)
+              {
+                $elem218 = null;
+                $xfer += $input->readString($elem218);
+                $elem212 []= $elem218;
+              }
+              $xfer += $input->readListEnd();
+              $this->cells []= $elem212;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_set_cells_as_arrays_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->mutate_spec !== null) {
+      if (!is_object($this->mutate_spec)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('mutate_spec', TType::STRUCT, 3);
+      $xfer += $this->mutate_spec->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cells !== null) {
+      if (!is_array($this->cells)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cells', TType::LST, 4);
+      {
+        $output->writeListBegin(TType::LST, count($this->cells));
+        {
+          foreach ($this->cells as $iter219)
+          {
+            {
+              $output->writeListBegin(TType::STRING, count($iter219));
+              {
+                foreach ($iter219 as $iter220)
+                {
+                  $xfer += $output->writeString($iter220);
+                }
+              }
+              $output->writeListEnd();
+            }
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_shared_mutator_set_cells_as_arrays_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_set_cells_as_arrays_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_set_cells_as_arrays_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -10420,24 +18077,24 @@ class ClientService_offer_cells_as_arrays_args {
         case 4:
           if ($ftype == TType::LST) {
             $this->cells = array();
-            $_size158 = 0;
-            $_etype161 = 0;
-            $xfer += $input->readListBegin($_etype161, $_size158);
-            for ($_i162 = 0; $_i162 < $_size158; ++$_i162)
+            $_size221 = 0;
+            $_etype224 = 0;
+            $xfer += $input->readListBegin($_etype224, $_size221);
+            for ($_i225 = 0; $_i225 < $_size221; ++$_i225)
             {
-              $elem163 = null;
-              $elem163 = array();
-              $_size164 = 0;
-              $_etype167 = 0;
-              $xfer += $input->readListBegin($_etype167, $_size164);
-              for ($_i168 = 0; $_i168 < $_size164; ++$_i168)
+              $elem226 = null;
+              $elem226 = array();
+              $_size227 = 0;
+              $_etype230 = 0;
+              $xfer += $input->readListBegin($_etype230, $_size227);
+              for ($_i231 = 0; $_i231 < $_size227; ++$_i231)
               {
-                $elem169 = null;
-                $xfer += $input->readString($elem169);
-                $elem163 []= $elem169;
+                $elem232 = null;
+                $xfer += $input->readString($elem232);
+                $elem226 []= $elem232;
               }
               $xfer += $input->readListEnd();
-              $this->cells []= $elem163;
+              $this->cells []= $elem226;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -10483,14 +18140,14 @@ class ClientService_offer_cells_as_arrays_args {
       {
         $output->writeListBegin(TType::LST, count($this->cells));
         {
-          foreach ($this->cells as $iter170)
+          foreach ($this->cells as $iter233)
           {
             {
-              $output->writeListBegin(TType::STRING, count($iter170));
+              $output->writeListBegin(TType::STRING, count($iter233));
               {
-                foreach ($iter170 as $iter171)
+                foreach ($iter233 as $iter234)
                 {
-                  $xfer += $output->writeString($iter171);
+                  $xfer += $output->writeString($iter234);
                 }
               }
               $output->writeListEnd();
@@ -10570,6 +18227,222 @@ class ClientService_offer_cells_as_arrays_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_offer_cells_as_arrays_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_shared_mutator_set_cell_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $mutate_spec = null;
+  public $cell = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'mutate_spec',
+          'type' => TType::STRUCT,
+          'class' => 'MutateSpec',
+          ),
+        4 => array(
+          'var' => 'cell',
+          'type' => TType::STRUCT,
+          'class' => 'Cell',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['mutate_spec'])) {
+        $this->mutate_spec = $vals['mutate_spec'];
+      }
+      if (isset($vals['cell'])) {
+        $this->cell = $vals['cell'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_set_cell_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRUCT) {
+            $this->mutate_spec = new MutateSpec();
+            $xfer += $this->mutate_spec->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 4:
+          if ($ftype == TType::STRUCT) {
+            $this->cell = new Cell();
+            $xfer += $this->cell->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_set_cell_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->mutate_spec !== null) {
+      if (!is_object($this->mutate_spec)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('mutate_spec', TType::STRUCT, 3);
+      $xfer += $this->mutate_spec->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cell !== null) {
+      if (!is_object($this->cell)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cell', TType::STRUCT, 4);
+      $xfer += $this->cell->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_shared_mutator_set_cell_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_set_cell_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_set_cell_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -10798,6 +18671,243 @@ class ClientService_offer_cell_result {
 
 }
 
+class ClientService_shared_mutator_set_cell_as_array_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $mutate_spec = null;
+  public $cell = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'mutate_spec',
+          'type' => TType::STRUCT,
+          'class' => 'MutateSpec',
+          ),
+        4 => array(
+          'var' => 'cell',
+          'type' => TType::LST,
+          'etype' => TType::STRING,
+          'elem' => array(
+            'type' => TType::STRING,
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['mutate_spec'])) {
+        $this->mutate_spec = $vals['mutate_spec'];
+      }
+      if (isset($vals['cell'])) {
+        $this->cell = $vals['cell'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_set_cell_as_array_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRUCT) {
+            $this->mutate_spec = new MutateSpec();
+            $xfer += $this->mutate_spec->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 4:
+          if ($ftype == TType::LST) {
+            $this->cell = array();
+            $_size235 = 0;
+            $_etype238 = 0;
+            $xfer += $input->readListBegin($_etype238, $_size235);
+            for ($_i239 = 0; $_i239 < $_size235; ++$_i239)
+            {
+              $elem240 = null;
+              $xfer += $input->readString($elem240);
+              $this->cell []= $elem240;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_set_cell_as_array_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->mutate_spec !== null) {
+      if (!is_object($this->mutate_spec)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('mutate_spec', TType::STRUCT, 3);
+      $xfer += $this->mutate_spec->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cell !== null) {
+      if (!is_array($this->cell)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cell', TType::LST, 4);
+      {
+        $output->writeListBegin(TType::STRING, count($this->cell));
+        {
+          foreach ($this->cell as $iter241)
+          {
+            $xfer += $output->writeString($iter241);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_shared_mutator_set_cell_as_array_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_shared_mutator_set_cell_as_array_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_shared_mutator_set_cell_as_array_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_offer_cell_as_array_args {
   static $_TSPEC;
 
@@ -10892,14 +19002,14 @@ class ClientService_offer_cell_as_array_args {
         case 4:
           if ($ftype == TType::LST) {
             $this->cell = array();
-            $_size172 = 0;
-            $_etype175 = 0;
-            $xfer += $input->readListBegin($_etype175, $_size172);
-            for ($_i176 = 0; $_i176 < $_size172; ++$_i176)
+            $_size242 = 0;
+            $_etype245 = 0;
+            $xfer += $input->readListBegin($_etype245, $_size242);
+            for ($_i246 = 0; $_i246 < $_size242; ++$_i246)
             {
-              $elem177 = null;
-              $xfer += $input->readString($elem177);
-              $this->cell []= $elem177;
+              $elem247 = null;
+              $xfer += $input->readString($elem247);
+              $this->cell []= $elem247;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -10945,9 +19055,9 @@ class ClientService_offer_cell_as_array_args {
       {
         $output->writeListBegin(TType::STRING, count($this->cell));
         {
-          foreach ($this->cell as $iter178)
+          foreach ($this->cell as $iter248)
           {
-            $xfer += $output->writeString($iter178);
+            $xfer += $output->writeString($iter248);
           }
         }
         $output->writeListEnd();
@@ -11023,6 +19133,232 @@ class ClientService_offer_cell_as_array_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_offer_cell_as_array_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_open_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $flags = 0;
+  public $flush_interval = 0;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'flags',
+          'type' => TType::I32,
+          ),
+        4 => array(
+          'var' => 'flush_interval',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['flags'])) {
+        $this->flags = $vals['flags'];
+      }
+      if (isset($vals['flush_interval'])) {
+        $this->flush_interval = $vals['flush_interval'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_open_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->flags);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 4:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->flush_interval);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_open_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->flags !== null) {
+      $xfer += $output->writeFieldBegin('flags', TType::I32, 3);
+      $xfer += $output->writeI32($this->flags);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->flush_interval !== null) {
+      $xfer += $output->writeFieldBegin('flush_interval', TType::I32, 4);
+      $xfer += $output->writeI32($this->flush_interval);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_open_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::I64,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_open_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_open_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::I64, 0);
+      $xfer += $output->writeI64($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -11244,6 +19580,232 @@ class ClientService_open_mutator_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_open_mutator_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::I64, 0);
+      $xfer += $output->writeI64($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_open_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $future = null;
+  public $flags = 0;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'future',
+          'type' => TType::I64,
+          ),
+        4 => array(
+          'var' => 'flags',
+          'type' => TType::I32,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['future'])) {
+        $this->future = $vals['future'];
+      }
+      if (isset($vals['flags'])) {
+        $this->flags = $vals['flags'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_open_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->future);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 4:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->flags);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_open_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->future !== null) {
+      $xfer += $output->writeFieldBegin('future', TType::I64, 3);
+      $xfer += $output->writeI64($this->future);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->flags !== null) {
+      $xfer += $output->writeFieldBegin('flags', TType::I32, 4);
+      $xfer += $output->writeI32($this->flags);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_open_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::I64,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_open_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_open_result');
     if ($this->success !== null) {
       $xfer += $output->writeFieldBegin('success', TType::I64, 0);
       $xfer += $output->writeI64($this->success);
@@ -11487,6 +20049,152 @@ class ClientService_open_mutator_async_result {
 
 }
 
+class ClientService_mutator_close_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_close_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_close_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_close_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_close_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_close_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_close_mutator_args {
   static $_TSPEC;
 
@@ -11621,6 +20329,152 @@ class ClientService_close_mutator_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_close_mutator_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_cancel_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_cancel_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_cancel_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_cancel_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_cancel_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_cancel_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -11779,6 +20633,152 @@ class ClientService_cancel_mutator_async_result {
 
 }
 
+class ClientService_async_mutator_close_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_close_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_close_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_close_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_close_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_close_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_close_mutator_async_args {
   static $_TSPEC;
 
@@ -11925,7 +20925,7 @@ class ClientService_close_mutator_async_result {
 
 }
 
-class ClientService_set_cell_args {
+class ClientService_mutator_set_cell_args {
   static $_TSPEC;
 
   public $mutator = null;
@@ -11956,7 +20956,7 @@ class ClientService_set_cell_args {
   }
 
   public function getName() {
-    return 'ClientService_set_cell_args';
+    return 'ClientService_mutator_set_cell_args';
   }
 
   public function read($input)
@@ -12001,7 +21001,7 @@ class ClientService_set_cell_args {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('ClientService_set_cell_args');
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cell_args');
     if ($this->mutator !== null) {
       $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
       $xfer += $output->writeI64($this->mutator);
@@ -12012,6 +21012,197 @@ class ClientService_set_cell_args {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
       }
       $xfer += $output->writeFieldBegin('cell', TType::STRUCT, 2);
+      $xfer += $this->cell->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_set_cell_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_set_cell_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cell_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_set_cell_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $cell = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'cell',
+          'type' => TType::STRUCT,
+          'class' => 'Cell',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['cell'])) {
+        $this->cell = $vals['cell'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_set_cell_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRUCT) {
+            $this->cell = new Cell();
+            $xfer += $this->cell->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_set_cell_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cell !== null) {
+      if (!is_object($this->cell)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cell', TType::STRUCT, 3);
       $xfer += $this->cell->write($output);
       $xfer += $output->writeFieldEnd();
     }
@@ -12096,7 +21287,7 @@ class ClientService_set_cell_result {
 
 }
 
-class ClientService_set_cell_as_array_args {
+class ClientService_mutator_set_cell_as_array_args {
   static $_TSPEC;
 
   public $mutator = null;
@@ -12130,7 +21321,7 @@ class ClientService_set_cell_as_array_args {
   }
 
   public function getName() {
-    return 'ClientService_set_cell_as_array_args';
+    return 'ClientService_mutator_set_cell_as_array_args';
   }
 
   public function read($input)
@@ -12158,14 +21349,221 @@ class ClientService_set_cell_as_array_args {
         case 2:
           if ($ftype == TType::LST) {
             $this->cell = array();
-            $_size179 = 0;
-            $_etype182 = 0;
-            $xfer += $input->readListBegin($_etype182, $_size179);
-            for ($_i183 = 0; $_i183 < $_size179; ++$_i183)
+            $_size249 = 0;
+            $_etype252 = 0;
+            $xfer += $input->readListBegin($_etype252, $_size249);
+            for ($_i253 = 0; $_i253 < $_size249; ++$_i253)
             {
-              $elem184 = null;
-              $xfer += $input->readString($elem184);
-              $this->cell []= $elem184;
+              $elem254 = null;
+              $xfer += $input->readString($elem254);
+              $this->cell []= $elem254;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cell_as_array_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cell !== null) {
+      if (!is_array($this->cell)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cell', TType::LST, 2);
+      {
+        $output->writeListBegin(TType::STRING, count($this->cell));
+        {
+          foreach ($this->cell as $iter255)
+          {
+            $xfer += $output->writeString($iter255);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_set_cell_as_array_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_set_cell_as_array_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cell_as_array_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_set_cell_as_array_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $cell = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'cell',
+          'type' => TType::LST,
+          'etype' => TType::STRING,
+          'elem' => array(
+            'type' => TType::STRING,
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['cell'])) {
+        $this->cell = $vals['cell'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_set_cell_as_array_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::LST) {
+            $this->cell = array();
+            $_size256 = 0;
+            $_etype259 = 0;
+            $xfer += $input->readListBegin($_etype259, $_size256);
+            for ($_i260 = 0; $_i260 < $_size256; ++$_i260)
+            {
+              $elem261 = null;
+              $xfer += $input->readString($elem261);
+              $this->cell []= $elem261;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -12185,22 +21583,27 @@ class ClientService_set_cell_as_array_args {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_set_cell_as_array_args');
-    if ($this->mutator !== null) {
-      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
-      $xfer += $output->writeI64($this->mutator);
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
       $xfer += $output->writeFieldEnd();
     }
     if ($this->cell !== null) {
       if (!is_array($this->cell)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
       }
-      $xfer += $output->writeFieldBegin('cell', TType::LST, 2);
+      $xfer += $output->writeFieldBegin('cell', TType::LST, 3);
       {
         $output->writeListBegin(TType::STRING, count($this->cell));
         {
-          foreach ($this->cell as $iter185)
+          foreach ($this->cell as $iter262)
           {
-            $xfer += $output->writeString($iter185);
+            $xfer += $output->writeString($iter262);
           }
         }
         $output->writeListEnd();
@@ -12288,7 +21691,7 @@ class ClientService_set_cell_as_array_result {
 
 }
 
-class ClientService_set_cells_args {
+class ClientService_mutator_set_cells_args {
   static $_TSPEC;
 
   public $mutator = null;
@@ -12323,7 +21726,7 @@ class ClientService_set_cells_args {
   }
 
   public function getName() {
-    return 'ClientService_set_cells_args';
+    return 'ClientService_mutator_set_cells_args';
   }
 
   public function read($input)
@@ -12351,15 +21754,224 @@ class ClientService_set_cells_args {
         case 2:
           if ($ftype == TType::LST) {
             $this->cells = array();
-            $_size186 = 0;
-            $_etype189 = 0;
-            $xfer += $input->readListBegin($_etype189, $_size186);
-            for ($_i190 = 0; $_i190 < $_size186; ++$_i190)
+            $_size263 = 0;
+            $_etype266 = 0;
+            $xfer += $input->readListBegin($_etype266, $_size263);
+            for ($_i267 = 0; $_i267 < $_size263; ++$_i267)
             {
-              $elem191 = null;
-              $elem191 = new Cell();
-              $xfer += $elem191->read($input);
-              $this->cells []= $elem191;
+              $elem268 = null;
+              $elem268 = new Cell();
+              $xfer += $elem268->read($input);
+              $this->cells []= $elem268;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cells_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cells !== null) {
+      if (!is_array($this->cells)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cells', TType::LST, 2);
+      {
+        $output->writeListBegin(TType::STRUCT, count($this->cells));
+        {
+          foreach ($this->cells as $iter269)
+          {
+            $xfer += $iter269->write($output);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_set_cells_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_set_cells_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cells_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_set_cells_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $cells = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'cells',
+          'type' => TType::LST,
+          'etype' => TType::STRUCT,
+          'elem' => array(
+            'type' => TType::STRUCT,
+            'class' => 'Cell',
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['cells'])) {
+        $this->cells = $vals['cells'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_set_cells_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::LST) {
+            $this->cells = array();
+            $_size270 = 0;
+            $_etype273 = 0;
+            $xfer += $input->readListBegin($_etype273, $_size270);
+            for ($_i274 = 0; $_i274 < $_size270; ++$_i274)
+            {
+              $elem275 = null;
+              $elem275 = new Cell();
+              $xfer += $elem275->read($input);
+              $this->cells []= $elem275;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -12379,22 +21991,27 @@ class ClientService_set_cells_args {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_set_cells_args');
-    if ($this->mutator !== null) {
-      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
-      $xfer += $output->writeI64($this->mutator);
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
       $xfer += $output->writeFieldEnd();
     }
     if ($this->cells !== null) {
       if (!is_array($this->cells)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
       }
-      $xfer += $output->writeFieldBegin('cells', TType::LST, 2);
+      $xfer += $output->writeFieldBegin('cells', TType::LST, 3);
       {
         $output->writeListBegin(TType::STRUCT, count($this->cells));
         {
-          foreach ($this->cells as $iter192)
+          foreach ($this->cells as $iter276)
           {
-            $xfer += $iter192->write($output);
+            $xfer += $iter276->write($output);
           }
         }
         $output->writeListEnd();
@@ -12482,7 +22099,7 @@ class ClientService_set_cells_result {
 
 }
 
-class ClientService_set_cells_as_arrays_args {
+class ClientService_mutator_set_cells_as_arrays_args {
   static $_TSPEC;
 
   public $mutator = null;
@@ -12520,7 +22137,7 @@ class ClientService_set_cells_as_arrays_args {
   }
 
   public function getName() {
-    return 'ClientService_set_cells_as_arrays_args';
+    return 'ClientService_mutator_set_cells_as_arrays_args';
   }
 
   public function read($input)
@@ -12548,24 +22165,254 @@ class ClientService_set_cells_as_arrays_args {
         case 2:
           if ($ftype == TType::LST) {
             $this->cells = array();
-            $_size193 = 0;
-            $_etype196 = 0;
-            $xfer += $input->readListBegin($_etype196, $_size193);
-            for ($_i197 = 0; $_i197 < $_size193; ++$_i197)
+            $_size277 = 0;
+            $_etype280 = 0;
+            $xfer += $input->readListBegin($_etype280, $_size277);
+            for ($_i281 = 0; $_i281 < $_size277; ++$_i281)
             {
-              $elem198 = null;
-              $elem198 = array();
-              $_size199 = 0;
-              $_etype202 = 0;
-              $xfer += $input->readListBegin($_etype202, $_size199);
-              for ($_i203 = 0; $_i203 < $_size199; ++$_i203)
+              $elem282 = null;
+              $elem282 = array();
+              $_size283 = 0;
+              $_etype286 = 0;
+              $xfer += $input->readListBegin($_etype286, $_size283);
+              for ($_i287 = 0; $_i287 < $_size283; ++$_i287)
               {
-                $elem204 = null;
-                $xfer += $input->readString($elem204);
-                $elem198 []= $elem204;
+                $elem288 = null;
+                $xfer += $input->readString($elem288);
+                $elem282 []= $elem288;
               }
               $xfer += $input->readListEnd();
-              $this->cells []= $elem198;
+              $this->cells []= $elem282;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cells_as_arrays_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cells !== null) {
+      if (!is_array($this->cells)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cells', TType::LST, 2);
+      {
+        $output->writeListBegin(TType::LST, count($this->cells));
+        {
+          foreach ($this->cells as $iter289)
+          {
+            {
+              $output->writeListBegin(TType::STRING, count($iter289));
+              {
+                foreach ($iter289 as $iter290)
+                {
+                  $xfer += $output->writeString($iter290);
+                }
+              }
+              $output->writeListEnd();
+            }
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_set_cells_as_arrays_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_set_cells_as_arrays_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cells_as_arrays_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_set_cells_as_arrays_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $cells = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'cells',
+          'type' => TType::LST,
+          'etype' => TType::LST,
+          'elem' => array(
+            'type' => TType::LST,
+            'etype' => TType::STRING,
+            'elem' => array(
+              'type' => TType::STRING,
+              ),
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['cells'])) {
+        $this->cells = $vals['cells'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_set_cells_as_arrays_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::LST) {
+            $this->cells = array();
+            $_size291 = 0;
+            $_etype294 = 0;
+            $xfer += $input->readListBegin($_etype294, $_size291);
+            for ($_i295 = 0; $_i295 < $_size291; ++$_i295)
+            {
+              $elem296 = null;
+              $elem296 = array();
+              $_size297 = 0;
+              $_etype300 = 0;
+              $xfer += $input->readListBegin($_etype300, $_size297);
+              for ($_i301 = 0; $_i301 < $_size297; ++$_i301)
+              {
+                $elem302 = null;
+                $xfer += $input->readString($elem302);
+                $elem296 []= $elem302;
+              }
+              $xfer += $input->readListEnd();
+              $this->cells []= $elem296;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -12585,27 +22432,32 @@ class ClientService_set_cells_as_arrays_args {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_set_cells_as_arrays_args');
-    if ($this->mutator !== null) {
-      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
-      $xfer += $output->writeI64($this->mutator);
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
       $xfer += $output->writeFieldEnd();
     }
     if ($this->cells !== null) {
       if (!is_array($this->cells)) {
         throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
       }
-      $xfer += $output->writeFieldBegin('cells', TType::LST, 2);
+      $xfer += $output->writeFieldBegin('cells', TType::LST, 3);
       {
         $output->writeListBegin(TType::LST, count($this->cells));
         {
-          foreach ($this->cells as $iter205)
+          foreach ($this->cells as $iter303)
           {
             {
-              $output->writeListBegin(TType::STRING, count($iter205));
+              $output->writeListBegin(TType::STRING, count($iter303));
               {
-                foreach ($iter205 as $iter206)
+                foreach ($iter303 as $iter304)
                 {
-                  $xfer += $output->writeString($iter206);
+                  $xfer += $output->writeString($iter304);
                 }
               }
               $output->writeListEnd();
@@ -12697,7 +22549,7 @@ class ClientService_set_cells_as_arrays_result {
 
 }
 
-class ClientService_set_cells_serialized_args {
+class ClientService_mutator_set_cells_serialized_args {
   static $_TSPEC;
 
   public $mutator = null;
@@ -12735,7 +22587,7 @@ class ClientService_set_cells_serialized_args {
   }
 
   public function getName() {
-    return 'ClientService_set_cells_serialized_args';
+    return 'ClientService_mutator_set_cells_serialized_args';
   }
 
   public function read($input)
@@ -12786,7 +22638,7 @@ class ClientService_set_cells_serialized_args {
 
   public function write($output) {
     $xfer = 0;
-    $xfer += $output->writeStructBegin('ClientService_set_cells_serialized_args');
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cells_serialized_args');
     if ($this->mutator !== null) {
       $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
       $xfer += $output->writeI64($this->mutator);
@@ -12800,6 +22652,192 @@ class ClientService_set_cells_serialized_args {
     if ($this->flush !== null) {
       $xfer += $output->writeFieldBegin('flush', TType::BOOL, 3);
       $xfer += $output->writeBool($this->flush);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_set_cells_serialized_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_set_cells_serialized_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_set_cells_serialized_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_set_cells_serialized_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+  public $cells = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'cells',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+      if (isset($vals['cells'])) {
+        $this->cells = $vals['cells'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_set_cells_serialized_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->cells);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_set_cells_serialized_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cells !== null) {
+      $xfer += $output->writeFieldBegin('cells', TType::STRING, 3);
+      $xfer += $output->writeString($this->cells);
       $xfer += $output->writeFieldEnd();
     }
     $xfer += $output->writeFieldStop();
@@ -12871,6 +22909,152 @@ class ClientService_set_cells_serialized_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_set_cells_serialized_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_flush_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_flush_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_flush_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_mutator_flush_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_mutator_flush_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_mutator_flush_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -13017,6 +23201,177 @@ class ClientService_flush_mutator_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_flush_mutator_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_set_cell_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+  public $cell = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'cell',
+          'type' => TType::STRUCT,
+          'class' => 'Cell',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+      if (isset($vals['cell'])) {
+        $this->cell = $vals['cell'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cell_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRUCT) {
+            $this->cell = new Cell();
+            $xfer += $this->cell->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cell_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cell !== null) {
+      if (!is_object($this->cell)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cell', TType::STRUCT, 2);
+      $xfer += $this->cell->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_set_cell_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cell_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cell_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -13200,6 +23555,198 @@ class ClientService_set_cell_async_result {
 
 }
 
+class ClientService_async_mutator_set_cell_as_array_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+  public $cell = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'cell',
+          'type' => TType::LST,
+          'etype' => TType::STRING,
+          'elem' => array(
+            'type' => TType::STRING,
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+      if (isset($vals['cell'])) {
+        $this->cell = $vals['cell'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cell_as_array_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::LST) {
+            $this->cell = array();
+            $_size305 = 0;
+            $_etype308 = 0;
+            $xfer += $input->readListBegin($_etype308, $_size305);
+            for ($_i309 = 0; $_i309 < $_size305; ++$_i309)
+            {
+              $elem310 = null;
+              $xfer += $input->readString($elem310);
+              $this->cell []= $elem310;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cell_as_array_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cell !== null) {
+      if (!is_array($this->cell)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cell', TType::LST, 2);
+      {
+        $output->writeListBegin(TType::STRING, count($this->cell));
+        {
+          foreach ($this->cell as $iter311)
+          {
+            $xfer += $output->writeString($iter311);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_set_cell_as_array_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cell_as_array_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cell_as_array_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_set_cell_as_array_async_args {
   static $_TSPEC;
 
@@ -13262,14 +23809,14 @@ class ClientService_set_cell_as_array_async_args {
         case 2:
           if ($ftype == TType::LST) {
             $this->cell = array();
-            $_size207 = 0;
-            $_etype210 = 0;
-            $xfer += $input->readListBegin($_etype210, $_size207);
-            for ($_i211 = 0; $_i211 < $_size207; ++$_i211)
+            $_size312 = 0;
+            $_etype315 = 0;
+            $xfer += $input->readListBegin($_etype315, $_size312);
+            for ($_i316 = 0; $_i316 < $_size312; ++$_i316)
             {
-              $elem212 = null;
-              $xfer += $input->readString($elem212);
-              $this->cell []= $elem212;
+              $elem317 = null;
+              $xfer += $input->readString($elem317);
+              $this->cell []= $elem317;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -13302,9 +23849,9 @@ class ClientService_set_cell_as_array_async_args {
       {
         $output->writeListBegin(TType::STRING, count($this->cell));
         {
-          foreach ($this->cell as $iter213)
+          foreach ($this->cell as $iter318)
           {
-            $xfer += $output->writeString($iter213);
+            $xfer += $output->writeString($iter318);
           }
         }
         $output->writeListEnd();
@@ -13392,6 +23939,200 @@ class ClientService_set_cell_as_array_async_result {
 
 }
 
+class ClientService_async_mutator_set_cells_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+  public $cells = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'cells',
+          'type' => TType::LST,
+          'etype' => TType::STRUCT,
+          'elem' => array(
+            'type' => TType::STRUCT,
+            'class' => 'Cell',
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+      if (isset($vals['cells'])) {
+        $this->cells = $vals['cells'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cells_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::LST) {
+            $this->cells = array();
+            $_size319 = 0;
+            $_etype322 = 0;
+            $xfer += $input->readListBegin($_etype322, $_size319);
+            for ($_i323 = 0; $_i323 < $_size319; ++$_i323)
+            {
+              $elem324 = null;
+              $elem324 = new Cell();
+              $xfer += $elem324->read($input);
+              $this->cells []= $elem324;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cells_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cells !== null) {
+      if (!is_array($this->cells)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cells', TType::LST, 2);
+      {
+        $output->writeListBegin(TType::STRUCT, count($this->cells));
+        {
+          foreach ($this->cells as $iter325)
+          {
+            $xfer += $iter325->write($output);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_set_cells_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cells_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cells_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_set_cells_async_args {
   static $_TSPEC;
 
@@ -13455,15 +24196,15 @@ class ClientService_set_cells_async_args {
         case 2:
           if ($ftype == TType::LST) {
             $this->cells = array();
-            $_size214 = 0;
-            $_etype217 = 0;
-            $xfer += $input->readListBegin($_etype217, $_size214);
-            for ($_i218 = 0; $_i218 < $_size214; ++$_i218)
+            $_size326 = 0;
+            $_etype329 = 0;
+            $xfer += $input->readListBegin($_etype329, $_size326);
+            for ($_i330 = 0; $_i330 < $_size326; ++$_i330)
             {
-              $elem219 = null;
-              $elem219 = new Cell();
-              $xfer += $elem219->read($input);
-              $this->cells []= $elem219;
+              $elem331 = null;
+              $elem331 = new Cell();
+              $xfer += $elem331->read($input);
+              $this->cells []= $elem331;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -13496,9 +24237,9 @@ class ClientService_set_cells_async_args {
       {
         $output->writeListBegin(TType::STRUCT, count($this->cells));
         {
-          foreach ($this->cells as $iter220)
+          foreach ($this->cells as $iter332)
           {
-            $xfer += $iter220->write($output);
+            $xfer += $iter332->write($output);
           }
         }
         $output->writeListEnd();
@@ -13586,6 +24327,221 @@ class ClientService_set_cells_async_result {
 
 }
 
+class ClientService_async_mutator_set_cells_as_arrays_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+  public $cells = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'cells',
+          'type' => TType::LST,
+          'etype' => TType::LST,
+          'elem' => array(
+            'type' => TType::LST,
+            'etype' => TType::STRING,
+            'elem' => array(
+              'type' => TType::STRING,
+              ),
+            ),
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+      if (isset($vals['cells'])) {
+        $this->cells = $vals['cells'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cells_as_arrays_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::LST) {
+            $this->cells = array();
+            $_size333 = 0;
+            $_etype336 = 0;
+            $xfer += $input->readListBegin($_etype336, $_size333);
+            for ($_i337 = 0; $_i337 < $_size333; ++$_i337)
+            {
+              $elem338 = null;
+              $elem338 = array();
+              $_size339 = 0;
+              $_etype342 = 0;
+              $xfer += $input->readListBegin($_etype342, $_size339);
+              for ($_i343 = 0; $_i343 < $_size339; ++$_i343)
+              {
+                $elem344 = null;
+                $xfer += $input->readString($elem344);
+                $elem338 []= $elem344;
+              }
+              $xfer += $input->readListEnd();
+              $this->cells []= $elem338;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cells_as_arrays_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cells !== null) {
+      if (!is_array($this->cells)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('cells', TType::LST, 2);
+      {
+        $output->writeListBegin(TType::LST, count($this->cells));
+        {
+          foreach ($this->cells as $iter345)
+          {
+            {
+              $output->writeListBegin(TType::STRING, count($iter345));
+              {
+                foreach ($iter345 as $iter346)
+                {
+                  $xfer += $output->writeString($iter346);
+                }
+              }
+              $output->writeListEnd();
+            }
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_set_cells_as_arrays_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cells_as_arrays_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cells_as_arrays_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_set_cells_as_arrays_async_args {
   static $_TSPEC;
 
@@ -13652,24 +24608,24 @@ class ClientService_set_cells_as_arrays_async_args {
         case 2:
           if ($ftype == TType::LST) {
             $this->cells = array();
-            $_size221 = 0;
-            $_etype224 = 0;
-            $xfer += $input->readListBegin($_etype224, $_size221);
-            for ($_i225 = 0; $_i225 < $_size221; ++$_i225)
+            $_size347 = 0;
+            $_etype350 = 0;
+            $xfer += $input->readListBegin($_etype350, $_size347);
+            for ($_i351 = 0; $_i351 < $_size347; ++$_i351)
             {
-              $elem226 = null;
-              $elem226 = array();
-              $_size227 = 0;
-              $_etype230 = 0;
-              $xfer += $input->readListBegin($_etype230, $_size227);
-              for ($_i231 = 0; $_i231 < $_size227; ++$_i231)
+              $elem352 = null;
+              $elem352 = array();
+              $_size353 = 0;
+              $_etype356 = 0;
+              $xfer += $input->readListBegin($_etype356, $_size353);
+              for ($_i357 = 0; $_i357 < $_size353; ++$_i357)
               {
-                $elem232 = null;
-                $xfer += $input->readString($elem232);
-                $elem226 []= $elem232;
+                $elem358 = null;
+                $xfer += $input->readString($elem358);
+                $elem352 []= $elem358;
               }
               $xfer += $input->readListEnd();
-              $this->cells []= $elem226;
+              $this->cells []= $elem352;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -13702,14 +24658,14 @@ class ClientService_set_cells_as_arrays_async_args {
       {
         $output->writeListBegin(TType::LST, count($this->cells));
         {
-          foreach ($this->cells as $iter233)
+          foreach ($this->cells as $iter359)
           {
             {
-              $output->writeListBegin(TType::STRING, count($iter233));
+              $output->writeListBegin(TType::STRING, count($iter359));
               {
-                foreach ($iter233 as $iter234)
+                foreach ($iter359 as $iter360)
                 {
-                  $xfer += $output->writeString($iter234);
+                  $xfer += $output->writeString($iter360);
                 }
               }
               $output->writeListEnd();
@@ -13789,6 +24745,192 @@ class ClientService_set_cells_as_arrays_async_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_set_cells_as_arrays_async_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_set_cells_serialized_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+  public $cells = null;
+  public $flush = false;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'cells',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'flush',
+          'type' => TType::BOOL,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+      if (isset($vals['cells'])) {
+        $this->cells = $vals['cells'];
+      }
+      if (isset($vals['flush'])) {
+        $this->flush = $vals['flush'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cells_serialized_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->cells);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::BOOL) {
+            $xfer += $input->readBool($this->flush);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cells_serialized_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->cells !== null) {
+      $xfer += $output->writeFieldBegin('cells', TType::STRING, 2);
+      $xfer += $output->writeString($this->cells);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->flush !== null) {
+      $xfer += $output->writeFieldBegin('flush', TType::BOOL, 3);
+      $xfer += $output->writeBool($this->flush);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_set_cells_serialized_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_set_cells_serialized_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_set_cells_serialized_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -13987,6 +25129,152 @@ class ClientService_set_cells_serialized_async_result {
 
 }
 
+class ClientService_async_mutator_flush_args {
+  static $_TSPEC;
+
+  public $mutator = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'mutator',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['mutator'])) {
+        $this->mutator = $vals['mutator'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_flush_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->mutator);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_flush_args');
+    if ($this->mutator !== null) {
+      $xfer += $output->writeFieldBegin('mutator', TType::I64, 1);
+      $xfer += $output->writeI64($this->mutator);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_async_mutator_flush_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_async_mutator_flush_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_async_mutator_flush_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_flush_mutator_async_args {
   static $_TSPEC;
 
@@ -14121,6 +25409,172 @@ class ClientService_flush_mutator_async_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_flush_mutator_async_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_exists_args {
+  static $_TSPEC;
+
+  public $ns = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_exists_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_exists_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::STRING, 1);
+      $xfer += $output->writeString($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_exists_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::BOOL,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_exists_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::BOOL) {
+            $xfer += $input->readBool($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_exists_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::BOOL, 0);
+      $xfer += $output->writeBool($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -14485,6 +25939,378 @@ class ClientService_exists_table_result {
 
 }
 
+class ClientService_table_exists_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $name = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'name',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['name'])) {
+        $this->name = $vals['name'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_exists_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_exists_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->name !== null) {
+      $xfer += $output->writeFieldBegin('name', TType::STRING, 2);
+      $xfer += $output->writeString($this->name);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_exists_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::BOOL,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_exists_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::BOOL) {
+            $xfer += $input->readBool($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_exists_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::BOOL, 0);
+      $xfer += $output->writeBool($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_id_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_id_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_id_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_id_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRING,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_id_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_id_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+      $xfer += $output->writeString($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_get_table_id_args {
   static $_TSPEC;
 
@@ -14654,6 +26480,192 @@ class ClientService_get_table_id_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_get_table_id_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+      $xfer += $output->writeString($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_schema_str_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_schema_str_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_schema_str_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_schema_str_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRING,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_schema_str_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_schema_str_result');
     if ($this->success !== null) {
       $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
       $xfer += $output->writeString($this->success);
@@ -14857,6 +26869,192 @@ class ClientService_get_schema_str_result {
 
 }
 
+class ClientService_table_get_schema_str_with_ids_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_schema_str_with_ids_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_schema_str_with_ids_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_schema_str_with_ids_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRING,
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_schema_str_with_ids_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->success);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_schema_str_with_ids_result');
+    if ($this->success !== null) {
+      $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
+      $xfer += $output->writeString($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_get_schema_str_with_ids_args {
   static $_TSPEC;
 
@@ -15029,6 +27227,197 @@ class ClientService_get_schema_str_with_ids_result {
     if ($this->success !== null) {
       $xfer += $output->writeFieldBegin('success', TType::STRING, 0);
       $xfer += $output->writeString($this->success);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_schema_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_schema_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_schema_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_schema_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::STRUCT,
+          'class' => 'Schema',
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_schema_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::STRUCT) {
+            $this->success = new Schema();
+            $xfer += $this->success->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_schema_result');
+    if ($this->success !== null) {
+      if (!is_object($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::STRUCT, 0);
+      $xfer += $this->success->write($output);
       $xfer += $output->writeFieldEnd();
     }
     if ($this->e !== null) {
@@ -15362,14 +27751,14 @@ class ClientService_get_tables_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size235 = 0;
-            $_etype238 = 0;
-            $xfer += $input->readListBegin($_etype238, $_size235);
-            for ($_i239 = 0; $_i239 < $_size235; ++$_i239)
+            $_size361 = 0;
+            $_etype364 = 0;
+            $xfer += $input->readListBegin($_etype364, $_size361);
+            for ($_i365 = 0; $_i365 < $_size361; ++$_i365)
             {
-              $elem240 = null;
-              $xfer += $input->readString($elem240);
-              $this->success []= $elem240;
+              $elem366 = null;
+              $xfer += $input->readString($elem366);
+              $this->success []= $elem366;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -15405,9 +27794,203 @@ class ClientService_get_tables_result {
       {
         $output->writeListBegin(TType::STRING, count($this->success));
         {
-          foreach ($this->success as $iter241)
+          foreach ($this->success as $iter367)
           {
-            $xfer += $output->writeString($iter241);
+            $xfer += $output->writeString($iter367);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_get_listing_args {
+  static $_TSPEC;
+
+  public $ns = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_get_listing_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_get_listing_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_get_listing_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::LST,
+          'etype' => TType::STRUCT,
+          'elem' => array(
+            'type' => TType::STRUCT,
+            'class' => 'NamespaceListing',
+            ),
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_get_listing_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::LST) {
+            $this->success = array();
+            $_size368 = 0;
+            $_etype371 = 0;
+            $xfer += $input->readListBegin($_etype371, $_size368);
+            for ($_i372 = 0; $_i372 < $_size368; ++$_i372)
+            {
+              $elem373 = null;
+              $elem373 = new NamespaceListing();
+              $xfer += $elem373->read($input);
+              $this->success []= $elem373;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_get_listing_result');
+    if ($this->success !== null) {
+      if (!is_array($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::LST, 0);
+      {
+        $output->writeListBegin(TType::STRUCT, count($this->success));
+        {
+          foreach ($this->success as $iter374)
+          {
+            $xfer += $iter374->write($output);
           }
         }
         $output->writeListEnd();
@@ -15555,15 +28138,15 @@ class ClientService_get_listing_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size242 = 0;
-            $_etype245 = 0;
-            $xfer += $input->readListBegin($_etype245, $_size242);
-            for ($_i246 = 0; $_i246 < $_size242; ++$_i246)
+            $_size375 = 0;
+            $_etype378 = 0;
+            $xfer += $input->readListBegin($_etype378, $_size375);
+            for ($_i379 = 0; $_i379 < $_size375; ++$_i379)
             {
-              $elem247 = null;
-              $elem247 = new NamespaceListing();
-              $xfer += $elem247->read($input);
-              $this->success []= $elem247;
+              $elem380 = null;
+              $elem380 = new NamespaceListing();
+              $xfer += $elem380->read($input);
+              $this->success []= $elem380;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -15599,9 +28182,223 @@ class ClientService_get_listing_result {
       {
         $output->writeListBegin(TType::STRUCT, count($this->success));
         {
-          foreach ($this->success as $iter248)
+          foreach ($this->success as $iter381)
           {
-            $xfer += $iter248->write($output);
+            $xfer += $iter381->write($output);
+          }
+        }
+        $output->writeListEnd();
+      }
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_splits_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $table_name = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'table_name',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['table_name'])) {
+        $this->table_name = $vals['table_name'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_splits_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->table_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_splits_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->table_name !== null) {
+      $xfer += $output->writeFieldBegin('table_name', TType::STRING, 2);
+      $xfer += $output->writeString($this->table_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_get_splits_result {
+  static $_TSPEC;
+
+  public $success = null;
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        0 => array(
+          'var' => 'success',
+          'type' => TType::LST,
+          'etype' => TType::STRUCT,
+          'elem' => array(
+            'type' => TType::STRUCT,
+            'class' => 'TableSplit',
+            ),
+          ),
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['success'])) {
+        $this->success = $vals['success'];
+      }
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_get_splits_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 0:
+          if ($ftype == TType::LST) {
+            $this->success = array();
+            $_size382 = 0;
+            $_etype385 = 0;
+            $xfer += $input->readListBegin($_etype385, $_size382);
+            for ($_i386 = 0; $_i386 < $_size382; ++$_i386)
+            {
+              $elem387 = null;
+              $elem387 = new TableSplit();
+              $xfer += $elem387->read($input);
+              $this->success []= $elem387;
+            }
+            $xfer += $input->readListEnd();
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_get_splits_result');
+    if ($this->success !== null) {
+      if (!is_array($this->success)) {
+        throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);
+      }
+      $xfer += $output->writeFieldBegin('success', TType::LST, 0);
+      {
+        $output->writeListBegin(TType::STRUCT, count($this->success));
+        {
+          foreach ($this->success as $iter388)
+          {
+            $xfer += $iter388->write($output);
           }
         }
         $output->writeListEnd();
@@ -15769,15 +28566,15 @@ class ClientService_get_table_splits_result {
         case 0:
           if ($ftype == TType::LST) {
             $this->success = array();
-            $_size249 = 0;
-            $_etype252 = 0;
-            $xfer += $input->readListBegin($_etype252, $_size249);
-            for ($_i253 = 0; $_i253 < $_size249; ++$_i253)
+            $_size389 = 0;
+            $_etype392 = 0;
+            $xfer += $input->readListBegin($_etype392, $_size389);
+            for ($_i393 = 0; $_i393 < $_size389; ++$_i393)
             {
-              $elem254 = null;
-              $elem254 = new TableSplit();
-              $xfer += $elem254->read($input);
-              $this->success []= $elem254;
+              $elem394 = null;
+              $elem394 = new TableSplit();
+              $xfer += $elem394->read($input);
+              $this->success []= $elem394;
             }
             $xfer += $input->readListEnd();
           } else {
@@ -15813,15 +28610,181 @@ class ClientService_get_table_splits_result {
       {
         $output->writeListBegin(TType::STRUCT, count($this->success));
         {
-          foreach ($this->success as $iter255)
+          foreach ($this->success as $iter395)
           {
-            $xfer += $iter255->write($output);
+            $xfer += $iter395->write($output);
           }
         }
         $output->writeListEnd();
       }
       $xfer += $output->writeFieldEnd();
     }
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_drop_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $if_exists = true;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::STRING,
+          ),
+        2 => array(
+          'var' => 'if_exists',
+          'type' => TType::BOOL,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['if_exists'])) {
+        $this->if_exists = $vals['if_exists'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_drop_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::BOOL) {
+            $xfer += $input->readBool($this->if_exists);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_drop_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::STRING, 1);
+      $xfer += $output->writeString($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->if_exists !== null) {
+      $xfer += $output->writeFieldBegin('if_exists', TType::BOOL, 2);
+      $xfer += $output->writeBool($this->if_exists);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_namespace_drop_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_namespace_drop_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_namespace_drop_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);
@@ -16186,6 +29149,192 @@ class ClientService_rename_table_result {
 
 }
 
+class ClientService_table_rename_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $name = null;
+  public $new_name = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'new_name',
+          'type' => TType::STRING,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['name'])) {
+        $this->name = $vals['name'];
+      }
+      if (isset($vals['new_name'])) {
+        $this->new_name = $vals['new_name'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_rename_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->new_name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_rename_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->name !== null) {
+      $xfer += $output->writeFieldBegin('name', TType::STRING, 2);
+      $xfer += $output->writeString($this->name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->new_name !== null) {
+      $xfer += $output->writeFieldBegin('new_name', TType::STRING, 3);
+      $xfer += $output->writeString($this->new_name);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_rename_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_rename_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_rename_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
 class ClientService_drop_table_args {
   static $_TSPEC;
 
@@ -16360,6 +29509,192 @@ class ClientService_drop_table_result {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('ClientService_drop_table_result');
+    if ($this->e !== null) {
+      $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
+      $xfer += $this->e->write($output);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_drop_args {
+  static $_TSPEC;
+
+  public $ns = null;
+  public $name = null;
+  public $if_exists = true;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'ns',
+          'type' => TType::I64,
+          ),
+        2 => array(
+          'var' => 'name',
+          'type' => TType::STRING,
+          ),
+        3 => array(
+          'var' => 'if_exists',
+          'type' => TType::BOOL,
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['ns'])) {
+        $this->ns = $vals['ns'];
+      }
+      if (isset($vals['name'])) {
+        $this->name = $vals['name'];
+      }
+      if (isset($vals['if_exists'])) {
+        $this->if_exists = $vals['if_exists'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_drop_args';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::I64) {
+            $xfer += $input->readI64($this->ns);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 2:
+          if ($ftype == TType::STRING) {
+            $xfer += $input->readString($this->name);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        case 3:
+          if ($ftype == TType::BOOL) {
+            $xfer += $input->readBool($this->if_exists);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_drop_args');
+    if ($this->ns !== null) {
+      $xfer += $output->writeFieldBegin('ns', TType::I64, 1);
+      $xfer += $output->writeI64($this->ns);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->name !== null) {
+      $xfer += $output->writeFieldBegin('name', TType::STRING, 2);
+      $xfer += $output->writeString($this->name);
+      $xfer += $output->writeFieldEnd();
+    }
+    if ($this->if_exists !== null) {
+      $xfer += $output->writeFieldBegin('if_exists', TType::BOOL, 3);
+      $xfer += $output->writeBool($this->if_exists);
+      $xfer += $output->writeFieldEnd();
+    }
+    $xfer += $output->writeFieldStop();
+    $xfer += $output->writeStructEnd();
+    return $xfer;
+  }
+
+}
+
+class ClientService_table_drop_result {
+  static $_TSPEC;
+
+  public $e = null;
+
+  public function __construct($vals=null) {
+    if (!isset(self::$_TSPEC)) {
+      self::$_TSPEC = array(
+        1 => array(
+          'var' => 'e',
+          'type' => TType::STRUCT,
+          'class' => 'ClientException',
+          ),
+        );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['e'])) {
+        $this->e = $vals['e'];
+      }
+    }
+  }
+
+  public function getName() {
+    return 'ClientService_table_drop_result';
+  }
+
+  public function read($input)
+  {
+    $xfer = 0;
+    $fname = null;
+    $ftype = 0;
+    $fid = 0;
+    $xfer += $input->readStructBegin($fname);
+    while (true)
+    {
+      $xfer += $input->readFieldBegin($fname, $ftype, $fid);
+      if ($ftype == TType::STOP) {
+        break;
+      }
+      switch ($fid)
+      {
+        case 1:
+          if ($ftype == TType::STRUCT) {
+            $this->e = new ClientException();
+            $xfer += $this->e->read($input);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
+        default:
+          $xfer += $input->skip($ftype);
+          break;
+      }
+      $xfer += $input->readFieldEnd();
+    }
+    $xfer += $input->readStructEnd();
+    return $xfer;
+  }
+
+  public function write($output) {
+    $xfer = 0;
+    $xfer += $output->writeStructBegin('ClientService_table_drop_result');
     if ($this->e !== null) {
       $xfer += $output->writeFieldBegin('e', TType::STRUCT, 1);
       $xfer += $this->e->write($output);

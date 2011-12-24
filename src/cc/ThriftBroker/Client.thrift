@@ -185,7 +185,7 @@ struct ScanSpec {
   1: optional list<RowInterval> row_intervals
   2: optional list<CellInterval> cell_intervals
   3: optional bool return_deletes = 0
-  4: optional i32 revs = 0
+  4: optional i32 versions = 0
   5: optional i32 row_limit = 0
   6: optional i64 start_time
   7: optional i64 end_time
@@ -589,6 +589,7 @@ service ClientService {
    *
    * @param ns - namespace name 
    */
+  void namespace_create(1:string ns) throws (1:ClientException e),
   void create_namespace(1:string ns) throws (1:ClientException e),
 
   /**
@@ -600,6 +601,8 @@ service ClientService {
    */
   void create_table(1:Namespace ns, 2:string table_name, 3:string schema)
       throws (1:ClientException e),
+  void table_create(1:Namespace ns, 2:string table_name, 3:string schema)
+      throws (1:ClientException e),
   
   /**
    * Alter a table
@@ -610,6 +613,8 @@ service ClientService {
    */
   void alter_table(1:Namespace ns, 2:string table_name, 3:string schema)
       throws (1:ClientException e),
+  void table_alter(1:Namespace ns, 2:string table_name, 3:string schema)
+      throws (1:ClientException e),
   
   /**
    * Open a namespace 
@@ -617,6 +622,7 @@ service ClientService {
    * @param ns - namespace
    * @return value is guaranteed to be non-zero and unique
    */
+  Namespace namespace_open(1:string ns) throws (1:ClientException e),
   Namespace open_namespace(1:string ns) throws (1:ClientException e),
 
   /**
@@ -624,19 +630,24 @@ service ClientService {
    *
    * @param ns - namespace
    */
+  void namespace_close(1:Namespace ns) throws (1:ClientException e),
   void close_namespace(1:Namespace ns) throws (1:ClientException e),
   
   /**
    * Open a future object 
-   * @param queue_size - num of results the future object can enqueue without blocking threads  
+   * @param capacity - Amount of result data the future object can enqueue without blocking threads  
    */
-  Future open_future(1:i32 queue_size = 0)
+  Future future_open(1:i32 capacity = 0)
+      throws (1:ClientException e),
+  Future open_future(1:i32 capacity = 0)
       throws (1:ClientException e),
   
   /**
    * Cancel tasks outstanding in a future object 
    * @param ff - Future object 
    */
+  void future_cancel(1:Future ff)
+      throws (1:ClientException e),
   void cancel_future(1:Future ff)
       throws (1:ClientException e),
   
@@ -645,21 +656,24 @@ service ClientService {
    * @param ff - Future object which has the asynchronous results
    * @return - result from async scanner/mutator
    */
-  Result get_future_result(1:Future ff) throws (1:ClientException e),
+  Result future_get_result(1:Future ff, 2:i32 timeout_millis = 0) throws (1:ClientException e),
+  Result get_future_result(1:Future ff, 2:i32 timeout_millis = 0) throws (1:ClientException e),
   
   /**
    * Fetch asynchronous results 
    * @param ff - Future object which has the asynchronous results
    * @return - result from async scanner/mutator
    */
-  ResultAsArrays get_future_result_as_arrays(1:Future ff) throws (1:ClientException e),
+  ResultAsArrays future_get_result_as_arrays(1:Future ff, 2:i32 timeout_millis = 0) throws (1:ClientException e),
+  ResultAsArrays get_future_result_as_arrays(1:Future ff, 2:i32 timeout_millis = 0) throws (1:ClientException e),
   
   /**
    * Fetch asynchronous results 
    * @param ff - Future object which has the asynchronous results
    * @return - result from async scanner/mutator
    */
-  ResultSerialized get_future_result_serialized(1:Future ff) throws (1:ClientException e),
+  ResultSerialized future_get_result_serialized(1:Future ff, 2:i32 timeout_millis = 0) throws (1:ClientException e),
+  ResultSerialized get_future_result_serialized(1:Future ff, 2:i32 timeout_millis = 0) throws (1:ClientException e),
   
   /**
    * Check if future object's queue is empty
@@ -685,9 +699,10 @@ service ClientService {
    * Close a future object 
    * @param ff - the future object to be closed
    */
+  void future_close(1:Future ff)
+      throws (1:ClientException e),
   void close_future(1:Future ff)
       throws (1:ClientException e),
-
 
   /**
    * Open a table scanner
@@ -695,6 +710,8 @@ service ClientService {
    * @param table_name - table name
    * @param scan_spec - scan specification
    */
+  Scanner scanner_open(1:Namespace ns, 2:string table_name, 3:ScanSpec scan_spec)
+      throws (1:ClientException e),
   Scanner open_scanner(1:Namespace ns, 2:string table_name, 3:ScanSpec scan_spec)
       throws (1:ClientException e),
   
@@ -705,6 +722,9 @@ service ClientService {
    * @param future - callback object
    * @param scan_spec - scan specification
    */
+  ScannerAsync async_scanner_open(1:Namespace ns, 2:string table_name, 3:Future future, 
+                                  4:ScanSpec scan_spec)
+      throws (1:ClientException e),
   ScannerAsync open_scanner_async(1:Namespace ns, 2:string table_name, 3:Future future, 
                                   4:ScanSpec scan_spec)
       throws (1:ClientException e),
@@ -715,6 +735,7 @@ service ClientService {
    *
    * @param scanner - scanner id to close
    */
+  void scanner_close(1:Scanner scanner) throws (1:ClientException e),
   void close_scanner(1:Scanner scanner) throws (1:ClientException e),
   
   /**
@@ -722,6 +743,7 @@ service ClientService {
    *
    * @param scanner - scanner id to close
    */
+  void async_scanner_cancel(1:ScannerAsync scanner) throws (1:ClientException e),
   void cancel_scanner_async(1:ScannerAsync scanner) throws (1:ClientException e),
 
   /**
@@ -729,6 +751,7 @@ service ClientService {
    *
    * @param scanner - scanner id to close
    */
+  void async_scanner_close(1:ScannerAsync scanner) throws (1:ClientException e),
   void close_scanner_async(1:ScannerAsync scanner) throws (1:ClientException e),
 
   /**
@@ -736,26 +759,33 @@ service ClientService {
    *
    * @param scanner - scanner id
    */
+  list<Cell> scanner_get_cells(1:Scanner scanner) throws (1:ClientException e),
   list<Cell> next_cells(1:Scanner scanner) throws (1:ClientException e),
 
+  list<CellAsArray> scanner_get_cells_as_arrays(1:Scanner scanner)
+      throws (1:ClientException e),
   list<CellAsArray> next_cells_as_arrays(1:Scanner scanner)
       throws (1:ClientException e),
 
   /**
    * Alternative interface returning buffer of serialized cells
    */
-  CellsSerialized next_cells_serialized(1:Scanner scanner)
+  CellsSerialized scanner_get_cells_serialized(1:Scanner scanner) throws (1:ClientException e),
+  CellsSerialized next_cells_serialized(1:Scanner scanner) throws (1:ClientException e),
 
   /**
    * Iterate over rows of a scanner
    *
    * @param scanner - scanner id
    */
+  list<Cell> scanner_get_row(1:Scanner scanner) throws (1:ClientException e),
   list<Cell> next_row(1:Scanner scanner) throws (1:ClientException e),
 
   /**
    * Alternative interface using array as cell
    */
+  list<CellAsArray> scanner_get_row_as_arrays(1:Scanner scanner)
+      throws (1:ClientException e),
   list<CellAsArray> next_row_as_arrays(1:Scanner scanner)
       throws (1:ClientException e),
 
@@ -765,6 +795,7 @@ service ClientService {
    *
    * @param scanner - scanner id
    */
+  CellsSerialized scanner_get_row_serialized(1:Scanner scanner) throws (1:ClientException e),
   CellsSerialized next_row_serialized(1:Scanner scanner) throws (1:ClientException e),
 
   /**
@@ -848,6 +879,8 @@ service ClientService {
    * @param mutate_spec - mutator specification
    *
    */
+  void shared_mutator_refresh(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec) 
+      throws (1:ClientException e),
   void refresh_shared_mutator(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec) 
       throws (1:ClientException e),
 
@@ -865,12 +898,16 @@ service ClientService {
    *
    * @param cells - set of cells to be written 
    */
+  void shared_mutator_set_cells(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec, 4:list<Cell> cells)
+      throws (1:ClientException e),
   void offer_cells(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec, 4:list<Cell> cells)
       throws (1:ClientException e),
   
   /**
    * Alternative to offer_cell interface using array as cell
    */
+  void shared_mutator_set_cells_as_arrays(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec, 
+                           4:list<CellAsArray> cells) throws (1:ClientException e),
   void offer_cells_as_arrays(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec, 
                            4:list<CellAsArray> cells) throws (1:ClientException e),
   
@@ -888,12 +925,16 @@ service ClientService {
    *
    * @param cell - cell to be written 
    */
+  void shared_mutator_set_cell(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec, 4:Cell cell) 
+      throws (1:ClientException e),
   void offer_cell(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec, 4:Cell cell) 
       throws (1:ClientException e),
   
   /**
    * Alternative to offer_cell interface using array as cell
    */
+  void shared_mutator_set_cell_as_array(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec, 
+      4:CellAsArray cell) throws (1:ClientException e),
   void offer_cell_as_array(1:Namespace ns, 2:string table_name, 3:MutateSpec mutate_spec, 
       4:CellAsArray cell) throws (1:ClientException e),
 
@@ -910,6 +951,8 @@ service ClientService {
    *
    * @return mutator id
    */
+  Mutator mutator_open(1:Namespace ns, 2:string table_name, 3:i32 flags = 0; 
+      4:i32 flush_interval = 0) throws (1:ClientException e),
   Mutator open_mutator(1:Namespace ns, 2:string table_name, 3:i32 flags = 0; 
       4:i32 flush_interval = 0) throws (1:ClientException e),
   
@@ -923,6 +966,8 @@ service ClientService {
    *
    * @return mutator id
    */
+  MutatorAsync async_mutator_open(1:Namespace ns, 2:string table_name, 3:Future future, 
+      4:i32 flags = 0) throws (1:ClientException e),
   MutatorAsync open_mutator_async(1:Namespace ns, 2:string table_name, 3:Future future, 
       4:i32 flags = 0) throws (1:ClientException e),
 
@@ -931,6 +976,8 @@ service ClientService {
    *
    * @param mutator - mutator id to close
    */
+  void mutator_close(1:Mutator mutator)
+      throws (1:ClientException e),
   void close_mutator(1:Mutator mutator)
       throws (1:ClientException e),
   
@@ -939,6 +986,8 @@ service ClientService {
    *
    * @param mutator -  mutator id to cancel 
    */
+  void async_mutator_cancel(1:MutatorAsync mutator) 
+      throws (1:ClientException e),
   void cancel_mutator_async(1:MutatorAsync mutator) 
       throws (1:ClientException e),
 
@@ -947,51 +996,96 @@ service ClientService {
    *
    * @param mutator - mutator id to close
    */
+  void async_mutator_close(1:MutatorAsync mutator)
+      throws (1:ClientException e),
   void close_mutator_async(1:MutatorAsync mutator)
       throws (1:ClientException e),
 
 
   /**
-   * Set a cell in the table
+   * Set a cell via mutator
    *
    * @param mutator - mutator id
    *
    * @param cell - the cell to set
    */
-  void set_cell(1:Mutator mutator, 2:Cell cell) throws (1:ClientException e),
+  void mutator_set_cell(1:Mutator mutator, 2:Cell cell) throws (1:ClientException e),
+
+  /**
+   * Set a cell in the table
+   *
+   * @param ns - namespace id
+   *
+   * @param table_name - table name
+   *
+   * @param cell - the cell to set
+   */
+  void set_cell(1:Namespace ns, 2:string table_name, 3:Cell cell) throws (1:ClientException e),
 
   /**
    * Alternative interface using array as cell
    */
-  void set_cell_as_array(1:Mutator mutator, 2:CellAsArray cell)
+  void mutator_set_cell_as_array(1:Mutator mutator, 2:CellAsArray cell)
       throws (1:ClientException e),
 
   /**
-   * Put a list of cells into a table
+   * Alternative interface using array as cell
+   */
+  void set_cell_as_array(1:Namespace ns, 2:string table_name, 3:CellAsArray cell)
+      throws (1:ClientException e),
+
+  /**
+   * Put a list of cells into a table via mutator
    *
    * @param mutator - mutator id
    *
    * @param cells - a list of cells (a cell with no row key set is assumed
    *        to have the same row key as the previous cell)
    */
-  void set_cells(1:Mutator mutator, 2:list<Cell> cells)
+  void mutator_set_cells(1:Mutator mutator, 2:list<Cell> cells)
+      throws (1:ClientException e),
+
+  /**
+   * Put a list of cells into a table
+   *
+   * @param ns - namespace id
+   *
+   * @param table_name - table name
+   *
+   * @param cells - a list of cells (a cell with no row key set is assumed
+   *        to have the same row key as the previous cell)
+   */
+  void set_cells(1:Namespace ns, 2:string table_name, 3:list<Cell> cells)
       throws (1:ClientException e),
 
   /**
    * Alternative interface using array as cell
    */
-  void set_cells_as_arrays(1:Mutator mutator, 2:list<CellAsArray> cells)
+  void mutator_set_cells_as_arrays(1:Mutator mutator, 2:list<CellAsArray> cells)
+      throws (1:ClientException e),
+
+  /**
+   * Alternative interface using array as cell
+   */
+  void set_cells_as_arrays(1:Namespace ns, 2:string table_name, 3:list<CellAsArray> cells)
       throws (1:ClientException e),
 
   /**
    * Alternative interface using buffer of serialized cells
    */
-  void set_cells_serialized(1:Mutator mutator, 2:CellsSerialized cells, 3:bool flush = 0)
+  void mutator_set_cells_serialized(1:Mutator mutator, 2:CellsSerialized cells, 3:bool flush = 0)
+      throws (1:ClientException e),
+
+  /**
+   * Alternative interface using buffer of serialized cells
+   */
+   void set_cells_serialized(1:Namespace ns, 2:string table_name, 3:CellsSerialized cells)
       throws (1:ClientException e),
 
   /**
    * Flush mutator buffers
    */
+  void mutator_flush(1:Mutator mutator) throws (1:ClientException e),
   void flush_mutator(1:Mutator mutator) throws (1:ClientException e),
   
   /**
@@ -1001,11 +1095,14 @@ service ClientService {
    *
    * @param cell - the cell to set
    */
+  void async_mutator_set_cell(1:MutatorAsync mutator, 2:Cell cell) throws (1:ClientException e),
   void set_cell_async(1:MutatorAsync mutator, 2:Cell cell) throws (1:ClientException e),
 
   /**
    * Alternative interface using array as cell using an asynchonous mutator 
    */
+  void async_mutator_set_cell_as_array(1:MutatorAsync mutator, 2:CellAsArray cell)
+      throws (1:ClientException e),
   void set_cell_as_array_async(1:MutatorAsync mutator, 2:CellAsArray cell)
       throws (1:ClientException e),
 
@@ -1017,24 +1114,31 @@ service ClientService {
    * @param cells - a list of cells (a cell with no row key set is assumed
    *        to have the same row key as the previous cell)
    */
+  void async_mutator_set_cells(1:MutatorAsync mutator, 2:list<Cell> cells)
+      throws (1:ClientException e),
   void set_cells_async(1:MutatorAsync mutator, 2:list<Cell> cells)
       throws (1:ClientException e),
 
   /**
    * Alternative interface using array as cell
    */
+  void async_mutator_set_cells_as_arrays(1:MutatorAsync mutator, 2:list<CellAsArray> cells)
+      throws (1:ClientException e),
   void set_cells_as_arrays_async(1:MutatorAsync mutator, 2:list<CellAsArray> cells)
       throws (1:ClientException e),
 
   /**
    * Alternative interface using buffer of serialized cells
    */
+  void async_mutator_set_cells_serialized(1:MutatorAsync mutator, 2:CellsSerialized cells, 3:bool flush = 0)
+      throws (1:ClientException e),
   void set_cells_serialized_async(1:MutatorAsync mutator, 2:CellsSerialized cells, 3:bool flush = 0)
       throws (1:ClientException e),
 
   /**
    * Flush mutator buffers
    */
+  void async_mutator_flush(1:MutatorAsync mutator) throws (1:ClientException e),
   void flush_mutator_async(1:MutatorAsync mutator) throws (1:ClientException e),
   
   /**
@@ -1044,6 +1148,7 @@ service ClientService {
    *
    * @return true if ns exists, false ow
    */
+  bool namespace_exists(1:string ns) throws (1:ClientException e),
   bool exists_namespace(1:string ns) throws (1:ClientException e),
  
   /**
@@ -1056,6 +1161,7 @@ service ClientService {
    * @return true if table exists, false ow
    */
   bool exists_table(1:Namespace ns, 2:string name) throws (1:ClientException e),
+  bool table_exists(1:Namespace ns, 2:string name) throws (1:ClientException e),
 
   /**
    * Get the id of a table
@@ -1066,6 +1172,7 @@ service ClientService {
    *
    * @return table id string
    */
+  string table_get_id(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
   string get_table_id(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
 
   /**
@@ -1077,6 +1184,7 @@ service ClientService {
    *
    * @return schema string (in xml)
    */
+  string table_get_schema_str(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
   string get_schema_str(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
   
   /**
@@ -1088,6 +1196,7 @@ service ClientService {
    *
    * @return schema string (in xml)
    */
+  string table_get_schema_str_with_ids(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
   string get_schema_str_with_ids(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
   
   /**
@@ -1099,6 +1208,7 @@ service ClientService {
    *
    * @return schema object describing a table 
    */
+  Schema table_get_schema(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
   Schema get_schema(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
 
   /**
@@ -1117,6 +1227,7 @@ service ClientService {
    *
    * @return a list of table names
    */
+  list<NamespaceListing> namespace_get_listing(1:Namespace ns) throws (1:ClientException e),
   list<NamespaceListing> get_listing(1:Namespace ns) throws (1:ClientException e),
   
   /**
@@ -1128,6 +1239,7 @@ service ClientService {
    *
    * @return a list of table names
    */
+  list<TableSplit> table_get_splits(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
   list<TableSplit> get_table_splits(1:Namespace ns, 2:string table_name) throws (1:ClientException e),
   
   /**
@@ -1137,6 +1249,8 @@ service ClientService {
    *
    * @param if_exists - if true, don't barf if the table doesn't exist
    */
+  void namespace_drop(1:string ns, 2:bool if_exists = 1)
+      throws (1:ClientException e),
   void drop_namespace(1:string ns, 2:bool if_exists = 1)
       throws (1:ClientException e),
   
@@ -1151,6 +1265,8 @@ service ClientService {
    */
   void rename_table(1:Namespace ns, 2:string name, 3:string new_name)
       throws (1:ClientException e),
+  void table_rename(1:Namespace ns, 2:string name, 3:string new_name)
+      throws (1:ClientException e),
 
   /**
    * Drop a table
@@ -1162,6 +1278,8 @@ service ClientService {
    * @param if_exists - if true, don't barf if the table doesn't exist
    */
   void drop_table(1:Namespace ns, 2:string name, 3:bool if_exists = 1)
+      throws (1:ClientException e),
+  void table_drop(1:Namespace ns, 2:string name, 3:bool if_exists = 1)
       throws (1:ClientException e),
 
   /**

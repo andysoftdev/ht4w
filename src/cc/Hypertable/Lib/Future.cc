@@ -62,7 +62,7 @@ bool Future::get(ResultPtr &result) {
 
     if (result->is_error())
       break;
-    else if (result->is_scan()) {
+    if (result->is_scan()) {
       TableScannerAsync *scanner = result->get_scanner();
       // ignore result if scanner has been cancelled
       if (!scanner || !scanner->is_cancelled()) // scanner must be alive
@@ -80,11 +80,16 @@ bool Future::get(ResultPtr &result) {
 }
 
 bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
+
+  if (timeout_ms == 0)
+    return get(result);
+
   ScopedRecLock lock(m_outstanding_mutex);
 
-  size_t mem_result=0;
   timed_out = false;
 
+
+  size_t mem_result=0;
   boost::xtime wait_time;
   boost::xtime_get(&wait_time, boost::TIME_UTC);
   xtime_add_millis(wait_time, timeout_ms);
@@ -127,8 +132,6 @@ bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
         break;
     }
   }
-  // wake a thread blocked on queue space
-  m_outstanding_cond.notify_one();
   return true;
 }
 
