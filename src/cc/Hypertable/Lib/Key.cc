@@ -34,12 +34,12 @@ namespace {
   const char end_root_row_chars[7] = { '0', '/', '0', ':', (char)0xff, (char)0xff, 0 };
 
   size_t
-  write_key(uint8_t *buf, uint8_t control, uint8_t flag, const char *row,
+  write_key(uint8_t *buf, uint8_t control, uint8_t flag, const char *row, size_t row_len, 
             uint8_t column_family_code, const char *column_qualifier) {
     uint8_t *ptr = buf;
     *ptr++ = control;
     strcpy((char *)ptr, row);
-    ptr += strlen(row) + 1;
+    ptr += row_len + 1;
     *ptr++ = column_family_code;
     if (column_qualifier != 0) {
       strcpy((char *)ptr, column_qualifier);
@@ -61,7 +61,8 @@ namespace Hypertable {
   ByteString
   create_key(uint8_t flag, const char *row, uint8_t column_family_code,
       const char *column_qualifier, int64_t timestamp, int64_t revision) {
-    size_t len = 1 + strlen(row) + 4;
+    size_t row_len = strlen(row);
+    size_t len = 1 + row_len + 4;
     uint8_t control = 0;
 
     if (timestamp == AUTO_ASSIGN)
@@ -80,7 +81,7 @@ namespace Hypertable {
         // !!! could probably just make this 6
     ByteString bs(ptr);
     Serialization::encode_vi32(&ptr, len);
-    ptr += write_key(ptr, control, flag, row, column_family_code,
+    ptr += write_key(ptr, control, flag, row, row_len, column_family_code,
                      column_qualifier);
 
     if (control & Key::HAVE_TIMESTAMP)
@@ -96,7 +97,8 @@ namespace Hypertable {
   create_key_and_append(DynamicBuffer &dst_buf, uint8_t flag, const char *row,
       uint8_t column_family_code, const char *column_qualifier,
       int64_t timestamp, int64_t revision) {
-    size_t len = 1 + strlen(row) + 4;
+    size_t row_len = strlen(row);
+    size_t len = 1 + row_len + 4;
     uint8_t control = 0;
 
     if (column_qualifier)
@@ -120,7 +122,7 @@ namespace Hypertable {
     if (dst_buf.remaining() < len + 6)
       dst_buf.grow(dst_buf.fill() + len + 6);
     Serialization::encode_vi32(&dst_buf.ptr, len);
-    dst_buf.ptr += write_key(dst_buf.ptr, control, flag, row,
+    dst_buf.ptr += write_key(dst_buf.ptr, control, flag, row, row_len,
                              column_family_code, column_qualifier);
 
     if (control & Key::HAVE_TIMESTAMP)
@@ -137,11 +139,12 @@ namespace Hypertable {
   void create_key_and_append(DynamicBuffer &dst_buf, const char *row) {
     uint8_t control = Key::HAVE_REVISION
         | Key::HAVE_TIMESTAMP | Key::REV_IS_TS;
-    size_t len = 13 + strlen(row);
+    size_t row_len = strlen(row);
+    size_t len = 13 + row_len;
     if (dst_buf.remaining() < len + 6)
       dst_buf.grow(dst_buf.fill() + len + 6);
     Serialization::encode_vi32(&dst_buf.ptr, len);
-    dst_buf.ptr += write_key(dst_buf.ptr, control, 0, row, 0, 0);
+    dst_buf.ptr += write_key(dst_buf.ptr, control, 0, row, row_len, 0, 0);
     Key::encode_ts64(&dst_buf.ptr, 0);
     assert(dst_buf.fill() <= dst_buf.size);
   }
