@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:fw="http://schemas.microsoft.com/wix/FirewallExtension">
 
   <!-- product declaration-->
   <?define ProductName = "Hypertable"?>
   <?define Manufacturer="ht4w.softdev.ch"?>
   <?define Description="Hypertable for Windows"?>
-  <?define Copyright="ht4w, Copyright © 2010-2011"?>
+  <?define Copyright="ht4w, Copyright © 2010-2012"?>
 
   <!-- ProductVersion/ProductCode passed by hypertable-msi.wixproj -->
   <?define RTMProductVersion="0.0.0.1" ?>

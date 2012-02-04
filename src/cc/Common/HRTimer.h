@@ -1,5 +1,5 @@
 /** -*- C++ -*-
- * Copyright (C) 2011 Andy Thalmann
+ * Copyright (C) 2010-2012 Thalmann Software & Consulting, http://www.softdev.ch
  *
  * This file is part of ht4w.
  *
@@ -44,10 +44,27 @@ class HRTimer {
         HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
     }
 
-    inline double peek_ms() {
+    inline void reset() {
+      if (!::QueryPerformanceCounter(&start))
+          HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
+    }
+
+    inline double peek_ms(bool reset = false) {
       if (!::QueryPerformanceCounter(&peek))
           HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
-      return (peek.QuadPart - start.QuadPart) / (freq / 1000.0);
+      double ms = (peek.QuadPart - start.QuadPart) / (freq / 1e3);
+      if (reset)
+        start = peek;
+      return ms;
+    }
+
+    inline int64_t peek_ns(bool reset = false) {
+      if (!::QueryPerformanceCounter(&peek))
+          HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
+      int64_t ns = (int64_t)((peek.QuadPart - start.QuadPart) / (freq / 1e9));
+      if (reset)
+        start = peek;
+      return ns;
     }
 
     inline ~HRTimer() {
