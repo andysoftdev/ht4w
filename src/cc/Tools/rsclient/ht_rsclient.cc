@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2009 Doug Judd (Zvents, Inc.)
+ * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *

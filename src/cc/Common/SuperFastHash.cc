@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2004-2008 Paul Hsieh
+ * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * cf. http://www.azillionmonkeys.com/qed/weblicense.html
  */
