@@ -1,25 +1,24 @@
-set :source_machine, "mothercompiler"
-set :install_dir,  "/opt/hypertable"
-set :hypertable_version, "0.9.5.4"
-set :default_pkg, "/tmp/hypertable-0.9.5.4-linux-x86_64.deb"
+set :source_machine, "test00"
+set :install_dir,  "/opt/hypertable/doug"
+set :hypertable_version, "0.9.5.5"
+set :default_pkg, "/tmp/hypertable-0.9.5.5-linux-x86_64.deb"
 set :default_dfs, "hadoop"
-set :default_config, "/opt/hypertable/dev-hypertable.cfg"
+set :default_config, "/home/doug/benchmark/perftest-hypertable.cfg"
 set :default_additional_args, ""
-set :hbase_home, "/opt/hbase/current"
+set :hbase_home, "/usr/lib/hbase"
 set :default_client_multiplier, 1
 set :default_test_driver, "hypertable"
 set :default_test_args, ""
 
-role :source, "mothercompiler"
-role :master, "mothercompiler"
-role :hyperspace, "mothercompiler", "motherlode000", "motherlode001"
-role :slave,  "motherlode000", "motherlode001", "motherlode002", "motherlode003", "motherlode004", "
-motherlode005", "motherlode006", "motherlode007", "motherlode008"
-role :localhost, "mothercompiler"
-role :thriftbroker,  "thrift001", "thrift002", "thrift003", "thrift004", "thrift005"
-role :spare, "spare000", "spare001"
-role :test_client, "test001", "test002", "test003", "test004"
-role :test_dispatcher, "test000"
+role :source, "test00"
+role :master, "test01"
+role :hyperspace, "test01", "test02", "test03"
+role :slave,  "test04", "test05", "test06", "test07", "test08", "test09", "test10", "test11", "test12", "test13", "test14", "test15"
+role :localhost, "test00"
+role :thriftbroker
+role :spare
+role :test_client, "test00", "test01", "test02", "test03"
+role :test_dispatcher, "test00"
 
 ######################### END OF USER CONFIGURATION ############################
 
@@ -348,6 +347,90 @@ task :stop_thriftbrokers, :roles => :thriftbroker do
   CMD
 end
 
+desc "Starts HBase processes."
+task :start_hbase do
+  transaction do
+    start_zookeeper
+    start_hbase_master
+    start_hbase_regionservers
+  end
+end
+
+desc "Starts Zookeeper processes."
+task :start_zookeeper, :roles => :hyperspace do
+  run <<-CMD
+   service hadoop-zookeeper-server start
+  CMD
+end
+
+desc "Starts HBase Master processes."
+task :start_hbase_master, :roles => :master do
+  run <<-CMD
+   service hadoop-hbase-master start
+  CMD
+end
+
+desc "Starts HBase Regionserver processes."
+task :start_hbase_regionservers, :roles => :slave do
+  run <<-CMD
+   service hadoop-hbase-regionserver start
+  CMD
+end
+
+
+desc "Stops HBase and Zookeeper"
+task :stop_hbase do
+  transaction do
+    stop_hbase_master
+    stop_hbase_regionservers
+    stop_zookeeper
+  end  
+end
+
+desc "Stop HBase master processes"
+task :stop_hbase_master, :roles => :master do
+  run <<-CMD
+  service hadoop-hbase-master stop
+  CMD
+end
+
+desc "Stops HBase regionserver processes."
+task :stop_hbase_regionservers, :roles => :slave do
+  run <<-CMD
+  service hadoop-hbase-regionserver stop
+  CMD
+end
+
+desc "Stops Zookeeper processes."
+task :stop_zookeeper, :roles => :hyperspace do
+  run <<-CMD 
+  service hadoop-zookeeper-server stop
+  CMD
+end
+
+desc "Cleans HBase, removing all tables."
+task :clean_hbase do
+  transaction do
+    clean_hbase_hdfs
+    clean_zookeeper
+  end  
+end
+
+desc "Clean Zookeeper removing all state"
+task :clean_zookeeper, :roles => :hyperspace do
+  run <<-CMD 
+  rm -rf /var/zookeeper/version*
+  CMD
+end
+
+desc "Clean HBase HDFS state"
+task :clean_hbase_hdfs, :roles => :master do
+  run <<-CMD 
+  hadoop fs -rmr /hbase/*
+  CMD
+end
+
+
 desc "Cleans hyperspace & rangeservers, removing all tables."
 task :cleandb do
   transaction do
@@ -440,8 +523,8 @@ if "#{test_driver}" == "hypertable"
   set :stop_test_args, ""
 elsif "#{test_driver}" == "hbase"
   set :thrift_broker_command, "echo -n"
-  set :start_test_client_command, "#{install_dir}/current/bin/start-test-client.sh --jrun-opts \"--add-to-classpath #{hbase_home}/conf\" --count #{client_multiplier} #{roles[:test_dispatcher].servers[0]}"
-  set :run_test_dispatcher_command, "#{install_dir}/current/bin/jrun --pidfile #{install_dir}/#{hypertable_version}/run/Hypertable.TestDispatcher.pid --add-to-classpath #{hbase_home}/conf org.hypertable.examples.PerformanceTest.Dispatcher --driver=#{test_driver} --clients=#{roles[:test_client].servers.length*client_multiplier} #{test_args}"
+  set :start_test_client_command, "#{install_dir}/current/bin/start-test-client.sh --jrun-opts \"--add-to-classpath #{hbase_home}/conf --add-to-classpath /etc/zookeeper/zoo.cfg -Xmx512m -Xms128m -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=70\" --count #{client_multiplier} #{roles[:test_dispatcher].servers[0]}"
+  set :run_test_dispatcher_command, "#{install_dir}/current/bin/jrun --pidfile #{install_dir}/#{hypertable_version}/run/Hypertable.TestDispatcher.pid --add-to-classpath #{hbase_home}/conf --add-to-classpath /etc/zookeeper/zoo.cfg org.hypertable.examples.PerformanceTest.Dispatcher --driver=#{test_driver} --clients=#{roles[:test_client].servers.length*client_multiplier} #{test_args}"
   set :stop_test_args, "--no-thriftbroker --no-dfsbroker"
 else
   set :thrift_broker_command, "echo Invalid test driver - #{test_driver}"

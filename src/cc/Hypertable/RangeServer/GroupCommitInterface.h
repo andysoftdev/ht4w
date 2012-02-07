@@ -136,7 +136,6 @@ namespace Hypertable {
 
 #endif
 
-    std::set<Range *> wait_ranges;
     DynamicBuffer go_buf;
     bool wait_for_metadata_recovery;
     bool wait_for_system_recovery;

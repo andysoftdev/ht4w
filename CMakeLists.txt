@@ -1,9 +1,9 @@
 #
-# Copyright (C) 2009 Doug Judd (Zvents, Inc.)
+# Copyright (C) 2007-2012 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
+# as published by the Free Software Foundation; either version 3
 # of the License, or any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -23,7 +23,7 @@ project(HYPERTABLE)
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
 set(VERSION_MICRO "5")
-set(VERSION_PATCH "4")
+set(VERSION_PATCH "5")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
@@ -91,7 +91,6 @@ find_package(Threads REQUIRED)
 message(STATUS "Use thread library: ${CMAKE_THREAD_LIBS_INIT}")
 find_package(Boost REQUIRED)
 find_package(BerkeleyDB REQUIRED)
-find_package(RRDtool REQUIRED)
 find_package(EXPAT REQUIRED)
 find_package(Log4cpp REQUIRED)
 find_package(Readline REQUIRED)
@@ -100,6 +99,8 @@ find_package(ZLIB REQUIRED)
 find_package(BZip2 REQUIRED)
 find_package(RE2 REQUIRED)
 find_package(Snappy REQUIRED)
+find_package(RRDtool REQUIRED)
+find_package(Cronolog REQUIRED)
 find_package(Doxygen)
 find_package(Tcmalloc)
 find_package(Jemalloc)
@@ -196,6 +197,17 @@ install(FILES ${HYPERTABLE_BINARY_DIR}/java/hypertable-${VERSION}.jar
           DESTINATION lib/java OPTIONAL)
 install(PROGRAMS bin/jrun DESTINATION bin)
 
+file(GLOB PHPFILES ${PHPTHRIFT_ROOT}/*.php)
+
+# Copy PHP Thrift files
+install(FILES ${PHPFILES} DESTINATION lib/php)
+install(DIRECTORY ${PHPTHRIFT_ROOT}/protocol ${PHPTHRIFT_ROOT}/server ${PHPTHRIFT_ROOT}/transport
+        DESTINATION lib/php USE_SOURCE_PERMISSIONS)
+
+# Copy C++ Thrift files
+install(DIRECTORY ${Thrift_INCLUDE_DIR} DESTINATION include USE_SOURCE_PERMISSIONS)
+install(DIRECTORY ${Log4cpp_INCLUDE_DIR}/log4cpp DESTINATION include USE_SOURCE_PERMISSIONS)
+
 if (NOT HT_COMPONENT_INSTALL)
   install(FILES ${HYPERTABLE_BINARY_DIR}/java/hypertable-${VERSION}-examples.jar
           DESTINATION lib/java OPTIONAL)
@@ -207,8 +219,10 @@ if (NOT HT_COMPONENT_INSTALL)
           USE_SOURCE_PERMISSIONS)
   install(DIRECTORY examples/freebase DESTINATION examples
           USE_SOURCE_PERMISSIONS)
-
-include(PackageHelper)
+  install(PROGRAMS
+          "${RRDTOOL_DIR}/rrdtool" "${CRONOLOG_DIR}/cronolog"
+          DESTINATION bin)
+  include(PackageHelper)
 else ()
   install(PROGRAMS bin/ht-env.sh bin/fhsize.sh bin/prerm.sh DESTINATION bin)
 endif ()

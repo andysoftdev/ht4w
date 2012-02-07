@@ -88,6 +88,8 @@ Comm::Comm() {
     HT_ABORT;
   }
 
+  InetAddr::initialize(&m_local_addr, System::net_info().primary_addr.c_str(), 0);
+
 #ifdef _WIN32
 
   socket_t s = socket(AF_INET, SOCK_STREAM, 0);
@@ -163,6 +165,12 @@ int Comm::connect(const CommAddress &addr, DispatchHandlerPtr &default_handler) 
   if ((sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
     HT_ERRORF("socket: %s", strerror(errno));
     return Error::COMM_SOCKET_ERROR;
+  }
+
+  // bind socket to local address
+  if ((bind(sd, (const sockaddr *)&m_local_addr, sizeof(sockaddr_in))) < 0) {
+    HT_ERRORF( "bind: %s: %s", m_local_addr.format().c_str(), strerror(errno));
+    return Error::COMM_BIND_ERROR;
   }
 
 #endif

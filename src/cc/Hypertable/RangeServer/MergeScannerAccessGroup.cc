@@ -166,7 +166,7 @@ MergeScannerAccessGroup::do_initialize()
       // row set 
       if (!m_scan_context->rowset.empty()) {
         int cmp = 1;
-        while (!m_scan_context->rowset.empty() 
+        while (!m_scan_context->rowset.empty()
             && (cmp = strcmp(*m_scan_context->rowset.begin(), sstate.key.row)) < 0)
           m_scan_context->rowset.erase(m_scan_context->rowset.begin());
         if (cmp > 0) {
@@ -406,8 +406,8 @@ MergeScannerAccessGroup::do_forward()
         // row set
         if (!m_scan_context->rowset.empty()) {
           int cmp = 1;
-          while (!m_scan_context->rowset.empty() 
-              && (cmp = strcmp(*m_scan_context->rowset.begin(), 
+          while (!m_scan_context->rowset.empty()
+              && (cmp = strcmp(*m_scan_context->rowset.begin(),
                                 sstate.key.row)) < 0)
             m_scan_context->rowset.erase(m_scan_context->rowset.begin());
           if (cmp > 0)

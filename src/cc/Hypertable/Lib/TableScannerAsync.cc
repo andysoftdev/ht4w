@@ -176,7 +176,8 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
       case (Error::TABLE_NOT_FOUND):
       case (Error::RANGESERVER_TABLE_NOT_FOUND):
         if (m_table->auto_refresh() && is_create)
-        abort = !(m_interval_scanners[scanner_id]->retry_or_abort(true, true, is_create, &next));
+        abort = !(m_interval_scanners[scanner_id]->retry_or_abort(true, true, 
+                    is_create, &next, error));
         else {
           next = m_interval_scanners[scanner_id]->abort(is_create);
           abort = true;
@@ -184,7 +185,8 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
         break;
       case (Error::RANGESERVER_GENERATION_MISMATCH):
         if (m_table->auto_refresh() && is_create)
-        abort = !(m_interval_scanners[scanner_id]->retry_or_abort(true, false, is_create, &next));
+        abort = !(m_interval_scanners[scanner_id]->retry_or_abort(true, false, 
+                    is_create, &next, error));
         else {
           next = m_interval_scanners[scanner_id]->abort(is_create);
           abort = true;
@@ -197,7 +199,8 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
       case(Error::RANGESERVER_RANGE_NOT_FOUND):
       case(Error::COMM_NOT_CONNECTED):
       case(Error::COMM_BROKEN_CONNECTION):
-        abort = !(m_interval_scanners[scanner_id]->retry_or_abort(false, true, is_create, &next));
+        abort = !(m_interval_scanners[scanner_id]->retry_or_abort(false, true, 
+                    is_create, &next, error));
         break;
 
       default:
@@ -374,16 +377,32 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool 
       break;
     }
     m_current_scanner = current_scanner;
+
     if (m_interval_scanners[current_scanner] !=0) {
       next = m_interval_scanners[current_scanner]->set_current(&do_callback, cells, abort);
       HT_ASSERT(do_callback || !next || abort);
 
-      // scan was cancelled and this is the last outstanding scanner
-      if (next && m_outstanding==1 && cancelled && m_error == Error::OK) {
+      // this is the last outstanding scanner and the scan was cancelled
+      // or failed with an error
+      if (next 
+          && m_outstanding==1 
+          && ((cancelled && m_error == Error::OK)
+            || m_error != Error::OK)) {
         do_callback = true;
         cells = new ScanCells;
       }
       maybe_callback_ok(m_current_scanner, next, do_callback, cells);
     }
+  }
+
+  // if we skipped ALL outstanding scanners then make sure the "eos" marker
+  // is sent to the caller, and m_outstanding is decremented
+  if (next 
+      && m_outstanding == 1
+      && current_scanner == ((int)m_interval_scanners.size() - 1) 
+      && !cells) {
+    cells = new ScanCells;
+    maybe_callback_ok(m_current_scanner, true, true, cells);
+    m_current_scanner = (int)m_interval_scanners.size() - 1;
   }
 }

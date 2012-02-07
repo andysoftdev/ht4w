@@ -195,16 +195,13 @@ namespace Hypertable {
 
     Mutex                      m_update_qualify_queue_mutex;
     boost::condition           m_update_qualify_queue_cond;
-    Mutex                      m_update_qualify_mutex;
     std::list<UpdateContext *> m_update_qualify_queue;
     Mutex                      m_update_commit_queue_mutex;
     boost::condition           m_update_commit_queue_cond;
     int32_t                    m_update_commit_queue_count;
-    Mutex                      m_update_commit_mutex;
     std::list<UpdateContext *> m_update_commit_queue;
     Mutex                      m_update_response_queue_mutex;
     boost::condition           m_update_response_queue_cond;
-    Mutex                      m_update_response_mutex;
     std::list<UpdateContext *> m_update_response_queue;
     std::vector<Thread *>      m_update_threads;
 

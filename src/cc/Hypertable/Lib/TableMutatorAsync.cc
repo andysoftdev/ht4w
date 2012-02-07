@@ -42,15 +42,12 @@ void TableMutatorAsync::handle_send_exceptions() {
     throw;
   }
   catch (std::bad_alloc &) {
-    m_last_error = Error::BAD_MEMORY_ALLOCATION;
     HT_ERROR("caught bad_alloc here");
   }
   catch (std::exception &e) {
-    m_last_error = Error::EXTERNAL;
     HT_ERRORF("caught std::exception: %s", e.what());
   }
   catch (...) {
-    m_last_error = Error::EXTERNAL;
     HT_ERROR("caught unknown exception here");
   }
 }
@@ -62,20 +59,38 @@ TableMutatorAsync::TableMutatorAsync(PropertiesPtr &props, Comm *comm,
     bool explicit_block_only)
   : m_comm(comm), m_app_queue(app_queue), m_table(table), m_range_locator(range_locator),
     m_memory_used(0), m_resends(0), m_timeout_ms(timeout_ms), m_cb(cb), m_flags(flags),
-    m_explicit_block_only(explicit_block_only), m_next_buffer_id(0), m_cancelled(false),
-    m_mutated(false) {
-  HT_ASSERT(timeout_ms);
-  table->get(m_table_identifier, m_schema);
+    m_mutex(m_buffer_mutex), m_cond(m_buffer_cond), m_explicit_block_only(explicit_block_only),
+    m_next_buffer_id(0), m_cancelled(false), m_mutated(false) {
+  initialize(props);
+}
+
+
+TableMutatorAsync::TableMutatorAsync(Mutex &mutex, boost::condition &cond, PropertiesPtr &props,
+				     Comm *comm, ApplicationQueuePtr &app_queue, Table *table,
+				     RangeLocatorPtr &range_locator, uint32_t timeout_ms,
+				     ResultCallback *cb, uint32_t flags,
+				     bool explicit_block_only)
+  : m_comm(comm), m_app_queue(app_queue), m_table(table), m_range_locator(range_locator),
+    m_memory_used(0), m_resends(0), m_timeout_ms(timeout_ms), m_cb(cb), m_flags(flags),
+    m_mutex(mutex), m_cond(cond), m_explicit_block_only(explicit_block_only), m_next_buffer_id(0),
+    m_cancelled(false), m_mutated(false) {
+  initialize(props);
+}
+
+void TableMutatorAsync::initialize(PropertiesPtr &props) {
+  HT_ASSERT(m_timeout_ms);
+  m_table->get(m_table_identifier, m_schema);
 
   m_max_memory = props->get_i64("Hypertable.Mutator.ScatterBuffer.FlushLimit.Aggregate");
 
   uint32_t buffer_id = ++m_next_buffer_id;
-  m_current_buffer = new TableMutatorAsyncScatterBuffer(m_comm, app_queue, this,
-      &m_table_identifier, m_schema, m_range_locator, m_table->auto_refresh(), timeout_ms,
+  m_current_buffer = new TableMutatorAsyncScatterBuffer(m_comm, m_app_queue, this,
+      &m_table_identifier, m_schema, m_range_locator, m_table->auto_refresh(), m_timeout_ms,
       buffer_id);
   if (m_cb)
     m_cb->register_mutator(this);
 }
+
 
 TableMutatorAsync::~TableMutatorAsync() {
   try {
@@ -92,13 +107,14 @@ TableMutatorAsync::~TableMutatorAsync() {
 }
 
 void TableMutatorAsync::wait_for_completion() {
-  ScopedLock lock(m_buffer_mutex);
+  ScopedLock lock(m_mutex);
   while(m_outstanding_buffers.size()>0)
     m_cond.wait(lock);
 }
 
 void
 TableMutatorAsync::set(const KeySpec &key, const void *value, uint32_t value_len) {
+  ScopedLock lock(m_member_mutex);
   bool unknown_cf;
   bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) > 0;
   size_t incr_mem;
@@ -122,6 +138,7 @@ TableMutatorAsync::set(const KeySpec &key, const void *value, uint32_t value_len
 
 void
 TableMutatorAsync::set_cells(Cells::const_iterator it, Cells::const_iterator end) {
+  ScopedLock lock(m_member_mutex);
   bool unknown_cf;
   bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) > 0;
   size_t incr_mem;
@@ -161,6 +178,7 @@ TableMutatorAsync::set_cells(Cells::const_iterator it, Cells::const_iterator end
 }
 
 void TableMutatorAsync::set_delete(const KeySpec &key) {
+  ScopedLock lock(m_member_mutex);
   Key full_key;
   bool unknown_cf;
   bool ignore_unknown_cfs = (m_flags & Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS) > 0;
@@ -185,7 +203,6 @@ void TableMutatorAsync::set_delete(const KeySpec &key) {
   }
   catch (...) {
     handle_send_exceptions();
-    m_last_key = key;
     throw;
   }
 }
@@ -236,16 +253,17 @@ TableMutatorAsync::to_full_key(const void *row, const char *column_family,
 }
 
 void TableMutatorAsync::cancel() {
-  ScopedLock lock(m_cancel_mutex);
+  ScopedLock lock(m_member_mutex);
   m_cancelled=true;
 }
 
 bool TableMutatorAsync::is_cancelled() {
-  ScopedLock lock(m_cancel_mutex);
+  ScopedLock lock(m_member_mutex);
   return m_cancelled;
 }
 
 bool TableMutatorAsync::needs_flush() {
+  ScopedLock lock(m_member_mutex);
   if (m_current_buffer->full() || m_memory_used > m_max_memory)
     return true;
   return false;
@@ -259,19 +277,22 @@ void TableMutatorAsync::flush(bool sync) {
   uint32_t flags = sync ? 0:Table::MUTATOR_FLAG_NO_LOG_SYNC;
 
   try {
-    if (m_current_buffer->memory_used() > 0) {
-      ScopedLock lock(m_buffer_mutex);
-      uint32_t buffer_id = ++m_next_buffer_id;
-      m_current_buffer->send(flags);
-      if (m_outstanding_buffers.size() == 0 && m_cb)
-        m_cb->increment_outstanding();
-      m_outstanding_buffers[m_current_buffer->get_id()] = m_current_buffer;
-      m_current_buffer = new TableMutatorAsyncScatterBuffer(m_comm, m_app_queue, this,
-          &m_table_identifier, m_schema, m_range_locator, m_table->auto_refresh(),
-          m_timeout_ms, buffer_id);
-
-      m_memory_used = 0;
+    {
+      ScopedLock lock(m_mutex);
+      ScopedLock member_lock(m_member_mutex);
+      if (m_current_buffer->memory_used() > 0) {
+        m_current_buffer->send(flags);
+        uint32_t buffer_id = ++m_next_buffer_id;
+        if (m_outstanding_buffers.size() == 0 && m_cb)
+          m_cb->increment_outstanding();
+        m_outstanding_buffers[m_current_buffer->get_id()] = m_current_buffer;
+	m_current_buffer = new TableMutatorAsyncScatterBuffer(m_comm, m_app_queue, this,
+                &m_table_identifier, m_schema, m_range_locator, m_table->auto_refresh(),
+	         m_timeout_ms, buffer_id);
+	m_memory_used = 0;
+      }
     }
+
     // sync any unsynced RS
     if (sync)
       do_sync();
@@ -280,55 +301,71 @@ void TableMutatorAsync::flush(bool sync) {
 }
 
 void TableMutatorAsync::get_unsynced_rangeservers(std::vector<CommAddress> &unsynced) {
+  ScopedLock lock(m_member_mutex);
   unsynced.clear();
   foreach (const CommAddress &comm_addr, m_unsynced_rangeservers)
     unsynced.push_back(comm_addr);
 }
 
 void TableMutatorAsync::do_sync() {
+  TableIdentifierManaged table_identifier;
+
+  {
+    ScopedLock lock(m_member_mutex);
+    if (m_unsynced_rangeservers.empty())
+      return;
+    table_identifier = m_table_identifier;
+  }
+
   // sync unsynced rangeservers
   try {
-    if (!m_unsynced_rangeservers.empty()) {
-      TableMutatorSyncDispatchHandler sync_handler(m_comm, m_table_identifier, m_timeout_ms);
+    TableMutatorSyncDispatchHandler sync_handler(m_comm, table_identifier, m_timeout_ms);
+
+    {
+      ScopedLock lock(m_member_mutex);
       foreach (CommAddress addr, m_unsynced_rangeservers)
         sync_handler.add(addr);
+    }
 
-      if (!sync_handler.wait_for_completion()) {
-        std::vector<TableMutatorSyncDispatchHandler::ErrorResult> errors;
-        uint32_t retry_count = 0;
-        bool retry_failed;
-        do {
-          bool do_refresh = false;
-          retry_count++;
-          sync_handler.get_errors(errors);
-          for (size_t i=0; i<errors.size(); i++) {
-            if (m_table->auto_refresh() &&
-                (errors[i].error == Error::RANGESERVER_GENERATION_MISMATCH ||
-                 (!m_mutated && errors[i].error == Error::RANGESERVER_TABLE_NOT_FOUND)))
-              do_refresh = true;
-            else
-              HT_ERRORF("commit log sync error - %s - %s", errors[i].msg.c_str(),
-                  Error::get_text(errors[i].error));
-          }
-          if (do_refresh)
-            m_table->refresh(m_table_identifier, m_schema);
-          sync_handler.retry();
+    if (!sync_handler.wait_for_completion()) {
+      std::vector<TableMutatorSyncDispatchHandler::ErrorResult> errors;
+      uint32_t retry_count = 0;
+      bool retry_failed;
+      do {
+        bool do_refresh = false;
+        retry_count++;
+        sync_handler.get_errors(errors);
+        for (size_t i=0; i<errors.size(); i++) {
+          if (m_table->auto_refresh() &&
+              (errors[i].error == Error::RANGESERVER_GENERATION_MISMATCH ||
+               (!mutated() && errors[i].error == Error::RANGESERVER_TABLE_NOT_FOUND)))
+            do_refresh = true;
+          else
+            HT_ERRORF("commit log sync error - %s - %s", errors[i].msg.c_str(),
+                      Error::get_text(errors[i].error));
         }
-        while ((retry_failed = (!sync_handler.wait_for_completion())) &&
-            retry_count < ms_max_sync_retries);
-        /**
-         * Commit log sync failed
-         */
-        if (retry_failed) {
-          sync_handler.get_errors(errors);
-          String error_str;
-          error_str =  (String) "commit log sync error '" + errors[0].msg.c_str() + "' '" +
-            Error::get_text(errors[0].error) + "' max retry limit=" +
-            ms_max_sync_retries + " hit";
-          HT_THROW(errors[0].error, error_str);
+        if (do_refresh) {
+          ScopedLock lock(m_member_mutex);
+          m_table->refresh(m_table_identifier, m_schema);
+          m_current_buffer->refresh_schema(m_table_identifier, m_schema);
         }
+        sync_handler.retry();
+      }
+      while ((retry_failed = (!sync_handler.wait_for_completion())) &&
+             retry_count < ms_max_sync_retries);
+      /**
+       * Commit log sync failed
+       */
+      if (retry_failed) {
+        sync_handler.get_errors(errors);
+        String error_str;
+        error_str =  (String) "commit log sync error '" + errors[0].msg.c_str() + "' '" +
+          Error::get_text(errors[0].error) + "' max retry limit=" +
+          ms_max_sync_retries + " hit";
+        HT_THROW(errors[0].error, error_str);
       }
     }
+
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
@@ -341,7 +378,7 @@ void TableMutatorAsync::do_sync() {
 }
 
 TableMutatorAsyncScatterBufferPtr TableMutatorAsync::get_outstanding_buffer(size_t id) {
-  ScopedLock lock(m_buffer_mutex);
+  ScopedLock lock(m_mutex);
   TableMutatorAsyncScatterBufferPtr buffer;
   ScatterBufferAsyncMap::iterator it = m_outstanding_buffers.find(id);
   if (it != m_outstanding_buffers.end())
@@ -365,8 +402,9 @@ void TableMutatorAsync::update_outstanding(TableMutatorAsyncScatterBufferPtr &bu
 }
 
 void TableMutatorAsync::buffer_finish(uint32_t id, int error, bool retry) {
-  bool cancelled = is_cancelled();
-  ScopedLock lock(m_buffer_mutex);
+  ScopedLock lock(m_mutex);
+  bool cancelled = false;
+  bool mutated = false;
   TableMutatorAsyncScatterBufferPtr buffer;
   ScatterBufferAsyncMap::iterator it;
 
@@ -374,8 +412,13 @@ void TableMutatorAsync::buffer_finish(uint32_t id, int error, bool retry) {
   HT_ASSERT(it != m_outstanding_buffers.end());
 
   buffer = it->second;
-  m_failed_mutations.clear();
-  update_unsynced_rangeservers(buffer->get_unsynced_rangeservers());
+  {
+    ScopedLock lock(m_member_mutex);
+    m_failed_mutations.clear();
+    update_unsynced_rangeservers(buffer->get_unsynced_rangeservers());
+    cancelled = m_cancelled;
+    mutated = m_mutated;
+  }
 
   if (cancelled) {
     update_outstanding(buffer);
@@ -384,7 +427,8 @@ void TableMutatorAsync::buffer_finish(uint32_t id, int error, bool retry) {
 
   if (error != Error::OK) {
     if (error == Error::RANGESERVER_GENERATION_MISMATCH ||
-        (!m_mutated && error == Error::RANGESERVER_TABLE_NOT_FOUND)) {
+        (!mutated && error == Error::RANGESERVER_TABLE_NOT_FOUND)) {
+      ScopedLock lock(m_member_mutex);
       // retry possible
       m_table->refresh(m_table_identifier, m_schema);
       buffer->refresh_schema(m_table_identifier, m_schema);
@@ -394,9 +438,12 @@ void TableMutatorAsync::buffer_finish(uint32_t id, int error, bool retry) {
       if (retry)
         buffer->set_retries_to_fail(error);
       // send error to callback
-      buffer->get_failed_mutations(m_failed_mutations);
-      if (m_cb != 0)
-        m_cb->update_error(this, error, m_failed_mutations);
+      {
+        ScopedLock lock(m_member_mutex);
+        buffer->get_failed_mutations(m_failed_mutations);
+        if (m_cb != 0)
+          m_cb->update_error(this, error, m_failed_mutations);
+      }
       update_outstanding(buffer);
       return;
     }
@@ -414,10 +461,13 @@ void TableMutatorAsync::buffer_finish(uint32_t id, int error, bool retry) {
       redo=0;
     }
     if (!redo) {
-      buffer->get_failed_mutations(m_failed_mutations);
-      // send error to callback
-      if (m_cb != 0)
-        m_cb->update_error(this, error, m_failed_mutations);
+      {
+        ScopedLock lock(m_member_mutex);
+        buffer->get_failed_mutations(m_failed_mutations);
+        // send error to callback
+        if (m_cb != 0)
+          m_cb->update_error(this, error, m_failed_mutations);
+      }
       update_outstanding(buffer);
     }
     else {
@@ -430,7 +480,10 @@ void TableMutatorAsync::buffer_finish(uint32_t id, int error, bool retry) {
   }
   else {
     // everything went well
-    m_mutated = true;
+    {
+      ScopedLock lock(m_member_mutex);
+      m_mutated = true;
+    }
     if (m_cb != 0)
       m_cb->update_ok(this);
     update_outstanding(buffer);

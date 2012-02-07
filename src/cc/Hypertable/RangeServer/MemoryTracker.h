@@ -25,59 +25,36 @@
 #include <boost/thread/mutex.hpp>
 
 #include "FileBlockCache.h"
+#include "QueryCache.h"
 
 namespace Hypertable {
 
   class MemoryTracker {
   public:
-    enum {
-      query_cache = 0,
-      cell_cache,
-      cell_store,
-      block_cache,
-      consumer_count
-    };
+    MemoryTracker(FileBlockCache *block_cache, QueryCache *query_cache) 
+      : m_memory_used(0), m_block_cache(block_cache), m_query_cache(query_cache) { }
 
-    MemoryTracker(FileBlockCache *block_cache) 
-      : m_block_cache(block_cache) { memset(m_memory_used_by, 0, sizeof(m_memory_used_by)); }
-
-    void add(int consumer, int64_t amount) {
+    void add(int64_t amount) {
       ScopedLock lock(m_mutex);
-      m_memory_used_by[consumer] += amount;
+      m_memory_used += amount;
     }
 
-    void subtract(int consumer, int64_t amount) {
+    void subtract(int64_t amount) {
       ScopedLock lock(m_mutex);
-      m_memory_used_by[consumer] -= amount;
+      m_memory_used -= amount;
     }
 
     int64_t balance() {
-      int64_t memory_used_by[consumer_count];
-      memory_used(memory_used_by);
-      int64_t memory_used = 0;
-      for (int i = 0; i < consumer_count; ++i)
-        memory_used += memory_used_by[i];
-      return memory_used;
-    }
-
-    int64_t memory_used(int consumer) {
-      HT_ASSERT(consumer >= query_cache && consumer <= block_cache);
       ScopedLock lock(m_mutex);
-      return consumer != block_cache ? m_memory_used_by[consumer] : m_block_cache->memory_used();
-    }
-
-    template <size_t size> inline
-    void memory_used(int64_t (&memory_used_by)[size]) {
-      ScopedLock lock(m_mutex);
-      memcpy(memory_used_by, m_memory_used_by, sizeof(int64_t) * std::min(size, (size_t)block_cache));
-      if (size > block_cache)
-        memory_used_by[block_cache] = m_block_cache->memory_used();
+      return m_memory_used + (m_block_cache ? m_block_cache->memory_used() : 0) +
+        (m_query_cache ? m_query_cache->memory_used() : 0);
     }
 
   private:
     Mutex m_mutex;
-    int64_t m_memory_used_by[consumer_count-1]; // block_cache tracked by m_block_cache
+    int64_t m_memory_used;
     FileBlockCache *m_block_cache;
+    QueryCache *m_query_cache;
   };
 
 }

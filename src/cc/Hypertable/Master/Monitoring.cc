@@ -24,7 +24,6 @@
 #include "Common/Logger.h"
 #include "Common/Path.h"
 #include "Common/md5.h"
-#include "Common/version.h"
 
 #include <algorithm>
 #include <cctype>
@@ -33,10 +32,7 @@
 #include <boost/algorithm/string.hpp>
 
 extern "C" {
-#ifndef _WIN32
-#include <rrd.h>
-#endif
-#include <time.h>
+#include <unistd.h>
 }
 
 #include "Monitoring.h"
@@ -44,7 +40,8 @@ extern "C" {
 using namespace Hypertable;
 using namespace std;
 
-Monitoring::Monitoring(PropertiesPtr &props,NameIdMapperPtr &m_namemap) : m_last_server_count(0) {
+Monitoring::Monitoring(PropertiesPtr &props,NameIdMapperPtr &m_namemap) 
+  : m_last_server_count(0) {
 
   /**
    * Create dir for storing monitoring stats
@@ -62,18 +59,17 @@ Monitoring::Monitoring(PropertiesPtr &props,NameIdMapperPtr &m_namemap) : m_last
   this->m_namemap_ptr = m_namemap;
 
   memset(m_last_server_set_digest, 0, 16);
-
 }
 
 void Monitoring::create_dir(const String &dir) {
     if (!FileUtils::exists(dir)) {
-        if (!FileUtils::mkdirs(dir)) {
-            HT_THROW(Error::LOCAL_IO_ERROR, "Unable to create monitoring dir "+dir);
-        }
-        HT_INFOF("Created monitoring dir %s",dir.c_str());
+      if (!FileUtils::mkdirs(dir)) {
+        HT_THROW(Error::LOCAL_IO_ERROR, "Unable to create monitoring dir "+dir);
+      }
+      HT_INFOF("Created monitoring dir %s",dir.c_str());
     }
     else
-        HT_INFOF("rangeservers monitoring stats dir %s exists ",dir.c_str());
+      HT_INFOF("rangeservers monitoring stats dir %s exists ",dir.c_str());
 }
 
 void Monitoring::add_server(const String &location, StatsSystem &system_info) {
@@ -117,29 +113,22 @@ namespace {
 
 void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
   ScopedLock lock(m_mutex);
+  struct rangeserver_rrd_data rrd_data;
   RangeServerMap::iterator iter;
+  double numerator, denominator;
   int32_t server_count = 0;
   CstrSet server_set;
 
-  //to keep track max timestamp across rangeserver
-  //this value is used to update table rrds
+  // to keep track max timestamp across rangeserver
+  // this value is used to update table rrds
   table_stats_timestamp = 0;
   // copy to previous hashmap to calculate read rates
   m_prev_table_stat_map = m_table_stat_map;
   m_table_stat_map.clear(); // clear the previous contents
 
-#ifndef _WIN32
-  struct rangeserver_rrd_data rrd_data;
-  double numerator, denominator;
-#endif
-
   for (size_t i=0; i<stats.size(); i++) {
 
-#ifndef _WIN32
-
     memset(&rrd_data, 0, sizeof(rrd_data));
-
-#endif
 
     iter = m_server_map.find(stats[i].location);
     if (iter == m_server_map.end()) {
@@ -158,8 +147,6 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
       server_count++;
       server_set.insert(stats[i].location.c_str());
     }
-
-#ifndef _WIN32
 
     if ((*iter).second->stats) {
 
@@ -231,14 +218,21 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
 
     compute_clock_skew(stats[i].stats->timestamp, &stats[i]);
 
+#ifndef _WIN32
+
     String rrd_file = m_monitoring_rs_dir + "/" + stats[i].location + "_stats_v0.rrd";
 
     if (!FileUtils::exists(rrd_file))
       create_rangeserver_rrd(rrd_file);
 
+#endif
+
     if (rrd_data.timestamp > table_stats_timestamp) {
       table_stats_timestamp = rrd_data.timestamp;
     }
+
+#ifndef _WIN32
+
     update_rangeserver_rrd(rrd_file, rrd_data);
 
 #endif
@@ -422,9 +416,6 @@ void Monitoring::compute_clock_skew(int64_t server_timestamp, RangeServerStatist
 }
 
 void Monitoring::create_rangeserver_rrd(const String &filename) {
-
-#ifndef _WIN32
-
   char buf[64];
   String step;
 
@@ -485,28 +476,10 @@ void Monitoring::create_rangeserver_rrd(const String &filename) {
   args.push_back((String)"RRA:MAX:.5:10:2880"); // 5min res spikes for last 10 days
   args.push_back((String)"RRA:MAX:.5:720:2190");// 6hr res spikes for last 1.5 yrs
 
-  int argc = args.size();
-  const char **argv = new const char *[argc+1];
-  for (int ii=0; ii< argc; ++ii)
-    argv[ii] = args[ii].c_str();
-  argv[argc] = NULL;
-
-  rrd_create(argc, (char**)argv);
-
-  if (rrd_test_error()!=0)
-    HT_ERROR_OUT << "Error creating RRD " << filename << ": "<< rrd_get_error() << HT_END;
-
-  rrd_clear_error();
-  delete [] argv;
-
-#endif
-
+  run_rrdtool(args);
 }
 
 void Monitoring::create_table_rrd(const String &filename) {
-
-#ifndef _WIN32
-
   char buf[64];
   String step;
 
@@ -552,31 +525,11 @@ void Monitoring::create_table_rrd(const String &filename) {
   args.push_back((String)"RRA:MAX:.5:10:2880"); // 5min res spikes for last 10 days
   args.push_back((String)"RRA:MAX:.5:720:2190");// 6hr res spikes for last 1.5 yrs
 
-  int argc = args.size();
-  const char **argv = new const char *[argc+1];
-  for (int ii=0; ii< argc; ++ii)
-    argv[ii] = args[ii].c_str();
-  argv[argc] = NULL;
-
-  rrd_create(argc, (char**)argv);
-
-  if (rrd_test_error()!=0)
-    HT_ERROR_OUT << "Error creating RRD " << filename << ": "<< rrd_get_error() << HT_END;
-
-  rrd_clear_error();
-  delete [] argv;
-
-#endif
-
+  run_rrdtool(args);
 }
 
 void Monitoring::update_table_rrd(const String &filename, struct table_rrd_data &rrd_data) {
-
-#ifndef _WIN32
-
   std::vector<String> args;
-  int argc;
-  const char **argv;
   String update;
 
   args.push_back((String)"update");
@@ -603,35 +556,15 @@ void Monitoring::update_table_rrd(const String &filename, struct table_rrd_data 
 		  (Lld)rrd_data.bloom_filter_accesses,
 		  (Lld)rrd_data.bloom_filter_maybes);
 
-  HT_INFOF("table update=\"%s\"", update.c_str());
+  HT_DEBUGF("table update=\"%s\"", update.c_str());
 
   args.push_back(update);
 
-  argc = args.size();
-
-  argv = new const char *[argc+1];
-  for (int ii=0; ii< argc; ++ii)
-    argv[ii] = args[ii].c_str();
-  argv[argc] = NULL;
-
-  rrd_update(argc, (char**)argv);
-  if (rrd_test_error()!=0) {
-    HT_ERROR_OUT << "Error updating RRD " << filename << ": " << rrd_get_error() << HT_END;
-  }
-  delete [] argv;
-  rrd_clear_error();
-
-#endif
-
+  run_rrdtool(args);
 }
 
 void Monitoring::update_rangeserver_rrd(const String &filename, struct rangeserver_rrd_data &rrd_data) {
-
-#ifndef _WIN32
-
   std::vector<String> args;
-  int argc;
-  const char **argv;
   String update;
 
   args.push_back((String)"update");
@@ -673,26 +606,11 @@ void Monitoring::update_rangeserver_rrd(const String &filename, struct rangeserv
                   rrd_data.cpu_user,
                   rrd_data.cpu_sys);
 
-  HT_INFOF("update=\"%s\"", update.c_str());
+  HT_DEBUGF("update=\"%s\"", update.c_str());
 
   args.push_back(update);
 
-  argc = args.size();
-
-  argv = new const char *[argc+1];
-  for (int ii=0; ii< argc; ++ii)
-    argv[ii] = args[ii].c_str();
-  argv[argc] = NULL;
-
-  rrd_update(argc, (char**)argv);
-  if (rrd_test_error()!=0) {
-    HT_ERROR_OUT << "Error updating RRD " << filename << ": " << rrd_get_error() << HT_END;
-  }
-  delete [] argv;
-  rrd_clear_error();
-
-#endif
-
+  run_rrdtool(args);
 }
 
 namespace {
@@ -743,9 +661,9 @@ void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics
       for (size_t j=0; j<stats[i].stats->system.fs_stat.size(); j++) {
         numerator += stats[i].stats->system.fs_stat[j].used;
         denominator += stats[i].stats->system.fs_stat[j].total;
-        disk += stats[i].stats->system.fs_stat[j].total; // already in KB
+        disk += stats[i].stats->system.fs_stat[j].total;
       }
-      disk /= 1000000.0;
+      disk /= 1000000000.0;
       disk_use_pct = (unsigned)((numerator/denominator)*100.0);
       time_t contact = (time_t)(stats[i].fetch_timestamp / 1000000000LL);
       char buf[64];
@@ -862,3 +780,32 @@ void Monitoring::change_id_mapping(const String &table_id, const String &table_n
 void Monitoring::invalidate_id_mapping(const String &table_id) {
   m_table_name_map.erase(table_id);
 }
+
+void Monitoring::run_rrdtool(std::vector<String> &command) {
+
+#ifndef _WIN32
+
+  const char *env = ::getenv("HYPERTABLE_HOME");
+  if (!env)
+    env = ".";
+  String cmd = env;
+  cmd += "/bin/rrdtool";
+
+  foreach (const String &s, command) {
+    cmd += " \"";
+    cmd += s;
+    cmd += "\" ";
+  }
+
+  HT_DEBUGF("run_rrdtool: %s", cmd.c_str());
+
+  int ret = ::system(cmd.c_str());
+  if (ret != 0) {
+    HT_WARNF("Monitor: shell command ('%s') returned status %d", 
+            cmd.c_str(), ret);
+  }
+
+#endif
+
+}
+

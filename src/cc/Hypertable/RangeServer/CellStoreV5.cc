@@ -84,7 +84,7 @@ CellStoreV5::~CellStoreV5() {
     HT_ERROR_OUT << e << HT_END;
   }
 
-  Global::memory_tracker->subtract( MemoryTracker::cell_store, sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.bloom_filter_memory + m_index_stats.block_index_memory );
+  Global::memory_tracker->subtract(sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.bloom_filter_memory + m_index_stats.block_index_memory);
 
 }
 
@@ -358,7 +358,7 @@ void CellStoreV5::load_bloom_filter() {
   }
 
   m_index_stats.bloom_filter_memory = sizeof(BloomFilterWithChecksum) + m_bloom_filter->total_size();
-  Global::memory_tracker->add(MemoryTracker::cell_store, m_index_stats.bloom_filter_memory);
+  Global::memory_tracker->add(m_index_stats.bloom_filter_memory);
 
 }
 
@@ -383,7 +383,7 @@ uint64_t CellStoreV5::purge_indexes() {
     m_index_stats.block_index_memory = 0;
   }
 
-  Global::memory_tracker->subtract( MemoryTracker::cell_store, memory_purged );
+  Global::memory_tracker->subtract(memory_purged);
 
   return memory_purged;
 }
@@ -749,7 +749,7 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
   delete [] m_column_ttl;
   m_column_ttl = 0;
 
-  Global::memory_tracker->add( MemoryTracker::cell_store, sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.block_index_memory + m_index_stats.bloom_filter_memory );
+  Global::memory_tracker->add(sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.block_index_memory + m_index_stats.bloom_filter_memory);
 }
 
 
@@ -845,7 +845,7 @@ CellStoreV5::open(const String &fname, const String &start_row,
               "length=%llu, file='%s'", (unsigned)m_fd, (Lld)m_trailer.fix_index_offset,
            (Lld)m_trailer.var_index_offset, (Llu)m_file_length, fname.c_str());
 
-  Global::memory_tracker->add( MemoryTracker::cell_store, sizeof(CellStoreV5) + sizeof(CellStoreInfo) );
+  Global::memory_tracker->add(sizeof(CellStoreV5) + sizeof(CellStoreInfo));
 
 }
 
@@ -942,7 +942,7 @@ void CellStoreV5::load_block_index() {
 
   m_index_builder.release_fixed_buf();
 
-  Global::memory_tracker->add( MemoryTracker::cell_store, m_index_stats.block_index_memory );
+  Global::memory_tracker->add(m_index_stats.block_index_memory);
 }
 
 

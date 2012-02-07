@@ -203,26 +203,16 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   m_update_delay = cfg.get_i32("UpdateDelay", 0);
 
   int64_t block_cache_min = cfg.get_i64("BlockCache.MinMemory");
-  int64_t block_cache_max;
-  if (cfg.has("BlockCache.MaxMemory"))
-    block_cache_max = cfg.get_i64("BlockCache.MaxMemory");
-  else {
+  int64_t block_cache_max = cfg.get_i64("BlockCache.MaxMemory");
+  if (block_cache_max == -1) {
     double physical_ram = mem_stat.ram * Property::MiB;
     block_cache_max = (int64_t)physical_ram;
   }
-  // reduce block cache minimum if required
-  if ((double)block_cache_min > (double)Global::memory_limit * 0.1) {
-    block_cache_min = (int64_t)((double)Global::memory_limit * 0.1);
-    props->set("Hypertable.RangeServer.BlockCache.MinMemory", block_cache_min);
-    HT_INFOF("Minimum size of block cache has been reduced to %.2fMB", (double)block_cache_min / Property::MiB);
-  }
-  if (block_cache_min > block_cache_max) {
-    block_cache_min = (int64_t)((double)block_cache_max * 0.1);
-    props->set("Hypertable.RangeServer.BlockCache.MinMemory", block_cache_min);
-    HT_INFOF("Minimum size of block cache has been reduced to %.2fMB", (double)block_cache_min / Property::MiB);
-  }
+  if (block_cache_min > block_cache_max)
+    block_cache_min = block_cache_max;
 
-  Global::block_cache = new FileBlockCache(block_cache_min, block_cache_max);
+  if (block_cache_max > 0)
+    Global::block_cache = new FileBlockCache(block_cache_min, block_cache_max);
 
   int64_t query_cache_memory = cfg.get_i64("QueryCache.MaxMemory");
   if (query_cache_memory > 0) {
@@ -235,8 +225,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     m_query_cache = new QueryCache(query_cache_memory);
   }
 
-  Global::memory_tracker = new MemoryTracker(Global::block_cache);
-  Global::memory_tracker->add(MemoryTracker::query_cache, query_cache_memory);
+  Global::memory_tracker = new MemoryTracker(Global::block_cache, m_query_cache);
 
   // reduce access group max memory limit if required
   HT_ASSERT(Global::memory_limit - block_cache_min - query_cache_memory > 0);
@@ -2096,15 +2085,25 @@ RangeServer::batch_update(std::vector<TableUpdate *> &updates, boost::xtime expi
   // Enqueue update
   {
     ScopedLock lock(m_update_qualify_queue_mutex);
+    HT_ASSERT(!updates.empty());
     m_update_qualify_queue.push_back(uc);
     m_update_qualify_queue_cond.notify_all();
   }
 
 }
 
+namespace {
+
+  struct ltRangePtr {
+    bool operator()(const RangePtr &rp1, const RangePtr &rp2) const {
+      return rp1.get() < rp2.get();
+    }
+  };
+
+}
+
 
 void RangeServer::update_qualify_and_transform() {
-  ScopedLock method_lock(m_update_qualify_mutex);
   UpdateContext *uc;
   SerializedKey key;
   const uint8_t *mod, *mod_end;
@@ -2122,18 +2121,20 @@ void RangeServer::update_qualify_and_transform() {
   CommitLogPtr transfer_log;
   RangeUpdate range_update;
   RangePtr range;
+  Mutex &mutex = m_update_qualify_queue_mutex;
+  boost::condition &cond = m_update_qualify_queue_cond;
+  std::list<UpdateContext *> &queue = m_update_qualify_queue;
 
   while (true) {
 
-    // Dequeue next update
     {
-      ScopedLock lock(m_update_qualify_queue_mutex);
-      while (m_update_qualify_queue.empty() && !m_shutdown)
-        m_update_qualify_queue_cond.wait(lock);
+      ScopedLock lock(mutex);
+      while (queue.empty() && !m_shutdown)
+        cond.wait(lock);
       if (m_shutdown)
         return;
-      uc = m_update_qualify_queue.front();
-      m_update_qualify_queue.pop_front();
+      uc = queue.front();
+      queue.pop_front();
     }
 
     rulist = 0;
@@ -2314,8 +2315,6 @@ void RangeServer::update_qualify_and_transform() {
             bool wait_for_maintenance;
             transfer_pending = rulist->range->get_transfer_info(transfer_info, transfer_log,
                                                                 &latest_range_revision, wait_for_maintenance);
-            if (wait_for_maintenance)
-              table_update->wait_ranges.insert(rulist->range.get());
           }
 
           if (rulist->transfer_log.get() == 0)
@@ -2516,7 +2515,6 @@ void RangeServer::update_qualify_and_transform() {
 
 
 void RangeServer::update_commit() {
-  ScopedLock method_lock(m_update_commit_mutex);
   UpdateContext *uc;
   SerializedKey key;
   std::list<UpdateContext *> coalesce_queue;
@@ -2651,7 +2649,6 @@ void RangeServer::update_commit() {
 
 
 void RangeServer::update_add_and_respond() {
-  ScopedLock method_lock(m_update_response_mutex);
   UpdateContext *uc;
   SerializedKey key;
   int error = Error::OK;
@@ -2742,9 +2739,6 @@ void RangeServer::update_add_and_respond() {
           break;
         }
       }
-
-      foreach(Range *rangep, table_update->wait_ranges)
-        rangep->wait_for_maintenance_to_complete();
 
       foreach (UpdateRequest *request, table_update->requests) {
         ResponseCallbackUpdate cb(m_comm, request->event);
@@ -3018,11 +3012,19 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
                              &m_stats->query_cache_accesses,
                              &m_stats->query_cache_hits);
 
-  if (Global::block_cache)
+  if (Global::block_cache) {
     Global::block_cache->get_stats(&m_stats->block_cache_max_memory,
                                    &m_stats->block_cache_available_memory,
                                    &m_stats->block_cache_accesses,
                                    &m_stats->block_cache_hits);
+  }
+  else {
+    m_stats->block_cache_max_memory = 0;
+    m_stats->block_cache_available_memory = 0;
+    m_stats->block_cache_accesses = 0;
+    m_stats->block_cache_hits = 0;
+  }
+
 
   TableMutatorPtr mutator;
   if (now > m_next_metrics_update) {

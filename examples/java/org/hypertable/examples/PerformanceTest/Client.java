@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2010 Doug Judd (Hypertable, Inc.)
+ * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
  * Hypertable is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * as published by the Free Software Foundation; either version 3
  * of the License, or any later version.
  *
  * Hypertable is distributed in the hope that it will be useful,
@@ -53,8 +53,9 @@ public class Client {
     "usage: Client [OPTIONS] <host>[:<port>]",
     "",
     "OPTIONS:",
-    "  --timeout=<t>  Specifies the connectin timeout value",
-    "  --reactors=<n>  Specifies the number of reactors",
+    "  --thriftbroker-port=<n>  Specifies the ThriftBroker port",
+    "  --timeout=<t>            Specifies the connection timeout value",
+    "  --reactors=<n>           Specifies the number of reactors",
     "",
     "This program is part of a performance test suite.  It acts as a single client",
     "supplying load to a Bigtable cluster and gets work from a dispatcher process.",
@@ -139,6 +140,7 @@ public class Client {
     throws InterruptedException, IOException {
     Integer waitObj = new Integer(0);
     int port = DEFAULT_PORT;
+    int thriftbroker_port = DriverHypertable.DEFAULT_THRIFTBROKER_PORT;
     String host = null;
     long timeout = 0;
 
@@ -151,6 +153,8 @@ public class Client {
     for (int i=0; i<args.length; i++) {
       if (args[i].startsWith("--timeout="))
         timeout = Integer.parseInt(args[i].substring(10));
+      if (args[i].startsWith("--thriftbroker-port="))
+        thriftbroker_port = Integer.parseInt(args[i].substring(20));
       else if (host == null) {
         int colon = args[i].indexOf(':');
         if (colon == -1)
@@ -221,17 +225,17 @@ public class Client {
       if (message.type() != Message.Type.SETUP)
         throw new HypertableException(Error.FAILED_EXPECTATION, "Expected SETUP message");
 
-      String valueDataFile = ((MessageSetup)message).getValueData();
-      DriverCommon.VALUE_DATA_FILE = valueDataFile;
+      Setup setup = ((MessageSetup)message).setup;
 
-      String driverName = ((MessageSetup)message).getDriver();
+      DriverCommon.VALUE_DATA_FILE = setup.valueData;
 
-      if (driverName.equals("hypertable"))
-        driver = new DriverHypertable();
-      else if (driverName.equals("hbase"))
+      if (setup.driver.equals("hypertable")) {
+        driver = new DriverHypertable(thriftbroker_port);
+      }
+      else if (setup.driver.equals("hbase"))
         driver = new DriverHBase();
       else {
-        MessageError messageError = new MessageError("Unrecognized driver: " + driverName);
+        MessageError messageError = new MessageError("Unrecognized driver: " + setup.driver);
         cbuf = messageError.createCommBuf(header);
         SendRequest(cbuf);
         synchronized (waitObj) {
@@ -241,9 +245,7 @@ public class Client {
         System.exit(1);
       }
 
-      driver.setup(((MessageSetup)message).getTableName(),
-                   ((MessageSetup)message).getTestType(),
-                   ((MessageSetup)message).getParallelism());
+      driver.setup(setup);
 
       /**
        * Create and send READY message

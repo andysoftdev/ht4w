@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2008 Luke Lu (Zvents, Inc.)
+ * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
  * Hypertable is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * as published by the Free Software Foundation; either version 3
  * of the License, or any later version.
  *
  * Hypertable is distributed in the hope that it will be useful,
@@ -1311,4 +1311,14 @@ service ClientService {
    */
   string create_cell_unique(1:Namespace ns, 2:string table_name, 3:Key key,
       4:string value) throws (1:ClientException e),
+
+  /**
+   * Retrieves a descriptive error string from an error code
+   *
+   * @param error_code - the numeric error code
+   *
+   * @return the descriptive string, or "ERROR NOT REGISTERED" if the error
+   *    code is unknown
+   */
+  string error_get_text(1:i32 error_code);
 }
