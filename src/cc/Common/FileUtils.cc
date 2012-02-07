@@ -189,17 +189,16 @@ char *FileUtils::file_to_buffer(const String &fname, size_t *lenp) {
 }
 
 bool FileUtils::mkdirs(const String &dirname) {
-  if (!exists(dirname)) {
-    Path dir(dirname);
-    if (!dir.is_complete()) {
-      dir = boost::filesystem::current_path();
-      dir /= dirname;
-    }
-    String dirname_bs(dir.normalize().string());
-    boost::replace_all(dirname_bs, "/", "\\");
-    int err;
-    if( (err = SHCreateDirectoryExA(0, dirname_bs.c_str(), 0)) != ERROR_SUCCESS ) {
-      HT_ERRORF("SHCreateDirectoryExA %s failed - %s", dirname_bs.c_str(), winapi_strerror(err));
+  Path dir(dirname);
+  if (!dir.is_complete()) {
+    dir = boost::filesystem::current_path();
+    dir /= dirname;
+  }
+  String native_dirname(dir.native_directory_string());
+  int err;
+  if ((err = SHCreateDirectoryExA(0, native_dirname.c_str(), 0)) != ERROR_SUCCESS) {
+    if (err != ERROR_FILE_EXISTS && err != ERROR_ALREADY_EXISTS) {
+      HT_ERRORF("SHCreateDirectoryExA %s failed - %s", native_dirname.c_str(), winapi_strerror(err));
       SetLastError(err);
       return false;
     }
