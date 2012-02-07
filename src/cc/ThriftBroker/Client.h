@@ -44,12 +44,12 @@ struct ClientHelper {
   boost::shared_ptr<TTransport> transport;
   boost::shared_ptr<TProtocol> protocol;
 
-  ClientHelper(const std::string &host, int port, int timeout_ms)
+  ClientHelper(const std::string &host, int port, int conn_timeout_ms, int timeout_ms)
     : socket(new TSocket(host, port)),
       transport(new TFramedTransport(socket)),
       protocol(new TBinaryProtocol(transport)) {
 
-    socket->setConnTimeout(timeout_ms);
+    socket->setConnTimeout(conn_timeout_ms);
     socket->setSendTimeout(timeout_ms);
     socket->setRecvTimeout(timeout_ms);
   }
@@ -60,9 +60,9 @@ struct ClientHelper {
  */
 class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
 public:
-  Client(const std::string &host, int port, int timeout_ms = 300000,
+  Client(const std::string &host, int port, int conn_timeout_ms = 30000, int timeout_ms = 300000,
          bool open = true)
-    : ClientHelper(host, port, timeout_ms), HqlServiceClient(protocol),
+    : ClientHelper(host, port, conn_timeout_ms, timeout_ms), HqlServiceClient(protocol),
       m_do_close(false) {
 
     if (open) {
@@ -86,9 +86,9 @@ private:
 
 class ThriftClient : public Client, public ReferenceCount {
   public:
-    ThriftClient(const std::string &_host, int _port, int _timeout_ms = 300000, bool open = true) 
+    ThriftClient(const std::string &_host, int _port, int _conn_timeout_ms = 30000, int _timeout_ms = 300000, bool open = true) 
     : Client(_host, _port, _timeout_ms, open)
-    , host(_host), port(_port), timeout_ms(_timeout_ms), locked(0), next_client(0) {
+    , host(_host), port(_port), conn_timeout_ms(_conn_timeout_ms), timeout_ms(_timeout_ms), locked(0), next_client(0) {
       ::InitializeCriticalSection(&cs);
     }
 
@@ -99,13 +99,13 @@ class ThriftClient : public Client, public ReferenceCount {
 
     ThriftClient* clone() {
       Lock lock( this );
-      return new ThriftClient(host, port, timeout_ms);
+      return new ThriftClient(host, port, conn_timeout_ms, timeout_ms);
     }
 
     ThriftClient* get_pooled() {
       Lock lock( this );
       if (client_pool.size() < maxConnectionPoolSize) {
-        ClientPtr client = new ThriftClient(host, port, timeout_ms);
+        ClientPtr client = new ThriftClient(host, port, conn_timeout_ms, timeout_ms);
         client_pool.push_back(client);
         return client.get();
       }
@@ -118,7 +118,7 @@ class ThriftClient : public Client, public ReferenceCount {
         if (!client->is_locked())
           return client.get();
       }
-      ClientPtr client = new ThriftClient(host, port, timeout_ms);
+      ClientPtr client = new ThriftClient(host, port, conn_timeout_ms, timeout_ms);
       client_pool.push_back(client);
       return client.get();
     }
@@ -145,7 +145,7 @@ class ThriftClient : public Client, public ReferenceCount {
         protocol = piprot_ = poprot_ =  _protocol;
         iprot_ = oprot_ = protocol.get();
 
-        socket->setConnTimeout(timeout_ms);
+        socket->setConnTimeout(conn_timeout_ms);
         socket->setSendTimeout(timeout_ms);
         socket->setRecvTimeout(timeout_ms);
 
@@ -209,6 +209,7 @@ class ThriftClient : public Client, public ReferenceCount {
     volatile long locked;
     std::string host;
     int port;
+    int conn_timeout_ms;
     int timeout_ms;
     client_pool_t client_pool;
     int next_client;
