@@ -289,7 +289,6 @@ const SwapStat &System::swap_stat() {
 
 const NetInfo &System::net_info() {
   ScopedRecLock lock(_mutex);
-
   if (!_net_infop)
     _net_infop = &_net_info.init();
 
@@ -374,7 +373,7 @@ CpuStat &CpuStat::refresh() {
   stolen = 0;
   total = 0;
 
-  HT_ASSERT(false); // Not implemented
+  HT_FATAL("Not implemented");
   return *this;
 }
 
@@ -427,7 +426,7 @@ DiskStat &DiskStat::refresh(const char *dir_prefix) {
   read_rate = 0;
   write_rate = 0;
 
-  HT_ASSERT(false); // Not implemented
+  HT_FATAL("Not implemented");
   return *this;
 }
 
@@ -443,7 +442,7 @@ SwapStat &SwapStat::refresh() {
   page_in = 0;
   page_out = 0;
 
-  HT_ASSERT(false); // Not implemented
+  HT_FATAL("Not implemented");
   return *this;
 }
 
@@ -458,7 +457,7 @@ OsInfo &OsInfo::init() {
   vendor_version.clear();
   vendor_name.clear();
 
-  HT_ASSERT(false); // Not implemented
+  HT_FATAL("Not implemented");
   return *this;
 }
 
@@ -513,7 +512,6 @@ NetInfo &NetInfo::init() {
                   primary_addr = buf;
                   WideCharToMultiByte(CP_ACP, 0, adapteraddr->FriendlyName, -1, buf, sizeof(buf), 0, 0);
                   primary_if = buf;
-                  WideCharToMultiByte(CP_ACP, 0, adapteraddr->Description, -1, buf, sizeof(buf), 0, 0);
                   if (GetAdaptersInfo(0, &len) == ERROR_BUFFER_OVERFLOW) {
                     PIP_ADAPTER_INFO adapters = (PIP_ADAPTER_INFO)malloc(len);
                     if (adapters) {
@@ -534,8 +532,8 @@ NetInfo &NetInfo::init() {
               }
               unicastaddr = unicastaddr->Next;
             }
-            adapteraddr = adapteraddr->Next;
           }
+          adapteraddr = adapteraddr->Next;
         }
       }
       free(adapteraddrs);
@@ -547,7 +545,6 @@ NetInfo &NetInfo::init() {
 
   if (primary_addr.empty())
     primary_addr = "127.0.0.1";
-
   return *this;
 }
 
@@ -562,7 +559,7 @@ NetStat &NetStat::refresh() {
   rx_rate = 0;
   tx_rate = 0;
 
-  HT_ASSERT(false); // Not implemented
+  HT_FATAL("Not implemented");
   return *this;
 }
 
@@ -621,7 +618,7 @@ FsStat &FsStat::refresh(const char *dir_prefix) {
   files = 0;
   free_files = 0;
 
-  HT_ASSERT(false); // Not implemented
+  HT_FATAL("Not implemented");
   return *this;
 }
 
