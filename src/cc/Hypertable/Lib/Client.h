@@ -69,7 +69,7 @@ namespace Hypertable {
      * @param default_timeout_ms default method call timeout in milliseconds
      */
     Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hyperspace::SessionPtr& session, PropertiesPtr &props,
-               uint32_t default_timeout_ms=0);
+               uint32_t connection_timeout_ms, uint32_t default_timeout_ms=0);
 
     ~Client() {}
 
@@ -144,6 +144,7 @@ namespace Hypertable {
     NameIdMapperPtr         m_namemap;
     MasterClientPtr         m_master_client;
     RangeLocatorPtr         m_range_locator;
+    uint32_t                m_connection_timeout_ms;
     uint32_t                m_timeout_ms;
     String                  m_install_dir;
     TableCachePtr           m_table_cache;

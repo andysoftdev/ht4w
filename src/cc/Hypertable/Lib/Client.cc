@@ -55,7 +55,8 @@ using namespace Config;
 
 Client::Client(const String &install_dir, const String &config_file,
                uint32_t default_timeout_ms)
-  : m_timeout_ms(default_timeout_ms), m_install_dir(install_dir) {
+  : m_connection_timeout_ms(default_timeout_ms), m_timeout_ms(default_timeout_ms),
+    m_install_dir(install_dir) {
   ScopedRecLock lock(rec_mutex);
 
   if (!properties)
@@ -66,7 +67,8 @@ Client::Client(const String &install_dir, const String &config_file,
 }
 
 Client::Client(const String &install_dir, uint32_t default_timeout_ms)
-  : m_timeout_ms(default_timeout_ms), m_install_dir(install_dir) {
+  : m_connection_timeout_ms(default_timeout_ms), m_timeout_ms(default_timeout_ms),
+    m_install_dir(install_dir) {
   ScopedRecLock lock(rec_mutex);
 
   if (!properties)
@@ -80,8 +82,9 @@ Client::Client(const String &install_dir, uint32_t default_timeout_ms)
 }
 
 
-Client::Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hyperspace::SessionPtr& session, PropertiesPtr &props, uint32_t default_timeout_ms)
-: m_timeout_ms(default_timeout_ms), m_install_dir(install_dir) {
+Client::Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hyperspace::SessionPtr& session, PropertiesPtr &props, uint32_t connection_timeout_ms, uint32_t default_timeout_ms)
+: m_connection_timeout_ms(connection_timeout_ms), m_timeout_ms(default_timeout_ms),
+  m_install_dir(install_dir) {
   ScopedRecLock lock(rec_mutex);
 
   if (!properties)
@@ -220,12 +223,13 @@ void Client::initialize_with_hyperspace() {
   boost::trim_if(m_toplevel_dir, boost::is_any_of("/"));
   m_toplevel_dir = String("/") + m_toplevel_dir;
 
-  m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
-
   if (m_timeout_ms == 0)
     m_timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
 
-  Timer timer(m_timeout_ms, true);
+  if (m_connection_timeout_ms == 0)
+    m_connection_timeout_ms = m_timeout_ms;
+
+  Timer timer(m_connection_timeout_ms, true);
 
   uint32_t wait_time, remaining;
   uint32_t interval=5000;
@@ -238,12 +242,13 @@ void Client::initialize_with_hyperspace() {
     if (timer.expired())
       HT_THROW_(Error::CONNECT_ERROR_HYPERSPACE);
 
-    cout << "Waiting for connection to Hyperspace..." << endl;
+    HT_INFO_OUT << "Waiting for connection to Hyperspace..." << HT_END;
 
     remaining = timer.remaining();
     wait_time = (remaining < interval) ? remaining : interval;
   }
 
+  m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
   m_app_queue = new ApplicationQueue(m_props->
                                      get_i32("Hypertable.Client.Workers"));
   m_master_client = new MasterClient(m_conn_manager, m_hyperspace, m_toplevel_dir,
