@@ -60,7 +60,7 @@ struct ClientHelper {
  */
 class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
 public:
-  Client(const std::string &host, int port, int conn_timeout_ms = 30000, int timeout_ms = 300000,
+  Client(const std::string &host, int port, int conn_timeout_ms = 30000, int timeout_ms = 600000,
          bool open = true)
     : ClientHelper(host, port, conn_timeout_ms, timeout_ms), HqlServiceClient(protocol),
       m_do_close(false) {
@@ -86,8 +86,8 @@ private:
 
 class ThriftClient : public Client, public ReferenceCount {
   public:
-    ThriftClient(const std::string &_host, int _port, int _conn_timeout_ms = 30000, int _timeout_ms = 300000, bool open = true) 
-    : Client(_host, _port, _timeout_ms, open)
+    ThriftClient(const std::string &_host, int _port, int _conn_timeout_ms = 30000, int _timeout_ms = 600000, bool open = true) 
+    : Client(_host, _port, _conn_timeout_ms, _timeout_ms, open)
     , host(_host), port(_port), conn_timeout_ms(_conn_timeout_ms), timeout_ms(_timeout_ms), locked(0), next_client(0) {
       ::InitializeCriticalSection(&cs);
     }
