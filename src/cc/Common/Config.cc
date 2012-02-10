@@ -309,11 +309,11 @@ void DefaultPolicy::init_options() {
     ("Hyperspace.Replica.Dir", str(), "Root of hyperspace file and directory "
         "heirarchy in local filesystem (if relative path, then is relative to "
         "the Hypertable data directory root)")
-    ("Hyperspace.KeepAlive.Interval", i32()->default_value(10000),
+    ("Hyperspace.KeepAlive.Interval", i32()->default_value(30000),
         "Hyperspace Keepalive interval (see Chubby paper)")
-    ("Hyperspace.Lease.Interval", i32()->default_value(60000),
+    ("Hyperspace.Lease.Interval", i32()->default_value(1000000),
         "Hyperspace Lease interval (see Chubby paper)")
-    ("Hyperspace.GracePeriod", i32()->default_value(60000),
+    ("Hyperspace.GracePeriod", i32()->default_value(200000),
         "Hyperspace Grace period (see Chubby paper)")
     ("Hyperspace.Session.Reconnect", boo()->default_value(false),
         "Reconnect to Hyperspace on session expiry")
