@@ -352,6 +352,20 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   Global::log_prune_threshold_max = cfg.get_i64("CommitLog.PruneThreshold.Max", threshold_max);
 
+  // reduce prune threshold max if required
+  if (Global::log_prune_threshold_max > Global::memory_limit) {
+    Global::log_prune_threshold_max = (int64_t)((double)Global::memory_limit * 0.8);
+    props->set("Hypertable.RangeServer.CommitLog.PruneThreshold.Max", Global::log_prune_threshold_max);
+    HT_INFOF("CommitLog.PruneThreshold.Max has been reduced to %.2fMB", (double)Global::log_prune_threshold_max / Property::MiB);
+  }
+
+  // reduce prune threshold min if required
+  if (Global::log_prune_threshold_min >= Global::log_prune_threshold_max) {
+    Global::log_prune_threshold_min = (int64_t)((double)Global::log_prune_threshold_max * 0.25);
+    props->set("Hypertable.RangeServer.CommitLog.PruneThreshold.Min", Global::log_prune_threshold_min);
+    HT_INFOF("CommitLog.PruneThreshold.Min has been reduced to %.2fMB", (double)Global::log_prune_threshold_min / Property::MiB);
+  }
+
   HT_INFOF("Prune thresholds - min=%lld, max=%lld", (Lld)Global::log_prune_threshold_min,
            (Lld)Global::log_prune_threshold_max);
 
