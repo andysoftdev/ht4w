@@ -59,7 +59,7 @@ namespace Hypertable {
    * @param rc pointer to a ReferenceCount object
    */
   inline void intrusive_ptr_add_ref(ReferenceCount *rc) {
-    atomic_inc_return(&rc->refcount);
+    atomic_inc(&rc->refcount);
   }
 
   /**
@@ -69,7 +69,7 @@ namespace Hypertable {
    * @param rc pointer to a ReferenceCount object
    */
   inline void intrusive_ptr_release(ReferenceCount *rc) {
-    if (atomic_sub_and_test(1, &rc->refcount))
+    if (atomic_dec_and_test(&rc->refcount))
       delete rc;
   }
 
