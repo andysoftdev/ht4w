@@ -270,7 +270,7 @@ void DefaultPolicy::init_options() {
     ("DfsBroker.Local.Embedded", boo()->default_value(false),
         "If true the hypertable master and range server use the embedded local filesystem,"
         "otherwise they use the DFS broker specified")
-    ("DfsBroker.Local.Embedded.AsyncIO", boo()->default_value(false),
+    ("DfsBroker.Local.Embedded.AsyncIO", boo()->default_value(true),
         "Indicates whether the embedded local filesystem uses asynchronous i/o or not.")
 
 #endif
