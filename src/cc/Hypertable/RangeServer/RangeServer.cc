@@ -361,7 +361,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   // reduce prune threshold min if required
   if (Global::log_prune_threshold_min >= Global::log_prune_threshold_max) {
-    Global::log_prune_threshold_min = (int64_t)((double)Global::log_prune_threshold_max * 0.25);
+    Global::log_prune_threshold_min = (int64_t)((double)Global::log_prune_threshold_max * 0.5);
     props->set("Hypertable.RangeServer.CommitLog.PruneThreshold.Min", Global::log_prune_threshold_min);
     HT_INFOF("CommitLog.PruneThreshold.Min has been reduced to %.2fMB", (double)Global::log_prune_threshold_min / Property::MiB);
   }
