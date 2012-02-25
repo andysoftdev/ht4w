@@ -21,10 +21,14 @@
 
 var db_static = ".\\build_windows\\db_static.vcxproj";
 var db = ".\\build_windows\\db.vcxproj";
+var db_vs10 = ".\\build_windows\\VS10\\db.vcxproj";
 var library_props = ".\\build_windows\\library.props";
+var library_props_vs10 = ".\\build_windows\\VS10\\library.props";
 
 var libdb = ".\\build_windows\\libdb.vcxproj";
 var libdb_props = ".\\build_windows\\libdb.props";
+var libdb_vs10 = ".\\build_windows\\VS10\\libdb.vcxproj";
+var libdb_props_vs10 = ".\\build_windows\\VS10\\libdb.props";
 
 var xmlns = "http://schemas.microsoft.com/developer/msbuild/2003";
 
@@ -40,10 +44,10 @@ function prepCfg( nodes ) {
     }
 }
 
-function prepXml( xml, isDb ) {
+function prepXml( xml, hasLibraryProps ) {
     var root = xml.documentElement;
 
-    if( isDb ) {
+    if( hasLibraryProps ) {
         var projectConfigurations = root.selectNodes("/ns:Project/ns:ItemGroup/ns:ProjectConfiguration[@Include]");
         for( var n = 0; n < projectConfigurations.length; ++n ) {
             var include = projectConfigurations[n].getAttribute("Include");
@@ -147,28 +151,40 @@ function prepXml( xml, isDb ) {
 
 function prep() {
     try {
-        var isDb = false;
+        var hasLibraryProps = false;
         var xml = new ActiveXObject( "Msxml2.DOMDocument.3.0" );
         xml.async = false;
         xml.load( db_static );
         if( xml.parseError.errorCode != 0 ) {
-            xml.load( db );
+            xml.load( db_vs10 );
             if( xml.parseError.errorCode != 0 ) {
-                WScript.Echo("loading " + db_static + " or " + db + " failed (" + xml.parseError.reason + ")");
-                return;
+                xml.load( db );
+                if( xml.parseError.errorCode != 0 ) {
+                    WScript.Echo("loading " + db_static + ", " + db_vs10 + " or " + db + " failed (" + xml.parseError.reason + ")");
+                    return;
+                }
             }
-            isDb = true;
+            else {
+                libdb = libdb_vs10;
+            }
+            hasLibraryProps = true;
         }
         xml.setProperty( "SelectionLanguage", "XPath" );
         xml.setProperty( "SelectionNamespaces", "xmlns:ns='" + xmlns + "'" );
 
-        prepXml( xml, isDb );
+        prepXml( xml, hasLibraryProps );
         xml.save( libdb );
 
-        if( isDb ) {
+        if( hasLibraryProps ) {
             var xml = new ActiveXObject( "Msxml2.DOMDocument.3.0" );
             xml.async = false;
-            xml.load( library_props );
+            xml.load( library_props_vs10 );
+            if( xml.parseError.errorCode != 0 ) {
+                xml.load( library_props );
+            }
+            else {
+                libdb_props = libdb_props_vs10;
+            }
             if( xml.parseError.errorCode == 0 ) {
                 xml.setProperty( "SelectionLanguage", "XPath" );
                 xml.setProperty( "SelectionNamespaces", "xmlns:ns='" + xmlns + "'" );
