@@ -205,21 +205,21 @@ namespace {
                 flags_fcs |= FILE_CACHE_MIN_HARD_DISABLE;
               if (!(flags_fcs & FILE_CACHE_MAX_HARD_ENABLE))
                 flags_fcs |= FILE_CACHE_MAX_HARD_DISABLE;
-
-              uint64_t max_system_file_cache = std::max(128 * Property::MiB, Config::max_system_file_cache());
-              if (max_system_file_cache < MAXSIZE_T) {
-                // ensure the granularity to 1 MB
-                SIZE_T new_max_fcs = max_system_file_cache >> 20;
-                new_max_fcs <<= 20;
-                if ((*setSystemFileCacheSize)(min_fcs, new_max_fcs, FILE_CACHE_MAX_HARD_ENABLE)) {
-                  HT_INFOF("Adjust system file cache size %dMB", (int)(new_max_fcs >> 20));
-                }
-                else
-                  WINAPI_ERROR("SetSystemFileCacheSize failed - %s");
-              }
             }
-            else
+            else if (GetLastError() != ERROR_ARITHMETIC_OVERFLOW)
               WINAPI_ERROR("GetSystemFileCacheSize failed - %s");
+
+            uint64_t max_system_file_cache = std::max(128 * Property::MiB, Config::max_system_file_cache());
+            if (max_system_file_cache < MAXSIZE_T) {
+              // ensure the granularity to 1 MB
+              SIZE_T new_max_fcs = max_system_file_cache >> 20;
+              new_max_fcs <<= 20;
+              if ((*setSystemFileCacheSize)(min_fcs, new_max_fcs, FILE_CACHE_MAX_HARD_ENABLE)) {
+                HT_INFOF("Adjust system file cache size %dMB", (int)(new_max_fcs >> 20));
+              }
+              else
+                WINAPI_ERROR("SetSystemFileCacheSize failed - %s");
+            }
           }
           CloseHandle (hToken);
         }
