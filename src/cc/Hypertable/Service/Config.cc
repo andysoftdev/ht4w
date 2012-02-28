@@ -79,6 +79,8 @@ const char* cfg_kill_server_timeout      = "Hypertable.Service.Timeout.KillServe
 const char* cfg_connection_timeout       = "Hypertable.Service.Timeout.Connection";
 const char* cfg_minuptime_before_restart = "Hypertable.Service.MinimumUptimeBeforeRestart";
 const char* cfg_priority_class           = "Hypertable.Service.Priority";
+const char* cfg_max_sys_file_cache       = "Hypertable.Service.MaxSystemFileCache";
+const char* cfg_max_sys_file_cache_pct   = "Hypertable.Service.MaxSystemFileCache.Percentage";
 
 void init(int argc, char **argv) {
   typedef Meta::list<ServicePolicy, DefaultServerPolicy > Policies;
@@ -231,12 +233,20 @@ int32_t minuptime_before_restart() {
 uint32_t priority_class() {
   String priority_class = get_str(cfg_priority_class);
   if (stricmp(priority_class.c_str(), "AboveNormal") == 0) {
-		return ABOVE_NORMAL_PRIORITY_CLASS;
-	}
-	else if (stricmp(priority_class.c_str(), "High") == 0) {
-		return HIGH_PRIORITY_CLASS;
-	}
-	return NORMAL_PRIORITY_CLASS;
+    return ABOVE_NORMAL_PRIORITY_CLASS;
+  }
+  else if (stricmp(priority_class.c_str(), "High") == 0) {
+    return HIGH_PRIORITY_CLASS;
+  }
+  return NORMAL_PRIORITY_CLASS;
+}
+
+uint64_t max_system_file_cache() {
+  if (has(cfg_max_sys_file_cache)) {
+    return get_i32(cfg_max_sys_file_cache) * Property::MiB;
+  }
+  double pct = std::max(1.0, std::min((double)get_i32(cfg_max_sys_file_cache_pct), 99.0)) / 100.0;
+  return (uint64_t)(System::mem_stat().ram * Property::MiB * pct);
 }
 
 bool silent() {

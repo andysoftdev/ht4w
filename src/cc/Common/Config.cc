@@ -514,6 +514,8 @@ void DefaultPolicy::init_options() {
     ("Hypertable.Service.Timeout.Connection", i32()->default_value(5000), "Connection timeout in ms")
     ("Hypertable.Service.MinimumUptimeBeforeRestart", i32()->default_value(60000), "Minimum servers uptime in ms before restart on failure")
     ("Hypertable.Service.Priority", str()->default_value("Normal"), "Database servers priority class [Normal, AboveNormal, High]")
+    ("Hypertable.Service.MaxSystemFileCache", i32(), "Maximum size of the system file cache, in MB")
+    ("Hypertable.Service.MaxSystemFileCache.Percentage", i32()->default_value(15), "Maximum size of the system file cache, in percentage of physical RAM")
 
 #endif
 

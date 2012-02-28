@@ -73,6 +73,7 @@ namespace Hypertable { namespace Config {
   int32_t connection_timeout();
   int32_t minuptime_before_restart();
   uint32_t priority_class();
+  uint64_t max_system_file_cache();
 
   bool silent();
 

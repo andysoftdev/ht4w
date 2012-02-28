@@ -39,6 +39,19 @@
 
 using namespace Hypertable;
 
+#ifndef FILE_CACHE_FLAGS_DEFINED
+
+#define FILE_CACHE_MAX_HARD_ENABLE      0x00000001
+#define FILE_CACHE_MAX_HARD_DISABLE     0x00000002
+#define FILE_CACHE_MIN_HARD_ENABLE      0x00000004
+#define FILE_CACHE_MIN_HARD_DISABLE     0x00000008
+
+#endif
+
+#ifndef MAXSIZE_T
+#define MAXSIZE_T ((SIZE_T)~((SIZE_T)0))
+#endif
+
 #define WINAPI_ERROR( msg ) \
 { \
   DWORD err = GetLastError(); \
@@ -50,9 +63,23 @@ namespace {
 
   class Service : private ServerUtils::Notify {
   public:
-    Service() : shutdown_event(0), service_launch_event(0), ssh(0) {
+    Service()
+      : shutdown_event(0)
+      , service_launch_event(0)
+      , ssh(0)
+      , waitHint(0)
+      , getSystemFileCacheSize(0)
+      , setSystemFileCacheSize(0)
+      , min_fcs(0)
+      , max_fcs(0)
+      , flags_fcs(0)
+    {
       ss.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
       ss.dwServiceSpecificExitCode = 0;
+
+      HMODULE kernel32 = LoadLibrary("kernel32.dll");
+      getSystemFileCacheSize = (fpGetSystemFileCacheSize)GetProcAddress(kernel32, "GetSystemFileCacheSize");
+      setSystemFileCacheSize = (fpSetSystemFileCacheSize)GetProcAddress(kernel32, "SetSystemFileCacheSize");
     }
     ~Service() {
       if (shutdown_event)
@@ -70,7 +97,9 @@ namespace {
       waitHint = Config::start_service_timeout();
       set_status(SERVICE_START_PENDING, waitHint);
       HT_INFO("Service start pending");
+      adjust_max_system_cache();
       ServerUtils::join_servers(shutdown_event->handle(), static_cast<ServerUtils::Notify*>(this));
+      restore_max_system_cache();
       HT_INFO("Service stopped");
       delete shutdown_event;
       shutdown_event = 0;
@@ -95,6 +124,15 @@ namespace {
     SERVICE_STATUS_HANDLE ssh;
     SERVICE_STATUS ss;
     DWORD waitHint;
+
+    typedef BOOL (WINAPI *fpGetSystemFileCacheSize)(PSIZE_T lpMinimumFileCacheSize, PSIZE_T lpMaximumFileCacheSize, PDWORD lpFlags);
+    typedef BOOL (WINAPI *fpSetSystemFileCacheSize)(SIZE_T MinimumFileCacheSize, SIZE_T MaximumFileCacheSize, DWORD Flags);
+
+    fpGetSystemFileCacheSize getSystemFileCacheSize;
+    fpSetSystemFileCacheSize setSystemFileCacheSize;
+    SIZE_T min_fcs;
+    SIZE_T max_fcs;
+    DWORD flags_fcs;
 
     // handle notifications
     virtual void servers_joined() {
@@ -153,6 +191,81 @@ namespace {
         ss.dwCheckPoint = ++dwCheckPoint;
 
       SetServiceStatus( ssh, &ss );
+    }
+
+    void adjust_max_system_cache() {
+      if (getSystemFileCacheSize && setSystemFileCacheSize) {
+        // enable the privilege to set system file cache size
+        HANDLE hToken = 0;
+        if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+          if (set_privilege(hToken, SE_INCREASE_QUOTA_NAME)) {
+            // get current settings
+            if ((*getSystemFileCacheSize)(&min_fcs, &max_fcs, &flags_fcs)) {
+              if (!(flags_fcs & FILE_CACHE_MIN_HARD_ENABLE))
+                flags_fcs |= FILE_CACHE_MIN_HARD_DISABLE;
+              if (!(flags_fcs & FILE_CACHE_MAX_HARD_ENABLE))
+                flags_fcs |= FILE_CACHE_MAX_HARD_DISABLE;
+
+              uint64_t max_system_file_cache = std::max(128 * Property::MiB, Config::max_system_file_cache());
+              if (max_system_file_cache < MAXSIZE_T) {
+                // ensure the granularity to 1 MB
+                SIZE_T new_max_fcs = max_system_file_cache >> 20;
+                new_max_fcs <<= 20;
+                if ((*setSystemFileCacheSize)(min_fcs, new_max_fcs, FILE_CACHE_MAX_HARD_ENABLE)) {
+                  HT_INFOF("Adjust system file cache size %dMB", (int)(new_max_fcs >> 20));
+                }
+                else
+                  WINAPI_ERROR("SetSystemFileCacheSize failed - %s");
+              }
+            }
+            else
+              WINAPI_ERROR("GetSystemFileCacheSize failed - %s");
+          }
+          CloseHandle (hToken);
+        }
+        else
+          WINAPI_ERROR("OpenProcessToken failed - %s");
+      }
+    }
+
+    void restore_max_system_cache() {
+      if (getSystemFileCacheSize && setSystemFileCacheSize) {
+        if (min_fcs || max_fcs || flags_fcs) {
+          if ((*setSystemFileCacheSize)(min_fcs, max_fcs, flags_fcs))
+            HT_INFOF("Restore system file cache size (%dMB, %dMB, flags=%d)", (int)(min_fcs >> 20), (int)(max_fcs >> 20), flags_fcs);
+          else
+            WINAPI_ERROR("SetSystemFileCacheSize failed - %s");
+        }
+      }
+    }
+
+    void purge_system_cache() {
+      if (getSystemFileCacheSize && setSystemFileCacheSize) {
+        if (!(*setSystemFileCacheSize)(-1, -1, 0))
+          WINAPI_ERROR("SetSystemFileCacheSize failed - %s");
+      }
+    }
+
+    bool set_privilege(HANDLE hToken, LPCTSTR lpszPrivilege, bool enablePrivilege = true) {
+        LUID luid;
+        if (!LookupPrivilegeValue(0, lpszPrivilege, &luid)) {
+            WINAPI_ERROR("LookupPrivilegeValue failed - %s");
+            return false;
+        }
+        TOKEN_PRIVILEGES tp;
+        tp.PrivilegeCount = 1;
+        tp.Privileges[0].Luid = luid;
+        tp.Privileges[0].Attributes = enablePrivilege ? SE_PRIVILEGE_ENABLED : 0;
+        // enable the privilege or disable all privileges
+        if (!AdjustTokenPrivileges(hToken, 0, &tp, sizeof(TOKEN_PRIVILEGES), 0, 0)) {
+            WINAPI_ERROR("AdjustTokenPrivileges failed - %s");
+            return false; 
+        }
+        if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
+            WINAPI_ERROR("The token does not have the specified privilege - %s");
+            return false;
+        }
+        return true;
     }
 
   };
