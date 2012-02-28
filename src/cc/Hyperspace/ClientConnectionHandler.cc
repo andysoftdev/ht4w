@@ -23,6 +23,9 @@
 #include "Common/Error.h"
 #include "Common/InetAddr.h"
 #include "Common/System.h"
+#ifdef _WIN32
+#include "Common/SystemInfo.h"
+#endif
 
 #include "ClientConnectionHandler.h"
 #include "Master.h"
@@ -86,8 +89,17 @@ void ClientConnectionHandler::handle(Hypertable::EventPtr &event_ptr) {
 
     memcpy(&m_master_addr, &event_ptr->addr, sizeof(struct sockaddr_in));
 
+#ifndef _WIN32
     CommBufPtr
         cbp(Hyperspace::Protocol::create_handshake_request(m_session_id, System::exe_name));
+#else
+    String name = format("%s:%d@%s",
+                         System::exe_name.c_str(),
+                         System::get_pid(),
+                         System::net_info().host_name.c_str());
+
+    CommBufPtr cbp(Hyperspace::Protocol::create_handshake_request(m_session_id, name));
+#endif
 
     if ((error = m_comm->send_request(event_ptr->addr, m_timeout_ms, cbp, this))
         != Error::OK) {
