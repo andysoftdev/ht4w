@@ -209,7 +209,8 @@ namespace {
             else if (GetLastError() != ERROR_ARITHMETIC_OVERFLOW)
               WINAPI_ERROR("GetSystemFileCacheSize failed - %s");
 
-            uint64_t max_system_file_cache = std::max(128 * Property::MiB, Config::max_system_file_cache());
+            bool isDefaulted;
+            uint64_t max_system_file_cache = std::max(128 * Property::MiB, Config::max_system_file_cache(isDefaulted));
             if (max_system_file_cache < MAXSIZE_T) {
               // ensure the granularity to 1 MB
               SIZE_T new_max_fcs = max_system_file_cache >> 20;
@@ -220,6 +221,8 @@ namespace {
               else
                 WINAPI_ERROR("SetSystemFileCacheSize failed - %s");
             }
+            else if (!isDefaulted)
+              HT_WARNF("Unable to adjust system file cache size to %dMB (max. cache size %dMB)", (int)(max_system_file_cache >> 20), (int)(MAXSIZE_T >> 20));
           }
           CloseHandle (hToken);
         }

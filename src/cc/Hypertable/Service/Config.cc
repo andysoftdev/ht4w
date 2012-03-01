@@ -241,10 +241,12 @@ uint32_t priority_class() {
   return NORMAL_PRIORITY_CLASS;
 }
 
-uint64_t max_system_file_cache() {
+uint64_t max_system_file_cache(bool& isDefaulted) {
   if (has(cfg_max_sys_file_cache)) {
+    isDefaulted = false;
     return get_i32(cfg_max_sys_file_cache) * Property::MiB;
   }
+  isDefaulted = defaulted(cfg_max_sys_file_cache_pct);
   double pct = std::max(1.0, std::min((double)get_i32(cfg_max_sys_file_cache_pct), 99.0)) / 100.0;
   return (uint64_t)(System::mem_stat().ram * Property::MiB * pct);
 }
