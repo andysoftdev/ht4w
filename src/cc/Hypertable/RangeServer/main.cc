@@ -106,6 +106,9 @@ int main(int argc, char **argv) {
 
     app_queue->join();
 
+    range_server = 0;
+    timer_handler = 0;
+
     HT_NOTICE("Exiting range server");
   }
   catch (Exception &e) {

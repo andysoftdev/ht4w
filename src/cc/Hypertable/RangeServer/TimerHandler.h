@@ -50,6 +50,7 @@ namespace Hypertable {
     virtual void schedule_maintenance();
     virtual void complete_maintenance_notify();
     virtual bool low_memory() { return m_app_queue_paused || m_low_physical_memory || m_moderate_low_memory; }
+    virtual void shutdown();
 
   private:
     Comm         *m_comm;

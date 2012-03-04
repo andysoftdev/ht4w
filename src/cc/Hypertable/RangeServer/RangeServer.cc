@@ -83,8 +83,6 @@ extern "C" {
 #include "ScanContext.h"
 #include "UpdateThread.h"
 
-#define CLEAN_SHUTDOWN
-
 using namespace std;
 using namespace Hypertable;
 using namespace Serialization;
@@ -97,8 +95,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     m_replay_finished(false), m_props(props), m_verbose(false),
     m_shutdown(false), m_comm(conn_mgr->get_comm()), m_conn_manager(conn_mgr),
     m_app_queue(app_queue), m_hyperspace(hyperspace), m_timer_handler(0),
-    m_group_commit_timer_handler(0), m_query_cache(0),
-    m_last_revision(TIMESTAMP_MIN), m_last_metrics_update(0),
+    m_query_cache(0), m_last_revision(TIMESTAMP_MIN), m_last_metrics_update(0),
     m_loadavg_accum(0.0), m_page_in_accum(0), m_page_out_accum(0),
     m_metric_samples(0), m_pending_metrics_updates(0)
 {
@@ -374,27 +371,17 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 void RangeServer::shutdown() {
 
   try {
-
     // stop maintenance timer
-    if (m_timer_handler) {
+    if (m_timer_handler)
       m_timer_handler->shutdown();
-#if defined(CLEAN_SHUTDOWN)
-      //FIXME m_timer_handler->wait_for_shutdown();
-#endif
-    }
 
-    if (m_group_commit_timer_handler) {
+    if (m_group_commit_timer_handler)
       m_group_commit_timer_handler->shutdown();
-#if defined(CLEAN_SHUTDOWN)
-      //FIXME m_group_commit_timer_handler->wait_for_shutdown();
-#endif
-    }
 
     // stop maintenance queue
+    Global::maintenance_queue->clear();
     Global::maintenance_queue->shutdown();
-#if defined(CLEAN_SHUTDOWN)
-    //FIXME Global::maintenance_queue->join();
-#endif
+    Global::maintenance_queue->join();
 
     // Kill update threads
     m_shutdown = true;
@@ -414,22 +401,33 @@ void RangeServer::shutdown() {
     if (Global::root_log) {
       Global::root_log->close();
       delete Global::root_log;
+      Global::root_log = 0;
     }
     if (Global::metadata_log) {
       Global::metadata_log->close();
       delete Global::metadata_log;
+      Global::metadata_log = 0;
     }
     if (Global::system_log) {
       Global::system_log->close();
       delete Global::system_log;
+      Global::system_log = 0;
     }
     if (Global::user_log) {
       Global::user_log->close();
       delete Global::user_log;
+      Global::user_log = 0;
     }
 
-    if (m_query_cache)
+    if (Global::block_cache) {
+      delete Global::block_cache;
+      Global::block_cache = 0;
+    }
+
+    if (m_query_cache) {
       delete m_query_cache;
+      m_query_cache = 0;
+    }
 
     Global::maintenance_queue = 0;
     Global::metadata_table = 0;
@@ -439,7 +437,11 @@ void RangeServer::shutdown() {
     Global::log_dfs = 0;
     Global::dfs = 0;
 
+    delete Global::memory_tracker;
+    Global::memory_tracker = 0;
+
     delete Global::protocol;
+    Global::protocol = 0;
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
@@ -450,6 +452,7 @@ void RangeServer::shutdown() {
 
 
 RangeServer::~RangeServer() {
+  m_timer_handler = 0;
 }
 
 
@@ -3547,8 +3550,6 @@ RangeServer::relinquish_range(ResponseCallback *cb, const TableIdentifier *table
 void RangeServer::close(ResponseCallback *cb) {
   std::vector<TableInfoPtr> table_vec;
   std::vector<RangePtr> range_vec;
-
-  (void)cb;
 
   HT_INFO("close");
 
