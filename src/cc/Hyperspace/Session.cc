@@ -75,7 +75,8 @@ Session::Session(Comm *comm, PropertiesPtr &cfg)
 }
 
 Session::~Session() {
-  m_keepalive_handler_ptr->destroy_session();
+  if (m_keepalive_handler_ptr)
+    m_keepalive_handler_ptr->destroy_session();
 }
 
 void Session::update_master_addr(const String &host)
@@ -84,6 +85,30 @@ void Session::update_master_addr(const String &host)
   HT_EXPECT(InetAddr::initialize(&m_master_addr, host.c_str(),m_hyperspace_port),
             Error::BAD_DOMAIN_NAME);
   m_hyperspace_master = host;
+}
+
+void Session::shutdown(Timer *timer) {
+  DispatchHandlerSynchronizer sync_handler;
+  Hypertable::EventPtr event_ptr;
+  CommBufPtr cbuf_ptr(Protocol::create_shutdown_request());
+
+ try_again:
+  if (!wait_for_safe())
+    HT_THROW(Error::HYPERSPACE_EXPIRED_SESSION, "");
+
+  int error = send_message(cbuf_ptr, &sync_handler, timer);
+  if (error == Error::OK) {
+    if (!sync_handler.wait_for_reply(event_ptr))
+      HT_THROW((int)Protocol::response_code(event_ptr.get()),
+               "Hyperspace 'shutdown' error");
+  }
+  else {
+    state_transition(Session::STATE_JEOPARDY);
+    goto try_again;
+  }
+
+  m_keepalive_handler_ptr->wait_for_destroy_session();
+  m_keepalive_handler_ptr = 0;
 }
 
 void Session::add_callback(SessionCallback *cb)

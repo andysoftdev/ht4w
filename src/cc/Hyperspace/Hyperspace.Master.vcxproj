@@ -50,6 +50,7 @@
     <ClCompile Include="RequestHandlerReadpathAttr.cc" />
     <ClCompile Include="RequestHandlerRelease.cc" />
     <ClCompile Include="RequestHandlerRenewSession.cc" />
+    <ClCompile Include="RequestHandlerShutdown.cc" />
     <ClCompile Include="RequestHandlerStatus.cc" />
     <ClCompile Include="ResponseCallbackAttrExists.cc" />
     <ClCompile Include="ResponseCallbackAttrGet.cc" />
@@ -67,9 +68,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BerkeleyDbFilesystem.h" />
-    <ClInclude Include="ClientConnectionHandler.h" />
-    <ClInclude Include="ClientHandleState.h" />
-    <ClInclude Include="ClientKeepaliveHandler.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="DbtManaged.h" />
     <ClInclude Include="DirEntry.h" />
@@ -106,6 +104,7 @@
     <ClInclude Include="RequestHandlerReadpathAttr.h" />
     <ClInclude Include="RequestHandlerRelease.h" />
     <ClInclude Include="RequestHandlerRenewSession.h" />
+    <ClInclude Include="RequestHandlerShutdown.h" />
     <ClInclude Include="RequestHandlerStatus.h" />
     <ClInclude Include="ResponseCallbackAttrExists.h" />
     <ClInclude Include="ResponseCallbackAttrGet.h" />

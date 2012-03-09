@@ -305,6 +305,9 @@ void ServerUtils::stop(server_t server, DWORD pid, bool& killed, Notify* notify)
     case dfsBroker:
       shutdown_done = shutdown_dfsbroker(pid);
       break;
+    case hyperspaceMaster:
+      shutdown_done = shutdown_hyperspace(pid);
+      break;
     case hypertableMaster:
       shutdown_done = shutdown_master(pid);
       break;
@@ -395,6 +398,45 @@ bool ServerUtils::shutdown_dfsbroker(DWORD pid) {
       client->shutdown(0, &sync_handler);
       EventPtr event_ptr;
       sync_handler.wait_for_reply(event_ptr);
+    }
+    if (pid) {
+      if (!ProcessUtils::join(pid, Config::stop_server_timeout()))
+        return false;
+    }
+    else {
+      if (!ProcessUtils::join(pids, false, Config::stop_server_timeout()))
+        return false;
+    }
+    return true;
+  }
+  catch (Exception& e) {
+    HT_ERROR_OUT << e << HT_END;
+  }
+  return false;
+}
+
+bool ServerUtils::shutdown_hyperspace(DWORD pid) {
+  HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
+  try {
+    std::vector<DWORD> pids;
+    if (!pid)
+      find(hypertableMaster, pids);
+    {
+      Strings replicas = Config::properties->get_strs("Hyperspace.Replica.Host");
+      int port = Config::properties->get_i16("Hyperspace.Replica.Port");
+      Comm* comm = Comm::instance();
+      ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
+      Hyperspace::SessionPtr hyperspace = new Hyperspace::Session(comm, Config::properties);
+
+      if (!hyperspace->wait_for_connection(Config::connection_timeout())) {
+        conn_mgr->remove_all();
+        HT_THROW(Error::REQUEST_TIMEOUT, "Unable to connect to hyperspace");
+      }
+      HT_NOTICEF("Shutdown hyperspace (%s)", InetAddr(replicas.front(), port).format().c_str());
+      Timer timer(Config::connection_timeout(), true);
+      hyperspace->shutdown(&timer);
+      hyperspace = 0;
+      conn_mgr->remove_all();
     }
     if (pid) {
       if (!ProcessUtils::join(pid, Config::stop_server_timeout()))

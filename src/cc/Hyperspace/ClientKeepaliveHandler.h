@@ -77,6 +77,7 @@ namespace Hyperspace {
     void expire_session();
 
     void destroy_session();
+    void wait_for_destroy_session();
 
   private:
 

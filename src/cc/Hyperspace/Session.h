@@ -675,6 +675,12 @@ namespace Hyperspace {
       return m_master_addr;
     }
 
+    /** Attempts to shutdown the Hyperspace server and destroys this session.
+     *
+     * @param timer maximum wait timer
+     */
+    void shutdown(Timer *timer=0);
+
   private:
 
     typedef hash_map<uint64_t, SessionCallback *> CallbackMap;

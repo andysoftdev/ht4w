@@ -90,6 +90,7 @@ namespace Hypertable {
     static bool check_metadata( );
 
     static bool shutdown_dfsbroker(DWORD pid);
+    static bool shutdown_hyperspace(DWORD pid);
     static bool shutdown_master(DWORD pid);
     static bool shutdown_rangeserver(DWORD pid);
     static void close_handles(launched_servers_t& launched_servers);
