@@ -29,6 +29,8 @@
 
 #ifdef _WIN32
 
+#include "HRTimer.h"
+
 struct tm* gmtime_r(const time_t *timer, struct tm *result)
 {
   if (timer && *timer < 0) { // handle date/times before 1970
@@ -59,8 +61,28 @@ using namespace std;
 namespace Hypertable {
 
 int64_t get_ts64() {
+#ifndef _WIN32
   HiResTime now;
   return ((int64_t)now.sec * 1000000000LL) + (int64_t)now.nsec;
+#else
+  static Hypertable::HRTimer timer;
+  static int64_t prev_ts = 0;
+  static boost::detail::spinlock mutex = BOOST_DETAIL_SPINLOCK_INIT;
+
+  HiResTime now;
+  int64_t ts = ((int64_t)now.sec * 1000000000LL) + (int64_t)now.nsec;
+  {
+    boost::detail::spinlock::scoped_lock lock(mutex);
+    if (prev_ts >= ts) {
+      int64_t elapsed = timer.peek_ns(true);
+      ts = elapsed ? prev_ts + elapsed : prev_ts + 1;
+    }
+    else
+      timer.reset();
+    prev_ts = ts;
+  }
+  return ts;
+#endif
 }
 
 bool xtime_add_millis(boost::xtime &xt, uint32_t millis) {
