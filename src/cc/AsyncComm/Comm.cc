@@ -114,7 +114,7 @@ Comm::Comm() {
 
 #endif
 
-  ReactorFactory::get_reactor(m_timer_reactor);
+  ReactorFactory::get_timer_reactor(m_timer_reactor);
   m_handler_map = ReactorRunner::handler_map;
 }
 

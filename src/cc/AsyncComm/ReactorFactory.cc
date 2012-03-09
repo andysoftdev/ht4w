@@ -96,7 +96,7 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
     use_poll = true;
 #endif
 
-  for (uint16_t i=0; i<reactor_count; i++) {
+  for (uint16_t i=0; i<=reactor_count; i++) {
     reactor_ptr = new Reactor();
     ms_reactors.push_back(reactor_ptr);
     rrunner.set_reactor(reactor_ptr);
