@@ -340,7 +340,9 @@ function comm_test(logfile, testName) {
 
 function comm_timeout_test(logfile, testName) {
     prepare_target(testName, ["commTestTimeout.golden"]);
-    return run_target(logfile, testName);
+    var status = run_target(logfile, testName);
+    files_delete(["commTestTimeout*"]);
+    return status;
 }
 
 function comm_timer_test(logfile, testName) {
