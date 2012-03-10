@@ -56,8 +56,15 @@ using namespace std;
 const int Reactor::READ_READY   = 0x01;
 const int Reactor::WRITE_READY  = 0x02;
 
-#endif
+#else
 
+Mutex Reactor::m_mutex;
+RequestCache Reactor::m_request_cache;
+Reactor::TimerHeap Reactor::m_timer_heap;
+boost::xtime Reactor::m_next_wakeup;
+std::set<IOHandler *> Reactor::m_removed_handlers;
+
+#endif
 
 /**
  *
@@ -65,7 +72,7 @@ const int Reactor::WRITE_READY  = 0x02;
 
 #ifdef _WIN32
 
-Reactor::Reactor() : m_mutex() {
+Reactor::Reactor() {
 }
 
 #else
@@ -173,12 +180,9 @@ Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
 
 
 void Reactor::handle_timeouts(PollTimeout &next_timeout) {
-  vector<ExpireTimer> expired_timers;
-  EventPtr event_ptr;
-  boost::xtime     now, next_req_timeout;
-  ExpireTimer timer;
-
-  while(true) {
+  while (true) {
+    vector<ExpireTimer> expired_timers;
+    boost::xtime now;
     {
       ScopedLock lock(m_mutex);
       IOHandler       *handler;
@@ -186,6 +190,7 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
 
       boost::xtime_get(&now, boost::TIME_UTC);
 
+      boost::xtime next_req_timeout;
       while ((dh = m_request_cache.get_next_timeout(now, handler,
                                                     &next_req_timeout)) != 0) {
         Event *event = new Event(Event::ERROR, ((IOHandlerData *)handler)->get_address(), Error::REQUEST_TIMEOUT);
@@ -203,45 +208,37 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
       }
 
       if (!m_timer_heap.empty()) {
-        ExpireTimer timer;
-
         while (!m_timer_heap.empty()) {
-          timer = m_timer_heap.top();
-          if (xtime_cmp(timer.expire_time, now) > 0) {
-            if (next_req_timeout.sec == 0
-                || xtime_cmp(timer.expire_time, next_req_timeout) < 0) {
-              next_timeout.set(now, timer.expire_time);
-              memcpy(&m_next_wakeup, &timer.expire_time, sizeof(m_next_wakeup));
-            }
+          const ExpireTimer& timer = m_timer_heap.top();
+          if (xtime_cmp(timer.expire_time, now) > 0)
             break;
-          }
           expired_timers.push_back(timer);
           m_timer_heap.pop();
         }
-
       }
+
     }
 
     /**
      * Deliver timer events
      */
-    for (size_t i=0; i<expired_timers.size(); i++) {
-      event_ptr = new Event(Event::TIMER, Error::OK);
-      if (expired_timers[i].handler)
-        expired_timers[i].handler->handle(event_ptr);
+    foreach (ExpireTimer& expired_timer, expired_timers) {
+      EventPtr event_ptr = new Event(Event::TIMER, Error::OK);
+      if (expired_timer.handler)
+        expired_timer.handler->handle(event_ptr);
     }
 
     {
       ScopedLock lock(m_mutex);
 
       if (!m_timer_heap.empty()) {
-        timer = m_timer_heap.top();
+        const ExpireTimer& timer = m_timer_heap.top();
 
         if (xtime_cmp(now, timer.expire_time) > 0)
           continue;
 
-        if (next_req_timeout.sec == 0
-            || xtime_cmp(timer.expire_time, next_req_timeout) < 0) {
+        if (m_next_wakeup.sec == 0
+            || xtime_cmp(timer.expire_time, m_next_wakeup) < 0) {
           next_timeout.set(now, timer.expire_time);
           memcpy(&m_next_wakeup, &timer.expire_time, sizeof(m_next_wakeup));
         }

@@ -91,7 +91,8 @@ namespace Hypertable {
     void add_timer(ExpireTimer &timer) {
       ScopedLock lock(m_mutex);
       m_timer_heap.push(timer);
-      poll_loop_interrupt();
+      if (m_next_wakeup.sec == 0 || xtime_cmp(timer.expire_time, m_next_wakeup) < 0)
+        poll_loop_interrupt();
     }
 
     void cancel_timer(DispatchHandler *handler) {
@@ -151,21 +152,30 @@ namespace Hypertable {
 
 #endif
 
-  protected:
+  private:
     typedef std::priority_queue<ExpireTimer, std::vector<ExpireTimer>, LtTimer>
             TimerHeap;
+
+#ifndef _WIN32
 
     Mutex           m_mutex;
     RequestCache    m_request_cache;
     TimerHeap       m_timer_heap;
-
-#ifndef _WIN32
     int             m_interrupt_sd;
     bool            m_interrupt_in_progress;
-#endif
-
     boost::xtime    m_next_wakeup;
     std::set<IOHandler *> m_removed_handlers;
+
+#else
+
+    static Mutex           m_mutex;
+    static RequestCache    m_request_cache;
+    static TimerHeap       m_timer_heap;
+    static boost::xtime    m_next_wakeup;
+    static std::set<IOHandler *> m_removed_handlers;
+
+#endif
+
   };
 
   typedef intrusive_ptr<Reactor> ReactorPtr;

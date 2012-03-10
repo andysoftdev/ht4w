@@ -36,7 +36,7 @@ namespace Hypertable {
 
     PollTimeout() : ts_ptr(0), duration_millis(-1) { return; }
 
-    void set(boost::xtime &now, boost::xtime &expire) {
+    void set(const boost::xtime &now, const boost::xtime &expire) {
       assert((xtime_cmp(now , expire) <= 0));
       if (now.sec == expire.sec) {
         duration_ts.tv_sec = 0;

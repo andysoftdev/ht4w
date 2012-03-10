@@ -68,7 +68,7 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
     return;
   }
 
-  hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, reactor_count);
+  hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, reactor_count + 1);
   if (hIOCP == 0) {
     HT_ERRORF( "CreateIoCompletionPort failed: %s", winapi_strerror(GetLastError()));
     return;
