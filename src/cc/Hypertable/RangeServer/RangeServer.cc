@@ -392,7 +392,6 @@ void RangeServer::shutdown() {
       thread->join();
 
     Global::range_locator = 0;
-    delete Global::block_cache;
 
     if (Global::rsml_writer) {
       Global::rsml_writer->close();
