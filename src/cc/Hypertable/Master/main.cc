@@ -261,8 +261,6 @@ int main(int argc, char **argv) {
     delete context->removal_manager;
 
     context = 0;
-
-    HT_NOTICE("Exiting master");
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
