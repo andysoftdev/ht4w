@@ -77,7 +77,7 @@ void CommandCopyToLocal::run() {
 	  HT_THROW(Error::EXTERNAL, strerror(errno));
 #endif
 
-    fd = m_client->open(m_args[src_arg].first);
+    fd = m_client->open(m_args[src_arg].first, 0, true);
 
     if (start_off > 0) {
       m_client->seek(fd, start_off);

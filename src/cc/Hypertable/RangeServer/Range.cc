@@ -343,12 +343,24 @@ void Range::add(const Key &key, const ByteString value) {
   size_t len = value.decode_length(&p);
   _out_ << format_bytes(20, p, len) << HT_END;
 
+  if (key.flag != FLAG_INSERT && key.flag >= KEYSPEC_DELETE_MAX) {
+    HT_ERRORF("Unknown key flag encountered (%d), skipping..", (int)key.flag);
+    return;
+  }
+
   if (key.flag == FLAG_DELETE_ROW) {
     for (size_t i=0; i<m_access_group_vector.size(); ++i)
       m_access_group_vector[i]->add(key, value);
   }
-  else
+  else {
+    if (key.column_family_code >= m_column_family_vector.size() ||
+        m_column_family_vector[key.column_family_code] == 0) {
+      HT_ERRORF("Bad column family code encountered (%d) for table %s, skipping...",
+                (int)key.column_family_code, m_metalog_entity->table.id);
+      return;
+    }
     m_column_family_vector[key.column_family_code]->add(key, value);
+  }
 
   if (key.flag == FLAG_INSERT)
     m_added_inserts++;
@@ -645,11 +657,11 @@ void Range::relinquish_compact_and_finish() {
       key.column_qualifier = m_metalog_entity->spec.end_row;
       key.column_qualifier_len = strlen(m_metalog_entity->spec.end_row);
       try {
-	mutator->set(key, 0, 0);
-	mutator->flush();
+        mutator->set(key, 0, 0);
+        mutator->flush();
       }
       catch (Exception &e) {
-	HT_ERROR_OUT << "Problem updating sys/RS_METRICS - " << e << HT_END;
+        HT_ERROR_OUT << "Problem updating sys/RS_METRICS - " << e << HT_END;
       }
     }
 
@@ -794,33 +806,21 @@ void Range::split_install_log() {
     m_split_row = split_rows[split_rows.size()/2];
     if (strcmp(m_split_row.c_str(), m_metalog_entity->spec.start_row) < 0 ||
         strcmp(m_split_row.c_str(), m_metalog_entity->spec.end_row) >= 0) {
-      split_rows.clear();
-      for (size_t i=0; i<ag_vector.size(); i++)
-        ag_vector[i]->get_cached_rows(split_rows);
-      if (split_rows.size() > 0) {
-        sort(split_rows.begin(), split_rows.end());
-        m_split_row = split_rows[split_rows.size()/2];
-        if (strcmp(m_split_row.c_str(), m_metalog_entity->spec.start_row) < 0 ||
-            strcmp(m_split_row.c_str(), m_metalog_entity->spec.end_row) >= 0) {
-          m_error = Error::RANGESERVER_ROW_OVERFLOW;
-          HT_THROWF(Error::RANGESERVER_ROW_OVERFLOW,
-                    "(a) Unable to determine split row for range %s[%s..%s]",
-                    m_metalog_entity->table.id, m_metalog_entity->spec.start_row, m_metalog_entity->spec.end_row);
-        }
-      }
-      else {
-        m_error = Error::RANGESERVER_ROW_OVERFLOW;
-        HT_THROWF(Error::RANGESERVER_ROW_OVERFLOW,
-                  "(b) Unable to determine split row for range %s[%s..%s]",
-                   m_metalog_entity->table.id, m_metalog_entity->spec.start_row, m_metalog_entity->spec.end_row);
+      if (!determine_split_row_from_cached_keys(ag_vector)) {
+	m_error = Error::RANGESERVER_ROW_OVERFLOW;
+	HT_THROWF(Error::RANGESERVER_ROW_OVERFLOW,
+		  "(a) Unable to determine split row for range %s[%s..%s]",
+		  m_metalog_entity->table.id, m_metalog_entity->spec.start_row, m_metalog_entity->spec.end_row);
       }
     }
   }
   else {
-    m_error = Error::RANGESERVER_ROW_OVERFLOW;
-    HT_THROWF(Error::RANGESERVER_ROW_OVERFLOW,
-              "(c) Unable to determine split row for range %s[%s..%s]",
-              m_metalog_entity->table.id, m_metalog_entity->spec.start_row, m_metalog_entity->spec.end_row);
+    if (!determine_split_row_from_cached_keys(ag_vector)) {
+      m_error = Error::RANGESERVER_ROW_OVERFLOW;
+      HT_THROWF(Error::RANGESERVER_ROW_OVERFLOW,
+		"(b) Unable to determine split row for range %s[%s..%s]",
+		m_metalog_entity->table.id, m_metalog_entity->spec.start_row, m_metalog_entity->spec.end_row);
+    }
   }
 
   m_metalog_entity->state.set_split_point(m_split_row);
@@ -887,6 +887,27 @@ void Range::split_install_log() {
   HT_MAYBE_FAIL("split-1");
   HT_MAYBE_FAIL_X("metadata-split-1", m_metalog_entity->table.is_metadata());
 
+}
+
+
+bool Range::determine_split_row_from_cached_keys(AccessGroupVector &ag_vector) {
+  std::vector<String> split_rows;  
+
+  for (size_t i=0; i<ag_vector.size(); i++)
+    ag_vector[i]->get_cached_rows(split_rows);
+
+  if (split_rows.size() > 0) {
+    sort(split_rows.begin(), split_rows.end());
+    m_split_row = split_rows[split_rows.size()/2];
+    if (strcmp(m_split_row.c_str(), m_metalog_entity->spec.start_row) < 0 ||
+	strcmp(m_split_row.c_str(), m_metalog_entity->spec.end_row) >= 0) {
+      return false;
+    }
+  }
+  else
+    return false;
+
+  return true;
 }
 
 
@@ -1186,9 +1207,9 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
       Barrier::ScopedActivator block_updates(m_update_barrier);
       ScopedLock lock(m_mutex);
       for (size_t i=0; i<ag_vector.size(); i++) {
-	if (m_metalog_entity->needs_compaction ||
+        if (m_metalog_entity->needs_compaction ||
             subtask_map.compaction(ag_vector[i].get()))
-      ag_vector[i]->stage_compaction();
+          ag_vector[i]->stage_compaction();
       }
     }
 
@@ -1201,12 +1222,12 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
         flags = subtask_map.flags(ag_vector[i].get());
 
       if (flags & MaintenanceFlag::COMPACT) {
-    try {
-      ag_vector[i]->run_compaction(flags);
-    }
-    catch (Exception&) {
-      ag_vector[i]->unstage_compaction();
-    }
+        try {
+          ag_vector[i]->run_compaction(flags);
+        }
+        catch (Exception &) {
+          ag_vector[i]->unstage_compaction();
+        }
       }
     }
 
@@ -1222,8 +1243,8 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
       m_metalog_entity->needs_compaction = false;
       Global::rsml_writer->record_state(m_metalog_entity.get());
     }
-    catch (Exception &) {
-      HT_ERRORF("Problem updating meta log entry for %s", m_name.c_str());
+    catch (Exception &e) {
+      HT_ERRORF("Problem updating meta log entry for %s (%s - %s)", m_name.c_str(), Error::get_text(e.code()), e.what());
       m_metalog_entity->needs_compaction = true;
     }
   }
@@ -1250,7 +1271,7 @@ void Range::purge_memory(MaintenanceFlag::Map &subtask_map) {
   try {
     for (size_t i=0; i<ag_vector.size(); i++) {
       if ( subtask_map.memory_purge(ag_vector[i].get()) )
-    memory_purged += ag_vector[i]->purge_memory(subtask_map);
+        memory_purged += ag_vector[i]->purge_memory(subtask_map);
     }
   }
   catch (Exception &e) {
@@ -1265,7 +1286,7 @@ void Range::purge_memory(MaintenanceFlag::Map &subtask_map) {
   }
 
   HT_INFOF("Memory Purge complete for range %s.  Purged %llu bytes of memory",
-       m_name.c_str(), (Llu)memory_purged);
+    m_name.c_str(), (Llu)memory_purged);
 
 }
 

@@ -44,6 +44,7 @@
 #include "HyperspaceSessionHandler.h"
 #include "RangeServer.h"
 #include "TimerHandler.h"
+#include "IndexUpdater.h"
 
 #ifdef _WIN32
 #include "Common/ServerLaunchEvent.h"
@@ -76,7 +77,8 @@ int main(int argc, char **argv) {
     }
 
     Comm *comm = Comm::instance();
-    ConnectionManagerPtr conn_manager= new ConnectionManager(comm);
+    ConnectionManagerPtr conn_manager = new ConnectionManager(comm);
+    Global::conn_manager = conn_manager;
 
     int worker_count = get_i32("Hypertable.RangeServer.Workers");
     ApplicationQueuePtr app_queue = new ApplicationQueue(worker_count);
@@ -106,6 +108,10 @@ int main(int argc, char **argv) {
 
     app_queue->join();
 
+    IndexUpdaterFactory::close();
+
+    Global::conn_manager->remove_all();
+    Global::conn_manager = 0;
     range_server = 0;
     timer_handler = 0;
 

@@ -197,6 +197,8 @@
     <ClInclude Include="HqlHelpText.h" />
     <ClInclude Include="HqlInterpreter.h" />
     <ClInclude Include="HqlParser.h" />
+    <ClInclude Include="IndexMutatorCallback.h" />
+    <ClInclude Include="IndexScannerCallback.h" />
     <ClInclude Include="IntervalScanner.h" />
     <ClInclude Include="IntervalScannerAsync.h" />
     <ClInclude Include="Key.h" />

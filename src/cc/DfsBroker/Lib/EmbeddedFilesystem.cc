@@ -102,7 +102,7 @@ EmbeddedFilesystem::~EmbeddedFilesystem() {
 
 void EmbeddedFilesystem::open(const String &name, uint32_t flags, DispatchHandler *handler) {
   try {
-    CommBufPtr cbp(m_protocol.create_open_request(name, flags, 0));
+    CommBufPtr cbp(m_protocol.create_open_request(name, flags, 0, false));
     enqueue_message(Request::fdRead, cbp, handler);
   }
   catch (Exception &e) {
@@ -111,8 +111,8 @@ void EmbeddedFilesystem::open(const String &name, uint32_t flags, DispatchHandle
 }
 
 
-int EmbeddedFilesystem::open(const String &name, uint32_t flags) {
-  return open(name, flags, m_asyncio);
+int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool verify_checksum) {
+  return open(name, flags, verify_checksum, m_asyncio);
 }
 
 
@@ -125,7 +125,7 @@ int EmbeddedFilesystem::open_buffered(const String &name, uint32_t flags, uint32
                HT_IO_ALIGNED(start_offset) &&
                HT_IO_ALIGNED(end_offset)));
 
-    int fd = open(name, flags);
+    int fd = open(name, flags, false);
 
     if (m_asyncio) {
       ScopedRecLock lock(m_mutex);
@@ -301,7 +301,7 @@ int64_t EmbeddedFilesystem::length(const String &name) {
 void EmbeddedFilesystem::pread(int fd, size_t len, uint64_t offset,
               DispatchHandler *handler) {
   try {
-    CommBufPtr cbp(m_protocol.create_position_read_request(fd, offset, len));
+    CommBufPtr cbp(m_protocol.create_position_read_request(fd, offset, len, false));
     enqueue_message(fd, cbp, handler);
   }
   catch (Exception &e) {
@@ -311,8 +311,8 @@ void EmbeddedFilesystem::pread(int fd, size_t len, uint64_t offset,
 }
 
 
-size_t EmbeddedFilesystem::pread(int fd, void *dst, size_t len, uint64_t offset) {
-  return pread(fd, dst, len, offset, m_asyncio);
+size_t EmbeddedFilesystem::pread(int fd, void *dst, size_t len, uint64_t offset, bool verify_checksum) {
+  return pread(fd, dst, len, offset, verify_checksum, m_asyncio);
 }
 
 
@@ -481,10 +481,11 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
         uint32_t flags = decode_i32(&decode_ptr, &decode_remain);
         uint32_t bufsz = decode_i32(&decode_ptr, &decode_remain);
         const char *fname = decode_str16(&decode_ptr, &decode_remain);
+        bool verify_checksum = decode_bool(&decode_ptr, &decode_remain);
         // validate filename
         if (fname[strlen(fname)-1] == '/')
           HT_THROWF(Error::DFSBROKER_BAD_FILENAME, "bad filename: %s", fname);
-        int fd = open(fname, flags, false);
+        int fd = open(fname, flags, verify_checksum, false);
 
         response.ensure(8);
         encode_i32(&response.ptr, Error::OK);
@@ -578,8 +579,9 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
         int fd = decode_i32(&decode_ptr, &decode_remain);
         uint64_t offset = decode_i64(&decode_ptr, &decode_remain);
         uint32_t amount = decode_i32(&decode_ptr, &decode_remain);
+        bool verify_checksum = decode_bool(&decode_ptr, &decode_remain);
         response.ensure(16 + amount);
-        size_t nread = pread(fd, response.base + 16, offset, amount, false);
+        size_t nread = pread(fd, response.base + 16, offset, amount, verify_checksum, false);
 
         encode_i32(&response.ptr, Error::OK);
         encode_i64(&response.ptr, offset);
@@ -673,7 +675,7 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
   handler->handle(event);
 }
 
-int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
+int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool /*verify_checksum*/, bool sync) {
   try {
     FdSyncGuard guard(this, Request::fdWrite, sync);
 
@@ -851,7 +853,7 @@ int64_t EmbeddedFilesystem::length(const String &name, bool sync) {
 }
 
 
-size_t EmbeddedFilesystem::pread(int fd, void *dst, size_t len, uint64_t offset, bool sync) {
+size_t EmbeddedFilesystem::pread(int fd, void *dst, size_t len, uint64_t offset, bool /*verify_checksum*/, bool sync) {
   try {
     FdSyncGuard guard(this, fd, sync);
 

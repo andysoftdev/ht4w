@@ -90,12 +90,14 @@ namespace {
         ("parallel", i32()->default_value(0),
          "Spawn threads to execute requests in parallel")
         ("query-delay", i32(), "Delay milliseconds between each query")
+        ("query-mode", str(),
+         "Whether to query 'index' or 'qualifier' index")
         ("sample-file", str(),
          "Output file to hold request latencies, one per line")
         ("seed", i32()->default_value(1), "Pseudo-random number generator seed")
         ("row-seed", i32()->default_value(1), "Pseudo-random number generator seed")
         ("spec-file", str(),
-         "File containing the DataGenerator specificaiton")
+         "File containing the DataGenerator specification")
         ("stdout", boo()->zero_tokens()->default_value(false),
          "Display generated data to stdout instead of sending load to cluster")
         ("verbose,v", boo()->zero_tokens()->default_value(false),
@@ -108,6 +110,7 @@ namespace {
         ("thrift", boo()->zero_tokens()->default_value(false),
          "Generate load via Thrift interface instead of C++ client library")
         ("version", "Show version information and exit")
+        ("overwrite-delete-flag", str(), "Force delete flag (DELETE_ROW, DELETE_CELL, DELETE_COLUMN_FAMILY)")
         ;
       alias("delete-percentage", "DataGenerator.DeletePercentage");
       alias("max-bytes", "DataGenerator.MaxBytes");
@@ -336,6 +339,20 @@ void generate_update_load(PropertiesPtr &props, String &tablename, bool flush,
 
     load_client_ptr->create_mutator(tablename, mutator_flags);
 
+    unsigned delete_flag = (unsigned)-1;
+    if (has("overwrite-delete-flag")) {
+      String delete_flag_str = get_str("overwrite-delete-flag");
+      if (delete_flag_str == "DELETE_ROW")
+        delete_flag = FLAG_DELETE_ROW;
+      else if (delete_flag_str == "DELETE_CELL")
+        delete_flag = FLAG_DELETE_CELL;
+      else if (delete_flag_str == "DELETE_COLUMN_FAMILY")
+        delete_flag = FLAG_DELETE_COLUMN_FAMILY;
+      else if (delete_flag_str != "")
+        HT_FATAL("unknown delete flag");
+    }
+
+
     for (DataGenerator::iterator iter = dg.begin(); iter != dg.end(); total_bytes+=iter.last_data_size(),++iter) {
       if (delete_pct != 0 && (::random() % 100) < delete_pct) {
         KeySpec key;
@@ -353,6 +370,20 @@ void generate_update_load(PropertiesPtr &props, String &tablename, bool flush,
         }
         key.timestamp = (*iter).timestamp;
         key.revision = (*iter).revision;
+
+        if (delete_flag == FLAG_DELETE_ROW) {
+          key.column_family = 0;
+          key.column_qualifier = 0;
+          key.column_qualifier_len = 0;
+          key.flag = delete_flag;
+        }
+        else if (delete_flag == FLAG_DELETE_COLUMN_FAMILY) {
+          key.flag = delete_flag;
+        }
+        else if (delete_flag == FLAG_DELETE_CELL) {
+          key.flag = delete_flag;
+        }
+
         if (flush)
           start_clocks = clock();
         load_client_ptr->set_delete(key);
@@ -578,6 +609,11 @@ void generate_update_load_parallel(PropertiesPtr &props, String &tablename, ::in
 
 }
 
+enum {
+  DEFAULT = 0,
+  INDEX = 1,
+  QUALIFIER = 2
+};
 
 void generate_query_load(PropertiesPtr &props, String &tablename, bool to_stdout, ::int32_t delay, String &sample_fname, bool thrift)
 {
@@ -590,15 +626,37 @@ void generate_query_load(PropertiesPtr &props, String &tablename, bool to_stdout
   double clocks_per_usec = (double)CLOCKS_PER_SEC / 1000000.0;
   bool output_samples = false;
   ofstream sample_file;
-  DataGenerator dg(props, true);
+
+  int query_mode = DEFAULT;
+  if (has("query-mode")) {
+    String qm = get_str("query-mode");
+    if (qm == "index")
+      query_mode = INDEX;
+    else if (qm == "qualifier")
+      query_mode = QUALIFIER;
+    else
+      HT_THROW(Error::CONFIG_BAD_VALUE, "invalid query-mode parameter");
+  }
+
+  DataGenerator dg(props, query_mode ? false : true);
 
   if (to_stdout) {
     for (DataGenerator::iterator iter = dg.begin(); iter != dg.end(); iter++) {
-      if (*(*iter).column_qualifier == 0)
-        cout << (*iter).row_key << "\t" << (*iter).column_family << "\n";
+      if (query_mode == DEFAULT) {
+        if (*(*iter).column_qualifier == 0)
+          cout << (*iter).row_key << "\t" << (*iter).column_family << "\n";
+        else
+          cout << (*iter).row_key << "\t" << (*iter).column_family << ":"
+               << (*iter).column_qualifier << "\n";
+      }
+      else if (query_mode == INDEX) {
+        cout << "\t" << (*iter).column_family;
+        if (*(*iter).column_qualifier != 0)
+          cout << (*iter).column_qualifier;
+        cout << "\t" << (const char *)(*iter).value << "\n";
+      }
       else
-        cout << (*iter).row_key << "\t" << (*iter).column_family << ":"
-             << (*iter).column_qualifier << "\n";
+        cout << "not implemented!\n";
     }
     cout << flush;
     return;
@@ -624,15 +682,26 @@ void generate_query_load(PropertiesPtr &props, String &tablename, bool to_stdout
     else
       load_client_ptr = new LoadClient(thrift);
 
-
     for (DataGenerator::iterator iter = dg.begin(); iter != dg.end(); iter++) {
 
       if (delay)
         poll(0, 0, delay);
 
       scan_spec.clear();
-      scan_spec.add_column((*iter).column_family);
-      scan_spec.add_row((*iter).row_key);
+      if (query_mode == INDEX) {
+        scan_spec.add_column((*iter).column_family);
+        scan_spec.add_column_predicate((*iter).column_family,
+                ColumnPredicate::EXACT_MATCH, (const char *)(*iter).value);
+      }
+      else if (query_mode == QUALIFIER) {
+        String s = format("%s:%s", (*iter).column_family, 
+                (*iter).column_qualifier ? (*iter).column_qualifier : "");
+        scan_spec.add_column(s.c_str());
+      }
+      else {
+        scan_spec.add_column((*iter).column_family);
+        scan_spec.add_row((*iter).row_key);
+      }
 
       start_clocks = clock();
 

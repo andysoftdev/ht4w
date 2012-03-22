@@ -32,6 +32,7 @@
     <ClCompile Include="AccessGroupGarbageTracker.cc" />
     <ClCompile Include="CellCache.cc" />
     <ClCompile Include="CellCacheAllocator.cc" />
+    <ClCompile Include="CellCacheManager.cc" />
     <ClCompile Include="CellCacheScanner.cc" />
     <ClCompile Include="CellStore.cc" />
     <ClCompile Include="CellStoreFactory.cc" />
@@ -45,12 +46,14 @@
     <ClCompile Include="CellStoreTrailerV3.cc" />
     <ClCompile Include="CellStoreTrailerV4.cc" />
     <ClCompile Include="CellStoreTrailerV5.cc" />
+    <ClCompile Include="CellStoreTrailerV6.cc" />
     <ClCompile Include="CellStoreV0.cc" />
     <ClCompile Include="CellStoreV1.cc" />
     <ClCompile Include="CellStoreV2.cc" />
     <ClCompile Include="CellStoreV3.cc" />
     <ClCompile Include="CellStoreV4.cc" />
     <ClCompile Include="CellStoreV5.cc" />
+    <ClCompile Include="CellStoreV6.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="ConnectionHandler.cc" />
     <ClCompile Include="FileBlockCache.cc" />
@@ -59,6 +62,7 @@
     <ClCompile Include="GroupCommit.cc" />
     <ClCompile Include="GroupCommitTimerHandler.cc" />
     <ClCompile Include="HyperspaceSessionHandler.cc" />
+    <ClCompile Include="IndexUpdater.cc" />
     <ClCompile Include="KeyCompressorNone.cc" />
     <ClCompile Include="KeyCompressorPrefix.cc" />
     <ClCompile Include="KeyDecompressorNone.cc" />
@@ -87,7 +91,6 @@
     <ClCompile Include="RangeServer.cc" />
     <ClCompile Include="RangeStatsGatherer.cc" />
     <ClCompile Include="RequestHandlerAcknowledgeLoad.cc" />
-    <ClCompile Include="RequestHandlerClose.cc" />
     <ClCompile Include="RequestHandlerCommitLogSync.cc" />
     <ClCompile Include="RequestHandlerCompact.cc" />
     <ClCompile Include="RequestHandlerCreateScanner.cc" />
@@ -107,6 +110,7 @@
     <ClCompile Include="RequestHandlerReplayCommit.cc" />
     <ClCompile Include="RequestHandlerReplayLoadRange.cc" />
     <ClCompile Include="RequestHandlerReplayUpdate.cc" />
+    <ClCompile Include="RequestHandlerShutdown.cc" />
     <ClCompile Include="RequestHandlerStatus.cc" />
     <ClCompile Include="RequestHandlerUpdate.cc" />
     <ClCompile Include="RequestHandlerUpdateSchema.cc" />
@@ -132,6 +136,7 @@
     <ClInclude Include="AccessGroupGarbageTracker.h" />
     <ClInclude Include="CellCache.h" />
     <ClInclude Include="CellCacheAllocator.h" />
+    <ClInclude Include="CellCacheManager.h" />
     <ClInclude Include="CellCacheScanner.h" />
     <ClInclude Include="CellList.h" />
     <ClInclude Include="CellListScanner.h" />
@@ -152,12 +157,14 @@
     <ClInclude Include="CellStoreTrailerV3.h" />
     <ClInclude Include="CellStoreTrailerV4.h" />
     <ClInclude Include="CellStoreTrailerV5.h" />
+    <ClInclude Include="CellStoreTrailerV6.h" />
     <ClInclude Include="CellStoreV0.h" />
     <ClInclude Include="CellStoreV1.h" />
     <ClInclude Include="CellStoreV2.h" />
     <ClInclude Include="CellStoreV3.h" />
     <ClInclude Include="CellStoreV4.h" />
     <ClInclude Include="CellStoreV5.h" />
+    <ClInclude Include="CellStoreV6.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionHandler.h" />
     <ClInclude Include="FileBlockCache.h" />
@@ -168,6 +175,7 @@
     <ClInclude Include="GroupCommitTimerHandler.h" />
     <ClInclude Include="HandlerFactory.h" />
     <ClInclude Include="HyperspaceSessionHandler.h" />
+    <ClInclude Include="IndexUpdater.h" />
     <ClInclude Include="KeyCompressor.h" />
     <ClInclude Include="KeyCompressorNone.h" />
     <ClInclude Include="KeyCompressorPrefix.h" />
@@ -206,7 +214,6 @@
     <ClInclude Include="RangeStatsGatherer.h" />
     <ClInclude Include="RangeTransferInfo.h" />
     <ClInclude Include="RequestHandlerAcknowledgeLoad.h" />
-    <ClInclude Include="RequestHandlerClose.h" />
     <ClInclude Include="RequestHandlerCommitLogSync.h" />
     <ClInclude Include="RequestHandlerCompact.h" />
     <ClInclude Include="RequestHandlerCreateScanner.h" />
@@ -226,6 +233,7 @@
     <ClInclude Include="RequestHandlerReplayCommit.h" />
     <ClInclude Include="RequestHandlerReplayLoadRange.h" />
     <ClInclude Include="RequestHandlerReplayUpdate.h" />
+    <ClInclude Include="RequestHandlerShutdown.h" />
     <ClInclude Include="RequestHandlerStatus.h" />
     <ClInclude Include="RequestHandlerUpdate.h" />
     <ClInclude Include="RequestHandlerUpdateSchema.h" />

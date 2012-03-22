@@ -41,6 +41,14 @@
 
 namespace Hypertable {
 
+  class TableMutatorAsync;
+  typedef intrusive_ptr<TableMutatorAsync> TableMutatorAsyncPtr;
+
+  class IndexMutatorCallback;
+  typedef intrusive_ptr<IndexMutatorCallback> IndexMutatorCallbackPtr;
+
+  class TableMutator;
+
   /**
    * Provides the ability to mutate a table in the form of adding and deleting
    * rows and cells.  Objects of this class are used to collect mutations and
@@ -53,7 +61,7 @@ namespace Hypertable {
   public:
 
     /**
-     * Constructs the TableMutator object
+     * Constructs the TableMutatorAsync object
      *
      * @param props reference to properties smart pointer
      * @param comm pointer to the Comm layer
@@ -70,15 +78,16 @@ namespace Hypertable {
     TableMutatorAsync(PropertiesPtr &props, Comm *comm,
 		      ApplicationQueuePtr &app_queue, Table *table,
 		      RangeLocatorPtr &range_locator, uint32_t timeout_ms, ResultCallback *cb,
-		      uint32_t flags = 0, bool explicit_block_only=false);
+		      uint32_t flags = 0, bool explicit_block_only = false);
 
     TableMutatorAsync(Mutex &mutex, boost::condition &cond, PropertiesPtr &props, Comm *comm,
 		      ApplicationQueuePtr &app_queue, Table *table,
 		      RangeLocatorPtr &range_locator, uint32_t timeout_ms, ResultCallback *cb,
-		      uint32_t flags = 0, bool explicit_block_only=false);
+		      uint32_t flags = 0, bool explicit_block_only = false,
+              TableMutator *mutator = 0);
 
     /**
-     * Destructor for TableMutator object
+     * Destructor for TableMutatorAsync object
      * Make sure buffers are flushed and unsynced rangeservers get synced.
      */
     ~TableMutatorAsync();
@@ -185,12 +194,26 @@ namespace Hypertable {
     }
     bool needs_flush();
 
+    SchemaPtr schema() { ScopedLock lock(m_mutex); return m_schema; }
+
   protected:
     void wait_for_completion();
 
   private:
+    /** flush function reserved for use in TableMutator */
+    friend class TableMutator;
+    void flush_with_tablequeue(TableMutator *mutator, bool sync=true);
 
     void initialize(PropertiesPtr &props);
+
+    void initialize_indices(PropertiesPtr &props);
+
+    void update_without_index(const Cell &cell);
+
+    void update_without_index(Key &full_key, const Cell &cell);
+
+    void update_without_index(Key &full_key, const void *value, 
+            size_t value_len);
 
     enum Operation {
       SET = 1,
@@ -205,14 +228,19 @@ namespace Hypertable {
     void do_sync();
 
     void to_full_key(const void *row, const char *cf, const void *cq,
-                     int64_t ts, int64_t rev, uint8_t flag, Key &full_key, bool &unknown_cf);
-    void to_full_key(const KeySpec &key, Key &full_key, bool &unknown_cf) {
+                     int64_t ts, int64_t rev, uint8_t flag, Key &full_key,
+                     Schema::ColumnFamily **pcf = 0);
+
+    void to_full_key(const KeySpec &key, Key &full_key,
+                     Schema::ColumnFamily **cf = 0) {
       to_full_key(key.row, key.column_family, key.column_qualifier,
-                  key.timestamp, key.revision, key.flag, full_key, unknown_cf);
+                  key.timestamp, key.revision, key.flag, full_key, cf);
     }
-    void to_full_key(const Cell &cell, Key &full_key, bool &unknown_cf) {
+
+    void to_full_key(const Cell &cell, Key &full_key,
+                     Schema::ColumnFamily **cf = 0) {
       to_full_key(cell.row_key, cell.column_family, cell.column_qualifier,
-                  cell.timestamp, cell.revision, cell.flag, full_key, unknown_cf);
+                  cell.timestamp, cell.revision, cell.flag, full_key, cf);
     }
 
     void update_unsynced_rangeservers(const CommAddressSet &unsynced);
@@ -224,8 +252,14 @@ namespace Hypertable {
       return m_mutated;
     }
 
+    bool key_uses_index(Key &key);
+
+    void update_with_index(Key &key, const void *value, uint32_t value_len, 
+                           Schema::ColumnFamily *cf);
+
     typedef std::map<uint32_t, TableMutatorAsyncScatterBufferPtr> ScatterBufferAsyncMap;
 
+    PropertiesPtr        m_props;
     Comm                *m_comm;
     ApplicationQueuePtr  m_app_queue;
     TablePtr             m_table;
@@ -254,9 +288,12 @@ namespace Hypertable {
     bool       m_cancelled;
     bool       m_mutated;   // needs mutex
     FailedMutations m_failed_mutations;
+    TableMutatorAsyncPtr m_index_mutator;
+    TableMutatorAsyncPtr m_qualifier_index_mutator;
+    IndexMutatorCallbackPtr m_imc;
+    bool       m_use_index;
+    TableMutator *m_mutator;
   };
-
-  typedef intrusive_ptr<TableMutatorAsync> TableMutatorAsyncPtr;
 
 } // namespace Hypertable
 

@@ -40,8 +40,8 @@ using namespace Serialization;
 
 ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
                                                Session *session)
-  : m_dead(false), m_destoying(false), m_comm(comm), m_session(session), m_session_id(0),
-    m_last_known_event(0) {
+  : m_dead(false), m_destoying(false), m_comm(comm),
+    m_session(session), m_session_id(0), m_last_known_event(0) {
   int error;
 
   HT_TRY("getting config values",
@@ -169,7 +169,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
           error = decode_i32(&decode_ptr, &decode_remain);
 
           if (error != Error::OK) {
-            HT_ERRORF("Master session (%llu) error - %s", session_id, Error::get_text(error));
+            HT_ERRORF("Master session (%llu) error - %s", (Llu)session_id, Error::get_text(error));
             expire_session();
             return;
           }

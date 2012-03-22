@@ -213,6 +213,7 @@
     <ClCompile Include="Usage.cc" />
     <ClCompile Include="Version.cc" />
     <ClCompile Include="winapi_strerror.cc" />
+    <ClCompile Include="WordStream.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Abi.h" />
@@ -294,6 +295,7 @@
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Usage.h" />
     <ClInclude Include="version.h" />
+    <ClInclude Include="WordStream.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

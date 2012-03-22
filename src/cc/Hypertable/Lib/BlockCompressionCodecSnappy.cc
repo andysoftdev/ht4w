@@ -117,7 +117,7 @@ BlockCompressionCodecSnappy::inflate(const DynamicBuffer &input,
 
     output.ptr = output.base + header.get_data_length();
   }
-  catch (Exception &e) {
+  catch (Exception &) {
     output.free();
     throw;
   }

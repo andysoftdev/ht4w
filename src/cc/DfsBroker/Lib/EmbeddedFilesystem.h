@@ -57,7 +57,7 @@ namespace Hypertable {
       EmbeddedFilesystem(PropertiesPtr &cfg);
 
       virtual void open(const String &name, uint32_t flags, DispatchHandler *handler);
-      virtual int open(const String &name, uint32_t flags=0);
+      virtual int open(const String &name, uint32_t flag, bool verify_checksum);
       virtual int open_buffered(const String &name, uint32_t flags, uint32_t buf_size,
                                 uint32_t outstanding, uint64_t start_offset=0,
                                 uint64_t end_offset=0);
@@ -90,7 +90,8 @@ namespace Hypertable {
 
       virtual void pread(int fd, size_t len, uint64_t offset,
                          DispatchHandler *handler);
-      virtual size_t pread(int fd, void *dst, size_t len, uint64_t offset);
+      virtual size_t pread(int fd, void *dst, size_t len, uint64_t offset,
+                           bool verify_checksum=true);
 
       virtual void mkdirs(const String &name, DispatchHandler *handler);
       virtual void mkdirs(const String &name);
@@ -184,7 +185,7 @@ namespace Hypertable {
       void enqueue_message(int fd, Hypertable::CommBufPtr &cbp_request, DispatchHandler *handler);
       void process_message(Hypertable::CommBufPtr &cbp_request, DispatchHandler *handler);
 
-      int open(const String &name, uint32_t flags, bool sync);
+      int open(const String &name, uint32_t flags, bool verify_checksum, bool sync);
       int create(const String &name, uint32_t flags, int32_t bufsz,
                          int32_t replication, int64_t blksz, bool sync);
       void close(int fd, bool sync);
@@ -193,7 +194,7 @@ namespace Hypertable {
       size_t append(int fd, StaticBuffer &buffer, uint32_t flags, uint64_t* offset, bool sync);
       void remove(const String &name, bool force, bool sync);
       int64_t length(const String &name, bool sync);
-      size_t pread(int fd, void *dst, size_t len, uint64_t offset, bool sync);
+      size_t pread(int fd, void *dst, size_t len, uint64_t offset, bool verify_checksum, bool sync);
       void mkdirs(const String &name, bool sync);
       void flush(int fd, bool sync);
       void rmdir(const String &name, bool force, bool sync);

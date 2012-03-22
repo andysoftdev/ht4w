@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_REQUESTHANDLERCLOSE_H
-#define HYPERTABLE_REQUESTHANDLERCLOSE_H
+#ifndef HYPERTABLE_REQUESTHANDLERSHUTDOWN_H
+#define HYPERTABLE_REQUESTHANDLERSHUTDOWN_H
 
 #include "Common/Runnable.h"
 
@@ -33,9 +33,9 @@ namespace Hypertable {
 
   class RangeServer;
 
-  class RequestHandlerClose : public ApplicationHandler {
+  class RequestHandlerShutdown : public ApplicationHandler {
   public:
-    RequestHandlerClose(Comm *comm, RangeServer *rs, EventPtr &event_ptr)
+    RequestHandlerShutdown(Comm *comm, RangeServer *rs, EventPtr &event_ptr)
       : ApplicationHandler(event_ptr), m_comm(comm), m_range_server(rs) { }
 
     virtual void run();
@@ -47,4 +47,4 @@ namespace Hypertable {
 
 }
 
-#endif // HYPERTABLE_REQUESTHANDLERCLOSE_H
+#endif // HYPERTABLE_REQUESTHANDLERSHUTDOWN_H

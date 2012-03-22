@@ -317,6 +317,8 @@ namespace Hypertable {
     void relinquish_install_log();
     void relinquish_compact_and_finish();
 
+    bool determine_split_row_from_cached_keys(AccessGroupVector &ag_vector);
+
     void split_install_log();
     void split_compact_and_shrink();
     void split_notify_master();
@@ -353,7 +355,7 @@ namespace Hypertable {
     Barrier          m_update_barrier;
     Barrier          m_scan_barrier;
     bool             m_is_root;
-    uint64_t         m_added_deletes[4];
+    uint64_t         m_added_deletes[KEYSPEC_DELETE_MAX];
     uint64_t         m_added_inserts;
     RangeSet        *m_range_set;
     int32_t          m_error;

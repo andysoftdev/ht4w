@@ -54,6 +54,7 @@ namespace Hypertable {
 
   public:
     CellCache();
+    CellCache(CellCacheArena &arena);
     virtual ~CellCache() { }
     /**
      * Adds a key/value pair to the CellCache.  This method assumes that
@@ -106,19 +107,19 @@ namespace Hypertable {
       return m_arena.total();
     }
 
-    void get_counts(size_t *cellsp, int64_t *key_bytesp, int64_t *value_bytesp) {
+    void add_counts(size_t *cellsp, int64_t *key_bytesp, int64_t *value_bytesp) {
       ScopedLock lock(m_mutex);
-      *cellsp = m_cell_map.size();
-      *key_bytesp = m_key_bytes;
-      *value_bytesp = m_value_bytes;
+      *cellsp += m_cell_map.size();
+      *key_bytesp += m_key_bytes;
+      *value_bytesp += m_value_bytes;
     }
-
-    int32_t get_collision_count() { return m_collisions; }
 
     int32_t get_delete_count() { return m_deletes; }
 
     void freeze() { m_frozen = true; }
     void unfreeze() { m_frozen = false; }
+
+    void merge(CellCache *other);
 
     void populate_key_set(KeySet &keys) {
       Key key;
@@ -128,6 +129,8 @@ namespace Hypertable {
 	keys.insert(key);
       }
     }
+
+    CellCacheArena &arena() { return m_arena; }
 
     friend class CellCacheScanner;
 
@@ -139,7 +142,8 @@ namespace Hypertable {
   protected:
 
     Mutex              m_mutex;
-    CellCacheArena     m_arena;
+    CellCacheArena     m_arena_base;
+    CellCacheArena    &m_arena;
     CellMap            m_cell_map;
     int32_t            m_deletes;
     int32_t            m_collisions;

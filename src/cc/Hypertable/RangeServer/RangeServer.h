@@ -112,8 +112,6 @@ namespace Hypertable {
 
     void metadata_sync(ResponseCallback *, const char *, uint32_t flags, std::vector<const char *> columns);
 
-    void close(ResponseCallback *cb);
-
     /**
      * Blocks while the maintenance queue is non-empty
      *
@@ -261,6 +259,7 @@ namespace Hypertable {
     LoadFactors            m_load_factors;
     size_t                 m_metric_samples;
     size_t                 m_cores;
+    int32_t                m_maintenance_pause_interval;
     CellsBuilder          *m_pending_metrics_updates;
   };
 

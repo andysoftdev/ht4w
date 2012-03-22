@@ -230,7 +230,6 @@ void Client::initialize_with_hyperspace() {
     m_connection_timeout_ms = m_timeout_ms;
 
   Timer timer(m_connection_timeout_ms, true);
-
   uint32_t wait_time, remaining;
   uint32_t interval=5000;
   
@@ -249,6 +248,7 @@ void Client::initialize_with_hyperspace() {
   }
 
   m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
+
   m_app_queue = new ApplicationQueue(m_props->
                                      get_i32("Hypertable.Client.Workers"));
   m_master_client = new MasterClient(m_conn_manager, m_hyperspace, m_toplevel_dir,
@@ -265,5 +265,5 @@ void Client::initialize_with_hyperspace() {
                                   m_app_queue, m_namemap, m_timeout_ms);
   m_namespace_cache = new NamespaceCache(m_props, m_range_locator, m_conn_manager, m_hyperspace,
                                          m_app_queue, m_namemap, m_master_client,
-                                         m_table_cache, m_timeout_ms);
+                                         m_table_cache, m_timeout_ms, this);
 }

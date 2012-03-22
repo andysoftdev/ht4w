@@ -115,6 +115,9 @@
     <ClCompile Include="Escaper.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="WordStream.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Abi.h">
@@ -352,6 +355,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Escaper.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WordStream.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

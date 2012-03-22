@@ -151,9 +151,6 @@
     <ClCompile Include="RangeStatsGatherer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RequestHandlerClose.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RequestHandlerCommitLogSync.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -299,6 +296,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MergeScannerRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CellCacheManager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CellStoreTrailerV6.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CellStoreV6.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IndexUpdater.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerShutdown.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -486,9 +498,6 @@
     <ClInclude Include="RangeStatsGatherer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerClose.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="RequestHandlerCommitLogSync.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -658,6 +667,21 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MergeScannerRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellCacheManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellStoreTrailerV6.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellStoreV6.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexUpdater.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerShutdown.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

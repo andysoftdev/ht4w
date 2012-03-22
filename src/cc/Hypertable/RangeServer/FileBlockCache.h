@@ -38,16 +38,19 @@ namespace Hypertable {
     static atomic_t ms_next_file_id;
 
   public:
-    FileBlockCache(int64_t min_memory, int64_t max_memory)
+    FileBlockCache(int64_t min_memory, int64_t max_memory, bool compressed)
       : m_min_memory(min_memory), m_max_memory(max_memory), m_limit(max_memory),
-	m_available(max_memory), m_accesses(0), m_hits(0) { HT_ASSERT(min_memory <= max_memory); }
+	m_available(max_memory), m_accesses(0), m_hits(0), m_compressed(compressed)
+    { HT_ASSERT(min_memory <= max_memory); }
     ~FileBlockCache();
+
+    bool compressed() { return m_compressed; }
 
     bool checkout(int file_id, uint32_t file_offset, uint8_t **blockp,
                   uint32_t *lengthp);
     void checkin(int file_id, uint32_t file_offset);
-    bool insert_and_checkout(int file_id, uint32_t file_offset,
-                             uint8_t *block, uint32_t length);
+    bool insert(int file_id, uint32_t file_offset,
+		uint8_t *block, uint32_t length, bool checkout=false);
     bool contains(int file_id, uint32_t file_offset);
 
     void increase_limit(int64_t amount);
@@ -103,6 +106,10 @@ namespace Hypertable {
 
     int64_t make_room(int64_t amount);
 
+    inline static int64_t make_key(int file_id, uint32_t file_offset) {
+      return ((int64_t)file_id << 32) | file_offset;
+    }
+
     class BlockCacheEntry {
     public:
       BlockCacheEntry() : file_id(-1), file_offset(0), block(0), length(0),
@@ -115,7 +122,7 @@ namespace Hypertable {
       uint8_t  *block;
       uint32_t length;
       uint32_t ref_count;
-      int64_t key() const { return ((int64_t)file_id << 32) | file_offset; }
+      int64_t key() const { return FileBlockCache::make_key(file_id, file_offset); }
     };
 
     struct DecrementRefCount {
@@ -126,7 +133,7 @@ namespace Hypertable {
 
     struct HashI64 {
       std::size_t operator()(int64_t x) const {
-        return (std::size_t)(x >> 32) ^ (std::size_t)x;
+        return (std::size_t)((x >> 32) * 31) ^ (std::size_t)x;
       }
     };
 
@@ -151,6 +158,7 @@ namespace Hypertable {
     int32_t      m_blocks;
     uint64_t     m_accesses;
     uint64_t     m_hits;
+    bool         m_compressed;
   };
 
 }

@@ -143,7 +143,7 @@ LocalBroker::~LocalBroker() {
 
 void
 LocalBroker::open(ResponseCallbackOpen *cb, const char *fname, 
-                  uint32_t flags, uint32_t bufsz) {
+                  uint32_t flags, uint32_t bufsz, bool) {
   int fd;
 #ifndef _WIN32
   int local_fd;
@@ -515,7 +515,7 @@ void LocalBroker::length(ResponseCallbackLength *cb, const char *fname) {
 
 void
 LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
-                   uint32_t amount) {
+                   uint32_t amount, bool) {
   OpenFileDataLocalPtr fdata;
 #ifndef _WIN32
   ssize_t nread;

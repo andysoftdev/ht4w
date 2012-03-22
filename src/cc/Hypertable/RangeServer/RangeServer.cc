@@ -97,7 +97,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     m_app_queue(app_queue), m_hyperspace(hyperspace), m_timer_handler(0),
     m_query_cache(0), m_last_revision(TIMESTAMP_MIN), m_last_metrics_update(0),
     m_loadavg_accum(0.0), m_page_in_accum(0), m_page_out_accum(0),
-    m_metric_samples(0), m_pending_metrics_updates(0)
+    m_metric_samples(0), m_maintenance_pause_interval(0), m_pending_metrics_updates(0)
 {
 
   uint16_t port;
@@ -118,6 +118,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   m_scanner_buffer_size = cfg.get_i64("Scanner.BufferSize");
   port = cfg.get_i16("Port");
   m_update_coalesce_limit = cfg.get_i64("UpdateCoalesceLimit");
+  m_maintenance_pause_interval = cfg.get_i32("Testing.MaintenanceNeeded.PauseInterval");
 
   /** Compute maintenance threads **/
   uint32_t maintenance_threads;
@@ -208,8 +209,20 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   if (block_cache_min > block_cache_max)
     block_cache_min = block_cache_max;
 
-  if (block_cache_max > 0)
-    Global::block_cache = new FileBlockCache(block_cache_min, block_cache_max);
+  if (block_cache_max > 0) {
+    // reduce block cache if required
+    if ((double)block_cache_max > (double)Global::memory_limit * 0.8) {
+      block_cache_max = (int64_t)((double)Global::memory_limit * 0.8);
+      props->set("Hypertable.RangeServer.BlockCache.MaxMemory", block_cache_max);
+      HT_INFOF("Maximum size of block cache has been reduced to %.2fMB", (double)block_cache_max / Property::MiB);
+    }
+    if (block_cache_min > block_cache_max) {
+      block_cache_min = block_cache_max;
+      props->set("Hypertable.RangeServer.BlockCache.MinMemory", block_cache_min);
+    }
+    Global::block_cache = new FileBlockCache(block_cache_min, block_cache_max,
+               cfg.get_bool("BlockCache.Compressed"));
+  }
 
   int64_t query_cache_memory = cfg.get_i64("QueryCache.MaxMemory");
   if (query_cache_memory > 0) {
@@ -371,17 +384,20 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 void RangeServer::shutdown() {
 
   try {
+    ScopedLock lock(m_stats_mutex);
     // stop maintenance timer
     if (m_timer_handler)
       m_timer_handler->shutdown();
-
-    if (m_group_commit_timer_handler)
-      m_group_commit_timer_handler->shutdown();
 
     // stop maintenance queue
     Global::maintenance_queue->clear();
     Global::maintenance_queue->shutdown();
     Global::maintenance_queue->join();
+
+    m_app_queue->stop();
+
+    if (m_group_commit_timer_handler)
+      m_group_commit_timer_handler->shutdown();
 
     // Kill update threads
     m_shutdown = true;
@@ -424,7 +440,7 @@ void RangeServer::shutdown() {
     }
 
     if (m_query_cache) {
-      delete m_query_cache;
+       delete m_query_cache;
       m_query_cache = 0;
     }
 
@@ -441,6 +457,8 @@ void RangeServer::shutdown() {
 
     delete Global::protocol;
     Global::protocol = 0;
+
+    m_app_queue->shutdown();
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
@@ -1774,9 +1792,9 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
       // make sure that we don't have a clock skew
       // poll() timeout is in milliseconds, revision and now is in nanoseconds
       int64_t now = Hypertable::get_ts64();
-      m_last_revision = range->get_scan_revision();
-      if (m_last_revision > now) {
-        int64_t diff = (m_last_revision - now) / 1000000;
+      int64_t revision = range->get_scan_revision();
+      if (revision > now) {
+        int64_t diff = (revision - now) / 1000000;
         HT_WARNF("Clock skew detected when loading range; waiting for %lld "
                  "millisec", (long long int)diff);
         poll(0, 0, diff);
@@ -2224,6 +2242,22 @@ void RangeServer::update_qualify_and_transform() {
           key.ptr = mod;
           row = key.row();
 
+          // error inducer for tests/integration/fail-index-mutator
+          if (HT_FAILURE_SIGNALLED("fail-index-mutator-0")) {
+            if (!strcmp(row, "1,+9RfmqoH62hPVvDTh6EC4zpTNfzNr8\t01918")) {
+              uc->send_back.count++;
+              uc->send_back.error = Error::INDUCED_FAILURE;
+              uc->send_back.offset = mod - request->buffer.base;
+              uc->send_back.len = strlen(row);
+              request->send_back_vector.push_back(uc->send_back);
+              memset(&uc->send_back, 0, sizeof(uc->send_back));
+              key.next(); // skip key
+              key.next(); // skip value;
+              mod = key.ptr;
+              continue;
+            }
+          }
+
           // If the row key starts with '\0' then the buffer is probably
           // corrupt, so mark the remaing key/value pairs as bad
           if (*row == 0) {
@@ -2239,7 +2273,7 @@ void RangeServer::update_qualify_and_transform() {
 
           // Look for containing range, add to stop mods if not found
           if (!table_update->table_info->find_containing_range(row, range,
-                                                               start_row, end_row)) {
+                                                        start_row, end_row)) {
             if (uc->send_back.error != Error::RANGESERVER_OUT_OF_RANGE
                 && uc->send_back.count > 0) {
               request->send_back_vector.push_back(uc->send_back);
@@ -2434,6 +2468,18 @@ void RangeServer::update_qualify_and_transform() {
               SchemaPtr schema = table_update->table_info->get_schema();
               uint8_t family=*(key.ptr+1+strlen((const char *)key.ptr+1)+1);
               Schema::ColumnFamily *cf = schema->get_column_family(family);
+
+	      // reset auto_revision if it's gotten behind
+	      if (uc->auto_revision < latest_range_revision) {
+		uc->auto_revision = Hypertable::get_ts64();
+		if (uc->auto_revision < latest_range_revision) {
+                  HT_THROWF(Error::RANGESERVER_REVISION_ORDER_ERROR,
+                            "Auto revision (%lld) is less than latest range "
+			    "revision (%lld) for range %s",
+                            (Lld)uc->auto_revision, (Lld)latest_range_revision,
+                            rulist->range->get_name().c_str());
+		}
+	      }
 
               // This will transform keys that need to be assigned a
               // timestamp and/or revision number by re-writing the key
@@ -2739,6 +2785,7 @@ void RangeServer::update_add_and_respond() {
     /**
      * wait for these ranges to complete maintenance
      */
+    bool maintenance_needed = false;
     foreach (TableUpdate *table_update, uc->updates) {
 
       /**
@@ -2750,6 +2797,7 @@ void RangeServer::update_add_and_respond() {
             !Global::maintenance_queue->is_scheduled((*iter).first)) {
           ScopedLock lock(m_mutex);
           m_maintenance_scheduler->need_scheduling();
+          maintenance_needed = true;
           if (m_timer_handler)
             m_timer_handler->schedule_maintenance();
           break;
@@ -2807,6 +2855,10 @@ void RangeServer::update_add_and_respond() {
     }
 
     delete uc;
+
+    // For testing
+    if (m_maintenance_pause_interval > 0 && maintenance_needed)
+      poll(0, 0, m_maintenance_pause_interval);
 
   }
 
@@ -2996,6 +3048,11 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb) {
   size_t table_count;
 
   HT_INFO_OUT << "Entering get_statistics()" << HT_END;
+
+  if (m_shutdown) {
+    cb->error(Error::SERVER_SHUTTING_DOWN, "");
+    return;
+  }
 
   m_server_stats->recompute(collector_id);
   m_stats->system.refresh();
@@ -3545,60 +3602,6 @@ RangeServer::relinquish_range(ResponseCallback *cb, const TableIdentifier *table
 
 }
 
-
-void RangeServer::close(ResponseCallback *cb) {
-  std::vector<TableInfoPtr> table_vec;
-  std::vector<RangePtr> range_vec;
-
-  HT_INFO("close");
-
-  Global::maintenance_queue->stop();
-
-  // Kill update threads
-  m_shutdown = true;
-  m_update_qualify_queue_cond.notify_all();
-  m_update_commit_queue_cond.notify_all();
-  m_update_response_queue_cond.notify_all();
-  foreach (Thread *thread, m_update_threads)
-    thread->join();
-
-  // get the tables
-  m_live_map->get_all(table_vec);
-
-  // add all ranges into the range vector
-  for (size_t i=0; i<table_vec.size(); i++)
-    table_vec[i]->get_range_vector(range_vec);
-
-  // increment the update counters
-  for (size_t i=0; i<range_vec.size(); i++)
-    range_vec[i]->increment_update_counter();
-
-  try {
-
-    if (Global::rsml_writer) {
-      Global::rsml_writer->close();
-      Global::rsml_writer = 0;
-    }
-
-    if (Global::root_log)
-      Global::root_log->close();
-
-    if (Global::metadata_log)
-      Global::metadata_log->close();
-
-    if (Global::system_log)
-      Global::system_log->close();
-
-    if (Global::user_log)
-      Global::user_log->close();
-
-    cb->response_ok();
-  }
-  catch (Exception &e) {
-    HT_ERROR_OUT << e << HT_END;
-  }
-
-}
 
 void RangeServer::wait_for_maintenance(ResponseCallback *cb) {
   boost::xtime expire_time;

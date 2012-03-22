@@ -24,14 +24,13 @@
 
 #include "RangeServer.h"
 
-#include "RequestHandlerClose.h"
+#include "RequestHandlerShutdown.h"
 
 using namespace Hypertable;
 
 /**
  *
  */
-void RequestHandlerClose::run() {
-  ResponseCallback cb(m_comm, m_event_ptr);
-  m_range_server->close(&cb);
+void RequestHandlerShutdown::run() {
+  m_range_server->shutdown();
 }

@@ -785,10 +785,7 @@ void Monitoring::run_rrdtool(std::vector<String> &command) {
 
 #ifndef _WIN32
 
-  const char *env = ::getenv("HYPERTABLE_HOME");
-  if (!env)
-    env = ".";
-  String cmd = env;
+  String cmd = System::install_dir;
   cmd += "/bin/rrdtool";
 
   foreach (const String &s, command) {

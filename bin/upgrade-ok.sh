@@ -32,9 +32,9 @@ usage() {
   echo "  Determines whether or not the upgrade from Hypertable"
   echo "  version <from> to version <to> is valid.  <from> and <to>"
   echo "  are assumed to be Hypertable installation directories"
-  echo "  whos last path component is either a version number or"
+  echo "  whose last path component is either a version number or"
   echo "  the symbolic link \"current\" which points to a Hypertable"
-  echo "  installation directory whos last path component is a"
+  echo "  installation directory whose last path component is a"
   echo "  version number."
   echo ""
   echo "return:"
@@ -106,10 +106,8 @@ if [ $TO_MINOR -le 1000000 ] && [ $TO_MINOR -ge 904000 ] ; then
     echo "Incompatible upgrade a: $FROM -> $TO"
     exit 1
 elif [ $TO_MAJOR -ge 1000000 ] ; then
-    if [ $FROM_MAJOR -ge 1000000 ] ; then
-        if [ $FROM_MINOR -eq $TO_MINOR ] ; then
-            exit 0
-        fi
+    if [ $FROM_MAJOR -le $TO_MAJOR ] ; then
+        exit 0
     fi
     echo "Incompatible upgrade b: $FROM -> $TO"
     exit 1

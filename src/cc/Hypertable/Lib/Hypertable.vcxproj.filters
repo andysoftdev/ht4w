@@ -558,5 +558,11 @@
     <ClInclude Include="TableCallback.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="IndexMutatorCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexScannerCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

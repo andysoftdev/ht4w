@@ -51,6 +51,8 @@ namespace {
     "./offset_test.golden",
     "./timeorder_test.hql",
     "./timeorder_test.golden",
+    "./indices_test.hql",
+    "./indices_test.golden",
     0
   };
 }
@@ -68,42 +70,26 @@ int main(int argc, char **argv) {
   }
 
   /**
-   *  hypertable_test
+   *  secondary INDEX tests
    */
 #ifndef _WIN32
   cmd_str = "./hypertable --test-mode --config hypertable.cfg "
-      "< hypertable_test.hql > hypertable_test.output 2>&1";
+      "< indices_test.hql > indices_test.output 2>&1";
   if (system(cmd_str.c_str()) != 0)
     _exit(1);
 
-  cmd_str = "diff hypertable_test.output hypertable_test.golden";
+  cmd_str = "diff indices_test.output indices_test.golden";
 #else
   cmd_str = "..\\hypertable.exe --test-mode --config hypertable.cfg "
-      "< hypertable_test.hql > hypertable_test.output 2>&1";
+      "< indices_test.hql > indices_test.output 2>&1";
   if (system(cmd_str.c_str()) != 0)
     _exit(1);
 
-  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/ig hypertable_test.output > hypertable_test.sed.output";
+  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/ig indices_test.output > indices_test.sed.output";
   if (system(cmd_str.c_str()) != 0)
     _exit(1);
 
-  cmd_str = "fc hypertable_test.sed.output hypertable_test.golden";
-#endif
-  if (system(cmd_str.c_str()) != 0)
-    _exit(1);
-
-#ifndef _WIN32
-  cmd_str = "gunzip -f hypertable_select_gz_test.output.gz";
-#else
-  cmd_str = "gzip -d -f hypertable_select_gz_test.output.gz";
-#endif
-  if (system(cmd_str.c_str()) != 0)
-    _exit(1);
-
-#ifndef _WIN32
-  cmd_str = "diff hypertable_select_gz_test.output hypertable_select_gz_test.golden";
-#else
-  cmd_str = "fc hypertable_select_gz_test.output hypertable_select_gz_test.golden";
+  cmd_str = "fc indices_test.sed.output indices_test.golden";
 #endif
   if (system(cmd_str.c_str()) != 0)
     _exit(1);
@@ -154,6 +140,31 @@ int main(int argc, char **argv) {
     _exit(1);
 
   cmd_str = "fc timeorder_test.sed.output timeorder_test.golden";
+#endif
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  /**
+   *  hypertable_test
+   */
+#ifndef _WIN32
+  cmd_str = "./hypertable --test-mode --config hypertable.cfg "
+      "< hypertable_test.hql > hypertable_test.output 2>&1";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "diff hypertable_test.output hypertable_test.golden";
+#else
+  cmd_str = "..\\hypertable.exe --test-mode --config hypertable.cfg "
+      "< hypertable_test.hql > hypertable_test.output 2>&1";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/ig hypertable_test.output > hypertable_test.sed.output";
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  cmd_str = "fc hypertable_test.sed.output hypertable_test.golden";
 #endif
   if (system(cmd_str.c_str()) != 0)
     _exit(1);

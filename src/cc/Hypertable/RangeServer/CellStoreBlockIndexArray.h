@@ -124,7 +124,7 @@ namespace Hypertable {
         fixed.ptr += sizeof(offset);
 
         if (!in_scope) {
-          if (strcmp(key.row(), start_row.c_str()) < 0)
+          if (strcmp(key.row(), start_row.c_str()) <= 0)
             continue;
           in_scope = true;
         }
@@ -154,7 +154,7 @@ namespace Hypertable {
         m_disk_used = m_end_of_last_block - (*m_array.begin()).offset;
 
         /** determine split key **/
-        size_t mid_point = m_array.size()/2;
+        size_t mid_point = (m_array.size()==2) ? 0 : m_array.size()/2;
         m_middle_key = m_array[mid_point].key;
       }
 

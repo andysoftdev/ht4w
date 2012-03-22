@@ -32,12 +32,14 @@
 #include "CellStoreV3.h"
 #include "CellStoreV4.h"
 #include "CellStoreV5.h"
+#include "CellStoreV6.h"
 #include "CellStoreTrailerV0.h"
 #include "CellStoreTrailerV1.h"
 #include "CellStoreTrailerV2.h"
 #include "CellStoreTrailerV3.h"
 #include "CellStoreTrailerV4.h"
 #include "CellStoreTrailerV5.h"
+#include "CellStoreTrailerV6.h"
 #include "Global.h"
 
 using namespace Hypertable;
@@ -56,18 +58,21 @@ CellStore *CellStoreFactory::open(const String &name,
   /** Get the file length **/
   file_length = Global::dfs->length(name);
 
+  bool second_try = false;
+ try_again:
+
   if (HT_IO_ALIGNED(file_length))
     oflags = Filesystem::OPEN_FLAG_DIRECTIO;
 
   /** Open the DFS file **/
-  fd = Global::dfs->open(name, oflags);
+  fd = Global::dfs->open(name, oflags, second_try);
 
   amount = (file_length < HT_DIRECT_IO_ALIGNMENT) ? file_length : HT_DIRECT_IO_ALIGNMENT;
   offset = file_length - amount;
 
   boost::shared_array<uint8_t> trailer_buf( new uint8_t [amount] );
 
-  nread = Global::dfs->pread(fd, trailer_buf.get(), amount, offset);
+  nread = Global::dfs->pread(fd, trailer_buf.get(), amount, offset, second_try);
 
   if (nread != amount)
     HT_THROWF(Error::DFSBROKER_IO_ERROR,
@@ -83,10 +88,35 @@ CellStore *CellStoreFactory::open(const String &name,
   // If file format is < 4 and happens to be aligned, reopen non-directio
   if (version < 4 && oflags) {
     Global::dfs->close(fd);
-    fd = Global::dfs->open(name);
+    fd = Global::dfs->open(name, 0, second_try);
   }
 
-  if (version == 5) {
+  if (version == 6) {
+    CellStoreTrailerV6 trailer_v6;
+    CellStoreV6 *cellstore_v6;
+
+    if (amount < trailer_v6.size())
+      HT_THROWF(Error::RANGESERVER_CORRUPT_CELLSTORE,
+                "Bad length of CellStoreV6 file '%s' - %llu",
+                name.c_str(), (Llu)file_length);
+
+    try {
+      trailer_v6.deserialize(trailer_buf.get() + (amount - trailer_v6.size()));
+    }
+    catch (Exception &e) {
+      Global::dfs->close(fd);
+      if (!second_try && e.code() == Error::CHECKSUM_MISMATCH) {
+	second_try = true;
+	goto try_again;
+      }
+      throw;
+    }
+
+    cellstore_v6 = new CellStoreV6(Global::dfs.get());
+    cellstore_v6->open(name, start, end, fd, file_length, &trailer_v6);
+    return cellstore_v6;
+  }
+  else if (version == 5) {
     CellStoreTrailerV5 trailer_v5;
     CellStoreV5 *cellstore_v5;
 

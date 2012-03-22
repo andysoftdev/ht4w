@@ -302,7 +302,7 @@ void DefaultPolicy::init_options() {
     ("Hyperspace.Replica.Replication.Timeout", i32()->default_value(10000),
         "Hyperspace replication master dies if it doesn't receive replication acknowledgement "
         "within this period")
-    ("Hyperspace.Replica.Workers", i32(),
+    ("Hyperspace.Replica.Workers", i32()->default_value(20),
         "Number of Hyperspace Replica worker threads created")
     ("Hyperspace.Replica.Reactors", i32(),
         "Number of Hyperspace Master communication reactor threads created")
@@ -404,9 +404,11 @@ void DefaultPolicy::init_options() {
         boo()->default_value(false), "Ignore clock skew errors")
     ("Hypertable.RangeServer.CommitInterval", i32()->default_value(50),
      "Default minimum group commit interval in milliseconds")
+    ("Hypertable.RangeServer.BlockCache.Compressed", boo()->default_value(true),
+        "Controls whether or not block cache stores compressed blocks")
     ("Hypertable.RangeServer.BlockCache.MinMemory", i64()->default_value(0),
         "Minimum size of block cache")
-    ("Hypertable.RangeServer.BlockCache.MaxMemory", i64()->default_value(0),
+    ("Hypertable.RangeServer.BlockCache.MaxMemory", i64()->default_value(-1),
         "Maximum (target) size of block cache")
     ("Hypertable.RangeServer.QueryCache.MaxMemory", i64()->default_value(50*M),
         "Maximum size of query cache")
@@ -443,7 +445,9 @@ void DefaultPolicy::init_options() {
         "Roll commit log after this many bytes")
     ("Hypertable.RangeServer.CommitLog.Compressor",
         str()->default_value("quicklz"),
-        "Commit log compressor to use (zlib, lzo, quicklz, snappy, bmz, none)")
+       "Commit log compressor to use (zlib, lzo, quicklz, snappy, bmz, none)")
+    ("Hypertable.RangeServer.Testing.MaintenanceNeeded.PauseInterval", i32()->default_value(0),
+        "TESTING:  After update, if range needs maintenance, pause for this number of milliseconds")
     ("Hypertable.RangeServer.UpdateCoalesceLimit", i64()->default_value(5*M),
         "Amount of update data to coalesce into single commit log sync")
     ("Hypertable.Metadata.Replication", i32()->default_value(-1),

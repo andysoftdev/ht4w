@@ -48,7 +48,7 @@ namespace Hypertable {
       bool operator==(const Key &other) const {
 	return memcmp(digest, other.digest, 16) == 0;
       }
-      uint8_t digest[16];
+      uint64_t digest[2];
     };
 
     class RowKey {
@@ -101,14 +101,13 @@ namespace Hypertable {
     };
 
     struct KeyHash {
-      std::size_t operator()(Key k) const {
-        std::size_t *sptr = (std::size_t *)k.digest;
-        return sptr[0];
+      std::size_t operator()(const Key& k) const {
+        return (std::size_t)k.digest[0];
       }
     };
 
     struct RowKeyHash {
-      std::size_t operator()(RowKey k) const {
+      std::size_t operator()(const RowKey& k) const {
         return k.hash;
       }
     };

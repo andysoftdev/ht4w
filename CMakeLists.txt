@@ -23,7 +23,7 @@ project(HYPERTABLE)
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
 set(VERSION_MICRO "5")
-set(VERSION_PATCH "5")
+set(VERSION_PATCH "6")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
@@ -43,6 +43,10 @@ endif ()
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING
       "Options: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif ()
+
+if (PHPTHRIFT_ROOT)
+   message(FATAL_ERROR "PHPTHRIFT_ROOT variable no longer supported.  Use THRIFT_SOURCE_DIR instead.")
 endif ()
 
 # install directory prefix
@@ -197,12 +201,21 @@ install(FILES ${HYPERTABLE_BINARY_DIR}/java/hypertable-${VERSION}.jar
           DESTINATION lib/java OPTIONAL)
 install(PROGRAMS bin/jrun DESTINATION bin)
 
-file(GLOB PHPFILES ${PHPTHRIFT_ROOT}/*.php)
-
-# Copy PHP Thrift files
-install(FILES ${PHPFILES} DESTINATION lib/php)
-install(DIRECTORY ${PHPTHRIFT_ROOT}/protocol ${PHPTHRIFT_ROOT}/server ${PHPTHRIFT_ROOT}/transport
-        DESTINATION lib/php USE_SOURCE_PERMISSIONS)
+# Copy Thrift files
+if (THRIFT_SOURCE_DIR)
+  message(STATUS "Copying PHP files into installation")
+  file(GLOB PHPFILES ${THRIFT_SOURCE_DIR}/lib/php/src/*.php)
+  install(FILES ${PHPFILES} DESTINATION lib/php)
+  install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/php/src/protocol
+		    ${THRIFT_SOURCE_DIR}/lib/php/src/server
+		    ${THRIFT_SOURCE_DIR}/lib/php/src/transport
+          DESTINATION lib/php USE_SOURCE_PERMISSIONS)
+  message(STATUS "Copying Perl files into installation")
+  file(GLOB PERLFILES ${THRIFT_SOURCE_DIR}/lib/perl/lib/*.pm)
+  install(FILES ${PERLFILES} DESTINATION lib/perl)
+  install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/perl/lib/Thrift
+          DESTINATION lib/perl USE_SOURCE_PERMISSIONS)
+endif ()
 
 # Copy C++ Thrift files
 install(DIRECTORY ${Thrift_INCLUDE_DIR} DESTINATION include USE_SOURCE_PERMISSIONS)

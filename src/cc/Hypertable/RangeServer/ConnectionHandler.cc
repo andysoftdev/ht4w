@@ -55,7 +55,7 @@ extern "C" {
 #include "RequestHandlerReplayCommit.h"
 #include "RequestHandlerDropRange.h"
 #include "RequestHandlerRelinquishRange.h"
-#include "RequestHandlerClose.h"
+#include "RequestHandlerShutdown.h"
 #include "RequestHandlerCommitLogSync.h"
 #include "RequestHandlerWaitForMaintenance.h"
 
@@ -82,13 +82,8 @@ ConnectionHandler::ConnectionHandler(Comm *comm, ApplicationQueuePtr &app_queue,
  */
 void ConnectionHandler::handle(EventPtr &event) {
 
-  if (m_shutdown &&
-      event->header.command != RangeServerProtocol::COMMAND_SHUTDOWN &&
-      event->header.command != RangeServerProtocol::COMMAND_STATUS) {
-    ResponseCallback cb(m_comm, event);
-    cb.error(RANGESERVER_SHUTTING_DOWN, "");
-    return;
-  }
+  if (m_shutdown)
+    return; // skip any request during shutdown
 
   if (event->type == Event::MESSAGE) {
     ApplicationHandler *handler = 0;
@@ -166,21 +161,14 @@ void ConnectionHandler::handle(EventPtr &event) {
         handler = new RequestHandlerStatus(m_comm, m_range_server_ptr.get(),
                                            event);
         break;
-      case RangeServerProtocol::COMMAND_CLOSE:
-        m_shutdown = true;
-        handler = new RequestHandlerClose(m_comm, m_range_server_ptr.get(),
-                                             event);
-        break;
       case RangeServerProtocol::COMMAND_WAIT_FOR_MAINTENANCE:
         handler = new RequestHandlerWaitForMaintenance(m_comm, m_range_server_ptr.get(), event);
         break;
       case RangeServerProtocol::COMMAND_SHUTDOWN:
         HT_INFO("Received shutdown command");
         m_shutdown = true;
-        m_range_server_ptr->shutdown();
-        m_range_server_ptr = 0;
-        m_app_queue_ptr->shutdown();
-        return;
+        handler = new RequestHandlerShutdown(m_comm, m_range_server_ptr.get(), event);
+        break;
       case RangeServerProtocol::COMMAND_DUMP:
         handler = new RequestHandlerDump(m_comm, m_range_server_ptr.get(),
                                          event);

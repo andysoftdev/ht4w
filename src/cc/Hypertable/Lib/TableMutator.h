@@ -54,8 +54,7 @@ namespace Hypertable {
 
   public:
     enum {
-      FLAG_NO_LOG_SYNC             = Table::MUTATOR_FLAG_NO_LOG_SYNC,
-      FLAG_IGNORE_UNKNOWN_CFS      = Table::MUTATOR_FLAG_IGNORE_UNKNOWN_CFS
+      FLAG_NO_LOG_SYNC             = Table::MUTATOR_FLAG_NO_LOG_SYNC
     };
 
     /**
@@ -180,7 +179,10 @@ namespace Hypertable {
   private:
 
     void auto_flush();
-    void wait_for_flush_completion();
+
+    friend class TableMutatorAsync;
+    void wait_for_flush_completion(TableMutatorAsync *mutator);
+
     void set_last_error(int32_t error) {
       ScopedLock lock(m_mutex);
       m_last_error = error;

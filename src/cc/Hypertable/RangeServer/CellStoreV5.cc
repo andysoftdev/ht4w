@@ -123,20 +123,22 @@ CellListScanner *CellStoreV5::create_scanner(ScanContextPtr &scan_ctx) {
   return new CellStoreScanner<CellStoreBlockIndexArray<uint32_t> >(this, scan_ctx, need_index ? &m_index_map32 : 0);
 }
 
-int get_replication(PropertiesPtr &props, const TableIdentifier *table_id) {
+namespace {
+  int get_replication(PropertiesPtr &props, const TableIdentifier *table_id) {
 
-  int32_t replication = props->get_i32("replication", int32_t(-1));
+    int32_t replication = props->get_i32("replication", int32_t(-1));
 
-  if (replication == -1 && table_id) {
-    if (table_id->is_user()) {
-      if (Config::has("Hypertable.RangeServer.Data.DefaultReplication"))
-        replication = Config::get_i32("Hypertable.RangeServer.Data.DefaultReplication");
+    if (replication == -1 && table_id) {
+      if (table_id->is_user()) {
+	if (Config::has("Hypertable.RangeServer.Data.DefaultReplication"))
+	  replication = Config::get_i32("Hypertable.RangeServer.Data.DefaultReplication");
+      }
+      else if (Config::has("Hypertable.Metadata.Replication"))
+	replication = Config::get_i32("Hypertable.Metadata.Replication");
     }
-    else if (Config::has("Hypertable.Metadata.Replication"))
-      replication = Config::get_i32("Hypertable.Metadata.Replication");
-  }
 
-  return replication;
+    return replication;
+  }
 }
 
 void
@@ -733,7 +735,7 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
   m_file_length = m_offset;
 
   /** Re-open file for reading **/
-  m_fd = m_filesys->open(m_filename, Filesystem::OPEN_FLAG_DIRECTIO);
+  m_fd = m_filesys->open(m_filename, Filesystem::OPEN_FLAG_DIRECTIO, false);
 
   // If compacting due to a split, estimate the disk usage at 1/2
   if (m_trailer.flags & CellStoreTrailerV5::SPLIT)
