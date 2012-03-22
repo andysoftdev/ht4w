@@ -475,11 +475,17 @@ function hypertable_ldi_select_test(logfile, testName) {
 function hypertable_test(logfile, testName) {
     file_copy(solutionDir + "\\gzip.exe", targetDir);
     file_copy(solutionDir + "\\sed.exe", targetDir);
-    prepare_target(testName, ["hypertable_test.hql", "hypertable_test.golden", "offset_test.*", "timeorder_test.*", "hypertable_select_gz_test.golden", "*.tsv"]);
+    prepare_target(testName, ["hypertable_test.hql", "hypertable_test.golden", "offset_test.*", "timeorder_test.*", "indices_test.hql", "indices_test.golden", "hypertable_select_gz_test.golden", "*.tsv"]);
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
     var status = run_target(logfile, testName);
     files_delete(["gzip.exe", "sed.exe"]);
     return status;
+}
+
+function indices_test(logfile, testName) {
+    prepare_target(testName, ["indices_test.golden"]);
+    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
+    return run_target(logfile, testName);
 }
 
 function init_test(logfile, testName) {
@@ -659,6 +665,7 @@ all_tests.add("escaper_test", run_target);
 all_tests.add("exception_test", run_target);
 all_tests.add("failure_inducer_test", failure_inducer_test);
 all_tests.add("fileblock_cache_test", fileblock_cache_test);
+all_tests.add("filesystem_test", run_target);
 all_tests.add("future_abrupt_end_test", future_abrupt_end_test);
 all_tests.add("future_mutator_cancel_test", future_mutator_cancel_test);
 all_tests.add("future_test", future_test);
@@ -666,6 +673,7 @@ all_tests.add("hash_test", run_target);
 all_tests.add("hyperspace_test", hyperspace_test);
 all_tests.add("hypertable_ldi_select_test", hypertable_ldi_select_test);
 all_tests.add("hypertable_test", hypertable_test);
+all_tests.add("indices_test", indices_test);
 all_tests.add("inetaddr_test", run_target);
 all_tests.add("init_test", init_test);
 all_tests.add("large_insert_test", large_insert_test);
