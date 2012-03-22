@@ -68,10 +68,8 @@ namespace Hypertable {
 
     static char *file_to_buffer(const String &fname, size_t *lenp);
     static String file_to_string(const String &fname);
-
-#ifndef _WIN32
     static void *mmap(const String &fname, off_t *lenp);
-#endif
+    static int munmap(void *addr, size_t length);
     static bool mkdirs(const String &dirname);
     static bool exists(const String &fname);
     static bool unlink(const String &fname);

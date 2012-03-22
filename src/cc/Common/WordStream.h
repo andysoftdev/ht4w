@@ -26,9 +26,6 @@
 
 #include <vector>
 
-#ifdef _WIN32
-#include <boost/shared_array.hpp>
-#endif
 #include <boost/random.hpp>
 #include <boost/random/uniform_01.hpp>
 
@@ -52,9 +49,6 @@ namespace Hypertable {
 
     boost::mt19937 ms_rng;
     char *m_base;
-#ifdef _WIN32
-    boost::shared_array<const char> m_value_data;
-#endif
     const char *m_end;
     const char *m_separator;
     size_t m_words_per_record;

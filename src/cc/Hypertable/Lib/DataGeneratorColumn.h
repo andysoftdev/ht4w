@@ -82,7 +82,7 @@ namespace Hypertable {
   class ColumnString : public Column {
   public:
     ColumnString(ColumnSpec &spec, bool keys_only = false)
-      : Column(spec), m_keys_only(keys_only), m_first_offset(0), m_size(0),
+      : Column(spec), m_keys_only(keys_only), m_mmap_base(0), m_first_offset(0), m_size(0),
         m_second_offset(0) {
       String s = source;
       if (s.empty())
@@ -105,12 +105,8 @@ namespace Hypertable {
           m_source = (const char *)m_value_data.get();
         }
         else {
-#ifndef _WIN32
-          m_source = (const char *)FileUtils::mmap(s, &m_value_data_len);
-#else
-          m_value_data.reset( FileUtils::file_to_buffer(source, (size_t*)&m_value_data_len) );
-          m_source = (const char *)m_value_data.get();
-#endif
+          m_mmap_base = FileUtils::mmap(s, &m_value_data_len);
+          m_source = (const char *)m_mmap_base;
           HT_ASSERT(m_value_data_len >= size);
         }
         m_value_data_len -= size;
@@ -121,7 +117,10 @@ namespace Hypertable {
       }
     }
 
-    virtual ~ColumnString() { }
+    virtual ~ColumnString() { 
+      if (m_mmap_base)
+        FileUtils::munmap(m_mmap_base, m_value_data_len);
+    }
 
     virtual bool next() {
       // "cooked mode": we have two pointers. move the second pointer forward.
@@ -239,6 +238,7 @@ namespace Hypertable {
     boost::shared_array<char> m_render_buf;
     boost::shared_array<const char> m_value_data;
     const char *m_source;
+    void *m_mmap_base;
     off_t m_value_data_len;
     off_t m_first_offset;
     size_t m_size;

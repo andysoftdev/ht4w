@@ -79,6 +79,53 @@ String FileUtils::file_to_string(const String &fname) {
   return str;
 }
 
+void *FileUtils::mmap(const String &fname, off_t *lenp) {
+  *lenp = 0;
+
+  HANDLE fd = ::CreateFile(fname.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, NULL);
+  if (fd == INVALID_HANDLE_VALUE) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("CreateFile %s failed - %s", fname.c_str(), winapi_strerror(err));
+    ::SetLastError(err);
+    return 0;
+  }
+
+  LARGE_INTEGER fs;
+  if (!::GetFileSizeEx(fd, &fs)) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("GetFileSizeEx %s failed - %s", fname.c_str(), winapi_strerror(err));
+    ::CloseHandle(fd);
+    ::SetLastError(err);
+    return 0;
+  }
+
+  HANDLE mmaph = CreateFileMapping(fd, 0, PAGE_READONLY, 0, 0, 0);
+  if (!mmaph) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("CreateFileMapping %s failed - %s", fname.c_str(), winapi_strerror(err));
+    ::CloseHandle(fd);
+    ::SetLastError(err);
+    return 0;
+  }
+
+  void *buffer = MapViewOfFile(mmaph, FILE_MAP_READ, 0, 0, 0);
+  if (!buffer) {
+    DWORD err = ::GetLastError();
+    HT_ERRORF("MapViewOfFile %s failed - %s", fname.c_str(), winapi_strerror(err));
+    ::CloseHandle(mmaph);
+    ::CloseHandle(fd);
+    ::SetLastError(err);
+    return 0;
+  }
+  ::CloseHandle(mmaph);
+  ::CloseHandle(fd);
+  return buffer;
+}
+
+int FileUtils::munmap(void *addr, size_t) {
+  return UnmapViewOfFile(addr) ? 0 : -1;
+}
+
 #ifdef _WIN32
 
 #define HT_WIN32_LASTERROR( msg ) \
@@ -565,6 +612,12 @@ void *FileUtils::mmap(const String &fname, off_t *lenp) {
   close(fd);
 
   return map;
+}
+
+
+
+int FileUtils::munmap(void *addr, size_t length) {
+  ::munmap(addr, length);
 }
 
 

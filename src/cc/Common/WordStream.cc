@@ -46,12 +46,7 @@ WordStream::WordStream(const String &word_file, unsigned seed,
   if (!m_random)
     m_offset.resize(words_per_record, 0);
 
-#ifndef _WIN32
   m_base = (char *)FileUtils::mmap(word_file, &m_len);
-#else
-  m_value_data.reset( FileUtils::file_to_buffer(word_file, (size_t*)&m_len) );
-  m_base = (char *)m_value_data.get();
-#endif
   m_end = m_base + m_len;
     
   size_t count = 0;
@@ -80,9 +75,7 @@ WordStream::WordStream(const String &word_file, unsigned seed,
 
 
 WordStream::~WordStream() {
-#ifndef _WIN32
-  ::munmap((void *)m_base, m_len);
-#endif
+  FileUtils::munmap((void *)m_base, m_len);
 }
 
 
