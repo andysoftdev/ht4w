@@ -44,7 +44,6 @@
 #include "HyperspaceSessionHandler.h"
 #include "RangeServer.h"
 #include "TimerHandler.h"
-#include "IndexUpdater.h"
 
 #ifdef _WIN32
 #include "Common/ServerLaunchEvent.h"
@@ -107,15 +106,6 @@ int main(int argc, char **argv) {
     TimerHandlerPtr timer_handler = new TimerHandler(comm, range_server.get());
 
     app_queue->join();
-
-    IndexUpdaterFactory::close();
-
-    Global::conn_manager->remove_all();
-    Global::conn_manager = 0;
-    range_server = 0;
-    timer_handler = 0;
-
-    HT_NOTICE("Exiting range server");
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

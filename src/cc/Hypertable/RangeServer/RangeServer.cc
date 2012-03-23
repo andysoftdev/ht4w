@@ -82,6 +82,7 @@ extern "C" {
 #include "RangeStatsGatherer.h"
 #include "ScanContext.h"
 #include "UpdateThread.h"
+#include "IndexUpdater.h"
 
 using namespace std;
 using namespace Hypertable;
@@ -458,7 +459,11 @@ void RangeServer::shutdown() {
     delete Global::protocol;
     Global::protocol = 0;
 
-    m_app_queue->shutdown();
+    IndexUpdaterFactory::close();
+
+    HT_NOTICE("Exiting range server");
+
+    _exit(0);
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
