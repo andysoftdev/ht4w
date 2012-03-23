@@ -100,9 +100,11 @@ void MaintenanceScheduler::schedule() {
     if (Global::maintenance_queue->pending() < Global::maintenance_queue->workers())
       m_scheduling_needed = true;
     bool exceeded = memory_state.balance > memory_state.limit;
-    int64_t excess = exceeded ? memory_state.balance - memory_state.limit : 0;
+    excess = exceeded ? memory_state.balance - memory_state.limit : 0;
     memory_state.needed = ((memory_state.limit * (exceeded ? m_low_memory_limit_percentage : m_low_memory_limit_percentage / 2)) / 100) + excess;
   }
+  else if (Global::block_cache && memory_state.limit * (100 - m_low_memory_limit_percentage) / 100)
+    Global::block_cache->cap_memory_use();
 
   trace_str += String("low_memory\t") + (low_memory ? "true" : "false") + "\n";
   trace_str += String("Global::memory_tracker->balance()\t") + Global::memory_tracker->balance() + "\n";

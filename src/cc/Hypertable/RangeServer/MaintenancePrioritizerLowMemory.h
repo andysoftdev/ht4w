@@ -28,8 +28,8 @@ namespace Hypertable {
 
   class MaintenancePrioritizerLowMemory : public MaintenancePrioritizer {
   public:
-    MaintenancePrioritizerLowMemory(RSStatsPtr &server_stats)
-      : MaintenancePrioritizer(server_stats) { }
+    MaintenancePrioritizerLowMemory(const RSStatsPtr &server_stats)
+     : MaintenancePrioritizer(server_stats) { }
     virtual void prioritize(RangeStatsVector &range_data, MemoryState &memory_state,
                             int32_t priority, String &trace_str);
 

@@ -51,15 +51,14 @@ namespace Hypertable {
       int64_t needed;
     };
 
-    MaintenancePrioritizer(RSStatsPtr &server_stats)
-      : m_cellstore_minimum_size(0), m_server_stats(server_stats) { }
+    MaintenancePrioritizer(const RSStatsPtr &server_stats)
+      : m_server_stats(server_stats) { }
 
     virtual void prioritize(RangeStatsVector &range_data, MemoryState &memory_state,
                             int32_t priority, String &trace_str) = 0;
 
   protected:
 
-    int64_t m_cellstore_minimum_size;
     RSStatsPtr m_server_stats;
 
     bool schedule_inprogress_operations(RangeStatsVector &range_data,
