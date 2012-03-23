@@ -522,7 +522,14 @@ bool ServerUtils::shutdown_rangeserver(DWORD pid) {
       }
       RangeServerClientPtr client = new RangeServerClient(comm, Config::connection_timeout());
       HT_NOTICEF("Shutdown range server (%s)", addr.format().c_str());
-      client->wait_for_maintenance(addr);
+      try {
+        client->wait_for_maintenance(addr);
+      }
+      catch (Exception& e) {
+        if( e.code() != Error::REQUEST_TIMEOUT ) {
+          throw;
+        }
+      }
       client->shutdown(addr);
       client = 0;
       conn_mgr->remove_all();
