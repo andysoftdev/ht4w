@@ -188,7 +188,7 @@ function prepare_target(testName, files) {
 
 function clean_target() {
     system("..\\hypertable.service.exe --kill-servers");
-    files_delete(["*.txt", "*.xml", "*.out", "*.output.*", "*.stdout", "*.stderr", "*.golden", "*.cfg", "*.spec", "*.gz", "*.tsv", "*.dat"]);
+    files_delete(["*.txt", "*.xml", "*.out", "*.output.*", "*.stdout", "*.stderr", "*.golden", "*.cfg", "*.spec", "*.gz", "*.tsv", "*.dat", "*.hql"]);
     system("rd /S /Q test");
     system("rd /S /Q hypertable");
     system("rd /S /Q hyperspace");
