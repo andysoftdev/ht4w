@@ -37,6 +37,10 @@
 #include <transport/TServerSocket.h>
 #include <transport/TTransportUtils.h>
 
+#ifdef WIN32
+#pragma warning( disable : 4373 ) // virtual function overrides, previous versions of the compiler did not override when parameters only differed by const/volatile qualifiers
+#endif
+
 #include "Common/Time.h"
 #include "Hypertable/Lib/Client.h"
 #include "Hypertable/Lib/HqlInterpreter.h"
@@ -251,7 +255,7 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
 
   foreach(const ThriftGen::ColumnPredicate &cp, tss.column_predicates)
     hss.column_predicates.push_back(Hypertable::ColumnPredicate(
-        cp.column_family.c_str(), cp.operation, cp.value.c_str()));
+        cp.column_family.c_str(), cp.operation, cp.__isset.value ? cp.value.c_str() : 0));
 }
 
 void convert_cell(const ThriftGen::Cell &tcell, Hypertable::Cell &hcell) {

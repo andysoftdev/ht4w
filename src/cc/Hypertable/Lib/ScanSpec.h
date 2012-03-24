@@ -40,16 +40,18 @@ public:
   enum {
     NO_OPERATION=0,
     EXACT_MATCH,
-    PREFIX_MATCH
+    PREFIX_MATCH,
+    CONTAINS
   };
 
-  ColumnPredicate() : column_family(0), operation(0), value(0) { }
-  ColumnPredicate(const char *_column_family, uint32_t _operation, 
-          const char *_value, uint32_t value_len = 0)
-    : column_family(_column_family), operation(_operation), value(_value),
-        value_len(0) { 
-    if (!value_len && value) 
-      value_len = strlen(value); 
+  ColumnPredicate() : column_family(0), operation(0),
+    value(0), value_len(0) { }
+  ColumnPredicate(const char *_column_family, uint32_t _operation,
+          const char *_value, uint32_t _value_len = 0)
+    : column_family(_column_family), operation(_operation),
+       value(_value), value_len(_value_len) {
+    if (!value_len && value)
+      value_len = strlen(value);
   }
   ColumnPredicate(const uint8_t **bufp, size_t *remainp) {
     decode(bufp, remainp);
@@ -317,16 +319,13 @@ public:
 
   void add_column_predicate(CharArena &arena, const char *column_family,
           uint32_t operation, const char *value, uint32_t value_len = 0) {
-    if (column_predicates.size())
-      HT_THROW(Error::BAD_SCAN_SPEC, "column_predicate already specified");
-
     ColumnPredicate cp;
     cp.column_family = arena.dup(column_family);
-    cp.value = arena.dup(value);
     cp.operation = operation;
-    cp.value_len = value_len;
-    if (!cp.value_len)
-      cp.value_len = strlen(cp.value);
+    if (value) {
+      cp.value = arena.dup(value);
+      cp.value_len = value_len ? value_len : strlen(value);
+    }
     column_predicates.push_back(cp);
   }
 
