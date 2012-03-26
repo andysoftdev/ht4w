@@ -55,9 +55,6 @@ MaintenancePrioritizerLowMemory::prioritize(RangeStatsVector &range_data,
       range_data_user.push_back(range_data[i]);
   }
 
-  if (Global::block_cache)
-    Global::block_cache->cap_memory_use();
-
   /**
    * Assign priority for ROOT range
    */
@@ -164,12 +161,6 @@ MaintenancePrioritizerLowMemory::assign_priorities_user(RangeStatsVector &range_
   if (!purge_shadow_caches(range_data, memory_state, priority, trace_str))
     return;
 
-  if (Global::block_cache && memory_state.balance > memory_state.limit) {
-    memory_state.decrement_needed(Global::block_cache->decrease_limit(memory_state.balance - memory_state.limit));
-    if (!memory_state.need_more())
-      return;
-  }
-
   if (update_bytes < 500000 && scan_count > 10) {
 
     HT_INFOF("READ workload prioritization (update_bytes=%llu, scan_count=%u)",
@@ -179,6 +170,7 @@ MaintenancePrioritizerLowMemory::assign_priorities_user(RangeStatsVector &range_
       return;
 
     if (Global::block_cache) {
+      Global::block_cache->cap_memory_use();
       memory_state.decrement_needed( Global::block_cache->decrease_limit(memory_state.needed) );
       if (!memory_state.need_more())
         return;
@@ -194,6 +186,7 @@ MaintenancePrioritizerLowMemory::assign_priorities_user(RangeStatsVector &range_
 	     (Llu)update_bytes, (unsigned)scan_count);
 
     if (Global::block_cache) {
+      Global::block_cache->cap_memory_use();
       memory_state.decrement_needed( Global::block_cache->decrease_limit(memory_state.needed) );
       if (!memory_state.need_more())
         return;
