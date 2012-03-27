@@ -20,6 +20,10 @@
 #include "Common/Compat.h"
 #include "Common/System.h"
 
+#ifdef _WIN32
+#include "Common/ReferenceCount.h"
+#endif
+
 #include <iostream>
 #include <fstream>
 #include "ThriftBroker/Client.h"
@@ -29,6 +33,14 @@
 
 using namespace Hypertable;
 using namespace Hypertable::ThriftGen;
+
+#ifdef _WIN32
+
+inline void sleep( int sec ) {
+  ::Sleep( 1000 * sec );
+}
+
+#endif
 
 void run(Thrift::Client *client);
 void test_rename_alter(Thrift::Client *client, std::ostream &out);
@@ -45,8 +57,20 @@ void test_error(Thrift::Client *client, std::ostream &out);
 
 
 int main() {
+
+#ifdef _WIN32
+  pthread_win32_process_attach_np();
+  WSADATA wsaData;
+  if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    HT_FATAL("WSAStartup failed");
+#endif
+
   Thrift::Client *client = new Thrift::Client("localhost", 38080);
   run(client);
+
+#ifdef _WIN32
+  pthread_win32_process_detach_np();
+#endif
 }
 
 
@@ -170,7 +194,7 @@ void test_unique(Thrift::Client *client, std::ostream &out) {
     client->generate_guid(value);
     client->create_cell_unique(ret, ns, "UniqueTest", key, value);
   }
-  catch (ClientException &e) {
+  catch (ClientException &) {
     caught=true;
   }
   assert(caught);
@@ -307,7 +331,7 @@ void test_put(Thrift::Client *client) {
   try {
     client->offer_cells(ns, "thrift_test", mutate_spec, cells);
   }
-  catch (ClientException &e) {
+  catch (ClientException &) {
     // ok, fall through
   }
   client->namespace_close(ns);

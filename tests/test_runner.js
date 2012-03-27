@@ -317,6 +317,11 @@ function cellstore64_test(logfile, testName) {
     return run_target(logfile, testName);
 }
 
+function client_test(logfile, testName) {
+    run_servers("--Hypertable.DataDirectory=" + targetDir);
+    return run_target(logfile, testName);
+}
+
 function comm_datagram_test(logfile, testName) {
     system(solutionDir + "\\gzip -d -c " + solutionDir + "\\tests\\data\\words.gz", "words");
     system(solutionDir + "\\head -50000 words", "commTestDatagram.golden");
@@ -652,6 +657,7 @@ all_tests.add("bmz_test", bmz_test);
 all_tests.add("cellstore_scanner_delete_test", cellstore_scanner_delete_test);
 all_tests.add("cellstore_scanner_test", cellstore_scanner_test);
 //FIXME all_tests.add("cellstore64_test", cellstore64_test);
+all_tests.add("client_test", client_test);
 all_tests.add("comm_datagram_test", comm_datagram_test);
 all_tests.add("comm_reverse_request_test", comm_reverse_request_test);
 all_tests.add("comm_test", comm_test);
