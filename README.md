@@ -1,181 +1,125 @@
-HOW TO INSTALL
-==============
+HOW TO BUILD HYPERTABLE FOR WINDOWS
+===================================
 
-You can either download an appropriate binary package for your
-platform or build from source. Binary packages can be obtained from
-[here](http://package.hypertable.org/).
+Building Hypertable for Windows from source requires at least Microsoft Visual Studio 2010 Professional.
 
-See [this wiki
-page](http://code.google.com/p/hypertable/wiki/UpAndRunningWithBinaryPackages)
-for getting started with hypertable binary packages.
+###Browse through or download the ht4w source###
 
+* Browse through or download the ht4w source from [github](http://github.com/andysoftdev/ht4w).
+  To download the latest sources press the 'Downloads' button and choose one of the following files, either the
+  Download.tar.gz or the Download.zip.
+  
+* Alternatively, get the source from the repository, create a projects folder (the path must not contain any spaces) and use:
 
-HOW TO BUILD FROM SOURCE
-========================
+		mkdir hypertable
+		cd hypertable
+		git clone git://github.com/andysoftdev/ht4w.git
 
-1.  Download the source:
 
-    You can either download a release source tar ball from the [download
-    page](http://hypertable.org/download.html) and unpack it in your
-    source directory say ~/src:
+###Download and install boost###
 
-        cd ~/src
-        tar zxvf <path_to>/hypertable-<version>-src.tar.gz
+* Download the latest boost version either from [boost](http://www.boost.org/users/download/)
+  or from [sourceforge](http://sourceforge.net/projects/boost/files/boost/).
 
-    or from our git repository:
+* Unpack the content of the package (i.e. the content of the root folder, e.g. of the boost_1_44_0\) into ht4w\deps\boost\ and run:
 
-        cd ~/src
-        git clone git://scm.hypertable.org/pub/repos/hypertable.git
+		cd ht4w\deps\boost
+		build-win32.bat
+		build-x64.bat
+  When the build is successfully completed the intermediate files located in ht4w\build\deps\boost can be deleted.
 
-    From now on, we assume that your hypertable source tree is
-    ~/src/hypertable
 
-2.  Install the development environment:
+###Download and install Berkeley DB###
 
-    Run the following script to setup up the dev environment:
+* Download the latest Berkeley DB from [Oracle](http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html).
 
-        ~/src/hypertable/bin/src-utils/htbuild --install dev_env
+* Unpack the content of the package (i.e. the content of the root folder, e.g. of the db-5.2.28\) into ht4w\deps\db\ and run:
 
-    If it did not work for your platform, check out the
-    [HowToBuild](http://code.google.com/p/hypertable/wiki/HowToBuild)
-    wiki for various tips on building on various platforms.
+		cd ht4w\deps\db
+		cscript libdb.js
 
-    Patches for htbuild to support your platforms are welcome :)
 
-3.  Configure the build:
+###Build Hypertable servers, clients and tools###
 
-    Assuming you want your build tree to be ~/build/hypertable
+* Open the ht4w solution (ht4w\ht4w.sln) with Microsoft Visual Studio 2010 and build its configurations. Alternatively, open the Visual Studio command prompt and type:
 
-        mkdir -p ~/build/hypertable
-        cd ~/build/hypertable
-        cmake ~/src/hypertable
+		cd ht4w
+		msbuild ht4w.buildproj
+  or, for a complete rebuild, type
 
-    By default, hypertable gets installed in /opt/hypertable. To install into
-    your own install directory, say $prefix, you can use:
+		cd ht4w
+		msbuild ht4w.buildproj /t:Clean;Make
 
-        cmake -DCMAKE_INSTALL_PREFIX=$prefix ~/src/hypertable
 
-    By default the build is configured for debug. To make a release build for
-    production/performance test/benchmark:
+MANAGE HYPERTABLE SERVERS
+=========================
 
-        cmake -DCMAKE_BUILD_TYPE=Release ~/src/hypertable
+Use Hypertable.Service.exe (ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]) to manage the Hypertable servers. For a complete list
+of all available options and configuration settings run:
 
-    If you would like to install the build in a directory that contains
-    a version suffix (e.g. 0.9.3.0.1d45f8d), you can configure as follows:
+		Hypertable.Service.exe [--help|--help-config]
 
-        cmake -DCMAKE_BUILD_TYPE=Release -DVERSION_ADD_COMMIT_SUFFIX=1 ~/src/hypertable
+Copy or update the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) from ht4w\\conf to ht4w\\dist\\\[Win32|x64]\\\[Release|Debug]\\conf.
 
-    If you would like to build OS specific packages in a directory that contains
-    the specific OS and version (e.g. hypertable-0.9.5.0-suse_11.4-i386), you can configure as follows:
 
-        cmake -DCMAKE_BUILD_TYPE=Release -DPACKAGE_OS_SPECIFIC=1 ~/src/hypertable
+###Run Hypertable servers as a Windows service###
 
-    Note, you can also use:
+Hypertable.Service.exe will ask for elevation if running on Windows Vista or Windows 7 with UAC enabled:
 
-        ccmake ~/src/hypertable
+* Install Hypertable as a Windows service (the additional arguments will be passed to the Hypertable servers on service startup):
 
-    to change build parameters interactively.
+		Hypertable.Service --install-service [--service-name] [additional arguments]
 
-    To build shared libraries, e.g., for scripting language extensions:
+* Start Hypertable service:
 
-        cmake -DBUILD_SHARED_LIBS=ON ~/src/hypertable
+		Hypertable.Service --start-service [--service-name]
 
-    Since PHP has no builtin package system, its thrift installation needs to
-    be manually specified for ThriftBroker support:
-        cmake -DTHRIFT_SOURCE_DIR=/home/user/src/thrift
+* Stop Hypertable service:
 
-4.  Build Hypertable binaries.
+		Hypertable.Service --stop-service [--service-name]
 
-        make (or make -jnumber_of_cpu_or_cores_plus_1 for faster compile)
-        make install
+* Uninstall Hypertable service:
 
-    Note, if it is a shared library install, you might need to do:
+		Hypertable.Service --uninstall-service [--service-name]
 
-        echo $prefix/$version/lib | \
-            sudo tee /etc/ld.so.conf.d/hypertable
-        sudo /sbin/ldconfig
 
-    Or, you can use the usual LD_LIBRARY_PATH (most Unix like OS) and
-    DYLD_LIBRARY_PATH (Mac OS X) to specify non-standard shared library
-    directories.
+###Run Hypertable servers in foreground###
 
+The servers will run under the logged-on user account.
 
-HOW TO MAKE BINARY PACKAGES
-===========================
+* Start servers in command shell (use ctrl+c to stop the servers):
 
-The available package generators for cmake are a little different on
-different platforms. It is usually best to generate binary packages on
-their native platforms.
+		Hypertable.Service --join-servers [additional arguments]
 
-    cd ~/build/hypertable
-    ~/src/hypertable/bin/src-utils/htpkg generator...
+* Start servers and terminate:
 
-where generator can be DEB (for debian packages), RPM (for
-redhat/fedora/centos packages), PackageMaker (for Mac OS X packages)
-and STGZ (for self extracting gzipped tar files.) etc. See cpack(1)
-for more options.
+		Hypertable.Service --start-servers [--create-console] [additional arguments]
 
-For every generator listed on the command line, the above command will
-generate two packages: one for the entire hypertable distribution and
-one for thriftbroker only.
+* Stop running servers:
 
-You can also use htbuild to generate binary packages on remote machines
-that are not setup for development, even a base Amazon EC2 image:
+		Hypertable.Service --stop-servers
 
-    ~/src/hypertable/bin/src-utils/htbuild --ami ami-5946a730 DEB RPM TBZ2
+* Kill running servers:
 
-At the moment, I recommend an Ubuntu/Debian machine for generating binary
-packages as it can generate both RPM and DEB correctly faster without
-having to disable prelinking and selinux like on Fedora/Redhat.
+		Hypertable.Service --kill-servers
 
 
-HOW TO RUN REGRESSION TESTS
-===========================
+###Run Hypertable servers in the build environment###
 
-1.  Make sure software is built and installed according to
-    "HOW TO BUILD FROM SOURCE"
+* Start servers:
 
-2.  Run the regression tests
+		cd ht4w\bin
+		start-all-servers [x86|x64] [debug] [additional arguments]
 
-        cd ~/build/hypertable
-        make alltests
+* Stop servers:
 
-Note: there are two other high-level test targets: coretests (for core tests)
-and moretests (for more longer running tests, which is included in alltests.)
-These high-level test targets will (re)start test servers automatically when
-new servers are installed.  There is also a low-level "test" target in root
-of the build tree and src (and src/lang/Components) and tests/integration
-directories that does NOT auto restart test servers.
+		cd ht4w\bin
+		stop-all-servers [x86|x64] [debug] [additional arguments]
 
 
-HOW TO BUILD SOURCE CODE DOCUMENTATION TREE
-===========================================
+REDISTRIBUTE HYPERTABLE FOR WINDOWS
+===================================
 
-1.  Install the following tools:
-    - [doxygen](http://www.stack.nl/~dimitri/doxygen/)
-    - [graphviz](http://www.graphviz.org/)
+* Install the Microsoft Visual C++ 2010 redistributable package [x86|x64] on the target machine.
 
-    Note: if you ran `htbuild --install dev_env`, these should already
-    be installed
-
-2.  If you have doxygen installed on your system, then CMake should detect this
-    and add a "doc" target to the make file.  Building the source code
-    documentation tree is just a matter of running the following commands:
-
-        cd ~/build/hypertable
-        make doc
-
-To view the docs, load the following file into a web browser:
-
--  `~/build/hypertable/doc/html/index.html` for source code documentation and,
--  `~/build/hypertable/gen-html/index.html` for Thrift API reference.
--  `~/build/hypertable/hqldoc/index.html` for HQL reference.
-
-The Thrift API doc can also be generated independently (without doxygen
-installed) by running the follow command in the build tree:
-
-    make thriftdoc
-
-Similarly HQL doc can be generated independently (without doxygen etc.):
-
-    make hqldoc
+* Install the required config files (hypertable.cfg, METADATA.xml and RS_METRICS.xml) to [hypertable install directory]\\conf.
