@@ -38,6 +38,13 @@ using namespace Hypertable;
 using namespace Hyperspace;
 using namespace Serialization;
 
+#define HT_THROW_AND_LOG(error, fmt) \
+  { \
+    String error_text = format(fmt, Error::get_text(error)); \
+    HT_ERROR(error_text.c_str()); \
+    HT_THROW(error, error_text.c_str()); \
+  }
+
 ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
                                                Session *session)
   : m_dead(false), m_destoying(false), m_comm(comm),
@@ -76,14 +83,12 @@ ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
 
   if ((error = m_comm->send_datagram(m_master_addr, m_local_addr, cbp)
       != Error::OK)) {
-    HT_ERRORF("Unable to send datagram - %s", Error::get_text(error));
-    exit(1);
+    HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
   }
 
   if ((error = m_comm->set_timer(m_keep_alive_interval, this))
       != Error::OK) {
-    HT_ERRORF("Problem setting timer - %s", Error::get_text(error));
-    exit(1);
+    HT_THROW_AND_LOG(error, "Problem setting timer - %s");
   }
 }
 
@@ -137,13 +142,11 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
               m_last_known_event));
 
           if ((error = m_comm->send_datagram(m_master_addr, m_local_addr, cbp) != Error::OK)) {
-            HT_ERRORF("Unable to send datagram - %s", Error::get_text(error));
-            exit(1);
+            HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
           }
 
           if ((error = m_comm->set_timer(m_keep_alive_interval, this)) != Error::OK) {
-            HT_ERRORF("Problem setting timer - %s", Error::get_text(error));
-            exit(1);
+            HT_THROW_AND_LOG(error, "Problem setting timer - %s");
           }
           break;
         }
@@ -338,8 +341,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
             boost::xtime_get(&m_last_keep_alive_send_time, boost::TIME_UTC);
             if ((error = m_comm->send_datagram(m_master_addr, m_local_addr, cbp)
                 != Error::OK)) {
-              HT_ERRORF("Unable to send datagram - %s", Error::get_text(error));
-              exit(1);
+              HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
             }
           }
 
@@ -385,14 +387,12 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
 
     if ((error = m_comm->send_datagram(m_master_addr, m_local_addr, cbp)
         != Error::OK)) {
-      HT_ERRORF("Unable to send datagram - %s", Error::get_text(error));
-      exit(1);
+      HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
     }
 
     if ((error = m_comm->set_timer(m_keep_alive_interval, this))
         != Error::OK) {
-      HT_ERRORF("Problem setting timer - %s", Error::get_text(error));
-      exit(1);
+      HT_THROW_AND_LOG(error, "Problem setting timer - %s");
     }
   }
   else {
@@ -429,14 +429,12 @@ void ClientKeepaliveHandler::expire_session() {
     int error;
     if ((error = m_comm->send_datagram(m_master_addr, m_local_addr, cbp)
         != Error::OK)) {
-      HT_ERRORF("Unable to send datagram - %s", Error::get_text(error));
-      exit(1);
+      HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
     }
 
     if ((error = m_comm->set_timer(m_keep_alive_interval, this))
         != Error::OK) {
-      HT_ERRORF("Problem setting timer - %s", Error::get_text(error));
-      exit(1);
+      HT_THROW_AND_LOG(error, "Problem setting timer - %s");
     }
   }
 }
