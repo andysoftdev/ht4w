@@ -79,6 +79,8 @@
               Account="LocalSystem"
               ErrorControl="ignore"
               Interactive="no">
+              <ServiceDependency Id="LanmanWorkstation" />
+              <ServiceDependency Id="LanmanServer" />
             </ServiceInstall>
 
             <ServiceControl

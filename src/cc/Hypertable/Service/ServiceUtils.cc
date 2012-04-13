@@ -538,7 +538,11 @@ bool ServiceUtils::install_service(const String& service_name, const String& ser
                                   SERVICE_AUTO_START,
                                   SERVICE_ERROR_NORMAL,
                                   exe_name.c_str(),
-                                  0,0,0,0,0);
+                                  0,
+                                  0,
+                                  "LanmanWorstation\0LanmanServer\0",
+                                  0,
+                                  0);
     if (scv) {
       success = true;
       if (!service_desc.empty()) {
