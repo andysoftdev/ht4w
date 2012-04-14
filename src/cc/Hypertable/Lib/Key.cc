@@ -62,7 +62,7 @@ namespace Hypertable {
   void
   create_key_and_append(DynamicBuffer &dst_buf, uint8_t flag, const char *row,
       uint8_t column_family_code, const char *column_qualifier,
-      int64_t timestamp, int64_t revision) {
+      int64_t timestamp, int64_t revision, bool time_order_asc) {
     size_t row_len = strlen(row);
     size_t len = 1 + row_len + 4;
     uint8_t control = 0;
@@ -79,6 +79,9 @@ namespace Hypertable {
         control |= Key::REV_IS_TS;
     }
 
+    if (!time_order_asc)
+      control |= Key::TS_CHRONOLOGICAL;
+
     if (revision != AUTO_ASSIGN) {
       if (!(control & Key::REV_IS_TS))
         len += 8;
@@ -92,7 +95,7 @@ namespace Hypertable {
                              column_family_code, column_qualifier);
 
     if (control & Key::HAVE_TIMESTAMP)
-      Key::encode_ts64(&dst_buf.ptr, timestamp);
+      Key::encode_ts64(&dst_buf.ptr, timestamp, time_order_asc);
 
     if ((control & Key::HAVE_REVISION)
         && !(control & Key::REV_IS_TS))
@@ -102,9 +105,11 @@ namespace Hypertable {
 
   }
 
-  void create_key_and_append(DynamicBuffer &dst_buf, const char *row) {
+  void create_key_and_append(DynamicBuffer &dst_buf, const char *row, bool time_order_asc) {
     uint8_t control = Key::HAVE_REVISION
         | Key::HAVE_TIMESTAMP | Key::REV_IS_TS;
+    if (!time_order_asc)
+      control |= Key::TS_CHRONOLOGICAL;
     size_t row_len = strlen(row);
     size_t len = 13 + row_len;
     if (dst_buf.remaining() < len + 6)
