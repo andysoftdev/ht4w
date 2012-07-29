@@ -25,7 +25,7 @@
 #include "LoadBalancer.h"
 #include "Operation.h"
 #include "OperationBalance.h"
-#include "RemovalManager.h"
+#include "ReferenceManager.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -36,6 +36,7 @@ Context::~Context() {
     master_file_handle = 0;
   }
   delete balancer;
+  delete reference_manager;
 }
 
 void Context::add_server(RangeServerConnectionPtr &rsc) {
@@ -66,7 +67,7 @@ bool Context::connect_server(RangeServerConnectionPtr &rsc, const String &hostna
   comm->add_proxy(rsc->location(), hostname, public_addr);
   HT_INFOF("Registered proxy %s", rsc->location().c_str());
 
-  if (rsc->connect(hostname, local_addr, public_addr)) {
+  if (rsc->connect(hostname, local_addr, public_addr, test_mode)) {
     conn_count++;
     if (conn_count == 1)
       notify = true;
@@ -234,7 +235,31 @@ void Context::get_unbalanced_servers(const std::vector<String> &locations,
 
 void Context::set_servers_balanced(const std::vector<RangeServerConnectionPtr> &unbalanced) {
   ScopedLock lock(mutex);
-  foreach( const RangeServerConnectionPtr rsc, unbalanced) {
+  foreach (const RangeServerConnectionPtr rsc, unbalanced) {
     rsc->set_balanced();
   }
+}
+
+bool Context::can_accept_ranges(const RangeServerStatistics &stats)
+{
+  static int threshold = 0;
+  if (!threshold)
+    threshold = props->get_i32("Hypertable.Master.DiskThreshold.Percentage");
+
+  // system info was not yet initialized; assume that the disks are available
+  if (!stats.stats) {
+    HT_WARNF("RangeServer %s: no disk usage statistics available",
+            stats.location.c_str());
+    return true;
+  }
+
+  // accept new ranges if there's at least one disk below the threshold
+  foreach (const FsStat &fs, stats.stats->system.fs_stat) {
+    if (fs.use_pct < threshold)
+      return true;
+  }
+  HT_WARNF("RangeServer %s: all disks are above threshold of %d %% "
+          "(Hypertable.Master.DiskThresholdPct); will not assign ranges",
+          stats.location.c_str(), threshold);
+  return false;
 }

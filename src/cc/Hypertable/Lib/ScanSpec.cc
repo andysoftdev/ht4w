@@ -36,8 +36,8 @@ using namespace Hypertable;
 using namespace Serialization;
 
 size_t ColumnPredicate::encoded_length() const {
-  return    sizeof(uint32_t)
-          + encoded_length_vstr(column_family)
+  return sizeof(uint32_t)
+          + encoded_length_vstr(column_family) 
           + encoded_length_vstr(value_len);
 }
 

@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_INDEXRESULTCALLBACK_H
-#define HYPERTABLE_INDEXRESULTCALLBACK_H
+#ifndef HYPERTABLE_INDEXSCANNERCALLBACK_H
+#define HYPERTABLE_INDEXSCANNERCALLBACK_H
 
 #include <vector>
 #include <deque>
@@ -124,6 +124,8 @@ static String last;
       foreach (TableScannerAsync *s, m_scanners)
         delete s;
       m_scanners.clear();
+      if (m_mutator)
+        delete m_mutator;
       sspecs_clear();
       if (m_tmp_table) {
         Client *client = m_primary_table->get_namespace()->get_client();
@@ -229,19 +231,7 @@ static String last;
       // packet to the original callback and decrement the outstanding scanners
       // once more (this is the equivalent operation to the increment in
       // the constructor)
-      bool final_eos = false;
-      if (m_track_limits) {
-        if (((m_limits_reached && is_eos && m_eos) && 
-                    atomic_read(&m_outstanding_scanners) == 0)
-            || (!m_limits_reached && (is_eos || m_eos) && 
-                atomic_read(&m_outstanding_scanners) == 0))
-          final_eos = true;
-      }
-      else {
-        if ((is_eos || m_eos) && atomic_read(&m_outstanding_scanners) == 0)
-          final_eos = true;
-      }
-      if (final_eos) {
+      if ((is_eos || m_eos) && atomic_read(&m_outstanding_scanners) == 0) {
         m_eos = true;
         HT_ASSERT(m_final_decrement == false);
         if (!m_final_decrement) {
@@ -316,9 +306,12 @@ static String last;
         key.row_len = strlen(p);
         key.column_family = m_column_map[cfid].c_str();
         key.timestamp = cell.timestamp;
-        if (m_mutator) {
-          m_mutator->set(key, 0);
+        if (m_qualifier_scan) {
+          key.column_qualifier = r;
+          key.column_qualifier_len = strlen(r);
         }
+        if (m_mutator)
+          m_mutator->set(key, 0);
         else if (m_tmp_keys.find(key) == m_tmp_keys.end()) {
           m_tmp_keys.insert(CkeyMap::value_type(key, true));
         }
@@ -470,7 +463,7 @@ static String last;
 
         m_last_rowkey_verify = last;
 
-        while (m_sspecs.size()>SSB_QUEUE_LIMIT && !m_limits_reached)
+        while (m_sspecs.size() > SSB_QUEUE_LIMIT && !m_limits_reached)
           m_sspecs_cond.wait(lock);
 
         if (m_limits_reached) { 
@@ -514,7 +507,7 @@ static String last;
       m_last_rowkey_verify = last;
 
       // add the ScanSpec to the queue
-      while (m_sspecs.size()>SSB_QUEUE_LIMIT && !m_limits_reached)
+      while (m_sspecs.size() > SSB_QUEUE_LIMIT && !m_limits_reached)
         m_sspecs_cond.wait(lock);
 
       // if, in the meantime, we reached any CELL_LIMIT/ROW_LIMIT then return
@@ -795,4 +788,4 @@ static String last;
   }
 } // namespace Hypertable
 
-#endif // HYPERTABLE_INDEXRESULTCALLBACK_H
+#endif // HYPERTABLE_INDEXSCANNERCALLBACK_H

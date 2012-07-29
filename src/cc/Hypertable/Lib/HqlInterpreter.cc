@@ -92,9 +92,9 @@ cmd_create_namespace(Client *client, NamespacePtr &ns, ParserState &state,
     HqlInterpreter::Callback &cb) {
 
   if (!ns || state.ns.find('/') == 0)
-    client->create_namespace(state.ns);
+    client->create_namespace(state.ns, NULL, false, state.if_exists);
   else
-    client->create_namespace(state.ns, ns.get());
+    client->create_namespace(state.ns, ns.get(), false, state.if_exists);
   cb.on_finish();
 }
 
@@ -384,8 +384,9 @@ cmd_select(NamespacePtr &ns, ConnectionManagerPtr &conn_manager,
         nsec = cell.timestamp % 1000000000LL;
         unix_time = cell.timestamp / 1000000000LL;
         gmtime_r(&unix_time, &tms);
-        fout << format("%d-%02d-%02d %02d:%02d:%02d.%09d\t", tms.tm_year+1900,
-                       tms.tm_mon+1, tms.tm_mday, tms.tm_hour, tms.tm_min, tms.tm_sec, nsec);
+        fout << Hypertable::format("%d-%02d-%02d %02d:%02d:%02d.%09d\t", 
+                        tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday, 
+                        tms.tm_hour, tms.tm_min, tms.tm_sec, nsec);
       }
     }
     if (state.escape)
@@ -856,6 +857,14 @@ cmd_balance(Client *client, ParserState &state,
   cb.on_finish();
 }
 
+void
+cmd_stop(Client *client, ParserState &state, HqlInterpreter::Callback &cb) {
+  MasterClientPtr master = client->get_master_client();
+
+  master->stop(state.rs_name, false);
+
+  cb.on_finish();
+}
 
 void cmd_shutdown_master(Client *client, HqlInterpreter::Callback &cb) {
   client->shutdown();
@@ -942,6 +951,8 @@ void HqlInterpreter::execute(const String &line, Callback &cb) {
       cmd_drop_namespace(m_client, m_namespace, state, cb);        break;
     case COMMAND_BALANCE:
       cmd_balance(m_client, state, cb);                            break;
+    case COMMAND_STOP:
+      cmd_stop(m_client, state, cb);                               break;
 
     default:
       HT_THROW(Error::HQL_PARSE_ERROR, String("unsupported command: ") + stripped_line);

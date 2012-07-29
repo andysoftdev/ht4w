@@ -39,11 +39,13 @@ namespace Hypertable {
     void clear();
 
   private:
+    void parse_option_single(String option);
     struct failure_inducer_state {
       uint32_t iteration;
       uint32_t trigger_iteration;
       int failure_type;
       int error_code;
+      int pause_millis;
     };
     typedef hash_map<String, failure_inducer_state *> StateMap;
     Mutex m_mutex;

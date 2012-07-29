@@ -22,8 +22,8 @@ project(HYPERTABLE)
 # Hypertable version components
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
-set(VERSION_MICRO "5")
-set(VERSION_PATCH "6")
+set(VERSION_MICRO "6")
+set(VERSION_PATCH "0")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
@@ -75,7 +75,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   endif (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
 endif ()
 
-add_definitions(-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_REENTRANT)
+add_definitions(-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_REENTRANT -fPIC)
 
 # Uncomment the following to build dynamic libraries
 # set (BUILD_SHARED_LIBS ON)
@@ -97,7 +97,7 @@ find_package(Boost REQUIRED)
 find_package(BerkeleyDB REQUIRED)
 find_package(EXPAT REQUIRED)
 find_package(Log4cpp REQUIRED)
-find_package(Readline REQUIRED)
+find_package(Editline REQUIRED)
 find_package(SIGAR REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(BZip2 REQUIRED)
@@ -121,6 +121,7 @@ find_package(RubyThrift)
 find_package(PHP5Thrift)
 find_package(PerlThrift)
 find_package(PythonThrift)
+find_package(Python)
 
 # set malloc library (maybe)
 if (USE_JEMALLOC)
@@ -149,7 +150,7 @@ endif ()
 # include directories
 include_directories(src/cc ${HYPERTABLE_BINARY_DIR}/src/cc
     ${ZLIB_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} ${Log4cpp_INCLUDE_DIR}
-    ${EXPAT_INCLUDE_DIRS} ${BDB_INCLUDE_DIR} ${READLINE_INCLUDE_DIR}
+    ${EXPAT_INCLUDE_DIRS} ${BDB_INCLUDE_DIR} ${EDITLINE_INCLUDE_DIR}
     ${SIGAR_INCLUDE_DIR})
 
 if (Thrift_FOUND)
@@ -232,10 +233,9 @@ if (NOT HT_COMPONENT_INSTALL)
           USE_SOURCE_PERMISSIONS)
   install(DIRECTORY examples/freebase DESTINATION examples
           USE_SOURCE_PERMISSIONS)
-  install(PROGRAMS
-          "${RRDTOOL_DIR}/rrdtool" "${CRONOLOG_DIR}/cronolog"
-          DESTINATION bin)
   include(PackageHelper)
 else ()
   install(PROGRAMS bin/ht-env.sh bin/fhsize.sh bin/prerm.sh DESTINATION bin)
 endif ()
+
+install(PROGRAMS "${CRONOLOG_DIR}/cronolog" DESTINATION bin)

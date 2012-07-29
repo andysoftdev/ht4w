@@ -105,6 +105,7 @@ atomic_t LocalBroker::ms_next_fd = ATOMIC_INIT(0);
 LocalBroker::LocalBroker(PropertiesPtr &cfg) {
   m_verbose = cfg->get_bool("verbose");
   m_directio = cfg->get_bool("DfsBroker.Local.DirectIO");
+  m_no_removal = cfg->get_bool("DfsBroker.DisableFileRemoval");
 
 #if defined(__linux__)
   // disable direct i/o for kernels < 2.6
@@ -143,7 +144,7 @@ LocalBroker::~LocalBroker() {
 
 void
 LocalBroker::open(ResponseCallbackOpen *cb, const char *fname, 
-                  uint32_t flags, uint32_t bufsz, bool) {
+                  uint32_t flags, uint32_t bufsz) {
   int fd;
 #ifndef _WIN32
   int local_fd;
@@ -473,14 +474,24 @@ void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
   else
     abspath = m_rootdir + "/" + fname;
 
+  if (m_no_removal) {
+    String deleted_file = abspath + ".deleted";
+    if (!FileUtils::rename(abspath, deleted_file)) {
+      report_error(cb);
+      return;
+    }
+  }
+  else {
 #ifndef _WIN32
-  if (unlink(abspath.c_str()) == -1) {
+    if (unlink(abspath.c_str()) == -1) {
 #else
-  if (!DeleteFile(abspath.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) {
+    if (!DeleteFile(abspath.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) {
 #endif
-    report_error(cb);
-    HT_ERRORF("unlink failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
-    return;
+      report_error(cb);
+      HT_ERRORF("unlink failed: file='%s' - %s", abspath.c_str(),
+                IO_ERROR);
+      return;
+    }
   }
 
   if ((error = cb->response_ok()) != Error::OK)
@@ -489,12 +500,14 @@ void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
 }
 
 
-void LocalBroker::length(ResponseCallbackLength *cb, const char *fname) {
+void LocalBroker::length(ResponseCallbackLength *cb, const char *fname,
+        bool accurate) {
   String abspath;
   uint64_t length;
   int error;
 
-  HT_DEBUGF("length file='%s'", fname);
+  HT_DEBUGF("length file='%s' (accurate=%s)", fname,
+          accurate ? "true" : "false");
 
   if (fname[0] == '/')
     abspath = m_rootdir + fname;
@@ -599,26 +612,28 @@ void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
 
   if (FileUtils::exists(absdir)) {
 #ifndef _WIN32
-    cmd_str = (String)"/bin/rm -rf " + absdir;
-    if (system(cmd_str.c_str()) != 0) {
-      HT_ERRORF("%s failed.", cmd_str.c_str());
-      cb->error(Error::DFSBROKER_IO_ERROR, cmd_str);
+    if (m_no_removal) {
+      String deleted_file = absdir + ".deleted";
+      if (!FileUtils::rename(absdir, deleted_file)) {
+        report_error(cb);
+        return;
+      }
+    }
+    else {
+      cmd_str = (String)"/bin/rm -rf " + absdir;
+      if (system(cmd_str.c_str()) != 0) {
+        HT_ERRORF("%s failed.", cmd_str.c_str());
+        cb->error(Error::DFSBROKER_IO_ERROR, cmd_str);
+        return;
+      }
 #else
     if (!rmdir(absdir)) {
       HT_ERRORF("rmdir %s failed.", absdir.c_str());
       cb->error(Error::DFSBROKER_IO_ERROR, format("rmdir %s failed.", absdir.c_str()));
-#endif
       return;
     }
-  }
-
-#if 0
-  if (rmdir(absdir.c_str()) != 0) {
-    report_error(cb);
-    HT_ERRORF("rmdir failed: dname='%s' - %s", absdir.c_str(), IO_ERROR);
-    return;
-  }
 #endif
+  }
 
   if ((error = cb->response_ok()) != Error::OK)
     HT_ERRORF("Problem sending response for rmdir(%s) - %s",
@@ -676,8 +691,15 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
   }
 
   while (result != 0) {
+
     if (result->d_name[0] != '.' && result->d_name[0] != 0) {
-      listing.push_back((String)result->d_name);
+      if (m_no_removal) {
+        size_t len = strlen(result->d_name);
+        if (len <= 8 || strcmp(&result->d_name[len-8], ".deleted"))
+          listing.push_back((String)result->d_name);
+      }
+      else
+        listing.push_back((String)result->d_name);
       //HT_INFOF("readdir Adding listing '%s'", result->d_name);
     }
 

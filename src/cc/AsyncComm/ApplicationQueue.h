@@ -28,6 +28,7 @@
 #include <vector>
 
 #include <boost/thread/condition.hpp>
+#include <boost/thread/xtime.hpp>
 
 #include "Common/Thread.h"
 #include "Common/Mutex.h"
@@ -103,8 +104,8 @@ namespace Hypertable {
                 m_state.threads_available--;
                 return;
               }
-	      if (m_state.threads_available == m_state.threads_total)
-		m_state.quiesce_cond.notify_all();
+              if (m_state.threads_available == m_state.threads_total)
+                m_state.quiesce_cond.notify_all();
               m_state.cond.wait(lock);
             }
 
@@ -118,16 +119,15 @@ namespace Hypertable {
             iter = m_state.urgent_queue.begin();
             while (iter != m_state.urgent_queue.end()) {
               rec = (*iter);
-              if (!rec->handler || rec->handler->expired()) {
-                iter = m_state.urgent_queue.erase(iter);
-                remove_expired(rec);
-                continue;
-              }
               if (rec->usage == 0 || !rec->usage->running) {
                 if (rec->usage)
                   rec->usage->running = true;
                 m_state.urgent_queue.erase(iter);
                 break;
+              }
+              if (!rec->handler || rec->handler->expired()) {
+                iter = m_state.urgent_queue.erase(iter);
+                remove_expired(rec);
               }
               rec = 0;
               iter++;
@@ -137,16 +137,15 @@ namespace Hypertable {
               iter = m_state.queue.begin();
               while (iter != m_state.queue.end()) {
                 rec = (*iter);
-                if (!rec->handler || rec->handler->expired()) {
-                  iter = m_state.queue.erase(iter);
-                  remove_expired(rec);
-                  continue;
-                }
                 if (rec->usage == 0 || !rec->usage->running) {
                   if (rec->usage)
                     rec->usage->running = true;
                   m_state.queue.erase(iter);
                   break;
+                }
+                if (!rec->handler || rec->handler->expired()) {
+                  iter = m_state.queue.erase(iter);
+                  remove_expired(rec);
                 }
                 rec = 0;
                 iter++;
@@ -212,7 +211,6 @@ namespace Hypertable {
       bool m_one_shot;
     };
 
-    Mutex                  m_mutex;
     ApplicationQueueState  m_state;
     ThreadGroup            m_threads;
     std::vector<Thread::id>     m_thread_ids;
@@ -268,10 +266,18 @@ namespace Hypertable {
       m_state.cond.notify_all();
     }
 
-    void wait_for_empty() {
-      ScopedLock lock(m_mutex);
-      while (m_state.threads_available < m_state.threads_total)
-	m_state.quiesce_cond.wait(lock);
+    void wait_for_empty(int reserve_threads=0) {
+      ScopedLock lock(m_state.mutex);
+      while (m_state.threads_available < (m_state.threads_total-reserve_threads))
+        m_state.quiesce_cond.wait(lock);
+    }
+
+    void wait_for_empty(boost::xtime &expire_time, int reserve_threads=0) {
+      ScopedLock lock(m_state.mutex);
+      while (m_state.threads_available < (m_state.threads_total-reserve_threads)) {
+        if (!m_state.quiesce_cond.timed_wait(lock, expire_time))
+          return;
+      }
     }
 
     /**
@@ -280,7 +286,6 @@ namespace Hypertable {
      */
 
     virtual void join() {
-      ScopedLock lock(m_mutex);
       if (!joined) {
         m_threads.join_all();
         joined = true;

@@ -51,6 +51,9 @@ extern "C" {
 #include "Common/StringExt.h"
 #include "Common/SystemInfo.h"
 #include "Common/Version.h"
+#ifdef _WIN32
+#include "Common/Path.h"
+#endif
 
 #include "Hypertable/Lib/CommitLog.h"
 #include "Hypertable/Lib/Key.h"
@@ -58,8 +61,6 @@ extern "C" {
 #include "Hypertable/Lib/MetaLogReader.h"
 #include "Hypertable/Lib/MetaLogWriter.h"
 #include "Hypertable/Lib/RangeServerProtocol.h"
-#include "Hypertable/Lib/old/RangeServerMetaLogReader.h"
-#include "Hypertable/Lib/old/RangeServerMetaLogEntries.h"
 
 #include "DfsBroker/Lib/Client.h"
 #include "DfsBroker/Lib/EmbeddedFilesystem.h"
@@ -78,6 +79,7 @@ extern "C" {
 #include "MergeScannerRange.h"
 #include "MetaLogDefinitionRangeServer.h"
 #include "MetaLogEntityRange.h"
+#include "MetaLogEntityTask.h"
 #include "RangeServer.h"
 #include "RangeStatsGatherer.h"
 #include "ScanContext.h"
@@ -98,8 +100,17 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     m_app_queue(app_queue), m_hyperspace(hyperspace), m_timer_handler(0),
     m_query_cache(0), m_last_revision(TIMESTAMP_MIN), m_last_metrics_update(0),
     m_loadavg_accum(0.0), m_page_in_accum(0), m_page_out_accum(0),
-    m_metric_samples(0), m_maintenance_pause_interval(0), m_pending_metrics_updates(0)
+    m_metric_samples(0), m_maintenance_pause_interval(0), m_pending_metrics_updates(0),
+    m_profile_query(false)
 {
+#ifdef _WIN32
+
+  Path data_dir = props->get_str("Hypertable.DataDirectory");
+  data_dir /= "/run";
+  if (!FileUtils::exists(data_dir.string()))
+    FileUtils::mkdirs(data_dir.string());
+
+#endif
 
   uint16_t port;
   m_cores = System::cpu_info().total_cores;
@@ -120,6 +131,9 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   port = cfg.get_i16("Port");
   m_update_coalesce_limit = cfg.get_i64("UpdateCoalesceLimit");
   m_maintenance_pause_interval = cfg.get_i32("Testing.MaintenanceNeeded.PauseInterval");
+
+  m_control_file_check_interval = cfg.get_i32("ControlFile.CheckInterval");
+  boost::xtime_get(&m_last_control_file_check, boost::TIME_UTC);
 
   /** Compute maintenance threads **/
   uint32_t maintenance_threads;
@@ -155,10 +169,21 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   m_scanner_ttl = (time_t)cfg.get_i32("Scanner.Ttl");
 
   Global::metrics_interval = props->get_i32("Hypertable.LoadMetrics.Interval");
-  m_next_metrics_update = time(0) + Global::metrics_interval;
-  m_next_metrics_update -= m_next_metrics_update % Global::metrics_interval;
-  // randomly pick a time within 5 minutes of the next update
-  m_next_metrics_update = (m_next_metrics_update-150) + (Random::number32()%300);
+  if (HT_FAILURE_SIGNALLED("report-metrics-immediately")) {
+    m_next_metrics_update = time(0);
+  }
+  else {
+    m_next_metrics_update = time(0) + Global::metrics_interval;
+    m_next_metrics_update -= m_next_metrics_update % Global::metrics_interval;
+    // randomly pick a time within 5 minutes of the next update
+    m_next_metrics_update = (m_next_metrics_update - 150)
+        + (Random::number32() % 300);
+  }
+
+  // If METADATA-only load, then prevent metrics update by pushing
+  // the update time out by a couple of weeks.
+  if (props->get_bool("Hypertable.RangeServer.LoadMetadataOnly"))
+    m_next_metrics_update += 1000000;
 
   Global::cell_cache_scanner_cache_size =
     cfg.get_i32("AccessGroup.CellCache.ScannerCacheSize");
@@ -308,12 +333,6 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   m_replay_map = new TableInfoMap();
 
   /**
-   * Create maintenance scheduler
-   */
-  m_maintenance_stats_gatherer = new RangeStatsGatherer(m_live_map);
-  m_maintenance_scheduler = new MaintenanceScheduler(Global::maintenance_queue, m_server_stats, m_maintenance_stats_gatherer);
-
-  /**
    * Listen for incoming connections
    */
   ConnectionHandlerFactoryPtr chfp =
@@ -324,8 +343,9 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     m_comm->listen(listen_addr, chfp);
   }
   catch (Exception &e) {
-    HT_FATALF("Unable to listen on port %u - %s - %s",
+    HT_ERRORF("Unable to listen on port %u - %s - %s",
               port, Error::get_text(e.code()), e.what());
+    _exit(0);
   }
 
   /**
@@ -338,10 +358,17 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   m_master_connection_handler = new ConnectionHandler(m_comm, m_app_queue, this);
   Global::location_initializer = new LocationInitializer(m_props);
   m_master_client->initiate_connection(m_master_connection_handler, Global::location_initializer);
+  Global::master_client = m_master_client;
 
   Global::location_initializer->wait_until_assigned();
 
   initialize(props);
+
+  /**
+   * Create maintenance scheduler
+   */
+  m_maintenance_stats_gatherer = new RangeStatsGatherer(m_live_map);
+  m_maintenance_scheduler = new MaintenanceScheduler(Global::maintenance_queue, m_server_stats, m_maintenance_stats_gatherer);
 
   // Create "update" threads
   for (int i=0; i<3; i++)
@@ -385,17 +412,25 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 void RangeServer::shutdown() {
 
   try {
-    ScopedLock lock(m_stats_mutex);
     // stop maintenance timer
-    if (m_timer_handler)
+    if (m_timer_handler) {
       m_timer_handler->shutdown();
+      m_timer_handler->wait_for_shutdown();
+    }
 
     // stop maintenance queue
     Global::maintenance_queue->clear();
     Global::maintenance_queue->shutdown();
-    Global::maintenance_queue->join();
+    //Global::maintenance_queue->join();
 
+    // stop application queue
     m_app_queue->stop();
+    boost::xtime expire_time;
+    boost::xtime_get(&expire_time, boost::TIME_UTC);
+    expire_time.sec += 30;  // wait for up to 30 seconds
+    m_app_queue->wait_for_empty(expire_time, 1);
+
+    ScopedLock lock(m_stats_mutex);
 
     if (m_group_commit_timer_handler)
       m_group_commit_timer_handler->shutdown();
@@ -416,23 +451,31 @@ void RangeServer::shutdown() {
     }
     if (Global::root_log) {
       Global::root_log->close();
+      /*
       delete Global::root_log;
       Global::root_log = 0;
+      */
     }
     if (Global::metadata_log) {
       Global::metadata_log->close();
+      /*
       delete Global::metadata_log;
       Global::metadata_log = 0;
+      */
     }
     if (Global::system_log) {
       Global::system_log->close();
+      /*
       delete Global::system_log;
       Global::system_log = 0;
+      */
     }
     if (Global::user_log) {
       Global::user_log->close();
+      /*
       delete Global::user_log;
       Global::user_log = 0;
+      */
     }
 
     if (Global::block_cache) {
@@ -445,6 +488,7 @@ void RangeServer::shutdown() {
       m_query_cache = 0;
     }
 
+    /*
     Global::maintenance_queue = 0;
     Global::metadata_table = 0;
     Global::rs_metrics_table = 0;
@@ -458,6 +502,7 @@ void RangeServer::shutdown() {
 
     delete Global::protocol;
     Global::protocol = 0;
+    */
 
     IndexUpdaterFactory::close();
 
@@ -529,31 +574,69 @@ void RangeServer::initialize(PropertiesPtr &props) {
   HT_INFO_OUT << "log_dir=" << Global::log_dir << HT_END;
 }
 
+
 namespace {
 
-  void recover_old_metalog(std::vector<MetaLog::EntityPtr> &entities) {
-    String meta_log_dir = Global::log_dir + "/range_txn";
-    OldMetaLog::RangeServerMetaLogReaderPtr rsml_reader;
+  struct ByFragmentNumber {
+    bool operator()(const String &x, const String &y) const {
+      int num_x = atoi(x.c_str());
+      int num_y = atoi(y.c_str());
+      return num_x < num_y;
+    }
+  };
+
+  void add_mark_file_to_commit_logs(const String &logname) {
+    vector<String> listing;
+    vector<String> listing2;
+    String logdir = Global::log_dir + "/" + logname;
 
     try {
-
-      if (Global::log_dfs->exists(meta_log_dir)) {
-        bool found_recover_entry;
-        rsml_reader = new OldMetaLog::RangeServerMetaLogReader(Global::log_dfs.get(), meta_log_dir);
-        if (!rsml_reader->empty()) {
-          const OldMetaLog::RangeStates &range_states = rsml_reader->load_range_states(&found_recover_entry);
-          foreach(const OldMetaLog::RangeStateInfo *i, range_states) {
-            MetaLog::EntityPtr entity = new MetaLog::EntityRange(i->table, i->range, i->range_state, false);
-            ((MetaLog::EntityRange *)entity.get())->load_acknowledged = true;
-            entities.push_back(entity);
-          }
-        }
-      }
-
+      if (!Global::log_dfs->exists(logdir))
+        return;
+      Global::log_dfs->readdir(logdir, listing);
     }
-    catch (Exception &e) {
-      HT_ERROR_OUT << e << HT_END;
-      HT_ABORT;
+    catch (Hypertable::Exception &) {
+      HT_FATALF("Unable to read log directory '%s'", logdir.c_str());
+    }
+
+    if (listing.size() == 0)
+      return;
+
+    sort(listing.begin(), listing.end(), ByFragmentNumber());
+
+    // Remove zero-length files
+    foreach (String &entry, listing) {
+      String fragment_file = logdir + "/" + entry;
+      try {
+        if (Global::log_dfs->length(fragment_file) == 0) {
+          HT_INFOF("Removing log fragment '%s' because it has zero length",
+                  fragment_file.c_str());
+          Global::log_dfs->remove(fragment_file);
+        }
+        else
+          listing2.push_back(entry);
+      }
+      catch (Hypertable::Exception &) {
+        HT_FATALF("Unable to check fragment file '%s'", fragment_file.c_str());
+      }
+    }
+
+    if (listing2.size() == 0)
+      return;
+
+    char *endptr;
+    long num = strtol(listing2.back().c_str(), &endptr, 10);
+    String mark_filename = logdir + "/" + (int64_t)num + ".mark";
+
+    try {
+      int fd = Global::log_dfs->create(mark_filename, 0, -1, -1, -1);
+      StaticBuffer buf(1);
+      *buf.base = '0';
+      Global::log_dfs->append(fd, buf);
+      Global::log_dfs->close(fd);
+    }
+    catch (Hypertable::Exception &) {
+      HT_FATALF("Unable to create file '%s'", mark_filename.c_str());
     }
   }
 
@@ -583,19 +666,25 @@ void RangeServer::local_recover() {
 
     rsml_reader->get_entities(entities);
 
-    // If empty, try loading the old MetaLog
-    if (entities.empty())
-      recover_old_metalog(entities);
-
     if (!entities.empty()) {
       HT_DEBUG_OUT <<"Found "<< Global::log_dir << "/" << rsml_definition->name() <<", start recovering"<< HT_END;
 
-      // Fix for load_acknowledge bug
-      if (rsml_reader->version() == 1) {
-        for (size_t i=0; i<entities.size(); i++) {
-          if ((range_entity = dynamic_cast<MetaLog::EntityRange *>(entities[i].get())) != 0)
-            range_entity->load_acknowledged = true;
-        }
+      // Temporary code to handle upgrade from RANGE to RANGE2
+      // Metalog entries.  Should be removed around 12/2013
+      if (MetaLog::EntityRange::encountered_upgrade) {
+	add_mark_file_to_commit_logs("root");
+	add_mark_file_to_commit_logs("metadata");
+	add_mark_file_to_commit_logs("system");
+	add_mark_file_to_commit_logs("user");
+      }
+
+      // Populated Global::work_queue
+      {
+	MetaLog::EntityTask *task_entity;
+	foreach(MetaLog::EntityPtr &entity, entities) {
+	  if ((task_entity = dynamic_cast<MetaLog::EntityTask *>(entity.get())) != 0)
+	    Global::add_to_work_queue(task_entity);
+	}
       }
 
       Global::rsml_writer = new MetaLog::Writer(Global::log_dfs, rsml_definition,
@@ -616,7 +705,7 @@ void RangeServer::local_recover() {
 
       foreach(MetaLog::EntityPtr &entity, entities) {
         range_entity = dynamic_cast<MetaLog::EntityRange *>(entity.get());
-        if (range_entity->table.is_metadata() &&
+        if (range_entity && range_entity->table.is_metadata() &&
             range_entity->spec.end_row && !strcmp(range_entity->spec.end_row, Key::END_ROOT_ROW)) {
           replay_load_range(0, range_entity, false, &table_schemas);
         }
@@ -674,7 +763,7 @@ void RangeServer::local_recover() {
 
       foreach(MetaLog::EntityPtr &entity, entities) {
         range_entity = dynamic_cast<MetaLog::EntityRange *>(entity.get());
-        if (range_entity->table.is_metadata() &&
+        if (range_entity && range_entity->table.is_metadata() &&
             !(range_entity->spec.end_row &&
               !strcmp(range_entity->spec.end_row, Key::END_ROOT_ROW))) {
           replay_load_range(0, range_entity, false, &table_schemas);
@@ -725,6 +814,9 @@ void RangeServer::local_recover() {
         maintenance_tasks.clear();
       }
 
+      if (m_props->get_bool("Hypertable.RangeServer.LoadMetadataOnly"))
+	return;
+
       /**
        * Then recover SYSTEM ranges
        */
@@ -735,7 +827,7 @@ void RangeServer::local_recover() {
 
       foreach(MetaLog::EntityPtr &entity, entities) {
         range_entity = dynamic_cast<MetaLog::EntityRange *>(entity.get());
-        if (range_entity->table.is_system() && !range_entity->table.is_metadata())
+        if (range_entity && range_entity->table.is_system() && !range_entity->table.is_metadata())
           replay_load_range(0, range_entity, false, &table_schemas);
       }
 
@@ -793,7 +885,7 @@ void RangeServer::local_recover() {
 
       foreach(MetaLog::EntityPtr &entity, entities) {
         range_entity = dynamic_cast<MetaLog::EntityRange *>(entity.get());
-        if (!range_entity->table.is_system())
+        if (range_entity && !range_entity->table.is_system())
           replay_load_range(0, range_entity, false, &table_schemas);
       }
 
@@ -1518,8 +1610,7 @@ RangeServer::fetch_scanblock(ResponseCallbackFetchScanblock *cb,
 
 void
 RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
-    const RangeSpec *range_spec, const char *transfer_log_dir,
-    const RangeState *range_state, bool needs_compaction) {
+    const RangeSpec *range_spec, const RangeState *range_state, bool needs_compaction) {
   int error = Error::OK;
   TableMutatorPtr mutator;
   KeySpec key;
@@ -1556,8 +1647,7 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
         && !strcmp(range_spec->end_row, Key::END_ROOT_ROW);
 
       HT_INFO_OUT <<"Loading range: "<< *table <<" "<< *range_spec << " " << *range_state
-          << " transfer_log=" << transfer_log_dir << " needs_compaction="
-          << needs_compaction << HT_END;
+          << " needs_compaction=" << needs_compaction << HT_END;
 
       if (m_dropped_table_id_cache->contains(table->id)) {
         HT_WARNF("Table %s has been dropped", table->id);
@@ -1704,9 +1794,9 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
        * it has not been added yet and therefore no one else can find it and
        * concurrently access it.
        */
-      if (transfer_log_dir && *transfer_log_dir) {
+      if (range_state->transfer_log && *range_state->transfer_log) {
         CommitLogReaderPtr commit_log_reader =
-          new CommitLogReader(Global::log_dfs, transfer_log_dir, true);
+          new CommitLogReader(Global::log_dfs, range_state->transfer_log);
         if (!commit_log_reader->empty()) {
           CommitLog *log;
           if (is_root)
@@ -1722,10 +1812,7 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
 
           if ((error = log->link_log(commit_log_reader.get())) != Error::OK)
             HT_THROWF(error, "Unable to link transfer log (%s) into commit log(%s)",
-                      transfer_log_dir, log->get_log_dir().c_str());
-
-          // transfer the in-memory log fragments
-          log->stitch_in(commit_log_reader.get());
+                      range_state->transfer_log, log->get_log_dir().c_str());
         }
       }
 
@@ -1786,13 +1873,9 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
         table_info->unstage_range(range_spec);
         return;
       }
-
-      if (Global::rsml_writer)
-        Global::rsml_writer->record_state( range->metalog_entity() );
-      else {
-        cb->error(Error::SERVER_SHUTTING_DOWN, Global::location_initializer->get());
-        return;
-      }
+      
+      // Record range in RSML
+      range->record_state_rsml();
 
       // make sure that we don't have a clock skew
       // poll() timeout is in milliseconds, revision and now is in nanoseconds
@@ -1873,15 +1956,13 @@ void RangeServer::acknowledge_load(ResponseCallback *cb, const TableIdentifier *
       return;
     }
 
-    range->acknowledge_load();
-
-    if (Global::rsml_writer)
-      Global::rsml_writer->record_state( range->metalog_entity() );
-    else {
-      cb->error(Error::SERVER_SHUTTING_DOWN, Global::location_initializer->get());
+    try {
+      range->acknowledge_load();
+    }
+    catch(Exception &e) {
+      cb->error(e.code(), Global::location_initializer->get());
       return;
     }
-
   }
 
   cb->response_ok();
@@ -2125,6 +2206,8 @@ RangeServer::batch_update(std::vector<TableUpdate *> &updates, boost::xtime expi
   {
     ScopedLock lock(m_update_qualify_queue_mutex);
     HT_ASSERT(!updates.empty());
+    if (m_profile_query)
+      boost::xtime_get(&uc->start_time, TIME_UTC);
     m_update_qualify_queue.push_back(uc);
     m_update_qualify_queue_cond.notify_all();
   }
@@ -2474,17 +2557,17 @@ void RangeServer::update_qualify_and_transform() {
               uint8_t family=*(key.ptr+1+strlen((const char *)key.ptr+1)+1);
               Schema::ColumnFamily *cf = schema->get_column_family(family);
 
-	      // reset auto_revision if it's gotten behind
-	      if (uc->auto_revision < latest_range_revision) {
-		uc->auto_revision = Hypertable::get_ts64();
-		if (uc->auto_revision < latest_range_revision) {
+              // reset auto_revision if it's gotten behind
+              if (uc->auto_revision < latest_range_revision) {
+                uc->auto_revision = Hypertable::get_ts64();
+                if (uc->auto_revision < latest_range_revision) {
                   HT_THROWF(Error::RANGESERVER_REVISION_ORDER_ERROR,
-                            "Auto revision (%lld) is less than latest range "
-			    "revision (%lld) for range %s",
-                            (Lld)uc->auto_revision, (Lld)latest_range_revision,
-                            rulist->range->get_name().c_str());
-		}
-	      }
+                          "Auto revision (%lld) is less than latest range "
+                          "revision (%lld) for range %s",
+                          (Lld)uc->auto_revision, (Lld)latest_range_revision,
+                          rulist->range->get_name().c_str());
+                }
+              }
 
               // This will transform keys that need to be assigned a
               // timestamp and/or revision number by re-writing the key
@@ -2496,10 +2579,10 @@ void RangeServer::update_qualify_and_transform() {
               if (m_last_revision < latest_range_revision) {
                 if (m_last_revision != uc->auto_revision) {
                   HT_THROWF(Error::RANGESERVER_REVISION_ORDER_ERROR,
-                            "Supplied revision (%lld) is less than most recently "
-                            "seen revision (%lld) for range %s",
-                            (Lld)m_last_revision, (Lld)latest_range_revision,
-                            rulist->range->get_name().c_str());
+                          "Supplied revision (%lld) is less than most recently "
+                          "seen revision (%lld) for range %s",
+                          (Lld)m_last_revision, (Lld)latest_range_revision,
+                          rulist->range->get_name().c_str());
                 }
               }
             }
@@ -2572,6 +2655,12 @@ void RangeServer::update_qualify_and_transform() {
     // Enqueue update
     {
       ScopedLock lock(m_update_commit_queue_mutex);
+      if (m_profile_query) {
+        boost::xtime now;
+        boost::xtime_get(&now, TIME_UTC);
+        uc->qualify_time = xtime_diff_millis(uc->start_time, now);
+        uc->start_time = now;
+      }
       m_update_commit_queue.push_back(uc);
       m_update_commit_queue_cond.notify_all();
       m_update_commit_queue_count++;
@@ -2705,6 +2794,12 @@ void RangeServer::update_commit() {
       coalesce_queue.push_back(uc);
       while (!coalesce_queue.empty()) {
         uc = coalesce_queue.front();
+        if (m_profile_query) {
+          boost::xtime now;
+          boost::xtime_get(&now, TIME_UTC);
+          uc->commit_time = xtime_diff_millis(uc->start_time, now);
+          uc->start_time = now;
+        }
         coalesce_queue.pop_front();
         m_update_response_queue.push_back(uc);
       }
@@ -2859,6 +2954,14 @@ void RangeServer::update_add_and_respond() {
       m_server_stats->add_update_data(uc->total_updates, uc->total_added, uc->total_bytes_added, uc->total_syncs);
     }
 
+    if (m_profile_query) {
+      ScopedLock lock(m_profile_mutex);
+      boost::xtime now;
+      boost::xtime_get(&now, TIME_UTC);
+      uc->add_time = xtime_diff_millis(uc->start_time, now);
+      m_profile_query_out << now.sec << "\tupdate\t" << uc->qualify_time << "\t" << uc->commit_time << "\t" << uc->add_time << "\n";
+    }
+
     delete uc;
 
     // For testing
@@ -2916,12 +3019,11 @@ RangeServer::drop_table(ResponseCallback *cb, const TableIdentifier *table) {
    */
   for (size_t i=0; i<range_vector.size(); i++) {
     range_vector[i]->wait_for_maintenance_to_complete();
-    if (Global::rsml_writer) {
-      ScopedLock lock(m_drop_table_mutex);
-      Global::rsml_writer->record_removal( range_vector[i]->metalog_entity() );
+    try {
+      range_vector[i]->record_removal_rsml();
     }
-    else {
-      cb->error(Error::SERVER_SHUTTING_DOWN, Global::location_initializer->get());
+    catch (Exception &e) {
+      cb->error(e.code(), Global::location_initializer->get());
       return;
     }
   }
@@ -3678,8 +3780,9 @@ RangeServer::replay_load_range(ResponseCallback *cb,
 
     table_info->add_range(range);
 
-    if (write_rsml)
-      Global::rsml_writer->record_state( range->metalog_entity() );
+    //if (write_rsml)
+    //Global::rsml_writer->record_state( range->metalog_entity() );
+    HT_ASSERT(!write_rsml);
 
     if (cb && (error = cb->response_ok()) != Error::OK) {
       HT_ERRORF("Problem sending OK response - %s", Error::get_text(error));
@@ -3745,6 +3848,7 @@ void RangeServer::do_maintenance() {
   HT_ASSERT(m_timer_handler);
 
   try {
+    boost::xtime now;
 
     // Purge expired scanners
     Global::scanner_map.purge_expired(m_scanner_ttl);
@@ -3757,6 +3861,37 @@ void RangeServer::do_maintenance() {
 
     // Schedule maintenance
     m_maintenance_scheduler->schedule();
+
+    // Check for control files
+    boost::xtime_get(&now, TIME_UTC);
+    if (xtime_diff_millis(m_last_control_file_check, now) >= (int64_t)m_control_file_check_interval) {
+#ifndef _WIN32
+      if (FileUtils::exists(System::install_dir + "/run/query-profile")) {
+#else
+      Path data_dir = m_props->get_str("Hypertable.DataDirectory");
+      data_dir /= "/run";
+      if (FileUtils::exists(data_dir.string() + "/query-profile")) {
+#endif
+        if (!m_profile_query) {
+          ScopedLock lock(m_profile_mutex);
+#ifndef _WIN32
+          String output_fname = System::install_dir + "/run/query-profile.output";
+#else
+          String output_fname = data_dir.string() + "/query-profile.output";
+#endif
+          m_profile_query_out.open(output_fname.c_str(), ios_base::out|ios_base::app);
+          m_profile_query = true;
+        }
+      }
+      else {
+        if (m_profile_query) {
+          ScopedLock lock(m_profile_mutex);
+          m_profile_query_out.close();
+          m_profile_query = false;
+        }
+      }
+      m_last_control_file_check = now;
+    }
 
   }
   catch (Hypertable::Exception &e) {

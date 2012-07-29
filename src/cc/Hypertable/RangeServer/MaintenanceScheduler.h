@@ -56,7 +56,7 @@ namespace Hypertable {
 
   private:
 
-    int get_level(RangePtr &range);
+    int get_level(Range::MaintenanceData *range_data);
 
     bool low_memory_mode() {
       return m_prioritizer == &m_prioritizer_low_memory;
@@ -83,6 +83,7 @@ namespace Hypertable {
     int32_t m_merging_delay;
     int32_t m_merges_per_interval;
     int32_t m_move_compactions_per_interval;
+    std::set<int64_t> m_log_hashes;
   };
 
   typedef intrusive_ptr<MaintenanceScheduler> MaintenanceSchedulerPtr;

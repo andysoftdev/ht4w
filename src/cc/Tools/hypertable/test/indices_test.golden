@@ -1,6 +1,6 @@
 
 Welcome to the hypertable command interpreter.
-For information about Hypertable, visit http://www.hypertable.org/
+For information about Hypertable, visit http://hypertable.com
 
 Type 'help' for a list of commands, or 'help shell' for a
 list of shell meta commands.
@@ -204,7 +204,7 @@ CREATE TABLE t (
 SHOW CREATE TABLE "^t";
 
 CREATE TABLE '^t' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -226,7 +226,7 @@ CREATE TABLE t (
 SHOW CREATE TABLE "^t";
 
 CREATE TABLE '^t' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -400,23 +400,6 @@ rowa11	a	mella11
 SELECT a FROM t WHERE (ROW < "rowa3") AND a =^ "m";
 rowa10	a	mella10
 rowa11	a	mella11
-SELECT a FROM t WHERE ("rowa10" < ROW <= "rowa3") AND a =^ "m";
-rowa11	a	mella11
-SELECT a FROM t WHERE ("rowa10" <= ROW <= "rowa3") AND a =^ "m";
-rowa10	a	mella10
-rowa11	a	mella11
-SELECT a FROM t WHERE ("rowa10" <= ROW < "rowa3") AND a =^ "m";
-rowa10	a	mella10
-rowa11	a	mella11
-SELECT a FROM t WHERE ("rowa10" <= ROW < "rowa3" OR ROW < "rowa9") AND a =^ "m";
-rowa10	a	mella10
-rowa11	a	mella11
-SELECT a FROM t WHERE ("rowa1" <= ROW < "rowa3" OR ROW <= "rowa9") AND a =^ "m";
-rowa10	a	mella10
-rowa11	a	mella11
-SELECT a FROM t WHERE ("rowa1" <= ROW < "rowa3" OR ROW < "rowa9x") AND a =^ "m";
-rowa10	a	mella10
-rowa11	a	mella11
 SELECT a FROM t WHERE (ROW < "00") AND a =^ "m";
 SELECT a FROM t WHERE ROW REGEXP "rowa" AND a =^ "m";
 rowa10	a	mella10
@@ -441,46 +424,6 @@ SELECT a FROM t WHERE (ROW < "rowa3") AND a =^ "c";
 rowa0	a	cella0
 rowa1	a	cella1
 rowa2	a	cella2
-SELECT a FROM t WHERE ("rowa10" < ROW <= "rowa3") AND a =^ "c";
-rowa2	a	cella2
-rowa3	a	cella3
-SELECT a FROM t WHERE ("rowa10" <= ROW <= "rowa3") AND a =^ "c";
-rowa2	a	cella2
-rowa3	a	cella3
-SELECT a FROM t WHERE ("rowa10" <= ROW < "rowa3") AND a =^ "c";
-rowa2	a	cella2
-SELECT a FROM t WHERE ("rowa10" <= ROW < "rowa3" OR ROW < "rowa9") AND a =^ "c";
-rowa0	a	cella0
-rowa1	a	cella1
-rowa2	a	cella2
-rowa3	a	cella3
-rowa4	a	cella4
-rowa5	a	cella5
-rowa6	a	cella6
-rowa7	a	cella7
-rowa8	a	cella8
-SELECT a FROM t WHERE ("rowa1" <= ROW < "rowa3" OR ROW <= "rowa9") AND a =^ "c";
-rowa0	a	cella0
-rowa1	a	cella1
-rowa2	a	cella2
-rowa3	a	cella3
-rowa4	a	cella4
-rowa5	a	cella5
-rowa6	a	cella6
-rowa7	a	cella7
-rowa8	a	cella8
-rowa9	a	cella9
-SELECT a FROM t WHERE ("rowa1" <= ROW < "rowa3" OR ROW < "rowa9x") AND a =^ "c";
-rowa0	a	cella0
-rowa1	a	cella1
-rowa2	a	cella2
-rowa3	a	cella3
-rowa4	a	cella4
-rowa5	a	cella5
-rowa6	a	cella6
-rowa7	a	cella7
-rowa8	a	cella8
-rowa9	a	cella9
 SELECT a FROM t WHERE (ROW < "00") AND a =^ "c";
 SELECT a FROM t WHERE ROW REGEXP "rowa" AND a =^ "c";
 rowa0	a	cella0
@@ -882,7 +825,7 @@ CREATE TABLE t (
 SHOW CREATE TABLE "^t";
 
 CREATE TABLE '^t' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -898,7 +841,7 @@ CREATE TABLE t (
 SHOW CREATE TABLE "^t";
 
 CREATE TABLE '^t' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -927,7 +870,7 @@ CREATE TABLE r (
 SHOW CREATE TABLE "^r";
 
 CREATE TABLE '^r' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -1143,7 +1086,7 @@ CREATE TABLE t (
 SHOW CREATE TABLE "^^t";
 
 CREATE TABLE '^^t' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -1164,7 +1107,7 @@ CREATE TABLE t (
 SHOW CREATE TABLE "^^t";
 
 CREATE TABLE '^^t' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -1240,14 +1183,14 @@ CREATE TABLE t (
 SHOW CREATE TABLE "^t";
 
 CREATE TABLE '^t' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
 SHOW CREATE TABLE "^^t";
 
 CREATE TABLE '^^t' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -1264,14 +1207,14 @@ CREATE TABLE r (
 SHOW CREATE TABLE "^r";
 
 CREATE TABLE '^r' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
 SHOW CREATE TABLE "^^r";
 
 CREATE TABLE '^^r' (
-  v1 MAX_VERSIONS=1,
+  v1 MAX_VERSIONS 1,
   ACCESS GROUP default (v1)
 )
 
@@ -1962,3 +1905,10 @@ SELECT a FROM t WHERE a =^ "xas";
 USE "/tmp";
 GET LISTING;
 
+# issue 823
+CREATE TABLE t (data MAX_VERSIONS = 1, join MAX_VERSIONS = 1, QUALIFIER INDEX join);
+INSERT INTO t VALUES ('r1', 'join:a1', 'value 1');
+INSERT INTO t VALUES ('r2', 'join:a2', 'value 2');
+INSERT INTO t VALUES ('r3', 'join:b1', 'value 3');
+SELECT join:a1 FROM t WHERE VALUE REGEXP 'v';
+r1	join:a1	value 1

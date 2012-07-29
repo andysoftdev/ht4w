@@ -108,12 +108,14 @@ namespace Hypertable {
   }
 
   CommBuf *
-  MasterProtocol::create_move_range_request(const TableIdentifier *table,
-      const RangeSpec &range, const String &transfer_log_dir,
-      uint64_t soft_limit, bool split) {
+  MasterProtocol::create_move_range_request(const String &source,
+      const TableIdentifier *table, const RangeSpec &range,
+      const String &transfer_log_dir, uint64_t soft_limit, bool split) {
     CommHeader header(COMMAND_MOVE_RANGE);
-    CommBuf *cbuf = new CommBuf(header, table->encoded_length()
-        + range.encoded_length() + encoded_length_vstr(transfer_log_dir) + 9);
+    CommBuf *cbuf = new CommBuf(header, encoded_length_vstr(source)
+        + table->encoded_length() + range.encoded_length() 
+        + encoded_length_vstr(transfer_log_dir) + 9);
+    cbuf->append_vstr(source);
     table->encode(cbuf->get_data_ptr_address());
     range.encode(cbuf->get_data_ptr_address());
     cbuf->append_vstr(transfer_log_dir);
@@ -127,11 +129,14 @@ namespace Hypertable {
 
 
   CommBuf *
-  MasterProtocol::create_relinquish_acknowledge_request(const TableIdentifier *table,
+  MasterProtocol::create_relinquish_acknowledge_request(const String &source,
+							const TableIdentifier *table,
                                                         const RangeSpec &range) {
     CommHeader header(COMMAND_RELINQUISH_ACKNOWLEDGE);
-    CommBuf *cbuf = new CommBuf(header, table->encoded_length()
+    CommBuf *cbuf = new CommBuf(header, encoded_length_vstr(source)
+				+ table->encoded_length()
                                 + range.encoded_length());
+    cbuf->append_vstr(source);
     table->encode(cbuf->get_data_ptr_address());
     range.encode(cbuf->get_data_ptr_address());
     return cbuf;
@@ -167,6 +172,15 @@ namespace Hypertable {
     return cbuf;
   }
 
+  CommBuf *MasterProtocol::create_stop_request(const String &rsname,
+          bool recover) {
+    CommHeader header(COMMAND_STOP);
+    CommBuf *cbuf = new CommBuf(header, encoded_length_vstr(rsname) + 1);
+    cbuf->append_vstr(rsname);
+    cbuf->append_bool(recover);
+    return cbuf;
+  }
+
   const char *MasterProtocol::m_command_strings[] = {
     "create table",
     "get schema",
@@ -182,7 +196,8 @@ namespace Hypertable {
     "rename table",
     "relinquish acknowledge",
     "fetch result",
-    "balance"
+    "balance",
+    "stop"
   };
 
   const char *MasterProtocol::command_text(uint64_t command) {

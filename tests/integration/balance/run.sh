@@ -7,19 +7,30 @@ WRITE_SIZE=${WRITE_SIZE:-"40000000"}
 RS1_PIDFILE=$HT_HOME/run/Hypertable.RangeServer.rs1.pid
 RS2_PIDFILE=$HT_HOME/run/Hypertable.RangeServer.rs2.pid
 
-$HT_HOME/bin/start-test-servers.sh --clear --no-rangeserver
+save_failure_state() {
+  ARCHIVE_DIR="archive-"`date | sed 's/ /-/g'`
+  mkdir $ARCHIVE_DIR
+  cp $HT_HOME/log/* $ARCHIVE_DIR
+  cp ~/build/hypertable/debug/Testing/Temporary/LastTest.log.tmp $ARCHIVE_DIR
+  cp -f core* $ARCHIVE_DIR
+  cp rangeserver.* $ARCHIVE_DIR
+  cp errors.txt *.output $ARCHIVE_DIR
+  cp -r $HT_HOME/fs $ARCHIVE_DIR
+}
+
+$HT_HOME/bin/start-test-servers.sh --clear --no-rangeserver --DfsBroker.DisableFileRemoval=true
 
 $HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS1_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs1 \
    --Hypertable.RangeServer.Port=38060 \
    --Hypertable.RangeServer.Maintenance.Interval 100 \
-   --Hypertable.RangeServer.Range.SplitSize=400K 2>1 > rangeserver.rs1.output&
+   --Hypertable.RangeServer.Range.SplitSize=400K 2>&1 > rangeserver.rs1.output&
 
 $HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS2_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs2 \
    --Hypertable.RangeServer.Port=38061 \
    --Hypertable.RangeServer.Maintenance.Interval 100 \
-   --Hypertable.RangeServer.Range.SplitSize=400K 2>1 > rangeserver.rs2.output&
+   --Hypertable.RangeServer.Range.SplitSize=400K 2>&1 > rangeserver.rs2.output&
 
 $HT_HOME/bin/ht shell --no-prompt < $SCRIPT_DIR/create-table.hql
 
@@ -45,11 +56,11 @@ kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
 
 $HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS1_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs1 \
-   --Hypertable.RangeServer.Port=38062 2>1 >> rangeserver.rs1.output&
+   --Hypertable.RangeServer.Port=38062 2>&1 >> rangeserver.rs1.output&
 
 $HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS2_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs2 \
-   --Hypertable.RangeServer.Port=38063 2>1 >> rangeserver.rs2.output&
+   --Hypertable.RangeServer.Port=38063 2>&1 >> rangeserver.rs2.output&
 
 sleep 10
 
@@ -69,11 +80,11 @@ $HT_HOME/bin/ht ht_load_generator update \
     --rowkey.component.0.max=1000000 \
     --row-seed=2 \
     --Field.value.size=5000 \
-    --max-bytes=100000000 2>1 > load.output&
+    --max-bytes=100000000 2>&1 > load.output&
 
 LOAD_PID=${!}
 
-for ((i=0; i<15; i++)) ; do
+for ((i=0; i<30; i++)) ; do
   HQL_COMMAND=`$SCRIPT_DIR/generate_range_move.py 4`
   echo "Issuing HQL: $HQL_COMMAND"
   echo $HQL_COMMAND | $HT_HOME/bin/ht shell --batch
@@ -90,6 +101,7 @@ fi
 
 diff dump.output dump.golden
 if [ $? != 0 ] ; then
+  save_failure_state
   kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
   $HT_HOME/bin/clean-database.sh
   exit 1
@@ -103,7 +115,7 @@ $HT_HOME/bin/ht ht_load_generator query \
     --rowkey.component.0.max=1000000 \
     --row-seed=3 \
     --Field.value.size=1000 \
-    --max-keys=50000 2>1 > query.output&
+    --max-keys=50000 2>&1 > query.output&
 
 QUERY_PID=${!}
 
@@ -116,13 +128,31 @@ done
 wait $QUERY_PID
 
 fgrep ERROR query.output > errors.txt
-
-if [ -s error.$TEST_ID ] ; then
+if [ -s errors.txt ] ; then
+  save_failure_state
   kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
   $HT_HOME/bin/clean-database.sh
   exit 1
 fi
 
+let iteration=0
+$HT_HOME/bin/ht metalog_dump /hypertable/servers/rs1/log/rsml | fgrep "load_acknowledged=false" > errors.txt
+$HT_HOME/bin/ht metalog_dump /hypertable/servers/rs2/log/rsml | fgrep "load_acknowledged=false" >> errors.txt
+while [ -s errors.txt ] && [ $iteration -lt 5 ]; do
+  sleep 10
+  $HT_HOME/bin/ht metalog_dump /hypertable/servers/rs1/log/rsml | fgrep "load_acknowledged=false" > errors.txt
+  $HT_HOME/bin/ht metalog_dump /hypertable/servers/rs2/log/rsml | fgrep "load_acknowledged=false" >> errors.txt
+  let iteration=iteration+1
+done
+fgrep -i reset $HT_HOME/log/DfsBroker.local.log >> errors.txt
+ls core* >> errors.txt
+
+if [ -s errors.txt ] ; then
+  save_failure_state
+  kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
+  $HT_HOME/bin/clean-database.sh
+  exit 1
+fi
 
 kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
 $HT_HOME/bin/clean-database.sh

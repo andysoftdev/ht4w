@@ -1,6 +1,6 @@
 
 Welcome to the hypertable command interpreter.
-For information about Hypertable, visit http://www.hypertable.org/
+For information about Hypertable, visit http://hypertable.com
 
 Type 'help' for a list of commands, or 'help shell' for a
 list of shell meta commands.
@@ -2296,11 +2296,11 @@ ACCESS GROUP foo BLOCKSIZE=20000 ( banana )
 SHOW CREATE TABLE Fruits;
 
 CREATE TABLE Fruits (
-  banana MAX_VERSIONS=2 TTL=604800,
-  apple MAX_VERSIONS=3 TTL=172800,
-  carrot MAX_VERSIONS=3 TTL=604800,
-  ACCESS GROUP foo IN_MEMORY BLOCKSIZE=20000 (banana),
-  ACCESS GROUP default IN_MEMORY BLOCKSIZE=10000 (apple, carrot)
+  banana MAX_VERSIONS 2 TTL 604800,
+  apple MAX_VERSIONS 3 TTL 172800,
+  carrot MAX_VERSIONS 3 TTL 604800,
+  ACCESS GROUP foo IN_MEMORY BLOCKSIZE 20000 (banana),
+  ACCESS GROUP default IN_MEMORY BLOCKSIZE 10000 (apple, carrot)
 )
 
 
@@ -2359,7 +2359,7 @@ SHOW CREATE TABLE reptest1;
 CREATE TABLE reptest1 (
   a,
   b,
-  ACCESS GROUP default REPLICATION=2 (a, b)
+  ACCESS GROUP default REPLICATION 2 (a, b)
 )
 
 DESCRIBE TABLE reptest2;
@@ -2393,9 +2393,9 @@ CREATE TABLE reptest2 (
   a,
   b,
   c,
-  ACCESS GROUP ag1 REPLICATION=2 (a),
-  ACCESS GROUP ag2 REPLICATION=7 (b),
-  ACCESS GROUP default REPLICATION=5 (c)
+  ACCESS GROUP ag1 REPLICATION 2 (a),
+  ACCESS GROUP ag2 REPLICATION 7 (b),
+  ACCESS GROUP default REPLICATION 5 (c)
 )
 
 DROP TABLE IF EXISTS hypertable;
@@ -2720,3 +2720,21 @@ ALTER TABLE "ns/t" RENAME COLUMN FAMILY ('a', 'b');
 RENAME TABLE "ns/t" TO "ns/r";
 DROP TABLE "ns/r";
 
+# issue 565
+CREATE NAMESPACE issue565 IF NOT EXISTS;
+USE issue565;
+DROP NAMESPACE ns;
+Error: MasterClient operation drop_namespace('/issue565/ns', if_exists=false) failed - HYPERTABLE namespace does not exist
+CREATE NAMESPACE ns;
+CREATE NAMESPACE ns;
+Error: MasterClient operation create_namespace('issue565/ns', 0x0) failed - HYPERTABLE namespace exists
+GET LISTING;
+ns	(namespace)
+CREATE NAMESPACE ns IF NOT EXISTS;
+CREATE DATABASE ns IF NOT EXISTS;
+GET LISTING;
+ns	(namespace)
+DROP NAMESPACE ns;
+CREATE NAMESPACE ns IF NOT EXISTS;
+GET LISTING;
+ns	(namespace)

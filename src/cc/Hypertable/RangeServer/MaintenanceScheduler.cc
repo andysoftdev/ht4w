@@ -1,26 +1,30 @@
 /**
  * Copyright (C) 2007-2012 Hypertable, Inc.
-*
-* This file is part of Hypertable.
-*
-* Hypertable is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
+ *
+ * This file is part of Hypertable.
+ *
+ * Hypertable is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; version 3 of the
-* License, or any later version.
-*
-* Hypertable is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-* 02110-1301, USA.
-*/
+ * License, or any later version.
+ *
+ * Hypertable is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA.
+ */
 #include "Common/Compat.h"
 #include "Common/Config.h"
+#include "Common/md5.h"
 #include "Common/SystemInfo.h"
+#ifdef _WIN32
+#include "Common/Path.h"
+#endif
 
 #include <algorithm>
 #include <limits>
@@ -35,6 +39,7 @@
 #include "MaintenanceTaskMemoryPurge.h"
 #include "MaintenanceTaskRelinquish.h"
 #include "MaintenanceTaskSplit.h"
+#include "MaintenanceTaskWorkQueue.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -50,24 +55,49 @@ namespace {
 
 
 MaintenanceScheduler::MaintenanceScheduler(MaintenanceQueuePtr &queue, RSStatsPtr &server_stats,
-  RangeStatsGathererPtr &gatherer)
+                                           RangeStatsGathererPtr &gatherer)
   : m_initialized(false), m_scheduling_needed(false), m_queue(queue),
-  m_server_stats(server_stats), m_stats_gatherer(gatherer),
-  m_prioritizer_log_cleanup(server_stats),
-  m_prioritizer_low_memory(server_stats) {
-    m_prioritizer = &m_prioritizer_log_cleanup;
-    m_maintenance_interval = get_i32("Hypertable.RangeServer.Maintenance.Interval");
-    m_query_cache_memory = get_i64("Hypertable.RangeServer.QueryCache.MaxMemory");
-    // Setup to immediately schedule maintenance
-    boost::xtime_get(&m_last_maintenance, TIME_UTC);
-    memcpy(&m_last_low_memory, &m_last_maintenance, sizeof(boost::xtime));
+    m_server_stats(server_stats), m_stats_gatherer(gatherer),
+    m_prioritizer_log_cleanup(server_stats),
+    m_prioritizer_low_memory(server_stats) {
+  m_prioritizer = &m_prioritizer_log_cleanup;
+  m_maintenance_interval = get_i32("Hypertable.RangeServer.Maintenance.Interval");
+  m_query_cache_memory = get_i64("Hypertable.RangeServer.QueryCache.MaxMemory");
+  // Setup to immediately schedule maintenance
+  boost::xtime_get(&m_last_maintenance, TIME_UTC);
+  memcpy(&m_last_low_memory, &m_last_maintenance, sizeof(boost::xtime));
   memcpy(&m_last_check, &m_last_maintenance, sizeof(boost::xtime));
-    m_last_maintenance.sec -= m_maintenance_interval / 1000;
-    m_low_memory_limit_percentage = get_i32("Hypertable.RangeServer.LowMemoryLimit.Percentage");
-    m_merging_delay = get_i32("Hypertable.RangeServer.Maintenance.MergingCompaction.Delay");
-    m_merges_per_interval = get_i32("Hypertable.RangeServer.Maintenance.MergesPerInterval",
-      std::numeric_limits<int32_t>::max());
+  m_last_maintenance.sec -= m_maintenance_interval / 1000;
+  m_low_memory_limit_percentage = get_i32("Hypertable.RangeServer.LowMemoryLimit.Percentage");
+  m_merging_delay = get_i32("Hypertable.RangeServer.Maintenance.MergingCompaction.Delay");
+  m_merges_per_interval = get_i32("Hypertable.RangeServer.Maintenance.MergesPerInterval",
+                                  std::numeric_limits<int32_t>::max());
   m_move_compactions_per_interval = get_i32("Hypertable.RangeServer.Maintenance.MoveCompactionsPerInterval");
+
+  /** 
+   * This code adds hashes for the four primary commit log
+   * directories to the m_log_hashes set.  This set is passed
+   * into CommitLog::purge to tell the commit log that fragments
+   * from these directories are OK to remove.
+   */
+  String log_dir = Global::log_dir + "/root";
+  m_log_hashes.insert( md5_hash(log_dir.c_str()) );
+  log_dir = Global::log_dir + "/metadata";
+  m_log_hashes.insert( md5_hash(log_dir.c_str()) );
+  log_dir = Global::log_dir + "/system";
+  m_log_hashes.insert( md5_hash(log_dir.c_str()) );
+  log_dir = Global::log_dir + "/user";
+  m_log_hashes.insert( md5_hash(log_dir.c_str()) );
+
+#ifdef _WIN32
+
+  Path data_dir = properties->get_str("Hypertable.DataDirectory");
+  data_dir /= "/run";
+  if (!FileUtils::exists(data_dir.string()))
+    FileUtils::mkdirs(data_dir.string());
+
+#endif
+
 }
 
 
@@ -89,11 +119,11 @@ void MaintenanceScheduler::schedule() {
 
   // adjust limit if it makes sense
   if (Global::memory_limit_ensure_unused_current &&
-    memory_state.balance - m_query_cache_memory > Global::memory_limit_ensure_unused_current) {
+      memory_state.balance - m_query_cache_memory > Global::memory_limit_ensure_unused_current) {
     excess = Global::memory_limit_ensure_unused_current
-        - (int64_t)(System::mem_stat().free * Property::MiB);
-      if (excess > 0)
-        memory_state.limit = memory_state.balance - excess;
+                       - (int64_t)(System::mem_stat().free * Property::MiB);
+    if (excess > 0)
+      memory_state.limit = memory_state.balance - excess;
   }
 
   if (low_memory) {
@@ -140,7 +170,7 @@ void MaintenanceScheduler::schedule() {
      xtime_diff_millis(m_last_low_memory, now) >= (int64_t)m_merging_delay);
 
   if (!m_scheduling_needed &&
-    millis_since_last_maintenance < m_maintenance_interval)
+      millis_since_last_maintenance < m_maintenance_interval)
     return;
 
   Global::maintenance_queue->clear();
@@ -158,16 +188,18 @@ void MaintenanceScheduler::schedule() {
   int64_t bloom_filter_memory = 0;
   int64_t cell_cache_memory = 0;
   int64_t shadow_cache_memory = 0;
+  int64_t not_acknowledged = 0;
 
   /**
-  * Purge commit log fragments
-  */
+   * Purge commit log fragments
+   */
   {
-    int64_t revision_user = Global::user_log ? Global::user_log->get_latest_revision() : TIMESTAMP_MIN;
-    int64_t revision_metadata = Global::metadata_log ? Global::metadata_log->get_latest_revision() : TIMESTAMP_MIN;
-    int64_t revision_system = Global::system_log ? Global::system_log->get_latest_revision() : TIMESTAMP_MIN;
-    int64_t revision_root = Global::root_log ? Global::root_log->get_latest_revision() : TIMESTAMP_MIN;
+    int64_t revision_user = TIMESTAMP_MAX;
+    int64_t revision_metadata = TIMESTAMP_MAX;
+    int64_t revision_system = TIMESTAMP_MAX;
+    int64_t revision_root = TIMESTAMP_MAX;
     AccessGroup::CellStoreMaintenanceData *cs_data;
+    std::set<int64_t> log_dir_hashes = m_log_hashes;
 
     trace_str += String("before revision_root\t") + revision_root + "\n";
     trace_str += String("before revision_metadata\t") + revision_metadata + "\n";
@@ -176,11 +208,16 @@ void MaintenanceScheduler::schedule() {
 
     for (size_t i=0; i<range_data.size(); i++) {
 
+      log_dir_hashes.insert(range_data[i]->log_hash);
+
       if (range_data[i]->needs_major_compaction && priority <= m_move_compactions_per_interval) {
         range_data[i]->priority = priority++;
         range_data[i]->maintenance_flags = MaintenanceFlag::COMPACT_MOVE;
         continue;
       }
+
+      if (!range_data[i]->load_acknowledged)
+        not_acknowledged++;
 
       for (ag_data = range_data[i]->agdata; ag_data; ag_data = ag_data->next) {
 
@@ -194,23 +231,19 @@ void MaintenanceScheduler::schedule() {
 
         if (ag_data->earliest_cached_revision != TIMESTAMP_MAX) {
           if (range_data[i]->range->is_root()) {
-            if (revision_root == TIMESTAMP_MIN || 
-              ag_data->earliest_cached_revision < revision_root)
+            if (ag_data->earliest_cached_revision < revision_root)
               revision_root = ag_data->earliest_cached_revision;
           }
           else if (range_data[i]->is_metadata) {
-            if (revision_metadata == TIMESTAMP_MIN ||
-              ag_data->earliest_cached_revision < revision_metadata)
+            if (ag_data->earliest_cached_revision < revision_metadata)
               revision_metadata = ag_data->earliest_cached_revision;
           }
           else if (range_data[i]->is_system) {
-            if (revision_system == TIMESTAMP_MIN ||
-              ag_data->earliest_cached_revision < revision_system)
+            if (ag_data->earliest_cached_revision < revision_system)
               revision_system = ag_data->earliest_cached_revision;
           }
           else {
-            if (revision_user == TIMESTAMP_MIN ||
-              ag_data->earliest_cached_revision < revision_user)
+            if (ag_data->earliest_cached_revision < revision_user)
               revision_user = ag_data->earliest_cached_revision;
           }
         }
@@ -223,16 +256,16 @@ void MaintenanceScheduler::schedule() {
     trace_str += String("after revision_user\t") + revision_user + "\n";
 
     if (Global::root_log)
-      Global::root_log->purge(revision_root);
+      Global::root_log->purge(revision_root, log_dir_hashes);
 
     if (Global::metadata_log)
-      Global::metadata_log->purge(revision_metadata);
+      Global::metadata_log->purge(revision_metadata, log_dir_hashes);
 
     if (Global::system_log)
-      Global::system_log->purge(revision_system);
+      Global::system_log->purge(revision_system, log_dir_hashes);
 
     if (Global::user_log)
-      Global::user_log->purge(revision_user);
+      Global::user_log->purge(revision_user, log_dir_hashes);
   }
 
   {
@@ -246,14 +279,14 @@ void MaintenanceScheduler::schedule() {
     double query_cache_pct = ((double)m_query_cache_memory / (double)total_memory) * 100.0;
 
     HT_INFOF("Memory Statistics (MB): VM=%.2f, RSS=%.2f, tracked=%.2f, computed=%.2f limit=%.2f",
-      System::proc_stat().vm_size, System::proc_stat().vm_resident,
-      (double)memory_state.balance/(double)Property::MiB, (double)total_memory/(double)Property::MiB,
-      (double)Global::memory_limit/(double)Property::MiB);
+             System::proc_stat().vm_size, System::proc_stat().vm_resident,
+             (double)memory_state.balance/(double)Property::MiB, (double)total_memory/(double)Property::MiB,
+             (double)Global::memory_limit/(double)Property::MiB);
     HT_INFOF("Memory Allocation: BlockCache=%.2f%% BlockIndex=%.2f%% "
-      "BloomFilter=%.2f%% CellCache=%.2f%% ShadowCache=%.2f%% "
-      "QueryCache=%.2f%%",
-      block_cache_pct, block_index_pct, bloom_filter_pct,
-      cell_cache_pct, shadow_cache_pct, query_cache_pct);
+             "BloomFilter=%.2f%% CellCache=%.2f%% ShadowCache=%.2f%% "
+             "QueryCache=%.2f%%",
+             block_cache_pct, block_index_pct, bloom_filter_pct,
+             cell_cache_pct, shadow_cache_pct, query_cache_pct);
   }
 
   String dummy_str;
@@ -264,20 +297,25 @@ void MaintenanceScheduler::schedule() {
   boost::xtime schedule_time;
   boost::xtime_get(&schedule_time, boost::TIME_UTC);
 
+  if (not_acknowledged) {
+    HT_INFO_OUT << "Found load_acknowledged=false in " << not_acknowledged
+        << " ranges" << HT_END;
+  }
+
   // if this is the first time around, just enqueue work that
   // was in progress
   if (!m_initialized) {
     int level = 0, priority = 0;
     for (size_t i=0; i<range_data.size(); i++) {
       if (range_data[i]->state == RangeState::SPLIT_LOG_INSTALLED ||
-        range_data[i]->state == RangeState::SPLIT_SHRUNK) {
-          RangePtr range(range_data[i]->range);
-	level = get_level(range);
+          range_data[i]->state == RangeState::SPLIT_SHRUNK) {
+        RangePtr range(range_data[i]->range);
+        level = get_level(range_data[i]);
         Global::maintenance_queue->add(new MaintenanceTaskSplit(level, priority++, schedule_time, range));
       }
       else if (range_data[i]->state == RangeState::RELINQUISH_LOG_INSTALLED) {
         RangePtr range(range_data[i]->range);
-	level = get_level(range);
+        level = get_level(range_data[i]);
         Global::maintenance_queue->add(new MaintenanceTaskRelinquish(level, priority++, schedule_time, range));
       }
     }
@@ -300,19 +338,19 @@ void MaintenanceScheduler::schedule() {
     for (size_t i=0; i<range_data_prioritized.size(); i++) {
       if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::SPLIT) {
         RangePtr range(range_data_prioritized[i]->range);
-	level = get_level(range);
+        level = get_level(range_data_prioritized[i]);
         Global::maintenance_queue->add(new MaintenanceTaskSplit(level, range_data_prioritized[i]->priority, schedule_time, range));
       }
       else if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::RELINQUISH) {
         RangePtr range(range_data_prioritized[i]->range);
-	level = get_level(range);
+        level = get_level(range_data_prioritized[i]);
         Global::maintenance_queue->add(new MaintenanceTaskRelinquish(level, range_data_prioritized[i]->priority, schedule_time, range));
       }
       else if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::COMPACT) {
         MaintenanceTaskCompaction *task;
         RangePtr range(range_data_prioritized[i]->range);
-	level = get_level(range);
-	task = new MaintenanceTaskCompaction(level, range_data_prioritized[i]->priority, schedule_time, range);
+        level = get_level(range_data_prioritized[i]);
+        task = new MaintenanceTaskCompaction(level, range_data_prioritized[i]->priority, schedule_time, range);
         if (!range_data_prioritized[i]->needs_major_compaction) {
           for (AccessGroup::MaintenanceData *ag_data=range_data_prioritized[i]->agdata; ag_data; ag_data=ag_data->next) {
             if (MaintenanceFlag::minor_compaction(ag_data->maintenance_flags) ||
@@ -332,8 +370,8 @@ void MaintenanceScheduler::schedule() {
       else if (range_data_prioritized[i]->maintenance_flags & MaintenanceFlag::MEMORY_PURGE) {
         MaintenanceTaskMemoryPurge *task;
         RangePtr range(range_data_prioritized[i]->range);
-	level = get_level(range);
-	task = new MaintenanceTaskMemoryPurge(level, range_data_prioritized[i]->priority, schedule_time, range);
+        level = get_level(range_data_prioritized[i]);
+        task = new MaintenanceTaskMemoryPurge(level, range_data_prioritized[i]->priority, schedule_time, range);
         for (AccessGroup::MaintenanceData *ag_data=range_data_prioritized[i]->agdata; ag_data; ag_data=ag_data->next) {
           if (ag_data->maintenance_flags & MaintenanceFlag::MEMORY_PURGE) {
             task->add_subtask(ag_data->ag, ag_data->maintenance_flags);
@@ -348,6 +386,15 @@ void MaintenanceScheduler::schedule() {
     }
   }
 
+  MaintenanceTaskWorkQueue *task = 0;
+  {
+    ScopedLock lock(Global::mutex);
+    if (!Global::work_queue.empty())
+      task = new MaintenanceTaskWorkQueue(3, 0, Global::work_queue);
+  }
+  if (task)
+    Global::maintenance_queue->add(task);
+
   //cout << flush << trace_str << flush;
 
   m_scheduling_needed = false;
@@ -355,12 +402,12 @@ void MaintenanceScheduler::schedule() {
   m_stats_gatherer->clear();
 }
 
-int MaintenanceScheduler::get_level(RangePtr &range) {
-  if (range->is_root())
+int MaintenanceScheduler::get_level(Range::MaintenanceData *range_data) {
+  if (range_data->range->is_root())
     return 0;
-  if (range->metalog_entity()->table.is_metadata())
+  if (range_data->is_metadata)
     return 1;
-  else if (range->metalog_entity()->table.is_system())
+  else if (range_data->is_system)
     return 2;
   return 3;
 }
@@ -371,8 +418,15 @@ void MaintenanceScheduler::check_file_dump_statistics(boost::xtime now, RangeSta
   AccessGroup::MaintenanceData *ag_data;
 
   if (xtime_diff_millis(m_last_check, now) >= (int64_t)60000) {
+#ifndef _WIN32
     if (FileUtils::exists(System::install_dir + "/run/debug-scheduler")) {
       String output_fname = System::install_dir + "/run/scheduler.output";
+#else
+    Path data_dir = properties->get_str("Hypertable.DataDirectory");
+    data_dir /= "/run";
+    if (FileUtils::exists(data_dir.string() + "/debug-scheduler")) {
+      String output_fname = data_dir.string() + "/scheduler.output";
+#endif
       ofstream out;
       out.open(output_fname.c_str());
       out << header_str << "\n";
@@ -382,7 +436,11 @@ void MaintenanceScheduler::check_file_dump_statistics(boost::xtime now, RangeSta
           out << *ag_data << "\n";
       }
       out.close();
+#ifndef _WIN32
       FileUtils::unlink(System::install_dir + "/run/debug-scheduler");
+#else
+      FileUtils::unlink(data_dir.string() + "/debug-scheduler");
+#endif
     }
     m_last_check = now;
   }

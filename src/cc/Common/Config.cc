@@ -237,6 +237,8 @@ void DefaultPolicy::init_options() {
      "Ceph monitor address to connect to")
     ("HdfsBroker.Port", i16(),
         "Port number on which to listen (read by HdfsBroker only)")
+    ("HdfsBroker.Hadoop.ConfDir", str(), "Hadoop configuration directory "
+        "(e.g. /etc/hadoop/conf or /usr/lib/hadoop/conf)")
     ("HdfsBroker.fs.default.name", str(), "Hadoop Filesystem "
         "default name, same as fs.default.name property in Hadoop config "
         "(e.g. hdfs://localhost:9000)")
@@ -253,6 +255,8 @@ void DefaultPolicy::init_options() {
     ("Kfs.Broker.Reactors", i32(), "Number of Kfs broker reactor threads")
     ("Kfs.MetaServer.Name", str(), "Hostname of Kosmos meta server")
     ("Kfs.MetaServer.Port", i16(), "Port number for Kosmos meta server")
+    ("DfsBroker.DisableFileRemoval", boo()->default_value(false),
+        "Rename files with .deleted extension instead of removing (for testing)")
     ("DfsBroker.Local.DirectIO", boo()->default_value(false),
         "Read and write files using direct i/o")
     ("DfsBroker.Local.Port", i16()->default_value(38030),
@@ -321,6 +325,8 @@ void DefaultPolicy::init_options() {
         "Top-level hypertable directory name")
     ("Hypertable.Monitoring.Interval", i32()->default_value(30000),
         "Monitoring statistics gathering interval (in milliseconds)")
+    ("Hypertable.Monitoring.Disable", boo()->default_value(false),
+        "Disables the generation of monitoring statistics")
     ("Hypertable.LoadBalancer.Enable", boo()->default_value(true),
         "Enable automatic load balancing")
     ("Hypertable.LoadBalancer.Interval", i32()->default_value(86400000),
@@ -362,9 +368,15 @@ void DefaultPolicy::init_options() {
         "Includes master hash (host:port) in RangeServer location id")
     ("Hypertable.Master.Split.SoftLimitEnabled", boo()->default_value(true),
         "Enable aggressive splitting of tables with little data to spread out ranges")
+    ("Hypertable.Master.DiskThreshold.Percentage", i32()->default_value(90),
+        "Stop assigning ranges to RangeServers if disk usage is above this threshold")
     ("Hypertable.RangeServer.AccessGroup.GarbageThreshold.Percentage",
      i32()->default_value(20), "Perform major compaction when garbage accounts "
      "for this percentage of the data")
+    ("Hypertable.RangeServer.ControlFile.CheckInterval", i32()->default_value(30000),
+     "Minimum time interval (milliseconds) to check for control files in run/ directory")
+    ("Hypertable.RangeServer.LoadMetadataOnly", boo()->default_value(false),
+        "Instructs the RangeServer to only load ROOT and METADATA ranges (for debugging)")
     ("Hypertable.RangeServer.MemoryLimit", i64(), "RangeServer memory limit")
     ("Hypertable.RangeServer.MemoryLimit.Percentage", i32()->default_value(60),
      "RangeServer memory limit specified as percentage of physical RAM")
@@ -426,7 +438,9 @@ void DefaultPolicy::init_options() {
         "Host of DFS Broker to use for Commit Log")
     ("Hypertable.RangeServer.CommitLog.DfsBroker.Port", i16(),
         "Port of DFS Broker to use for Commit Log")
-
+    ("Hypertable.RangeServer.CommitLog.FragmentRemoval.RangeReferenceRequired", boo()->default_value(true),
+        "Only remove linked log fragments if they're part of a transfer log referenced by a range")
+        
 #ifdef _WIN32
 
     ("Hypertable.RangeServer.CommitLog.DfsBroker.Local.Embedded", boo()->default_value(false),

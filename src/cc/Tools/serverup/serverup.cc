@@ -27,6 +27,8 @@
 
 extern "C" {
 #include <netdb.h>
+#include <sys/types.h>
+#include <signal.h>
 }
 
 #include "Common/Config.h"
@@ -36,6 +38,11 @@ extern "C" {
 #include "Common/Init.h"
 #include "Common/Timer.h"
 #include "Common/Usage.h"
+
+#ifdef _WIN32
+#include "Common/Path.h"
+#include "Common/ProcessUtils.h"
+#endif
 
 #include "AsyncComm/ApplicationQueue.h"
 #include "AsyncComm/Comm.h"
@@ -189,16 +196,52 @@ namespace {
       host = properties->get_str("host").c_str();
     else
       host = "localhost";
-    HT_DEBUG_OUT << "Checking master on localhost:" << port << HT_END;
+    HT_DEBUG_OUT << "Checking master on " << host << ":" << port << HT_END;
     InetAddr addr(host, port);
 
+    // issue 816: try to connect via MasterClient. If it refuses, and if
+    // the host name is localhost then check if there's a
+    // Hypertable.Master.state file and verify the pid
     MasterClient *master = new MasterClient(conn_mgr, addr, wait_ms);
     master->set_verbose_flag(get_bool("verbose"));
 
-    if (!master->wait_for_connection(wait_ms))
-      HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
+    if (!master->wait_for_connection(wait_ms)) {
+      if (strcmp(host, "localhost") && strcmp(host, "127.0.0.1"))
+        HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
 
-    master->status(&timer);
+      String toplevel_dir = properties->get_str("Hypertable.Directory");
+      boost::trim_if(toplevel_dir, boost::is_any_of("/"));
+      toplevel_dir = "/" + toplevel_dir;
+
+#ifndef _WIN32
+      String state_file = toplevel_dir + "/run/Hypertable.Master.state";
+      if (!FileUtils::exists(state_file))
+        HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
+      String pidstr;
+      String pid_file = System::install_dir + "/run/Hypertable.Master.pid";
+      if (FileUtils::read(pid_file, pidstr) <= 0)
+        HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
+      pid_t pid = (pid_t)strtoul(pidstr.c_str(), 0, 0);
+      if (pid <= 0)
+        HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
+      // (kill(pid, 0) does not send any signal but checks if the process exists
+      if (::kill(pid, 0) < 0)
+        HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
+#else
+      Path data_dir = properties->get_str("Hypertable.DataDirectory");
+      data_dir /= "/run";
+      String state_file = data_dir.string() + "/Hypertable.Master.state";
+      if (!FileUtils::exists(state_file))
+        HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
+
+      std::vector<DWORD> pids;
+      ProcessUtils::find("Hypertable.Master.exe", pids);
+      if (pids.empty())
+        HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
+#endif
+    }
+    else
+      master->status(&timer);
   }
 
   void check_rangeserver(ConnectionManagerPtr &conn_mgr, uint32_t wait_ms) {

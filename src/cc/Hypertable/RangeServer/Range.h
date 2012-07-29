@@ -43,6 +43,7 @@
 #include "LoadMetricsRange.h"
 #include "MaintenanceFlag.h"
 #include "MetaLogEntityRange.h"
+#include "MetaLogEntityTask.h"
 #include "Metadata.h"
 #include "RangeMaintenanceGuard.h"
 #include "RangeSet.h"
@@ -99,6 +100,8 @@ namespace Hypertable {
       bool     relinquish;
       bool     needs_major_compaction;
       bool     needs_split;
+      int64_t  log_hash;
+      bool     load_acknowledged;
     };
 
     typedef std::map<String, AccessGroup *> AccessGroupMap;
@@ -273,14 +276,16 @@ namespace Hypertable {
       return (String)m_name;
     }
 
+    /**
+     * Only called during startup (before range is live) so locking is not
+     * necessary
+     */
     int get_state() {
-      ScopedLock lock(m_mutex);
       return m_metalog_entity->state.state;
     }
 
     int32_t get_error() { return m_error; }
 
-    MetaLog::EntityRange *metalog_entity() { return m_metalog_entity.get(); }
     void set_needs_compaction(bool needs_compaction) {
       ScopedLock lock(m_mutex);
       m_metalog_entity->needs_compaction = needs_compaction;
@@ -291,10 +296,7 @@ namespace Hypertable {
       return m_metalog_entity->needs_compaction;
     }
 
-    void acknowledge_load() {
-      ScopedLock lock(m_mutex);
-      m_metalog_entity->load_acknowledged = true;
-    }
+    void acknowledge_load();
 
     bool load_acknowledged() {
       // Not locking this mutex for performance reasons.  Ranges start out
@@ -305,6 +307,10 @@ namespace Hypertable {
       //ScopedLock lock(m_mutex);
       return m_metalog_entity->load_acknowledged;
     }
+
+    void record_state_rsml();
+
+    void record_removal_rsml();
 
   private:
 
@@ -324,6 +330,8 @@ namespace Hypertable {
     void split_notify_master();
 
     void split_install_log_rollback_metadata();
+
+    void maybe_create_log_removal_task(MetaLog::EntityTaskPtr &log_removal_task);
 
     // these need to be aligned
     uint64_t         m_scans;
@@ -365,6 +373,7 @@ namespace Hypertable {
     bool             m_removed_from_working_set;
     int64_t          m_maintenance_generation;
     LoadMetricsRange m_load_metrics;
+    int64_t          m_log_hash;
   };
 
   typedef intrusive_ptr<Range> RangePtr;

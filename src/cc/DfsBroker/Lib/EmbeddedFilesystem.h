@@ -57,7 +57,7 @@ namespace Hypertable {
       EmbeddedFilesystem(PropertiesPtr &cfg);
 
       virtual void open(const String &name, uint32_t flags, DispatchHandler *handler);
-      virtual int open(const String &name, uint32_t flag, bool verify_checksum);
+      virtual int open(const String &name, uint32_t flag);
       virtual int open_buffered(const String &name, uint32_t flags, uint32_t buf_size,
                                 uint32_t outstanding, uint64_t start_offset=0,
                                 uint64_t end_offset=0);
@@ -85,7 +85,7 @@ namespace Hypertable {
       virtual void remove(const String &name, DispatchHandler *handler);
       virtual void remove(const String &name, bool force = true);
 
-      virtual void length(const String &name, DispatchHandler *handler);
+      virtual void length(const String &name, bool accurate, DispatchHandler *handler);
       virtual int64_t length(const String &name);
 
       virtual void pread(int fd, size_t len, uint64_t offset,
@@ -185,7 +185,7 @@ namespace Hypertable {
       void enqueue_message(int fd, Hypertable::CommBufPtr &cbp_request, DispatchHandler *handler);
       void process_message(Hypertable::CommBufPtr &cbp_request, DispatchHandler *handler);
 
-      int open(const String &name, uint32_t flags, bool verify_checksum, bool sync);
+      int open(const String &name, uint32_t flags, bool sync);
       int create(const String &name, uint32_t flags, int32_t bufsz,
                          int32_t replication, int64_t blksz, bool sync);
       void close(int fd, bool sync);

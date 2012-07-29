@@ -48,8 +48,9 @@
 #include "OperationRenameTable.h"
 #include "OperationStatus.h"
 #include "OperationLoadBalancer.h"
+#include "OperationStop.h"
 #include "RangeServerConnection.h"
-#include "RemovalManager.h"
+#include "ReferenceManager.h"
 
 
 using namespace Hypertable;
@@ -87,7 +88,6 @@ void ConnectionHandler::handle(EventPtr &event) {
     //event->display()
 
     try {
-
       // sanity check command code
       if (event->header.command < 0
           || event->header.command >= MasterProtocol::COMMAND_MAX)
@@ -116,7 +116,7 @@ void ConnectionHandler::handle(EventPtr &event) {
         return;
       case MasterProtocol::COMMAND_MOVE_RANGE:
         operation = new OperationMoveRange(m_context, event);
-	if (!m_context->removal_manager->add_operation(operation)) {
+	if (!m_context->reference_manager->add(operation)) {
           HT_INFOF("Skipping %s because already in progress", operation->label().c_str());
           send_error_response(event, Error::MASTER_OPERATION_IN_PROGRESS, "");
           return;
@@ -128,6 +128,9 @@ void ConnectionHandler::handle(EventPtr &event) {
         break;
       case MasterProtocol::COMMAND_BALANCE:
         operation = new OperationLoadBalancer(m_context, event);
+        break;
+      case MasterProtocol::COMMAND_STOP:
+        operation = new OperationStop(m_context, event);
         break;
       case MasterProtocol::COMMAND_SHUTDOWN:
         HT_INFO("Received shutdown command");
@@ -175,8 +178,10 @@ void ConnectionHandler::handle(EventPtr &event) {
         HT_WARNF("%s", e.what());
       else
         HT_ERROR_OUT << e << HT_END;
-      operation->complete_error_no_log(e.code(), e.what());
-      m_context->response_manager->add_operation(operation);
+      if (operation) {
+        operation->complete_error_no_log(e.code(), e.what());
+        m_context->response_manager->add_operation(operation);
+      }
     }
   }
   else if (event->type == Event::DISCONNECT) {

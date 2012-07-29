@@ -31,7 +31,6 @@ namespace Hypertable {
 
     class EntityRange : public Entity {
     public:
-      EntityRange(int32_t type);
       EntityRange(const EntityHeader &header_);
       EntityRange(const TableIdentifier &identifier,
                   const RangeSpec &range, const RangeState &state_, bool needs_compaction_);
@@ -47,12 +46,16 @@ namespace Hypertable {
       RangeStateManaged state;
       bool needs_compaction;
       bool load_acknowledged;
+      String original_transfer_log;
+
+      static bool encountered_upgrade;
     };
     typedef intrusive_ptr<EntityRange> EntityRangePtr;
 
     namespace EntityType {
       enum {
-        RANGE = 0x00010001
+        RANGE  = 0x00010001,
+        RANGE2 = 0x00010002
       };
     }
 

@@ -79,7 +79,7 @@ MaprBroker::~MaprBroker() {
 
 void
 MaprBroker::open(ResponseCallbackOpen *cb, const char *fname, 
-		 uint32_t flags, uint32_t bufsz, bool) {
+		 uint32_t flags, uint32_t bufsz) {
   hdfsFile file;
   int fd;
 
@@ -296,9 +296,12 @@ void MaprBroker::remove(ResponseCallback *cb, const char *fname) {
 }
 
 
-void MaprBroker::length(ResponseCallbackLength *cb, const char *fname) {
+void MaprBroker::length(ResponseCallbackLength *cb, const char *fname,
+                        bool accurate) {
   hdfsFileInfo *fileInfo;
   int error;
+
+  (void)accurate;
 
   if ((fileInfo = hdfsGetPathInfo(m_filesystem, fname)) == 0) {
     report_error(cb);
@@ -314,7 +317,6 @@ void MaprBroker::length(ResponseCallbackLength *cb, const char *fname) {
               (Llu)fileInfo->mSize, fname, Error::get_text(error));
 
   hdfsFreeFileInfo(fileInfo, 1);
-
 }
 
 

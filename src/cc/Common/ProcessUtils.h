@@ -34,6 +34,7 @@ namespace Hypertable {
     static bool create(const char* cmd_line, DWORD flags, STARTUPINFO& si, const char* outfile, bool append_output, PROCESS_INFORMATION& pi, HANDLE& houtfile);
     static bool create(const char* cmd_line, DWORD flags, const STARTUPINFO& si, PROCESS_INFORMATION& pi);
     static void find(const char* exe_name, std::vector<DWORD>& pids);
+    static bool exists(DWORD pid);
     static bool join(DWORD pid, DWORD timeout_ms);
     static bool join(const std::vector<DWORD>& pids, bool joinAll, DWORD timeout_ms);
     static void kill(DWORD pid, DWORD timeout_ms);

@@ -14,14 +14,16 @@ import java.nio.ByteOrder;
 public class SerializedCellsWriter {
 
   public SerializedCellsWriter(int size) {
-    mBuffer = ByteBuffer.allocate(size);
+    mBuffer = ByteBuffer.allocate(size + 5);
     mBuffer.order(ByteOrder.LITTLE_ENDIAN);
-    mGrow=false;
+    mBuffer.putInt(SerializedCellsFlag.VERSION);
+    mGrow = false;
   }
 
   public SerializedCellsWriter(int size, boolean grow) {
-    mBuffer = ByteBuffer.allocate(size);
+    mBuffer = ByteBuffer.allocate(size + 5);
     mBuffer.order(ByteOrder.LITTLE_ENDIAN);
+    mBuffer.putInt(SerializedCellsFlag.VERSION);
     mGrow = grow;
   }
 
@@ -34,23 +36,24 @@ public class SerializedCellsWriter {
    * @return true if cells were added
    */
   public boolean add_serialized_cell_array(byte [] serialized_cells) {
-    int length = serialized_cells.length - 1;
+    int length = serialized_cells.length - 5;  // skip 4-byte version and 1-byte terminator
 
     // need to leave room for the termination byte
     if (length >= mBuffer.remaining()) {
-      if (mBuffer.position() > 0) {
+      if (mBuffer.position() > 4) {
         if (!mGrow) // dont grow this buffer
           return false;
         else {
           // grow
-          ByteBuffer newBuffer = ByteBuffer.allocate(((mBuffer.capacity()+length)*3)/2);
+          ByteBuffer newBuffer = ByteBuffer.allocate(((mBuffer.capacity()
+                          + length) * 3) / 2);
           newBuffer.order(ByteOrder.LITTLE_ENDIAN);
           newBuffer.put(mBuffer.array(), 0, mBuffer.position());
           mBuffer = newBuffer;
         }
       }
     }
-    mBuffer.put(serialized_cells, 0 , length);
+    mBuffer.put(serialized_cells, 4, length);
     return true;
   }
 
@@ -124,7 +127,8 @@ public class SerializedCellsWriter {
                      byte [] column_qualifier, int column_qualifier_offset, int column_qualifier_length,
                      long timestamp,
                      byte [] value, int value_offset, int value_length, byte flag) {
-    int length = 9 + row_length + column_family_length + column_qualifier_length + value_length;
+    int length = 9 + row_length + column_family_length
+        + column_qualifier_length + value_length;
     byte control = 0;
 
     if (timestamp == SerializedCellsFlag.AUTO_ASSIGN)
@@ -136,21 +140,22 @@ public class SerializedCellsWriter {
 
     // need to leave room for the termination byte
     if (length >= mBuffer.remaining()) {
-      if (mBuffer.position() > 0) {
-        if (!mGrow) // dont grow this buffer
+      if (mBuffer.position() > 4) {
+        if (!mGrow)  // dont grow this buffer
           return false;
         else {
-
           // grow
-          ByteBuffer newBuffer = ByteBuffer.allocate(((mBuffer.capacity()+length)*3)/2);
+          ByteBuffer newBuffer = ByteBuffer.allocate(((mBuffer.capacity()
+                          + length) * 3) / 2);
           newBuffer.order(ByteOrder.LITTLE_ENDIAN);
           newBuffer.put(mBuffer.array(), 0, mBuffer.position());
           mBuffer = newBuffer;
         }
       }
       else {
-        mBuffer = ByteBuffer.allocate(length+1);
+        mBuffer = ByteBuffer.allocate(length + 5);
         mBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        mBuffer.putInt(SerializedCellsFlag.VERSION);
       }
     }
 
@@ -165,8 +170,12 @@ public class SerializedCellsWriter {
         (control & SerializedCellsFlag.REV_IS_TS) == 0)
       mBuffer.putLong((long)0);
 
-    // row
-    mBuffer.put(row, row_offset, row_length);
+    String newRow = new String(row, row_offset, row_length);
+
+    if (!mSavedRow.equals(newRow)) {
+      mSavedRow = newRow;
+      mBuffer.put(row, row_offset, row_length);
+    }
     mBuffer.put((byte)0);
 
     // column family
@@ -239,7 +248,9 @@ public class SerializedCellsWriter {
 
   public void clear() {
     mBuffer.clear();
+    mBuffer.putInt(SerializedCellsFlag.VERSION);
     mFinalized = false;
+    mSavedRow = "";
   }
 
   public int capacity() {
@@ -247,6 +258,7 @@ public class SerializedCellsWriter {
   }
 
   private ByteBuffer mBuffer;
+  private String mSavedRow = "";
   private boolean mFinalized = false;
   private boolean mGrow = false;
 }

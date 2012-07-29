@@ -117,12 +117,6 @@ SELECT a FROM t WHERE "2011-11-10 00:00:00" < TIMESTAMP < "2011-11-11 00:00:00" 
 
 SELECT a FROM t WHERE (ROW < "rowa3" OR ROW > "rowa7") AND a =^ "m";
 SELECT a FROM t WHERE (ROW < "rowa3") AND a =^ "m";
-SELECT a FROM t WHERE ("rowa10" < ROW <= "rowa3") AND a =^ "m";
-SELECT a FROM t WHERE ("rowa10" <= ROW <= "rowa3") AND a =^ "m";
-SELECT a FROM t WHERE ("rowa10" <= ROW < "rowa3") AND a =^ "m";
-SELECT a FROM t WHERE ("rowa10" <= ROW < "rowa3" OR ROW < "rowa9") AND a =^ "m";
-SELECT a FROM t WHERE ("rowa1" <= ROW < "rowa3" OR ROW <= "rowa9") AND a =^ "m";
-SELECT a FROM t WHERE ("rowa1" <= ROW < "rowa3" OR ROW < "rowa9x") AND a =^ "m";
 SELECT a FROM t WHERE (ROW < "00") AND a =^ "m";
 SELECT a FROM t WHERE ROW REGEXP "rowa" AND a =^ "m";
 SELECT a FROM t WHERE ROW REGEXP "^rowa" AND a =^ "m";
@@ -133,12 +127,6 @@ SELECT a FROM t WHERE ROW REGEXP "\d$" AND a =^ "m";
 
 SELECT a FROM t WHERE (ROW < "rowa3" OR ROW > "rowa7") AND a =^ "c";
 SELECT a FROM t WHERE (ROW < "rowa3") AND a =^ "c";
-SELECT a FROM t WHERE ("rowa10" < ROW <= "rowa3") AND a =^ "c";
-SELECT a FROM t WHERE ("rowa10" <= ROW <= "rowa3") AND a =^ "c";
-SELECT a FROM t WHERE ("rowa10" <= ROW < "rowa3") AND a =^ "c";
-SELECT a FROM t WHERE ("rowa10" <= ROW < "rowa3" OR ROW < "rowa9") AND a =^ "c";
-SELECT a FROM t WHERE ("rowa1" <= ROW < "rowa3" OR ROW <= "rowa9") AND a =^ "c";
-SELECT a FROM t WHERE ("rowa1" <= ROW < "rowa3" OR ROW < "rowa9x") AND a =^ "c";
 SELECT a FROM t WHERE (ROW < "00") AND a =^ "c";
 SELECT a FROM t WHERE ROW REGEXP "rowa" AND a =^ "c";
 SELECT a FROM t WHERE ROW REGEXP "^rowa" AND a =^ "c";
@@ -571,3 +559,9 @@ SELECT a FROM t WHERE a =^ "xas";
 USE "/tmp";
 GET LISTING;
 
+# issue 823
+CREATE TABLE t (data MAX_VERSIONS = 1, join MAX_VERSIONS = 1, QUALIFIER INDEX join);
+INSERT INTO t VALUES ('r1', 'join:a1', 'value 1');
+INSERT INTO t VALUES ('r2', 'join:a2', 'value 2');
+INSERT INTO t VALUES ('r3', 'join:b1', 'value 3');
+SELECT join:a1 FROM t WHERE VALUE REGEXP 'v';

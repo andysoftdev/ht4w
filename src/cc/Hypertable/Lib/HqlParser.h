@@ -104,6 +104,7 @@ namespace Hypertable {
       COMMAND_HEAPCHECK,
       COMMAND_COMPACT,
       COMMAND_METADATA_SYNC,
+      COMMAND_STOP,
       COMMAND_MAX
     };
 
@@ -288,6 +289,7 @@ namespace Hypertable {
       String input_file;
       String source;
       String destination;
+      String rs_name;
       int input_file_src;
       String header_file;
       int header_file_src;
@@ -378,6 +380,15 @@ namespace Hypertable {
       void operator()(char const *str, char const *end) const {
         state.ns = String(str, end-str);
         trim_if(state.ns, is_any_of("'\""));
+      }
+      ParserState &state;
+    };
+
+    struct set_rangeserver {
+      set_rangeserver(ParserState &state) : state(state) { }
+      void operator()(char const *str, char const *end) const {
+        state.rs_name = String(str, end-str);
+        trim_if(state.rs_name, is_any_of("'\""));
       }
       ParserState &state;
     };
@@ -1877,6 +1888,7 @@ namespace Hypertable {
           Token LISTING      = as_lower_d["listing"];
           Token ESC_HELP     = as_lower_d["\\h"];
           Token SELECT       = as_lower_d["select"];
+          Token STOP         = as_lower_d["stop"];
           Token START_TIME   = as_lower_d["start_time"];
           Token END_TIME     = as_lower_d["end_time"];
           Token FROM         = as_lower_d["from"];
@@ -1925,6 +1937,7 @@ namespace Hypertable {
           Token STARTS       = as_lower_d["starts"];
           Token WITH         = as_lower_d["with"];
           Token IF           = as_lower_d["if"];
+          Token NOT          = as_lower_d["not"];
           Token EXISTS       = as_lower_d["exists"];
           Token DISPLAY_TIMESTAMPS = as_lower_d["display_timestamps"];
           Token RETURN_DELETES = as_lower_d["return_deletes"];
@@ -2054,6 +2067,11 @@ namespace Hypertable {
             | heapcheck_statement[set_command(self.state, COMMAND_HEAPCHECK)]
             | compact_statement[set_command(self.state, COMMAND_COMPACT)]
             | metadata_sync_statement[set_command(self.state, COMMAND_METADATA_SYNC)]
+            | stop_statement[set_command(self.state, COMMAND_STOP)]
+            ;
+
+          stop_statement
+            = STOP >> user_identifier[set_rangeserver(self.state)]
             ;
 
           metadata_sync_statement
@@ -2295,6 +2313,7 @@ namespace Hypertable {
           create_namespace_statement
             = CREATE >> (NAMESPACE | DATABASE)
               >> user_identifier[set_namespace(self.state)]
+              >> !(IF >> NOT >> EXISTS[set_if_exists(self.state)])
             ;
 
           use_namespace_statement
@@ -2308,7 +2327,7 @@ namespace Hypertable {
 
 
           table_option
-            = COMPRESSOR >> EQUAL >> string_literal[
+            = COMPRESSOR >> *EQUAL >> string_literal[
                 set_table_compressor(self.state)]
             | GROUP_COMMIT_INTERVAL >> EQUAL >> uint_p[set_group_commit_interval(self.state)]
             | table_option_in_memory[set_table_in_memory(self.state)]
@@ -2399,7 +2418,7 @@ namespace Hypertable {
             ;
 
           ttl_option
-            = TTL >> EQUAL >> duration[set_ttl(self.state)]
+            = TTL >> *EQUAL >> duration[set_ttl(self.state)]
             ;
 
           counter_option
@@ -2432,13 +2451,13 @@ namespace Hypertable {
             | in_memory_option[set_access_group_in_memory(self.state)]
             | blocksize_option
             | replication_option
-            | COMPRESSOR >> EQUAL >> string_literal[
+            | COMPRESSOR >> *EQUAL >> string_literal[
                 set_access_group_compressor(self.state)]
             | bloom_filter_option
             ;
 
           bloom_filter_option
-            = BLOOMFILTER >> EQUAL
+            = BLOOMFILTER >> *EQUAL
               >> string_literal[set_access_group_bloom_filter(self.state)]
             ;
 
@@ -2447,12 +2466,12 @@ namespace Hypertable {
             ;
 
           blocksize_option
-            = BLOCKSIZE >> EQUAL >> uint_p[
+            = BLOCKSIZE >> *EQUAL >> uint_p[
                 set_access_group_blocksize(self.state)]
             ;
 
           replication_option
-            = REPLICATION >> EQUAL >> uint_p[
+            = REPLICATION >> *EQUAL >> uint_p[
                 set_access_group_replication(self.state)]
             ;
 
@@ -2766,6 +2785,7 @@ namespace Hypertable {
           BOOST_SPIRIT_DEBUG_RULE(compact_statement);
           BOOST_SPIRIT_DEBUG_RULE(metadata_sync_statement);
           BOOST_SPIRIT_DEBUG_RULE(metadata_sync_option_spec);
+          BOOST_SPIRIT_DEBUG_RULE(stop_statement);
           BOOST_SPIRIT_DEBUG_RULE(range_type);
 #endif
         }
@@ -2809,7 +2829,8 @@ namespace Hypertable {
           cell_spec, wait_for_maintenance_statement, move_range_statement,
           balance_statement, range_move_spec_list, range_move_spec,
           balance_option_spec, heapcheck_statement, compact_statement,
-          metadata_sync_statement, metadata_sync_option_spec, range_type;
+          metadata_sync_statement, metadata_sync_option_spec, stop_statement,
+          range_type;
       };
 
       ParserState &state;

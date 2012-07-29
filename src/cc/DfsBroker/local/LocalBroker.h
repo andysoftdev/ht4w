@@ -99,7 +99,7 @@ namespace Hypertable {
     virtual ~LocalBroker();
 
     virtual void open(ResponseCallbackOpen *cb, const char *fname,
-                      uint32_t flags, uint32_t bufsz, bool verify_checksum);
+                      uint32_t flags, uint32_t bufsz);
     virtual void create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
            int32_t bufsz, int16_t replication, int64_t blksz);
     virtual void close(ResponseCallback *cb, uint32_t fd);
@@ -108,7 +108,8 @@ namespace Hypertable {
                         uint32_t amount, const void *data, bool sync);
     virtual void seek(ResponseCallback *cb, uint32_t fd, uint64_t offset);
     virtual void remove(ResponseCallback *cb, const char *fname);
-    virtual void length(ResponseCallbackLength *cb, const char *fname);
+    virtual void length(ResponseCallbackLength *cb, const char *fname,
+                    bool accurate = true);
     virtual void pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
                        uint32_t amount, bool verify_checksum);
     virtual void mkdirs(ResponseCallback *cb, const char *dname);
@@ -133,9 +134,10 @@ namespace Hypertable {
     static bool rmdir(const String& absdir);
 #endif
 
-    bool         m_verbose;
     String       m_rootdir;
+    bool         m_verbose;
     bool         m_directio;
+    bool         m_no_removal;
   };
 
 }

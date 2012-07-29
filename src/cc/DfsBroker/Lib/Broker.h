@@ -43,7 +43,7 @@ namespace Hypertable {
     public:
       virtual ~Broker() { return; }
       virtual void open(ResponseCallbackOpen *, const char *fname,
-                        uint32_t flags, uint32_t bufsz, bool verify_checksum) = 0;
+                        uint32_t flags, uint32_t bufsz) = 0;
       virtual void create(ResponseCallbackOpen *, const char *fname,
                           uint32_t flags, int32_t bufsz,
                           int16_t replication, int64_t blksz) = 0;
@@ -54,7 +54,8 @@ namespace Hypertable {
                           uint32_t amount, const void *data, bool flush) = 0;
       virtual void seek(ResponseCallback *, uint32_t fd, uint64_t offset) = 0;
       virtual void remove(ResponseCallback *, const char *fname) = 0;
-      virtual void length(ResponseCallbackLength *, const char *fname) = 0;
+      virtual void length(ResponseCallbackLength *, const char *fname,
+                        bool accurate = true) = 0;
       virtual void pread(ResponseCallbackRead *, uint32_t fd, uint64_t offset,
                          uint32_t amount, bool verify_checksum) = 0;
       virtual void mkdirs(ResponseCallback *, const char *dname) = 0;

@@ -79,6 +79,7 @@
     <ClCompile Include="MaintenanceTaskMemoryPurge.cc" />
     <ClCompile Include="MaintenanceTaskRelinquish.cc" />
     <ClCompile Include="MaintenanceTaskSplit.cc" />
+    <ClCompile Include="MaintenanceTaskWorkQueue.cc" />
     <ClCompile Include="MergeScanner.cc" />
     <ClCompile Include="MergeScannerAccessGroup.cc" />
     <ClCompile Include="MergeScannerRange.cc" />
@@ -86,6 +87,8 @@
     <ClCompile Include="MetadataRoot.cc" />
     <ClCompile Include="MetaLogDefinitionRangeServer.cc" />
     <ClCompile Include="MetaLogEntityRange.cc" />
+    <ClCompile Include="MetaLogEntityTaskAcknowledgeRelinquish.cc" />
+    <ClCompile Include="MetaLogEntityTaskRemoveTransferLog.cc" />
     <ClCompile Include="QueryCache.cc" />
     <ClCompile Include="Range.cc" />
     <ClCompile Include="RangeServer.cc" />
@@ -197,6 +200,7 @@
     <ClInclude Include="MaintenanceTaskMemoryPurge.h" />
     <ClInclude Include="MaintenanceTaskRelinquish.h" />
     <ClInclude Include="MaintenanceTaskSplit.h" />
+    <ClInclude Include="MaintenanceTaskWorkQueue.h" />
     <ClInclude Include="MemoryTracker.h" />
     <ClInclude Include="MergeScanner.h" />
     <ClInclude Include="MergeScannerAccessGroup.h" />
@@ -206,6 +210,8 @@
     <ClInclude Include="MetadataRoot.h" />
     <ClInclude Include="MetaLogDefinitionRangeServer.h" />
     <ClInclude Include="MetaLogEntityRange.h" />
+    <ClInclude Include="MetaLogEntityTaskAcknowledgeRelinquish.h" />
+    <ClInclude Include="MetaLogEntityTaskRemoveTransferLog.h" />
     <ClInclude Include="QueryCache.h" />
     <ClInclude Include="Range.h" />
     <ClInclude Include="RangeMaintenanceGuard.h" />

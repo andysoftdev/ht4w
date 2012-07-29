@@ -102,7 +102,7 @@ EmbeddedFilesystem::~EmbeddedFilesystem() {
 
 void EmbeddedFilesystem::open(const String &name, uint32_t flags, DispatchHandler *handler) {
   try {
-    CommBufPtr cbp(m_protocol.create_open_request(name, flags, 0, false));
+    CommBufPtr cbp(m_protocol.create_open_request(name, flags, 0));
     enqueue_message(Request::fdRead, cbp, handler);
   }
   catch (Exception &e) {
@@ -111,8 +111,8 @@ void EmbeddedFilesystem::open(const String &name, uint32_t flags, DispatchHandle
 }
 
 
-int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool verify_checksum) {
-  return open(name, flags, verify_checksum, m_asyncio);
+int EmbeddedFilesystem::open(const String &name, uint32_t flags) {
+  return open(name, flags, m_asyncio);
 }
 
 
@@ -281,9 +281,9 @@ void EmbeddedFilesystem::remove(const String &name, bool force) {
   remove(name, force, m_asyncio);
 }
 
-void EmbeddedFilesystem::length(const String &name, DispatchHandler *handler) {
+void EmbeddedFilesystem::length(const String &name, bool accurate, DispatchHandler *handler) {
   try {
-    CommBufPtr cbp(m_protocol.create_length_request(name));
+    CommBufPtr cbp(m_protocol.create_length_request(name, accurate));
     enqueue_message(Request::fdRead, cbp, handler);
   }
   catch (Exception &e) {
@@ -481,11 +481,10 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
         uint32_t flags = decode_i32(&decode_ptr, &decode_remain);
         uint32_t bufsz = decode_i32(&decode_ptr, &decode_remain);
         const char *fname = decode_str16(&decode_ptr, &decode_remain);
-        bool verify_checksum = decode_bool(&decode_ptr, &decode_remain);
         // validate filename
         if (fname[strlen(fname)-1] == '/')
           HT_THROWF(Error::DFSBROKER_BAD_FILENAME, "bad filename: %s", fname);
-        int fd = open(fname, flags, verify_checksum, false);
+        int fd = open(fname, flags, false);
 
         response.ensure(8);
         encode_i32(&response.ptr, Error::OK);
@@ -558,7 +557,7 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
     case Protocol::COMMAND_REMOVE:
       {
         const char *fname = decode_str16(&decode_ptr, &decode_remain);
-        remove(fname, false);
+        remove(fname, true, false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -567,6 +566,7 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
     case Protocol::COMMAND_LENGTH:
       {
         const char *fname = decode_str16(&decode_ptr, &decode_remain);
+        bool accurate = decode_bool(&decode_ptr, &decode_remain);
         int64_t len = length(fname, false);
 
         response.ensure(12);
@@ -609,7 +609,7 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
     case Protocol::COMMAND_RMDIR:
       {
         const char *dname = decode_str16(&decode_ptr, &decode_remain);
-        rmdir(dname);
+        rmdir(dname, true, false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -675,7 +675,7 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
   handler->handle(event);
 }
 
-int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool /*verify_checksum*/, bool sync) {
+int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
   try {
     FdSyncGuard guard(this, Request::fdWrite, sync);
 

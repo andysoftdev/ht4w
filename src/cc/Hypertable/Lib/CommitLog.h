@@ -28,7 +28,6 @@
 
 #include <boost/thread/xtime.hpp>
 
-#include "Common/Mutex.h"
 #include "Common/DynamicBuffer.h"
 #include "Common/ReferenceCount.h"
 #include "Common/String.h"
@@ -136,8 +135,11 @@ namespace Hypertable {
      * a revision that is less than the given revision.
      *
      * @param revision real cutoff revision
+     * @param remove_ok set of md5 hashes of logs that are ok to remove
      */
-    int purge(int64_t revision);
+    int purge(int64_t revision, std::set<int64_t> remove_ok);
+
+    void remove_linked_log(const String &log_dir);
 
     /**
      * Fills up a map of cumulative fragment size data.  One entry per log
@@ -171,7 +173,7 @@ namespace Hypertable {
       int64_t total = 0;
       for (LogFragmentQueue::iterator iter = m_fragment_queue.begin();
            iter != m_fragment_queue.end(); iter++)
-        total += (*iter).size;
+        total += (*iter)->size;
       return total;
     }
 
@@ -186,12 +188,13 @@ namespace Hypertable {
   private:
     void initialize(const String &log_dir,
                     PropertiesPtr &, CommitLogBase *init_log, bool is_meta);
-    int roll();
+    int roll(CommitLogFileInfo **clfip=0);
     int compress_and_write(DynamicBuffer &input, BlockCompressionHeader *header,
                            int64_t revision, bool sync);
+    void remove_file_info(CommitLogFileInfo *fi);
 
-    Mutex                   m_mutex;
     FilesystemPtr           m_fs;
+    std::set<CommitLogFileInfo *> m_reap_set;
     BlockCompressionCodec  *m_compressor;
     String                  m_cur_fragment_fname;
     int64_t                 m_cur_fragment_length;

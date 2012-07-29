@@ -89,9 +89,11 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
 {
   HT_ASSERT(!table->schema()->need_id_assignment());
 
+  // never use an index if the row key is specified
+  if (primary_spec.row_intervals.size())
+    return false;
+
   index_spec.set_keys_only(true);
-  if (primary_spec.value_regexp)
-    index_spec.set_value_regexp(primary_spec.value_regexp);
   index_spec.add_column("v1");
 
   // if a column qualifier is specified then make sure that all columns have
@@ -100,19 +102,23 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
   if (primary_spec.columns.size()) {
     for (size_t i = 0; i < primary_spec.columns.size(); i++) {
       Schema::ColumnFamily *cf = 0;
-      const char *qualifier = strchr(primary_spec.columns[i], ':');
-      if (!qualifier) {
+      const char *qualifier_start = strchr(primary_spec.columns[i], ':');
+      if (!qualifier_start) {
         *use_qualifier = false;
         break;
       }
 
-      String column(primary_spec.columns[i], qualifier);
+      String column(primary_spec.columns[i], qualifier_start);
       cf = table->schema()->get_column_family(column);
       if (!cf || !cf->has_qualifier_index) {
         *use_qualifier = false;
         break;
       }
-      qualifier++;
+
+      qualifier_start++;
+      String qualifier(qualifier_start);
+      boost::algorithm::trim_if(qualifier, boost::algorithm::is_any_of("'\""));
+
       if (qualifier[0] == '/') {
         *use_qualifier = false;
         break;
@@ -120,14 +126,14 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
 
       // prefix match: create row interval ["%d,qualifier", ..)
       if (qualifier[0] == '^') {
-        String q(qualifier + 1);
+        String q(qualifier.c_str() + 1);
         trim_if(q, boost::algorithm::is_any_of("'\""));
         String s = format("%d,%s", (int)cf->id, q.c_str());
         add_index_row(index_spec, s.c_str());
       }
       // exact match:  create row interval ["%d,qualifier\t", ..)
       else {
-        String s = format("%d,%s\t", (int)cf->id, qualifier);
+        String s = format("%d,%s\t", (int)cf->id, qualifier.c_str());
         add_index_row(index_spec, s.c_str());
       }
 
@@ -386,7 +392,7 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
   if (m_error != Error::OK || cancelled) {
     maybe_callback_error(scanner_id, next);
     if (next && scanner_id == m_current_scanner)
-      move_to_next_interval_scanner(scanner_id, cancelled);
+      move_to_next_interval_scanner(scanner_id);
     return;
   }
   else if (abort) {
@@ -396,10 +402,10 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
     HT_ERROR_OUT << e << HT_END;
     maybe_callback_error(scanner_id, next);
     if (next && scanner_id == m_current_scanner)
-      move_to_next_interval_scanner(scanner_id, cancelled);
+      move_to_next_interval_scanner(scanner_id);
   }
   else if (next && scanner_id == m_current_scanner) {
-    move_to_next_interval_scanner(scanner_id, cancelled);
+    move_to_next_interval_scanner(scanner_id);
   }
 }
 
@@ -420,7 +426,7 @@ void TableScannerAsync::handle_timeout(int scanner_id, const String &error_msg, 
   m_error = Error::REQUEST_TIMEOUT;
   maybe_callback_error(scanner_id, next);
   if (next && scanner_id == m_current_scanner)
-    move_to_next_interval_scanner(scanner_id, cancelled);
+    move_to_next_interval_scanner(scanner_id);
 
 }
 
@@ -433,7 +439,7 @@ void TableScannerAsync::handle_result(int scanner_id, EventPtr &event, bool is_c
   bool abort = (m_error != Error::OK || cancelled);
 
   bool next;
-  bool do_callback=false;
+  bool do_callback = false;
   int current_scanner = scanner_id;
 
   try {
@@ -461,7 +467,7 @@ void TableScannerAsync::handle_result(int scanner_id, EventPtr &event, bool is_c
     }
 
     if (next)
-      move_to_next_interval_scanner(current_scanner, cancelled);
+      move_to_next_interval_scanner(current_scanner);
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
@@ -533,9 +539,9 @@ String TableScannerAsync::get_table_name() const {
   return m_table->get_name();
 }
 
-void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool cancelled) {
-
-  bool next=true;
+void TableScannerAsync::move_to_next_interval_scanner(int current_scanner) {
+  bool next = true;
+  bool cancelled = is_cancelled();
   bool do_callback;
   ScanCellsPtr cells;
   bool abort = cancelled || (m_error != Error::OK);

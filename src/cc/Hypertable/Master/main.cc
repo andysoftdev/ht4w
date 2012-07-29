@@ -31,6 +31,9 @@ extern "C" {
 #include "Common/System.h"
 #include "Common/Thread.h"
 #include "Common/md5.h"
+#ifdef _WIN32
+#include "Common/Path.h"
+#endif
 
 #include "AsyncComm/Comm.h"
 
@@ -49,7 +52,7 @@ extern "C" {
 #include "OperationSystemUpgrade.h"
 #include "OperationWaitForServers.h"
 #include "OperationBalance.h"
-#include "RemovalManager.h"
+#include "ReferenceManager.h"
 #include "ResponseManager.h"
 
 #ifdef _WIN32
@@ -116,7 +119,26 @@ int main(int argc, char **argv) {
     boost::trim_if(context->toplevel_dir, boost::is_any_of("/"));
     context->toplevel_dir = String("/") + context->toplevel_dir;
 
+    // the "state-file" signals that we're currently acquiring the hyperspace
+    // lock; it is required for the serverup tool (issue 816)
+#ifndef _WIN32
+    String state_file = System::install_dir + "/run/Hypertable.Master.state";
+#else
+    Path data_dir = properties->get_str("Hypertable.DataDirectory");
+    data_dir /= "/run";
+    if (!FileUtils::exists(data_dir.string()))
+      FileUtils::mkdirs(data_dir.string());
+    String state_file = data_dir.string() + "/Hypertable.Master.state";
+#endif
+    String state_text = "acquiring";
+
+    if (FileUtils::write(state_file, state_text) < 0)
+      HT_INFOF("Unable to write state file %s", state_file.c_str());
+
     obtain_master_lock(context);
+
+    if (!FileUtils::unlink(state_file))
+      HT_INFOF("Unable to delete state file %s", state_file.c_str());
 
     context->namemap = new NameIdMapper(context->hyperspace, context->toplevel_dir);
     context->range_split_size = context->props->get_i64("Hypertable.RangeServer.Range.SplitSize");
@@ -171,7 +193,7 @@ int main(int argc, char **argv) {
     context->mml_writer = new MetaLog::Writer(context->dfs, context->mml_definition,
                                               log_dir, entities);
 
-    context->removal_manager = new RemovalManager(context->mml_writer);
+    context->reference_manager = new ReferenceManager();
 
     /** Response Manager */
     ResponseManagerContext *rmctx = new ResponseManagerContext(context->mml_writer);
@@ -193,7 +215,7 @@ int main(int argc, char **argv) {
       operation = dynamic_cast<Operation *>(entities[i].get());
       if (operation) {
         if (operation->remove_explicitly())
-          context->removal_manager->add_operation(operation);
+          context->reference_manager->add(operation);
         if (dynamic_cast<OperationBalance *>(operation.get())) {
           // there should be only one OPERATION_BALANCE
           HT_ASSERT(context->op_balance == NULL);
@@ -213,7 +235,7 @@ int main(int argc, char **argv) {
       OperationInitializePtr init_op = new OperationInitialize(context);
       if (context->namemap->exists_mapping("/sys/METADATA", 0))
         init_op->set_state(OperationState::CREATE_RS_METRICS);
-      context->removal_manager->add_operation(init_op.get());
+      context->reference_manager->add(init_op.get());
       operations.push_back( init_op );
     }
     else {
@@ -256,9 +278,6 @@ int main(int argc, char **argv) {
     response_manager_thread.join();
     delete rmctx;
     delete context->response_manager;
-
-    context->removal_manager->shutdown();
-    delete context->removal_manager;
 
     context = 0;
   }

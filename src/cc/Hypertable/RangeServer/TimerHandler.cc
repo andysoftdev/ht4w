@@ -30,6 +30,7 @@
 #endif
 
 #include <algorithm>
+#include <sstream>
 
 #include "Common/Time.h"
 
@@ -159,6 +160,7 @@ void TimerHandler::handle(Hypertable::EventPtr &event_ptr) {
       m_hrtimer = new HRTimer();
       #endif
       m_current_interval = 500;
+      boost::xtime_get(&m_pause_time, TIME_UTC);
     }
   }
   else if (m_app_queue_paused) {
@@ -229,6 +231,12 @@ void TimerHandler::restart_app_queue() {
   m_app_queue_paused_ticks = 0;
   m_last_low_memory_maintenance = TIMESTAMP_NULL;
   m_current_interval = m_timer_interval;
+
+  std::stringstream ss;
+  boost::xtime now;
+  boost::xtime_get(&now, TIME_UTC);
+  ss << now.sec << "\tapp-queue-pause\t" << xtime_diff_millis(m_pause_time, now);
+  m_range_server->write_profile_data(ss.str());
 }
 
 bool TimerHandler::low_memory_mode() {

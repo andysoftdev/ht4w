@@ -241,7 +241,8 @@ bool FileUtils::mkdirs(const String &dirname) {
     dir = boost::filesystem::current_path();
     dir /= dirname;
   }
-  String native_dirname(dir.native_directory_string());
+  String native_dirname(dir.normalize().native_directory_string());
+  boost::replace_all(native_dirname, "/", "\\");
   int err;
   if ((err = SHCreateDirectoryExA(0, native_dirname.c_str(), 0)) != ERROR_SUCCESS) {
     if (err != ERROR_FILE_EXISTS && err != ERROR_ALREADY_EXISTS) {

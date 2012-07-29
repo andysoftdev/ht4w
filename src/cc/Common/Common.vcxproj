@@ -176,6 +176,7 @@
     <ClCompile Include="Abi.cc" />
     <ClCompile Include="Checksum.cc" />
     <ClCompile Include="Config.cc" />
+    <ClCompile Include="Debug.cc" />
     <ClCompile Include="DiscreteRandomGenerator.cc" />
     <ClCompile Include="DiscreteRandomGeneratorFactory.cc" />
     <ClCompile Include="DiscreteRandomGeneratorZipf.cc" />
@@ -231,6 +232,7 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="CstrHashMap.h" />
     <ClInclude Include="CstrHashTraits.h" />
+    <ClInclude Include="Debug.h" />
     <ClInclude Include="DiscreteRandomGenerator.h" />
     <ClInclude Include="DiscreteRandomGeneratorFactory.h" />
     <ClInclude Include="DiscreteRandomGeneratorUniform.h" />

@@ -98,6 +98,18 @@ void ProcessUtils::find(const char* exe_name, std::vector<DWORD>& pids) {
   }
 }
 
+bool ProcessUtils::exists(DWORD pid) {
+  bool exists = false;
+  HANDLE p = OpenProcess(SYNCHRONIZE, FALSE, pid);
+  if (p) {
+    exists = true;
+  }
+  else if (GetLastError() != ERROR_INVALID_PARAMETER)
+    WINAPI_ERROR("OpenProcess failed - %s")
+
+  return exists;
+}
+
 bool ProcessUtils::join(DWORD pid, DWORD timeout_ms) {
   bool joined = false;
   HANDLE p = OpenProcess(SYNCHRONIZE, FALSE, pid);

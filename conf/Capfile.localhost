@@ -1,7 +1,7 @@
 set :source_machine, "localhost"
 set :install_dir,  "/opt/hypertable"
-set :hypertable_version, "0.9.5.6"
-set :default_pkg, "/tmp/hypertable-0.9.5.6-linux-x86_64.deb"
+set :hypertable_version, "0.9.6.0"
+set :default_pkg, "/tmp/hypertable-0.9.6.0-linux-x86_64.deb"
 set :default_dfs, "local"
 set :default_config, "/opt/hypertable/dev-hypertable.cfg"
 
@@ -400,6 +400,8 @@ end
 
 desc "Get status for Hyperspace.Master process."
 task :hyperspace_status, :roles => [:hyperspace] do
+  srand
+  sleep(rand(4))
   run <<-CMD
    #{install_dir}/current/bin/ht serverup hyperspace
   CMD

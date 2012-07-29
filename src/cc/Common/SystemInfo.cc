@@ -25,6 +25,7 @@
 #include "Common/Serialization.h"
 #include "Common/SystemInfo.h"
 #include "Common/Mutex.h"
+#include "Common/FailureInducer.h"
 
 extern "C" {
 #include <poll.h>
@@ -713,15 +714,19 @@ ProcInfo &ProcInfo::init() {
   ScopedRecLock lock(_mutex);
   sigar_proc_exe_t exeinfo;
   sigar_proc_args_t arginfo;
-  sigar_proc_cred_name_t name;
 
   memset(&exeinfo, 0, sizeof(exeinfo));
   pid = sigar_pid_get(sigar());
   HT_ASSERT(sigar_proc_exe_get(sigar(), pid, &exeinfo) == SIGAR_OK);
   HT_ASSERT(sigar_proc_args_get(sigar(), pid, &arginfo) == SIGAR_OK);
-  HT_ASSERT(sigar_proc_cred_name_get(sigar(), pid, &name) == SIGAR_OK);
 
+  /**
+  sigar_proc_cred_name_t name;
+  HT_ASSERT(sigar_proc_cred_name_get(sigar(), pid, &name) == SIGAR_OK);
   user = name.user;
+  */
+
+  user = "unknown";
   exe = exeinfo.name;
   cwd = exeinfo.cwd;
   root = exeinfo.root;
@@ -777,6 +782,9 @@ FsStat &FsStat::refresh(const char *dir_prefix) {
     avail = u.avail;
     files = u.files;
     free_files = u.free_files;
+    if (HT_FAILURE_SIGNALLED("fsstat-disk-full")) {
+      use_pct = 99.999;
+    }
   }
   return *this;
 }

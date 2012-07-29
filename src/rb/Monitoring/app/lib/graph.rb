@@ -44,14 +44,13 @@ module RRD
 
     def run
       tempname = "-"
-      params =  [File.dirname(__FILE__) << "/../../../bin/ht"]
-      params +=  %w{rrdtool graph}
+      params =  %w{rrdtool graph}
       params << tempname
       params += %w{--imgformat PNG --slope-mode --interlaced}
       params += ['--end', @end_.to_s, '--start', @start.to_s]
       params += ['--width', @width.to_s, '--height', @height.to_s]
       params += ['--title', "\'#{@title.to_s}\'"]
-      params += %w{--color BACK#ffffff     --color CANVAS#ffffff00}
+      params += %w{--color BACK#ffffff00   --color CANVAS#ffffff00}
       params += %w{--color SHADEA#ffffff00 --color SHADEB#ffffff00}
       params << 'LINE1:0#0000007f'
 

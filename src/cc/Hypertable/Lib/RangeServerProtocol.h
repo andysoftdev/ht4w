@@ -60,7 +60,8 @@ namespace Hypertable {
     static const uint64_t COMMAND_RELINQUISH_RANGE     = 21;
     static const uint64_t COMMAND_HEAPCHECK            = 22;
     static const uint64_t COMMAND_METADATA_SYNC        = 23;
-    static const uint64_t COMMAND_MAX                  = 24;
+    static const uint64_t COMMAND_INITIALIZE           = 24;
+    static const uint64_t COMMAND_MAX                  = 25;
 
     static const char *m_command_strings[];
 
@@ -110,14 +111,13 @@ namespace Hypertable {
      *
      * @param table table identifier
      * @param range range specification
-     * @param transfer_log transfer log to replay
      * @param range_state range state
      * @param needs_compaction if true the range needs to be compacted after load
      * @return protocol message
      */
     static CommBuf *create_request_load_range(const TableIdentifier &table,
-        const RangeSpec &range, const char *transfer_log,
-        const RangeState &range_state, bool needs_compaction);
+        const RangeSpec &range, const RangeState &range_state,
+        bool needs_compaction);
 
     /** Creates an "update" request message.  The data argument holds a
      * sequence of key/value pairs.  Each key/value pair is encoded as two

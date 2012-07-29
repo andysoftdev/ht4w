@@ -127,10 +127,13 @@
     <ClCompile Include="ServerMetrics.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RemovalManager.cc">
+    <ClCompile Include="LoadBalancerBasicOffloadServers.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LoadBalancerBasicOffloadServers.cc">
+    <ClCompile Include="OperationStop.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ReferenceManager.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -264,10 +267,13 @@
     <ClInclude Include="ServerMetrics.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RemovalManager.h">
+    <ClInclude Include="LoadBalancerBasicOffloadServers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="LoadBalancerBasicOffloadServers.h">
+    <ClInclude Include="OperationStop.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ReferenceManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

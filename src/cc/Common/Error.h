@@ -88,6 +88,9 @@ namespace Hypertable {
       LOCATION_UNASSIGNED                = 47,
       ALREADY_EXISTS                     = 48,
       CHECKSUM_MISMATCH                  = 49,
+      CLOSED                             = 50,
+      RANGESERVER_NOT_FOUND              = 51,
+      CONNECTION_NOT_INITIALIZED         = 52,
 
       CONFIG_BAD_ARGUMENT               = 1001,
       CONFIG_BAD_CFG_FILE               = 1002,
@@ -164,6 +167,8 @@ namespace Hypertable {
       HYPERSPACE_STATEDB_NODE_NOT_EXISTS           = 0x00030029,
       HYPERSPACE_STATEDB_NODE_ATTR_NOT_FOUND       = 0x0003002A,
 
+      HYPERSPACE_VERSION_MISMATCH                  = 0x00030030,
+
       MASTER_TABLE_EXISTS                    = 0x00040001,
       MASTER_BAD_SCHEMA                      = 0x00040002,
       MASTER_NOT_RUNNING                     = 0x00040003,
@@ -215,9 +220,10 @@ namespace Hypertable {
       METALOG_ENTRY_BAD_TYPE    = 0x00070006,
       METALOG_ENTRY_BAD_ORDER   = 0x00070007,
 
-      SERIALIZATION_INPUT_OVERRUN = 0x00080001,
-      SERIALIZATION_BAD_VINT      = 0x00080002,
-      SERIALIZATION_BAD_VSTR      = 0x00080003,
+      SERIALIZATION_INPUT_OVERRUN    = 0x00080001,
+      SERIALIZATION_BAD_VINT         = 0x00080002,
+      SERIALIZATION_BAD_VSTR         = 0x00080003,
+      SERIALIZATION_VERSION_MISMATCH = 0x00080004,
 
       THRIFTBROKER_BAD_SCANNER_ID         = 0x00090001,
       THRIFTBROKER_BAD_MUTATOR_ID         = 0x00090002,
@@ -353,10 +359,10 @@ operator<<(std::ostream &out, const ExceptionMessagesRenderer &r) {
 #define HT_THROW2_(_code_, _ex_) HT_THROW2(_code_, _ex_, "")
 
 #define HT_THROWF(_code_, _fmt_, ...) \
-  throw HT_EXCEPTION(_code_, format(_fmt_, __VA_ARGS__))
+  throw HT_EXCEPTION(_code_, Hypertable::format(_fmt_, __VA_ARGS__))
 
 #define HT_THROW2F(_code_, _ex_, _fmt_, ...) \
-  throw HT_EXCEPTION2(_code_, _ex_, format(_fmt_, __VA_ARGS__))
+  throw HT_EXCEPTION2(_code_, _ex_, Hypertable::format(_fmt_, __VA_ARGS__))
 
 #define HT_RETHROWF(_fmt_, ...) \
   catch (Exception &e) { HT_THROW2F(e.code(), e, _fmt_, __VA_ARGS__); } \

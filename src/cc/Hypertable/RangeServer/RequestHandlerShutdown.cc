@@ -26,6 +26,10 @@
 
 #include "RequestHandlerShutdown.h"
 
+extern "C" {
+#include <poll.h>
+}
+
 using namespace Hypertable;
 
 /**
@@ -33,4 +37,7 @@ using namespace Hypertable;
  */
 void RequestHandlerShutdown::run() {
   m_range_server->shutdown();
+  poll(0, 0, 2000);
+  HT_INFO("Exiting RangeServer.");
+  _exit(0);
 }

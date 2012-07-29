@@ -82,8 +82,8 @@ namespace Hypertable {
     void destroy_scanner(ResponseCallback *cb, uint32_t scanner_id);
     void fetch_scanblock(ResponseCallbackFetchScanblock *, uint32_t scanner_id);
     void load_range(ResponseCallback *, const TableIdentifier *,
-                    const RangeSpec *, const char *transfer_log_dir,
-                    const RangeState *, bool needs_compaction);
+                    const RangeSpec *, const RangeState *,
+		    bool needs_compaction);
     void acknowledge_load(ResponseCallback *, const TableIdentifier *,
                           const RangeSpec *);
     void update_schema(ResponseCallback *, const TableIdentifier *,
@@ -147,6 +147,13 @@ namespace Hypertable {
 
     void shutdown();
 
+    void write_profile_data(const String &line) {
+      if (m_profile_query) {
+        ScopedLock lock(m_profile_mutex);
+        m_profile_query_out << line << "\n";
+      }
+    }
+
   protected:
 
     friend class UpdateThread;
@@ -189,6 +196,10 @@ namespace Hypertable {
       uint32_t total_added;
       uint32_t total_syncs;
       uint64_t total_bytes_added;
+      boost::xtime start_time;
+      uint32_t qualify_time;
+      uint32_t commit_time;
+      uint32_t add_time;
     };
 
     Mutex                      m_update_qualify_queue_mutex;
@@ -261,6 +272,11 @@ namespace Hypertable {
     size_t                 m_cores;
     int32_t                m_maintenance_pause_interval;
     CellsBuilder          *m_pending_metrics_updates;
+    boost::xtime           m_last_control_file_check;
+    int32_t                m_control_file_check_interval;
+    std::ofstream          m_profile_query_out;
+    bool                   m_profile_query;
+    Mutex                  m_profile_mutex;
   };
 
   typedef intrusive_ptr<RangeServer> RangeServerPtr;

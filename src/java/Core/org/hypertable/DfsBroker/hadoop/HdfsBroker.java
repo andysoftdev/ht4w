@@ -21,6 +21,7 @@
 
 package org.hypertable.DfsBroker.hadoop;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -34,6 +35,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
+import org.apache.hadoop.hdfs.DFSClient;
 import org.apache.hadoop.util.ReflectionUtils;
 
 import org.hypertable.AsyncComm.Comm;
@@ -50,8 +52,9 @@ import org.apache.hadoop.fs.FileStatus;
  */
 public class HdfsBroker {
 
-    private static final int OPEN_FLAG_DIRECT    = 0x00000001;
-    private static final int OPEN_FLAG_OVERWRITE = 0x00000002;
+    private static final int OPEN_FLAG_DIRECT          = 0x00000001;
+    private static final int OPEN_FLAG_OVERWRITE       = 0x00000002;
+    private static final int OPEN_FLAG_VERIFY_CHECKSUM = 0x00000004;
 
     static final Logger log = Logger.getLogger(
                                  "org.hypertable.DfsBroker.hadoop");
@@ -60,8 +63,6 @@ public class HdfsBroker {
 
     public HdfsBroker(Comm comm, Properties props) throws IOException {
         String str;
-	boolean shortcircuit_reads = false;
-	boolean verify_checksums = false;
 
         str = props.getProperty("verbose");
         if (str != null && str.equalsIgnoreCase("true"))
@@ -69,38 +70,109 @@ public class HdfsBroker {
         else
             mVerbose = false;
 
-	str = props.getProperty("HdfsBroker.dfs.client.read.shortcircuit");
-	if (str != null && str.equalsIgnoreCase("true"))
-	    shortcircuit_reads = true;
+        str = props.getProperty("HdfsBroker.Hadoop.ConfDir");
+        if (str != null) {
+            if (mVerbose)
+                System.out.println("HdfsBroker.Hadoop.ConfDir=" + str);
+            try {
+                readHadoopConfig(str);
+            }
+            catch (Exception e) {
+               log.severe("Failed to parse HdfsBroker.HdfsSite.xml(" 
+                                   + str + ")");
+               e.printStackTrace();
+               System.exit(1);
+            }
+        }
+
+        // settings from the hadoop configuration are overwritten by values
+        // from the configuration file
+        str = props.getProperty("HdfsBroker.dfs.replication");
+        if (str != null)
+            mConf.setInt("dfs.replication", Integer.parseInt(str));
+
+        str = props.getProperty("HdfsBroker.dfs.client.read.shortcircuit");
+        if (str != null) {
+            if (str.equalsIgnoreCase("true"))
+                mConf.setBoolean("dfs.client.read.shortcircuit", true);
+            else
+                mConf.setBoolean("dfs.client.read.shortcircuit", false);
+        }
 
         str = props.getProperty("HdfsBroker.fs.default.name");
-        if (str == null) {
-            System.err.println(
-               "error: 'HdfsBroker.fs.default.name' property not specified.");
-            System.exit(1);
+        if (str != null) {
+            mConf.set("fs.default.name", str);
+        }
+        else {
+            // make sure that we have the fs.default.name property
+            if (mConf.get("fs.default.name") == null
+                    || mConf.get("fs.default.name").equals("file:///")) {
+                log.severe("Neither HdfsBroker.fs.default.name nor " +
+                        "HdfsBroker.Hadoop.ConfDir was specified.");
+                System.exit(1);
+            }
         }
 
         if (mVerbose) {
-            System.out.println("HdfsBroker.Server.fs.default.name=" + str);
-	    System.out.println("HdfsBroker.dfs.client.read.shortcircuit=" + shortcircuit_reads);
+            System.out.println("HdfsBroker.dfs.client.read.shortcircuit="
+                            + mConf.getBoolean("dfs.client.read.shortcircuit", 
+                                            false));
+            System.out.println("HdfsBroker.dfs.replication="
+                            + mConf.getInt("dfs.replication", -1));
+            System.out.println("HdfsBroker.Server.fs.default.name="
+                            + mConf.get("fs.default.name"));
         }
 
-        mConf.set("fs.default.name", str);
         mConf.set("dfs.client.buffer.dir", "/tmp");
         mConf.setInt("dfs.client.block.write.retries", 3);
         mConf.setBoolean("fs.automatic.close", false);
-        mConf.setBoolean("dfs.client.read.shortcircuit", shortcircuit_reads);
 
         try {
             mFilesystem = FileSystem.get(mConf);
-	    mFilesystem.initialize(FileSystem.getDefaultUri(mConf), mConf);
-	    mFilesystem_noverify = newInstanceFileSystem(mConf);
-	    mFilesystem_noverify.setVerifyChecksum(false);
+            mFilesystem.initialize(FileSystem.getDefaultUri(mConf), mConf);
+            mFilesystem_noverify = newInstanceFileSystem(mConf);
+            mFilesystem_noverify.setVerifyChecksum(false);
         }
         catch (Exception e) {
             log.severe("ERROR: Unable to establish connection to HDFS.");
             System.exit(1);
         }
+    }
+
+    private void addHadoopResource(Configuration cfg, String path) 
+                    throws Exception {
+        if (mVerbose)
+            System.out.println("Adding hadoop configuration file " + path);
+        File f = new File(path);
+        if (!f.exists()) {
+            log.severe("ERROR: File " + path + " does not exist; check "
+                    + "HdfsBroker.Hadoop.ConfDir");
+            System.exit(1);
+        }
+
+        cfg.addResource(new Path(path));
+    }
+
+    private void readHadoopConfig(String dir) throws Exception {
+        Configuration cfg = new Configuration();
+
+        addHadoopResource(cfg, dir + "/hdfs-site.xml"); // for "dfs.replication"
+        addHadoopResource(cfg, dir + "/core-site.xml"); // for "fs.default.name"
+
+        int replication = cfg.getInt("dfs.replication", 0);
+        if (replication == 0)
+            System.out.println("Unable to get dfs.replication value; using default");
+        else
+            mConf.setInt("dfs.replication", replication);
+
+        String name = cfg.get("fs.default.name");
+        if (name == null)
+            System.out.println("Unable to get fs.default.name value");
+        else
+            mConf.set("fs.default.name", name);
+
+        boolean b = cfg.getBoolean("dfs.client.read.shortcircuit", false);
+        mConf.setBoolean("dfs.client.read.shortcircuit", b);
     }
 
     /**
@@ -135,7 +207,7 @@ public class HdfsBroker {
      *
      */
     public void Open(ResponseCallbackOpen cb, String fileName, int flags,
-		     int bufferSize, boolean verify_checksum) {
+		     int bufferSize) {
         int fd;
         OpenFileData ofd;
         int error = Error.OK;
@@ -152,14 +224,14 @@ public class HdfsBroker {
 
             if (mVerbose)
               log.info("Opening file '" + fileName + "' flags=" + flags + " bs=" + bufferSize
-                         + " handle = " + fd + " verify_checksum=" + verify_checksum);
+                         + " handle = " + fd);
 
             ofd = mOpenFileMap.Create(fd, cb.GetAddress());
 
-	    if (verify_checksum)
-		ofd.is = mFilesystem.open(new Path(fileName));
-	    else
+	    if ((flags & OPEN_FLAG_VERIFY_CHECKSUM) == 0)
 		ofd.is_noverify = mFilesystem_noverify.open(new Path(fileName));
+	    else
+		ofd.is = mFilesystem.open(new Path(fileName));
 
             ofd.pathname = fileName;
 
@@ -205,7 +277,7 @@ public class HdfsBroker {
 
                 if (ofd.is != null) {
                     if (mVerbose)
-                        log.info("Closing input file " + ofd.pathname + " handle " + fd);
+                        log.info("Closing input stream for file " + ofd.pathname + " handle " + fd);
                     ofd.is.close();
                     ofd.is = null;
                 }
@@ -270,7 +342,8 @@ public class HdfsBroker {
                 log.info("Creating file '" + fileName + "' handle = " + fd);
 
             if (replication == -1)
-                replication = mFilesystem.getDefaultReplication();
+                replication = (short)mConf.getInt("dfs.replication", 
+                        mFilesystem.getDefaultReplication());
 
             if (bufferSize == -1)
                 bufferSize = mConf.getInt("io.file.buffer.size", 70000);
@@ -308,19 +381,28 @@ public class HdfsBroker {
     /**
      *
      */
-    public void Length(ResponseCallbackLength cb, String fileName) {
+    public void Length(ResponseCallbackLength cb, String fileName,
+            boolean accurate) {
         int error = Error.OK;
         long length;
 
         try {
-
             if (mVerbose)
-                log.info("Getting length of file '" + fileName);
+                log.info("Getting length of file '" + fileName +
+                        "' (accurate: " + accurate + ")");
 
-            length = mFilesystem.getFileStatus(new Path(fileName)).getLen();
+            Path path = new Path(fileName);
+            if (accurate) {
+                DFSClient.DFSDataInputStream in =
+                    (DFSClient.DFSDataInputStream)mFilesystem.open(path);
+                length = in.getVisibleLength();
+                in.close();
+            }
+            else {
+                length = mFilesystem.getFileStatus(path).getLen();
+            }
 
             error = cb.response(length);
-
         }
         catch (FileNotFoundException e) {
             log.severe("File not found: " + fileName);
@@ -487,15 +569,18 @@ public class HdfsBroker {
 
 	    if (verify_checksum) {
 		if (ofd.is == null) {
-		    if (ofd.is == null) {
-			ofd.is = mFilesystem.open(new Path(ofd.pathname));
-			log.info("Re-opening '" + ofd.pathname + "' for verify checksum read");
-		    }
+		    ofd.is = mFilesystem.open(new Path(ofd.pathname));
+		    log.info("Opening '" + ofd.pathname + "' for verify checksum read");
 		}
 		is = ofd.is;
 	    }
-	    else
+	    else {
+		if (ofd.is_noverify == null) {
+		    ofd.is_noverify = mFilesystem_noverify.open(new Path(ofd.pathname));
+		    log.info("Opening '" + ofd.pathname + "' for non-verify checksum read");
+		}
 		is = ofd.is_noverify;
+	    }
 
             if (is == null)
 		throw new IOException("File handle " + fd

@@ -68,7 +68,7 @@ CephBroker::~CephBroker() {
 }
 
 void CephBroker::open(ResponseCallbackOpen *cb, const char *fname,
-		      uint32_t flags, uint32_t bufsz, bool) {
+		      uint32_t flags, uint32_t bufsz) {
   int fd, ceph_fd;
   String abspath;
   HT_DEBUGF("open file='%s' bufsz=%d", fname, bufsz);
@@ -264,9 +264,12 @@ void CephBroker::remove(ResponseCallback *cb, const char *fname) {
   cb->response_ok();
 }
 
-void CephBroker::length(ResponseCallbackLength *cb, const char *fname) {
+void CephBroker::length(ResponseCallbackLength *cb, const char *fname,
+                    bool accurate) {
   int r;
   struct stat statbuf;
+
+  (void)accurate;
 
   HT_DEBUGF("length file='%s'", fname);
 

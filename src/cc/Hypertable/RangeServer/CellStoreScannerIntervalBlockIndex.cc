@@ -227,9 +227,6 @@ bool CellStoreScannerIntervalBlockIndex<IndexT>::fetch_next_block(bool eob) {
 				           (uint8_t **)&buf.base, &len)) {
 	  buf.grow(m_block.zlength, true);
 
-	  if (second_try)
-	    m_fd = m_cellstore->reopen_fd();
-
 	  /** Read compressed block **/
 	  Global::dfs->pread(m_fd, buf.base, m_block.zlength, m_block.offset, second_try);
 
@@ -266,14 +263,16 @@ bool CellStoreScannerIntervalBlockIndex<IndexT>::fetch_next_block(bool eob) {
 
       }
       catch (Exception &e) {
-        HT_ERROR_OUT <<"Error reading cell store (fd=" << m_fd << " file="
-                     << m_cellstore->get_filename() <<") : "
-                     << e << HT_END;
-        HT_ERROR_OUT << "pread(fd=" << m_fd << ", zlen="
-                     << m_block.zlength << ", offset=" << m_block.offset
-                     << HT_END;
+        HT_WARN_OUT << "Error reading cell store (fd=" << m_fd << " file="
+                    << m_cellstore->get_filename() << ") : "
+                    << e << HT_END;
+        HT_WARN_OUT << "pread(fd=" << m_fd << ", zlen="
+                    << m_block.zlength << ", offset=" << m_block.offset
+                    << HT_END;
         if (second_try)
           throw;
+
+        HT_INFO_OUT << "Retrying with dfs checksum enabled" << HT_END;
         second_try = true;
         goto try_again;
       }

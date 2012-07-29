@@ -313,6 +313,15 @@
     <ClCompile Include="RequestHandlerShutdown.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MetaLogEntityTaskAcknowledgeRelinquish.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogEntityTaskRemoveTransferLog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MaintenanceTaskWorkQueue.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -682,6 +691,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RequestHandlerShutdown.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogEntityTaskAcknowledgeRelinquish.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogEntityTaskRemoveTransferLog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MaintenanceTaskWorkQueue.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
