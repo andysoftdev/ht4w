@@ -2276,7 +2276,6 @@ public:
              format("Invalid namespace id: %lld", (Lld)id));
   }
 
-
   void remove_mutator(::int64_t id) {
     ScopedLock lock(m_mutator_mutex);
     MutatorMap::iterator it = m_mutator_map.find(id);
@@ -2305,6 +2304,60 @@ public:
              format("Invalid mutator id: %lld", (Lld)id));
   }
 
+  void print_statistics() {
+    int scanners = 0;
+    int async_scanners = 0;
+    int mutators = 0;
+    int async_mutators = 0;
+    int shared_mutators = 0;
+    int namespaces = 0;
+    int futures = 0;
+    int hql_interpreters = 0;
+    {
+      ScopedLock lock(m_scanner_mutex);
+      scanners = m_scanner_map.size();
+    }
+    {
+      ScopedLock lock(m_scanner_async_mutex);
+      async_scanners = m_scanner_async_map.size();
+    }
+    {
+      ScopedLock lock(m_mutator_mutex);
+      mutators = m_mutator_map.size();
+    }
+    {
+      ScopedLock lock(m_mutator_async_mutex);
+      async_mutators = m_mutator_async_map.size();
+    }
+    {
+      ScopedLock lock(m_shared_mutator_mutex);
+      shared_mutators = m_shared_mutator_map.size();
+    }
+    {
+      ScopedLock lock(m_namespace_mutex);
+      namespaces = m_namespace_map.size();
+    }
+    {
+      ScopedLock lock(m_future_mutex);
+      futures = m_future_map.size();
+    }
+    {
+      ScopedLock lock(m_interp_mutex);
+      hql_interpreters = m_hql_interp_map.size();
+    }
+    HT_INFOF("current statistics:\n"
+            "\t\tscanners:        %u\n"
+            "\t\tasync scanners:  %u\n"
+            "\t\tmutators:        %u\n"
+            "\t\tasync mutators:  %u\n"
+            "\t\tshared mutators: %u\n"
+            "\t\tnamespaces:      %u\n"
+            "\t\tfutures:         %u\n"
+            "\t\thql interp:      %u",
+            scanners, async_scanners, mutators, async_mutators,
+            shared_mutators, namespaces, futures, hql_interpreters);
+  }
+
 private:
   bool             m_log_api;
   Mutex            m_scanner_mutex;
@@ -2329,6 +2382,23 @@ private:
   ClientPtr        m_client;
   Mutex            m_interp_mutex;
   HqlInterpreterMap m_hql_interp_map;
+};
+
+class TimerHandler : public DispatchHandler {
+  public:
+    TimerHandler(ServerHandler *server)
+      : m_server(server) {
+    }
+
+    virtual void handle(EventPtr &event) {
+      if (event->type == Hypertable::Event::TIMER) {
+        m_server->print_statistics();
+        // print statistics once per minute
+        Comm::instance()->set_timer(60000, this);
+      }
+    }
+  private:
+    ServerHandler *m_server;
 };
 
 template <class ResultT, class CellT>
@@ -2389,14 +2459,18 @@ int main(int argc, char **argv) {
 
     if (has("thrift-timeout")) {
       int timeout_ms = get_i32("thrift-timeout");
-      serverTransport.reset( new TServerSocket(port, timeout_ms, timeout_ms) );
+      serverTransport.reset(new TServerSocket(port, timeout_ms, timeout_ms));
     }
     else
-      serverTransport.reset( new TServerSocket(port) );
+      serverTransport.reset(new TServerSocket(port));
 
     boost::shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
 
-    TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);
+    TThreadedServer server(processor, serverTransport, transportFactory,
+            protocolFactory);
+
+    TimerHandler timer(handler.get());
+    Comm::instance()->set_timer(60000, &timer);
 
     HT_INFO("Starting the server...");
     server.serve();
