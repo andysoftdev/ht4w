@@ -282,6 +282,10 @@ class PageArena : boost::noncopyable {
     }
     m_page_allocator.freed(m_total);
     m_pages = m_total = m_used = 0;
+
+    m_tinybuf = TinyBuffer();
+    m_gappy_pages.clear();
+    m_gappy_limit = 0;
   }
 
   /** swap with another allocator efficiently */
@@ -295,7 +299,7 @@ class PageArena : boost::noncopyable {
     std::swap(m_used, x.m_used);
     std::swap(m_tinybuf, x.m_tinybuf);
     std::swap(m_gappy_pages, x.m_gappy_pages);
-    std::swap(m_gappy_limit, m_gappy_limit);
+    std::swap(m_gappy_limit, x.m_gappy_limit);
   }
 
   /** dump some allocator stats */
