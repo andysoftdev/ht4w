@@ -3,9 +3,9 @@
 
 	<PropertyGroup>
 		<!-- Version and ProductCode (x86/x64), change for each version (update also src\wix\hypertable-msi.wixproj) -->
-		<Version>0.9.6.0</Version>
-		<ProductCode_x86>0E2BB8C7-DFF6-44F2-BFC4-47A4568825B8</ProductCode_x86>
-		<ProductCode_x64>8B6F34AE-79ED-4502-BC4D-DD36131F8174</ProductCode_x64>
+		<Version>0.9.6.1</Version>
+		<ProductCode_x86>B53AA76B-39D4-41E9-98F8-DA05D08215A5</ProductCode_x86>
+		<ProductCode_x64>DF5E82ED-B03E-4CCA-B952-868410489BA1</ProductCode_x64>
 
 		<!-- Master files to make -->
 		<MasterServers_x86>dist\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
