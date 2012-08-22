@@ -25,6 +25,7 @@
 #include "Common/FailureInducer.h"
 #include "Common/StringExt.h"
 #include "Common/Serialization.h"
+#include "Common/Time.h"
 
 #include "AsyncComm/ResponseCallback.h"
 
@@ -136,13 +137,11 @@ void ConnectionHandler::handle(EventPtr &event) {
         HT_INFO("Received shutdown command");
         m_shutdown = true;
         m_context->op->shutdown();
-        HT_NOTICE("Exiting master");
-        boost::xtime_get(&expire_time, boost::TIME_UTC);
+        boost::xtime_get(&expire_time, boost::TIME_UTC_);
         expire_time.sec += 15;
         m_context->op->timed_wait_for_idle(expire_time);
         m_context->op->shutdown();
-        m_context->mml_writer->close();
-        _exit(0);
+        return;
       case MasterProtocol::COMMAND_CREATE_NAMESPACE:
         operation = new OperationCreateNamespace(m_context, event);
         break;

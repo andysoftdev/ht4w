@@ -26,6 +26,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\Lib\CommitLog.cc" />
+    <ClCompile Include="..\Lib\CommitLogBase.cc" />
     <ClCompile Include="..\Lib\CommitLogBlockStream.cc" />
     <ClCompile Include="..\Lib\CommitLogReader.cc" />
     <ClCompile Include="AccessGroup.cc" />

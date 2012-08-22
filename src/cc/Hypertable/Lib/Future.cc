@@ -20,7 +20,7 @@
  */
 
 #include "Common/Compat.h"
-#include <boost/thread/xtime.hpp>
+#include "Common/Time.h"
 
 #include "Future.h"
 #include "TableScannerAsync.h"
@@ -31,7 +31,7 @@ using namespace Hypertable;
 Future::~Future() {
   cancel();
   wait_for_completion();
-  foreach (TableScannerAsync *scanner, m_scanners_owned)
+  foreach_ht (TableScannerAsync *scanner, m_scanners_owned)
     intrusive_ptr_release(scanner);
 }
 
@@ -91,7 +91,7 @@ bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
 
   size_t mem_result=0;
   boost::xtime wait_time;
-  boost::xtime_get(&wait_time, boost::TIME_UTC);
+    boost::xtime_get(&wait_time, boost::TIME_UTC_);
   xtime_add_millis(wait_time, timeout_ms);
 
   while (true) {

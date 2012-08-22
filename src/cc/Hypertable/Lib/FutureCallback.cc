@@ -31,14 +31,14 @@ using namespace Hypertable;
 FutureCallback::~FutureCallback() {
   cancel();
   wait_for_completion();
-  foreach (TableScannerAsync *scanner, m_scanners_owned)
+  foreach_ht (TableScannerAsync *scanner, m_scanners_owned)
     intrusive_ptr_release(scanner);
 }
 
 void FutureCallback::cancel() {
   ScopedRecLock lock(m_outstanding_mutex);
   m_cancelled = true;
-  foreach (TableScannerAsync *scanner, m_scanner_set)
+  foreach_ht (TableScannerAsync *scanner, m_scanner_set)
     scanner->cancel();
   m_outstanding_cond.notify_all();
 }
@@ -74,7 +74,7 @@ void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
 void FutureCallback::wait_for_completion() {
   {
     ScopedRecLock lock(m_outstanding_mutex);
-    foreach (TableMutatorAsync *mutator, m_mutator_set)
+    foreach_ht (TableMutatorAsync *mutator, m_mutator_set)
       mutator->flush();
   }
   ResultCallback::wait_for_completion();

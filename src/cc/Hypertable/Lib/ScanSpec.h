@@ -46,6 +46,7 @@ public:
 
   ColumnPredicate() : column_family(0), operation(0),
     value(0), value_len(0) { }
+
   ColumnPredicate(const char *_column_family, uint32_t _operation,
           const char *_value, uint32_t _value_len = 0)
     : column_family(_column_family), operation(_operation),
@@ -53,6 +54,7 @@ public:
     if (!value_len && value)
       value_len = strlen(value);
   }
+
   ColumnPredicate(const uint8_t **bufp, size_t *remainp) {
     decode(bufp, remainp);
   }

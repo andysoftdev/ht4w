@@ -33,23 +33,19 @@
 
 namespace Hypertable {
 
-  typedef std::vector<Range::MaintenanceData *> RangeStatsVector;
-
   class RangeStatsGatherer : public ReferenceCount {
   public:
     RangeStatsGatherer(TableInfoMapPtr &table_info_map) : m_table_info_map(table_info_map) { }
 
     virtual ~RangeStatsGatherer() { }
 
-    void fetch(RangeStatsVector &range_stats, size_t *lenp=0, TableMutator *mutator=0);
+    void fetch(RangeDataVector &range_data, TableMutator *mutator=0, int *log_generation=0);
 
     void clear();
 
   private:
     ByteArena m_arena;
-    TableInfoMapPtr  m_table_info_map;
-    std::vector<RangePtr> m_range_vec;
-
+    TableInfoMapPtr m_table_info_map;
   };
   typedef intrusive_ptr<RangeStatsGatherer> RangeStatsGathererPtr;
 

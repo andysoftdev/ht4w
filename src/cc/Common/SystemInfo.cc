@@ -764,6 +764,9 @@ ProcStat &ProcStat::refresh() {
   heap_size = tmp_heap_size;
   MallocExtension::instance()->GetNumericProperty("tcmalloc.slack_bytes", &tmp_heap_slack);
   heap_slack = tmp_heap_slack;
+#else
+  heap_size = 0;
+  heap_slack = 0;
 #endif
 
   return *this;
@@ -900,7 +903,7 @@ std::ostream &operator<<(std::ostream &out, const ProcInfo &i) {
   out <<"{ProcInfo: pid="<< i.pid <<" user="<< i.user <<" exe='"<< i.exe
       <<"'\n cwd='"<< i.cwd <<"' root='"<< i.root <<"'\n args=[";
 
-  foreach(const String &arg, i.args)
+  foreach_ht(const String &arg, i.args)
     out <<"'"<< arg <<"', ";
 
   out <<"]}";

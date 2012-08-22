@@ -71,7 +71,7 @@ TimerHandler::TimerHandler(Comm *comm, RangeServer *range_server)
 
   m_current_interval = m_timer_interval;
 
-  boost::xtime_get(&m_last_maintenance, TIME_UTC);
+  boost::xtime_get(&m_last_maintenance, TIME_UTC_);
 
   m_app_queue = m_range_server->get_application_queue();
 
@@ -97,7 +97,7 @@ void TimerHandler::schedule_maintenance() {
 
   if (!m_urgent_maintenance_scheduled && !m_maintenance_outstanding) {
     boost::xtime now;
-    boost::xtime_get(&now, TIME_UTC);
+    boost::xtime_get(&now, TIME_UTC_);
     uint64_t elapsed = xtime_diff_millis(m_last_maintenance, now);
     int error;
     uint32_t millis = (elapsed < 1000) ? 1000 - elapsed : 0;
@@ -113,7 +113,7 @@ void TimerHandler::schedule_maintenance() {
 void TimerHandler::complete_maintenance_notify() {
   ScopedLock lock(m_mutex);
   m_maintenance_outstanding = false;
-  boost::xtime_get(&m_last_maintenance, TIME_UTC);
+  boost::xtime_get(&m_last_maintenance, TIME_UTC_);
   if (m_app_queue_paused) {
     if (!low_memory_mode()) {
       restart_app_queue();
@@ -160,7 +160,7 @@ void TimerHandler::handle(Hypertable::EventPtr &event_ptr) {
       m_hrtimer = new HRTimer();
       #endif
       m_current_interval = 500;
-      boost::xtime_get(&m_pause_time, TIME_UTC);
+      boost::xtime_get(&m_pause_time, TIME_UTC_);
     }
   }
   else if (m_app_queue_paused) {
@@ -234,7 +234,7 @@ void TimerHandler::restart_app_queue() {
 
   std::stringstream ss;
   boost::xtime now;
-  boost::xtime_get(&now, TIME_UTC);
+  boost::xtime_get(&now, TIME_UTC_);
   ss << now.sec << "\tapp-queue-pause\t" << xtime_diff_millis(m_pause_time, now);
   m_range_server->write_profile_data(ss.str());
 }

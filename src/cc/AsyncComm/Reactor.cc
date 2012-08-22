@@ -43,6 +43,7 @@ extern "C" {
 #include "Common/Error.h"
 #include "Common/FileUtils.h"
 #include "Common/Logger.h"
+#include "Common/Time.h"
 
 #include "IOHandlerData.h"
 #include "Reactor.h"
@@ -188,7 +189,7 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
       IOHandler       *handler;
       DispatchHandler *dh;
 
-      boost::xtime_get(&now, boost::TIME_UTC);
+      boost::xtime_get(&now, boost::TIME_UTC_);
 
       boost::xtime next_req_timeout;
       while ((dh = m_request_cache.get_next_timeout(now, handler,
@@ -222,7 +223,7 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
     /**
      * Deliver timer events
      */
-    foreach (ExpireTimer& expired_timer, expired_timers) {
+    foreach_ht (ExpireTimer& expired_timer, expired_timers) {
       EventPtr event_ptr = new Event(Event::TIMER, Error::OK);
       if (expired_timer.handler)
         expired_timer.handler->handle(event_ptr);

@@ -113,6 +113,11 @@ wait_for_server() {
   server_desc=$1; shift
   max_retries=${max_retries:-40}
   report_interval=${report_interval:-5}
+  address=`$HYPERTABLE_HOME/bin/serverup --display-address=true $server`
+
+  if [ "$address" ]; then
+    address=" ($address)";
+  fi
 
   check_server "$@" $server
   ret=$?
@@ -120,7 +125,7 @@ wait_for_server() {
   while should_wait $ret "$become" && [ $retries -lt $max_retries ]; do
     let retries=retries+1
     let report=retries%$report_interval
-    [ $report == 0 ] && echo "Waiting for $server_desc to $become..."
+    [ $report == 0 ] && echo "Waiting for $server_desc$address to $become..."
     sleep 1
     check_server "$@" $server
     ret=$?
@@ -196,9 +201,9 @@ start_server_no_check() {
 
 # Sanity check
 [ "$HYPERTABLE_HOME" ] || die "ERROR: HYPERTABLE_HOME is not set"
-versionre='/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\.pre[0-9]*)?(\.[a-fA-F0-9]+)?|current)$'
-[[ $HYPERTABLE_HOME =~ $versionre ]] ||
-  die "ERROR: Invalid HYPERTABLE_HOME: $HYPERTABLE_HOME doesnt match regex ${versionre}"
+#versionre='/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\.pre[0-9]*)?(\.[a-fA-F0-9]+)?|current)$'
+#[[ $HYPERTABLE_HOME =~ $versionre ]] ||
+#  die "ERROR: Invalid HYPERTABLE_HOME: $HYPERTABLE_HOME doesnt match regex ${versionre}"
 
 # Make sure log and run directories exist
 [ -d $RUNTIME_ROOT/run ] || mkdir $RUNTIME_ROOT/run

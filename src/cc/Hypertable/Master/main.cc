@@ -272,6 +272,7 @@ int main(int argc, char **argv) {
     #endif
 
     context->op->join();
+    context->mml_writer->close();
     context->comm->close_socket(listen_addr);
 
     context->response_manager->shutdown();

@@ -322,6 +322,9 @@
     <ClCompile Include="MaintenanceTaskWorkQueue.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\Lib\CommitLogBase.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">

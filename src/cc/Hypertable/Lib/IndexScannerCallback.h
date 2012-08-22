@@ -88,7 +88,7 @@ static String last;
         m_cell_offset(0), m_row_count(0), m_cell_limit_per_family(0), 
         m_eos(false), m_limits_reached(false), m_readahead_count(0), 
         m_qualifier_scan(qualifier_scan), m_tmp_cutoff(0), 
-        m_final_decrement(false) {
+        m_final_decrement(false), m_shutdown(false) {
       atomic_set(&m_outstanding_scanners, 0);
       m_original_cb->increment_outstanding();
 
@@ -110,7 +110,7 @@ static String last;
 
       Schema::ColumnFamilies &families =
                 primary_table->schema()->get_column_families();
-      foreach (Schema::ColumnFamily *cf, families) {
+      foreach_ht (Schema::ColumnFamily *cf, families) {
         if (!cf->has_index && !cf->has_qualifier_index)
           continue;
         m_column_map[cf->id] = cf->name;
@@ -118,15 +118,13 @@ static String last;
     }
 
     virtual ~IndexScannerCallback() {
-      ScopedLock lock(m_mutex);
-      if (m_mutator)
-        delete m_mutator;
-      foreach (TableScannerAsync *s, m_scanners)
-        delete s;
+      ScopedLock lock1(m_scanner_mutex);
+      ScopedLock lock2(m_mutex);
       m_scanners.clear();
+      sspecs_clear();
       if (m_mutator)
         delete m_mutator;
-      sspecs_clear();
+
       if (m_tmp_table) {
         Client *client = m_primary_table->get_namespace()->get_client();
         NamespacePtr nstmp = client->open_namespace("/tmp");
@@ -134,8 +132,25 @@ static String last;
       }
     }
 
+    void shutdown() {
+      {
+        ScopedLock lock(m_mutex);
+        m_shutdown = true;
+      }
+
+      {
+        ScopedLock lock(m_scanner_mutex);
+        foreach_ht (TableScannerAsync *s, m_scanners)
+          delete s;
+      }
+
+      ScopedRecLock lock(m_outstanding_mutex);
+      while (atomic_read(&m_outstanding_scanners) > 1)
+        m_outstanding_cond.wait(lock);
+    }
+
     void sspecs_clear() {
-      foreach (ScanSpecBuilder *ssb, m_sspecs)
+      foreach_ht (ScanSpecBuilder *ssb, m_sspecs)
         delete ssb;
       m_sspecs.clear();
       m_sspecs_cond.notify_one();
@@ -251,7 +266,7 @@ static String last;
       size_t old_inserted_keys = m_tmp_keys.size();
       Cells cells;
       scancells->get(cells);
-      foreach (Cell &cell, cells) {
+      foreach_ht (Cell &cell, cells) {
         char *r = (char *)cell.row_key;
         char *p = r + strlen(r);
         while (*p != '\t' && p > (char *)cell.row_key)
@@ -362,10 +377,14 @@ static String last;
       ssb.set_return_deletes(primary_spec.return_deletes);
       ssb.set_keys_only(primary_spec.keys_only);
       ssb.set_row_regexp(primary_spec.row_regexp);
-      foreach (const String &s, primary_spec.columns)
+      foreach_ht (const String &s, primary_spec.columns)
         ssb.add_column(s.c_str());
       ssb.set_time_interval(primary_spec.time_interval.first, 
                             primary_spec.time_interval.second);
+
+      ScopedLock lock(m_scanner_mutex);
+      if (m_shutdown)
+        return;
 
       TableScannerAsync *s;
       if (m_tmp_table) {
@@ -376,7 +395,7 @@ static String last;
         for (CkeyMap::iterator it = m_tmp_keys.begin(); 
                 it != m_tmp_keys.end(); ++it) 
           ssb.add_row((const char *)it->first.row);
-        foreach (const ColumnPredicate &cp, primary_spec.column_predicates)
+        foreach_ht (const ColumnPredicate &cp, primary_spec.column_predicates)
           ssb.add_column_predicate(cp.column_family, cp.operation,
                   cp.value, cp.value_len);
 
@@ -400,7 +419,7 @@ static String last;
       HT_ASSERT(m_mutator == NULL);
 
       String inner;
-      foreach (Schema::ColumnFamily *cf, 
+      foreach_ht (Schema::ColumnFamily *cf, 
               m_primary_table->schema()->get_column_families()) {
         if (m_qualifier_scan && !cf->has_qualifier_index)
           continue;
@@ -443,17 +462,17 @@ static String last;
       //
       // see below for more comments
 #if defined (TEST_SSB_QUEUE)
-      foreach (Cell &cell, cells) {
+      foreach_ht (Cell &cell, cells) {
         if (!strcmp(last, (const char *)cell.row_key))
           continue;
         last = (const char *)cell.row_key;
 
         ScanSpecBuilder *ssb = new ScanSpecBuilder;
-        foreach (const String &s, primary_spec.columns)
+        foreach_ht (const String &s, primary_spec.columns)
           ssb->add_column(s.c_str());
         ssb->set_max_versions(primary_spec.max_versions);
         ssb->set_return_deletes(primary_spec.return_deletes);
-        foreach (const ColumnPredicate &cp, primary_spec.column_predicates)
+        foreach_ht (const ColumnPredicate &cp, primary_spec.column_predicates)
           ssb->add_column_predicate(cp.column_family, cp.operation,
                   cp.value, cp.value_len);
         if (primary_spec.value_regexp)
@@ -481,20 +500,20 @@ static String last;
       //
       // Create a new ScanSpec
       ScanSpecBuilder *ssb = new ScanSpecBuilder;
-      foreach (const String &s, primary_spec.columns)
+      foreach_ht (const String &s, primary_spec.columns)
         ssb->add_column(s.c_str());
       ssb->set_max_versions(primary_spec.max_versions);
       ssb->set_return_deletes(primary_spec.return_deletes);
-      foreach (const ColumnPredicate &cp, primary_spec.column_predicates)
+      foreach_ht (const ColumnPredicate &cp, primary_spec.column_predicates)
         ssb->add_column_predicate(cp.column_family, cp.operation,
                 cp.value, cp.value_len);
       if (primary_spec.value_regexp)
         ssb->set_value_regexp(primary_spec.value_regexp);
 
-      // foreach cell from the secondary index: verify that it exists in
+      // foreach_ht cell from the secondary index: verify that it exists in
       // the primary table, but make sure that each rowkey is only inserted
       // ONCE
-      foreach (Cell &cell, cells) {
+      foreach_ht (Cell &cell, cells) {
         if (!strcmp(last, (const char *)cell.row_key))
           continue;
         last = (const char *)cell.row_key;
@@ -537,13 +556,20 @@ static String last;
 
       ScanSpecBuilder *ssb = m_sspecs[0];
       m_sspecs.pop_front();
+      if (m_shutdown) {
+        delete ssb;
+        return;
+      }
       TableScannerAsync *s = 
             m_primary_table->create_scanner_async(this, ssb->get(), 
                         m_timeout_ms, Table::SCANNER_FLAG_IGNORE_INDEX);
-      m_scanners.push_back(s);
+
       m_readahead_count++;
       delete ssb;
       m_sspecs_cond.notify_one();
+
+      ScopedLock lock(m_scanner_mutex);
+      m_scanners.push_back(s);
     }
 
     void track_predicates(TableScannerAsync *scanner, ScanCellsPtr &scancells) {
@@ -564,7 +590,7 @@ static String last;
                        ? m_last_rowkey_tracking.c_str() 
                        : "";
       bool skip_row = false;
-      foreach (Cell &cell, cells) {
+      foreach_ht (Cell &cell, cells) {
         bool new_row = false;
         if (strcmp(last, cell.row_key)) {
           new_row = true;
@@ -620,7 +646,7 @@ static String last;
     }
 
     bool row_intervals_match(const RowIntervals &rivec, const char *row) {
-      foreach (const RowInterval &ri, rivec) {
+      foreach_ht (const RowInterval &ri, rivec) {
         if (ri.start && ri.start[0]) {
           if (ri.start_inclusive) {
             if (strcmp(row, ri.start)<0)
@@ -648,7 +674,7 @@ static String last;
 
     bool cell_intervals_match(const CellIntervals &civec, const char *row,
             const char *column) {
-      foreach (const CellInterval &ci, civec) {
+      foreach_ht (const CellInterval &ci, civec) {
         if (ci.start_row && ci.start_row[0]) {
           int s=strcmp(row, ci.start_row);
           if (s>0)
@@ -705,6 +731,9 @@ static String last;
 
     // a list of all scanners that are created in this object
     std::vector<TableScannerAsync *> m_scanners;
+
+    // a mutex for m_scanners
+    Mutex m_scanner_mutex;
 
     // a deque of ScanSpecs, needed for readahead in the primary table
     std::deque<ScanSpecBuilder *> m_sspecs;
@@ -770,6 +799,9 @@ static String last;
 
     // number of outstanding scanners (this is more precise than m_outstanding)
     atomic_t m_outstanding_scanners;
+
+    // shutting down this scanner?
+    bool m_shutdown;
   };
 
   typedef intrusive_ptr<IndexScannerCallback> IndexScannerCallbackPtr;

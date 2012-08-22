@@ -96,7 +96,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
       launched_servers_t launched_servers;
       if (!start(servers, Config::server_args().c_str(), launched_servers, notify))
         break;
-      boost::xtime_get(&recent_server_start, TIME_UTC);
+      boost::xtime_get(&recent_server_start, TIME_UTC_);
       HT_NOTICE("Servers started");
       joined = true;
       if (notify)
@@ -104,7 +104,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
       DWORD num_wait_handles = launched_servers.size() + 1;
       HANDLE* wait_handles = new HANDLE[num_wait_handles];
       int n = 0;
-      foreach(const launched_server_t& launched_server, launched_servers)
+      foreach_ht (const launched_server_t& launched_server, launched_servers)
         wait_handles[n++] = launched_server.pi.hProcess;
       wait_handles[n] = shutdown_event;
 
@@ -126,7 +126,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
           HT_NOTICEF("Server %s terminates unexpected", server_name(launched_server.server).c_str());
           // continuously crashing?
           boost::xtime now;
-          boost::xtime_get(&now, TIME_UTC);
+          boost::xtime_get(&now, TIME_UTC_);
           if (xtime_diff_millis(recent_server_start, now) > Config::minuptime_before_restart()) {
             // is range server or thrift broker?
             if (launched_server.server == rangeServer || launched_server.server == thriftBroker) {
@@ -339,7 +339,7 @@ void ServerUtils::kill(server_t server) {
   std::vector<DWORD> pids;
   find(server, pids);
   const String& exe_name = server_exe_name(server).c_str();
-  foreach(DWORD pid, pids) {
+  foreach_ht (DWORD pid, pids) {
     HT_NOTICEF("Killing %s (%d)", server_name(server).c_str(), pid);
     ProcessUtils::kill(pid, Config::kill_server_timeout());
   }
