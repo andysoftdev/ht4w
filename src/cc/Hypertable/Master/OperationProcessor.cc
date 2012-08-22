@@ -339,7 +339,7 @@ void OperationProcessor::add_exclusivity(Vertex v, const String &name) {
 
   for (DependencyIndex::iterator iter = m_context.exclusivity_index.lower_bound(name);
        iter != m_context.exclusivity_index.end() && iter->first == name; ++iter) {
-    tie(in_i, in_end) = in_edges(iter->second, m_context.graph);
+    boost::tie(in_i, in_end) = in_edges(iter->second, m_context.graph);
     for (; in_i != in_end; ++in_i) {
       src = source(*in_i, m_context.graph);
       m_context.ops[src]->exclusivities(names);

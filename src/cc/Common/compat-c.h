@@ -206,7 +206,7 @@ typedef int64_t ssize_t;
 typedef int32_t ssize_t;
 #endif
 
-#pragma deprecated(_errno)
+//#pragma deprecated(_errno) //removed with boost 1.50
 #pragma deprecated(perror)
 #pragma deprecated(strerror)
 
