@@ -283,7 +283,7 @@ class PageArena : boost::noncopyable {
     m_page_allocator.freed(m_total);
     m_pages = m_total = m_used = 0;
 
-    m_tinybuf = TinyBuffer();
+    m_tinybuf.fill = 0;
     m_gappy_pages.clear();
     m_gappy_limit = 0;
   }
