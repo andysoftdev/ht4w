@@ -123,6 +123,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -151,6 +152,7 @@ xcopy $(SolutionDir)conf\RS_METRICS.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -185,6 +187,7 @@ xcopy $(SolutionDir)conf\RS_METRICS.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -219,6 +222,7 @@ xcopy $(SolutionDir)conf\RS_METRICS.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>

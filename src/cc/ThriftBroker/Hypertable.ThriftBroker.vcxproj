@@ -101,6 +101,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;HyperAppHelper.lib;ThriftBroker.lib;expat.lib;pthread.lib;thrift.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -125,6 +126,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;HyperAppHelper.lib;ThriftBroker.lib;expat.lib;pthread.lib;thrift.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -157,6 +159,7 @@
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;HyperAppHelper.lib;ThriftBroker.lib;expat.lib;pthread.lib;thrift.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ForceSymbolReferences>
       </ForceSymbolReferences>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -187,6 +190,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;DfsBroker.lib;Hypertools.lib;Hyperspace.lib;Hypertable.lib;HyperAppHelper.lib;ThriftBroker.lib;expat.lib;pthread.lib;thrift.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
