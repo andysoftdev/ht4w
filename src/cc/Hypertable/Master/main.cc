@@ -281,6 +281,8 @@ int main(int argc, char **argv) {
     delete context->response_manager;
 
     context = 0;
+
+    HT_NOTICE("Exiting master");
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
