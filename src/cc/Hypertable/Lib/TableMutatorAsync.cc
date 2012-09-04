@@ -44,7 +44,13 @@ void TableMutatorAsync::handle_send_exceptions() {
   try {
     throw;
   }
-  catch (std::bad_alloc &) {
+  catch (Hypertable::Exception &ex) {
+    // issue 922: update the table if it was dropped and re-created
+    if (ex.code() == Error::TABLE_NOT_FOUND)
+      m_table->refresh();
+    throw;
+  }
+  catch (std::bad_alloc &e) {
     HT_ERROR("caught bad_alloc here");
   }
   catch (std::exception &e) {
@@ -54,7 +60,6 @@ void TableMutatorAsync::handle_send_exceptions() {
     HT_ERROR("caught unknown exception here");
   }
 }
-
 
 TableMutatorAsync::TableMutatorAsync(PropertiesPtr &props, Comm *comm, 
         ApplicationQueuePtr &app_queue, Table *table, 

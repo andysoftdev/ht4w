@@ -141,7 +141,6 @@ int main(int argc, char **argv) {
       HT_INFOF("Unable to delete state file %s", state_file.c_str());
 
     context->namemap = new NameIdMapper(context->hyperspace, context->toplevel_dir);
-    context->range_split_size = context->props->get_i64("Hypertable.RangeServer.Range.SplitSize");
 #ifndef _WIN32
     context->dfs = new DfsBroker::Client(context->conn_manager, context->props);
 #else

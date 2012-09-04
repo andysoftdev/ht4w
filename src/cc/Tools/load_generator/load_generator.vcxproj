@@ -28,6 +28,7 @@
     <ClCompile Include="ht_load_generator.cc" />
     <ClCompile Include="LoadClient.cc" />
     <ClCompile Include="LoadThread.cc" />
+    <ClCompile Include="QueryThread.cc" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\hypertable.rc">
@@ -39,6 +40,7 @@
     <ClInclude Include="LoadClient.h" />
     <ClInclude Include="LoadThread.h" />
     <ClInclude Include="ParallelLoad.h" />
+    <ClInclude Include="QueryThread.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{70E67DCF-1388-46ca-A2FE-13213C04E193}</ProjectGuid>

@@ -19,6 +19,9 @@
     <ClCompile Include="LoadThread.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="QueryThread.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\hypertable.rc" />
@@ -31,6 +34,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ParallelLoad.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QueryThread.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

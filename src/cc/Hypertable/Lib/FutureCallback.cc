@@ -36,7 +36,7 @@ FutureCallback::~FutureCallback() {
 }
 
 void FutureCallback::cancel() {
-  ScopedRecLock lock(m_outstanding_mutex);
+  ScopedLock lock(m_outstanding_mutex);
   m_cancelled = true;
   foreach_ht (TableScannerAsync *scanner, m_scanner_set)
     scanner->cancel();
@@ -44,7 +44,7 @@ void FutureCallback::cancel() {
 }
 
 void FutureCallback::register_scanner(TableScannerAsync *scanner) {
-  ScopedRecLock lock(m_outstanding_mutex);
+  ScopedLock lock(m_outstanding_mutex);
   m_scanner_set.insert(scanner);
   if (m_scanners_owned.insert(scanner).second)
     intrusive_ptr_add_ref(scanner);
@@ -52,20 +52,20 @@ void FutureCallback::register_scanner(TableScannerAsync *scanner) {
 }
 
 void FutureCallback::deregister_scanner(TableScannerAsync *scanner) {
-  ScopedRecLock lock(m_outstanding_mutex);
+  ScopedLock lock(m_outstanding_mutex);
   ScannerSet::iterator it = m_scanner_set.find(scanner);
   HT_ASSERT(it != m_scanner_set.end());
   m_scanner_set.erase(it);
 }
 
 void FutureCallback::register_mutator(TableMutatorAsync *mutator) {
-  ScopedRecLock lock(m_outstanding_mutex);
+  ScopedLock lock(m_outstanding_mutex);
   m_mutator_set.insert(mutator);
   m_cancelled = false;
 }
 
 void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
-  ScopedRecLock lock(m_outstanding_mutex);
+  ScopedLock lock(m_outstanding_mutex);
   MutatorSet::iterator it = m_mutator_set.find(mutator);
   HT_ASSERT(it != m_mutator_set.end());
   m_mutator_set.erase(it);
@@ -73,7 +73,7 @@ void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
 
 void FutureCallback::wait_for_completion() {
   {
-    ScopedRecLock lock(m_outstanding_mutex);
+    ScopedLock lock(m_outstanding_mutex);
     foreach_ht (TableMutatorAsync *mutator, m_mutator_set)
       mutator->flush();
   }

@@ -51,7 +51,7 @@ namespace Hypertable {
     void cancel();
 
     bool is_cancelled() {
-      ScopedRecLock lock(m_outstanding_mutex);
+      ScopedLock lock(m_outstanding_mutex);
       return _is_cancelled();
     }
 
