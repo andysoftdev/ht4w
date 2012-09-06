@@ -245,7 +245,7 @@ inline uint32_t TDenseProtocol::vlqWrite(uint64_t vlq) {
 
   while (vlq > 0) {
     assert(pos >= 0);
-    buf[pos] = (vlq | 0x80);
+    buf[pos] = uint8_t(vlq | 0x80);
     vlq >>= 7;
     pos--;
   }
@@ -281,6 +281,7 @@ uint32_t TDenseProtocol::writeMessageEnd() {
 }
 
 uint32_t TDenseProtocol::writeStructBegin(const char* name) {
+  (void) name;
   uint32_t xfer = 0;
 
   // The TypeSpec stack should be empty if this is the top-level read/write.
@@ -314,6 +315,7 @@ uint32_t TDenseProtocol::writeStructEnd() {
 uint32_t TDenseProtocol::writeFieldBegin(const char* name,
                                          const TType fieldType,
                                          const int16_t fieldId) {
+  (void) name;
   uint32_t xfer = 0;
 
   // Skip over optional fields.
@@ -507,6 +509,7 @@ uint32_t TDenseProtocol::readMessageEnd() {
 }
 
 uint32_t TDenseProtocol::readStructBegin(string& name) {
+  (void) name;
   uint32_t xfer = 0;
 
   if (ts_stack_.empty()) {
@@ -544,6 +547,7 @@ uint32_t TDenseProtocol::readStructEnd() {
 uint32_t TDenseProtocol::readFieldBegin(string& name,
                                         TType& fieldType,
                                         int16_t& fieldId) {
+  (void) name;
   uint32_t xfer = 0;
 
   // For optional fields, check to see if they are there.

@@ -28,22 +28,6 @@
 #include <map>
 #include <time.h>
 
-#ifdef _WIN32
-
-#include <Winsock2.h>
-
-#ifndef HAVE_STRUCT_TIMESPEC
-#define HAVE_STRUCT_TIMESPEC
-
-typedef struct timespec {
-    time_t tv_sec;	// Seconds since 00:00:00 GMT, 1 January 1970
-    long tv_nsec;	// Additional nanoseconds since tv_sec
-} timespec_t;
-
-#endif
-
-#endif
-
 namespace apache { namespace thrift { namespace concurrency {
 
 /**
@@ -115,7 +99,7 @@ class TimerManager {
     STOPPED
   };
 
-  virtual const STATE state() const;
+  virtual STATE state() const;
 
  private:
   boost::shared_ptr<const ThreadFactory> threadFactory_;

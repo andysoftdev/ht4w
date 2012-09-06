@@ -59,7 +59,6 @@ void test_error(Thrift::Client *client, std::ostream &out);
 int main() {
 
 #ifdef _WIN32
-  pthread_win32_process_attach_np();
   WSADATA wsaData;
   if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
     HT_FATAL("WSAStartup failed");
@@ -67,10 +66,6 @@ int main() {
 
   Thrift::Client *client = new Thrift::Client("localhost", 38080);
   run(client);
-
-#ifdef _WIN32
-  pthread_win32_process_detach_np();
-#endif
 }
 
 

@@ -19,13 +19,10 @@
 
 #include <cstdlib>
 #include <sstream>
+#include <boost/algorithm/string.hpp>
 
 #include <transport/THttpClient.h>
 #include <transport/TSocket.h>
-
-#ifdef _WIN32
-#include "config.h"
-#endif
 
 namespace apache { namespace thrift { namespace transport {
 
@@ -46,14 +43,13 @@ void THttpClient::parseHeader(char* header) {
   if (colon == NULL) {
     return;
   }
-  uint32_t sz = colon - header;
   char* value = colon+1;
 
-  if (strncmp(header, "Transfer-Encoding", sz) == 0) {
-    if (strstr(value, "chunked") != NULL) {
+  if (boost::istarts_with(header, "Transfer-Encoding")) {
+    if (boost::iends_with(value, "chunked")) {
       chunked_ = true;
     }
-  } else if (strncmp(header, "Content-Length", sz) == 0) {
+  } else if (boost::istarts_with(header, "Content-Length")) { 
     chunked_ = false;
     contentLength_ = atoi(value);
   }
@@ -68,7 +64,7 @@ bool THttpClient::parseStatusLine(char* status) {
   }
 
   *code = '\0';
-  while (*(code++) == ' ');
+  while (*(code++) == ' ') {};
 
   char* msg = strchr(code, ' ');
   if (msg == NULL) {
@@ -101,7 +97,7 @@ void THttpClient::flush() {
     "Content-Type: application/x-thrift" << CRLF <<
     "Content-Length: " << len << CRLF <<
     "Accept: application/x-thrift" << CRLF <<
-    "User-Agent: Thrift/" << VERSION << " (C++/THttpClient)" << CRLF <<
+    "User-Agent: Thrift/" << THRIFT_VERSION << " (C++/THttpClient)" << CRLF <<
     CRLF;
   string header = h.str();
 

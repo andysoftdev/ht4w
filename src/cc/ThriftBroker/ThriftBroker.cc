@@ -56,7 +56,6 @@
 
 #ifdef _WIN32
 
-#include "pthread.h"
 #include "Common/ServerLaunchEvent.h"
 
 #endif
@@ -75,7 +74,7 @@
 } while (0)
 
 #define RETHROW(_expr_) catch (Hypertable::Exception &e) { \
-  std::ostringstream oss;  oss << HT_FUNC << _expr_ << ": "<< e; \
+  std::ostringstream oss;  oss << HT_FUNC << " " << _expr_ << ": "<< e; \
   HT_ERROR_OUT << oss.str() << HT_END; \
   THROW_TE(e.code(), oss.str()); \
 }
@@ -1967,10 +1966,12 @@ public:
         convert_cells(hcells, tresult.cells);
       }
     }
+#ifndef _WIN32
     else {
       HT_THROW(Error::NOT_IMPLEMENTED, "Support for asynchronous mutators "
               "not yet implemented");
     }
+#endif
   }
 
   TableMutatorAsyncPtr _open_mutator_async(const ThriftGen::Namespace ns,
@@ -2472,7 +2473,6 @@ int main(int argc, char **argv) {
   Random::seed(time(NULL));
 
   #ifdef _WIN32
-  pthread_win32_process_attach_np();
   ServerLaunchEvent server_launch_event;
   #endif
 
@@ -2511,10 +2511,6 @@ int main(int argc, char **argv) {
   catch (Hypertable::Exception &e) {
     HT_ERROR_OUT << e << HT_END;
   }
-
-  #ifdef _WIN32
-  pthread_win32_process_detach_np();
-  #endif
 
   return 0;
 }

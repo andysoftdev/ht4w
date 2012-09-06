@@ -17,36 +17,24 @@
  * under the License.
  */
 
-#include "Util.h"
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include "Util.h"
+
 #if defined(HAVE_CLOCK_GETTIME)
 #include <time.h>
-#elif defined(HAVE_GETTIMEOFDAY)
+#elif defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
 #endif // defined(HAVE_CLOCK_GETTIME)
 
 namespace apache { namespace thrift { namespace concurrency {
 
-const int64_t Util::currentTimeTicks(int64_t ticksPerSec) {
+int64_t Util::currentTimeTicks(int64_t ticksPerSec) {
   int64_t result;
 
-#if _WIN32
-  static LARGE_INTEGER freq = { 0, 0 };
-  if( !freq.QuadPart ) {
-    ::QueryPerformanceFrequency( &freq );
-    if( !freq.QuadPart ) {
-        assert(false);
-        return 0;
-    }
-  }
-  LARGE_INTEGER count;
-  ::QueryPerformanceCounter( &count );
-  result = count.QuadPart * ticksPerSec / freq.QuadPart;
-#elif defined(HAVE_CLOCK_GETTIME)
+#if defined(HAVE_CLOCK_GETTIME)
   struct timespec now;
   int ret = clock_gettime(CLOCK_REALTIME, &now);
   assert(ret == 0);

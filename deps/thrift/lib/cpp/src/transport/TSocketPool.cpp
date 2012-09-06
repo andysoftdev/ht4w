@@ -35,7 +35,7 @@ using boost::shared_ptr;
 TSocketPoolServer::TSocketPoolServer()
   : host_(""),
     port_(0),
-    socket_(INVALID_SOCKET),
+    socket_(-1),
     lastFailTime_(0),
     consecutiveFailures_(0) {}
 
@@ -45,7 +45,7 @@ TSocketPoolServer::TSocketPoolServer()
 TSocketPoolServer::TSocketPoolServer(const string &host, int port)
   : host_(host),
     port_(port),
-    socket_(INVALID_SOCKET),
+    socket_(-1),
     lastFailTime_(0),
     consecutiveFailures_(0) {}
 
@@ -176,7 +176,7 @@ void TSocketPool::open() {
 
   unsigned int numServers = servers_.size();
   if (numServers == 0) {
-    socket_ = INVALID_SOCKET;
+    socket_ = -1;
     throw TTransportException(TTransportException::NOT_OPEN);
   }
 
@@ -204,7 +204,7 @@ void TSocketPool::open() {
 
     if (server->lastFailTime_ > 0) {
       // The server was marked as down, so check if enough time has elapsed to retry
-      int elapsedTime = time(NULL) - server->lastFailTime_;
+      int elapsedTime = (int)(time(NULL) - server->lastFailTime_);
       if (elapsedTime > retryInterval_) {
         retryIntervalPassed = true;
       }
@@ -217,7 +217,7 @@ void TSocketPool::open() {
         } catch (TException e) {
           string errStr = "TSocketPool::open failed "+getSocketInfo()+": "+e.what();
           GlobalOutput(errStr.c_str());
-          socket_ = INVALID_SOCKET;
+          socket_ = -1;
           continue;
         }
 
@@ -233,7 +233,7 @@ void TSocketPool::open() {
       if (server->consecutiveFailures_ > maxConsecutiveFailures_) {
         // Mark server as down
         server->consecutiveFailures_ = 0;
-        server->lastFailTime_ = time(NULL);
+        server->lastFailTime_ = (int)time(NULL);
       }
     }
   }
@@ -245,7 +245,7 @@ void TSocketPool::open() {
 void TSocketPool::close() {
   TSocket::close();
   if (currentServer_) {
-    currentServer_->socket_ = INVALID_SOCKET;
+    currentServer_->socket_ = -1;
   }
 }
 

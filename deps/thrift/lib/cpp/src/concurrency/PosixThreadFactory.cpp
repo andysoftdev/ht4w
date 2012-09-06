@@ -17,16 +17,6 @@
  * under the License.
  */
 
-#ifdef _WIN32
-
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
-#endif
-
 #include "PosixThreadFactory.h"
 #include "Exception.h"
 
@@ -78,21 +68,16 @@ class PthreadThread: public Thread {
  public:
 
   PthreadThread(int policy, int priority, int stackSize, bool detached, shared_ptr<Runnable> runnable) :
+
 #ifndef _WIN32
     pthread_(0),
-#endif
+#endif // _WIN32
+
     state_(uninitialized),
     policy_(policy),
     priority_(priority),
     stackSize_(stackSize),
     detached_(detached) {
-
-#ifdef _WIN32
-
-    pthread_.p = 0;
-    pthread_.x = 0;
-
-#endif
 
     this->Thread::runnable(runnable);
   }
@@ -133,8 +118,12 @@ class PthreadThread: public Thread {
     }
 
     // Set thread policy
-    int re_setschedpolicy;
-    if ((re_setschedpolicy = pthread_attr_setschedpolicy(&thread_attr, policy_)) != 0 && re_setschedpolicy != ENOTSUP) {
+    #ifdef _WIN32
+	//WIN32 Pthread implementation doesn't seem to support sheduling policies other then PosixThreadFactory::OTHER - runtime error
+	policy_ = PosixThreadFactory::OTHER;
+    #endif
+
+    if (pthread_attr_setschedpolicy(&thread_attr, policy_) != 0) {
       throw SystemResourceException("pthread_attr_setschedpolicy failed");
     }
 
@@ -172,11 +161,12 @@ class PthreadThread: public Thread {
   }
 
   Thread::id_t getId() {
+
 #ifndef _WIN32
     return (Thread::id_t)pthread_;
 #else
-    return (Thread::id_t)pthread_getw32threadid_np(pthread_);
-#endif
+    return (Thread::id_t)pthread_.p;
+#endif // _WIN32
   }
 
   shared_ptr<Runnable> runnable() const { return Thread::runnable(); }
@@ -205,15 +195,11 @@ void* PthreadThread::threadMain(void* arg) {
   ProfilerRegisterThread();
 #endif
 
-  thread->state_ = starting;
+  thread->state_ = started;
   thread->runnable()->run();
   if (thread->state_ != stopping && thread->state_ != stopped) {
     thread->state_ = stopping;
   }
-
-#ifdef _WIN32
-  pthread_win32_thread_detach_np();
-#endif
 
   return (void*)0;
 }
@@ -264,7 +250,7 @@ class PosixThreadFactory::Impl {
     max_priority = sched_get_priority_max(pthread_policy);
 #endif
     int quanta = (HIGHEST - LOWEST) + 1;
-    float stepsperquanta = (max_priority - min_priority) / quanta;
+    float stepsperquanta = (float)(max_priority - min_priority) / quanta;
 
     if (priority <= HIGHEST) {
       return (int)(min_priority + stepsperquanta * priority);
@@ -314,11 +300,13 @@ class PosixThreadFactory::Impl {
   void setDetached(bool value) { detached_ = value; }
 
   Thread::id_t getCurrentThreadId() const {
+
 #ifndef _WIN32
     return (Thread::id_t)pthread_self();
 #else
-    return (Thread::id_t)::GetCurrentThreadId();
-#endif
+    return (Thread::id_t)pthread_self().p;
+#endif // _WIN32
+
   }
 
 };

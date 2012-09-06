@@ -24,10 +24,6 @@
 #include <transport/THttpServer.h>
 #include <transport/TSocket.h>
 
-#ifdef _WIN32
-#include "config.h"
-#endif
-
 namespace apache { namespace thrift { namespace transport {
 
 using namespace std;
@@ -65,7 +61,7 @@ bool THttpServer::parseStatusLine(char* status) {
   }
 
   *path = '\0';
-  while (*(++path) == ' ');
+  while (*(++path) == ' ') {};
 
   char* http = strchr(path, ' ');
   if (http == NULL) {
@@ -91,7 +87,7 @@ void THttpServer::flush() {
   h <<
     "HTTP/1.1 200 OK" << CRLF <<
     "Date: " << getTimeRFC1123() << CRLF <<
-    "Server: Thrift/" << VERSION << CRLF <<
+    "Server: Thrift/" << THRIFT_VERSION << CRLF <<
     "Content-Type: application/x-thrift" << CRLF <<
     "Content-Length: " << len << CRLF <<
     "Connection: Keep-Alive" << CRLF <<

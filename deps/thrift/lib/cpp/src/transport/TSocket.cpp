@@ -17,95 +17,80 @@
  * under the License.
  */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
 #include <cstring>
 #include <sstream>
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
+#endif
+#ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
+#endif
 #include <sys/types.h>
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <netdb.h>
+#endif
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 
 #include "concurrency/Monitor.h"
-#include "concurrency/Util.h"
 #include "TSocket.h"
 #include "TTransportException.h"
+
+#ifndef SOCKOPT_CAST_T
+#   ifndef _WIN32
+#       define SOCKOPT_CAST_T void
+#   else
+#       define SOCKOPT_CAST_T char
+#   endif // _WIN32
+#endif
+
+template<class T>
+inline const SOCKOPT_CAST_T* const_cast_sockopt(const T* v) {
+    return reinterpret_cast<const SOCKOPT_CAST_T*>(v);
+}
+
+template<class T>
+inline SOCKOPT_CAST_T* cast_sockopt(T* v) {
+    return reinterpret_cast<SOCKOPT_CAST_T*>(v);
+}
 
 namespace apache { namespace thrift { namespace transport {
 
 using namespace std;
 
+// Global var to track total socket sys calls
+uint32_t g_socket_syscalls = 0;
+
 #ifdef _WIN32
 
-std::string winapi_strerror(DWORD err) {
-    std::string strerror;
-    if( err ) {
-        char* lpBuffer = 0;
-
-        DWORD len = ::FormatMessageA(
-                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                0, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                (LPSTR) &lpBuffer, 0, NULL );
-
-        if( len == 0 ) {
-            lpBuffer = (char*)::LocalAlloc(LMEM_FIXED, 0x100);
-            sprintf( lpBuffer, "unknown error %d", err );
-        }
-        else {
-            while( len > 0 && lpBuffer[len-1] < ' ' ) {
-                lpBuffer[--len] = '\0';
-            }
-        }
-        if( lpBuffer ) {
-            if( *lpBuffer ) {
-                strerror = lpBuffer;
-            }
-            ::LocalFree(lpBuffer);
-        }		
-    }
-    return strerror;
-}
+extern std::string winapi_strerror(DWORD err);
 
 #define SOCKETERRNO ::WSAGetLastError()
 #define ERRNO ::GetLastError() 
 #define STRERROR( e ) winapi_strerror(e)
 
-#ifndef SHUT_RDWR
-#define SHUT_RDWR SD_BOTH
-#endif
-
-inline int setsockopt( socket_t s, int level, int optname, void* optval, int optlen ) {
-    return ::setsockopt( s, level, optname, (const char *)optval, optlen );
-}
-
-inline void usleep( int ms ) {
-    ::Sleep( ms );
-}
-
-#else
-
-#define SOCKETERRNO errno
-#define ERRNO errno
-#define STRERROR( e ) std::string(strerror)
-
-#endif
-
 #define THROW( ex, msg, e ) \
 { \
-    const int __err = e; \
-    std::string strerr( msg + getSocketInfo() + ", " + STRERROR(__err) ); \
-    GlobalOutput.perror(strerr, __err); \
-    throw TTransportException(ex, strerr, __err); \
+  const int __err = e; \
+  std::string strerr( msg + getSocketInfo() + ", " + STRERROR(__err) ); \
+  GlobalOutput.perror(strerr, __err); \
+  throw TTransportException(ex, strerr, __err); \
 }
 
-// Global var to track total socket sys calls
-uint32_t g_socket_syscalls = 0;
+#endif
 
 /**
  * TSocket implementation.
@@ -116,7 +101,7 @@ TSocket::TSocket(string host, int port) :
   host_(host),
   port_(port),
   path_(""),
-  socket_(INVALID_SOCKET),
+  socket_(-1),
   connTimeout_(0),
   sendTimeout_(0),
   recvTimeout_(0),
@@ -126,13 +111,14 @@ TSocket::TSocket(string host, int port) :
   maxRecvRetries_(5) {
   recvTimeval_.tv_sec = (int)(recvTimeout_/1000);
   recvTimeval_.tv_usec = (int)((recvTimeout_%1000)*1000);
+  cachedPeerAddr_.ipv4.sin_family = AF_UNSPEC;
 }
 
 TSocket::TSocket(string path) :
   host_(""),
   port_(0),
   path_(path),
-  socket_(INVALID_SOCKET),
+  socket_(-1),
   connTimeout_(0),
   sendTimeout_(0),
   recvTimeout_(0),
@@ -142,13 +128,14 @@ TSocket::TSocket(string path) :
   maxRecvRetries_(5) {
   recvTimeval_.tv_sec = (int)(recvTimeout_/1000);
   recvTimeval_.tv_usec = (int)((recvTimeout_%1000)*1000);
+  cachedPeerAddr_.ipv4.sin_family = AF_UNSPEC;
 }
 
 TSocket::TSocket() :
   host_(""),
   port_(0),
   path_(""),
-  socket_(INVALID_SOCKET),
+  socket_(-1),
   connTimeout_(0),
   sendTimeout_(0),
   recvTimeout_(0),
@@ -158,9 +145,10 @@ TSocket::TSocket() :
   maxRecvRetries_(5) {
   recvTimeval_.tv_sec = (int)(recvTimeout_/1000);
   recvTimeval_.tv_usec = (int)((recvTimeout_%1000)*1000);
+  cachedPeerAddr_.ipv4.sin_family = AF_UNSPEC;
 }
 
-TSocket::TSocket(socket_t socket) :
+TSocket::TSocket(int socket) :
   host_(""),
   port_(0),
   path_(""),
@@ -174,6 +162,7 @@ TSocket::TSocket(socket_t socket) :
   maxRecvRetries_(5) {
   recvTimeval_.tv_sec = (int)(recvTimeout_/1000);
   recvTimeval_.tv_usec = (int)((recvTimeout_%1000)*1000);
+  cachedPeerAddr_.ipv4.sin_family = AF_UNSPEC;
 }
 
 TSocket::~TSocket() {
@@ -181,7 +170,7 @@ TSocket::~TSocket() {
 }
 
 bool TSocket::isOpen() {
-  return (socket_ != INVALID_SOCKET);
+  return (socket_ >= 0);
 }
 
 bool TSocket::peek() {
@@ -189,13 +178,9 @@ bool TSocket::peek() {
     return false;
   }
   uint8_t buf;
-#ifndef _WIN32
-  int r = recv(socket_, &buf, 1, MSG_PEEK);
-#else
-  int r = recv(socket_, (char*)&buf, 1, MSG_PEEK);
-#endif
+  int r = recv(socket_, cast_sockopt(&buf), 1, MSG_PEEK);
   if (r == -1) {
-    int errno_copy = SOCKETERRNO;
+    int errno_copy = errno;
     #if defined __FreeBSD__ || defined __MACH__
     /* shigin:
      * freebsd returns -1 and ECONNRESET if socket was closed by 
@@ -207,29 +192,28 @@ bool TSocket::peek() {
       return false;
     }
     #endif
-    close();
-    THROW( TTransportException::UNKNOWN, "TSocket::peek() recv()",  errno_copy )
+    GlobalOutput.perror("TSocket::peek() recv() " + getSocketInfo(), errno_copy);
+    throw TTransportException(TTransportException::UNKNOWN, "recv()", errno_copy);
   }
   return (r > 0);
 }
 
 void TSocket::openConnection(struct addrinfo *res) {
+
   if (isOpen()) {
     return;
   }
 
-#ifndef _WIN32
   if (! path_.empty()) {
     socket_ = socket(PF_UNIX, SOCK_STREAM, IPPROTO_IP);
-  } else 
-#endif
-  {
+  } else {
     socket_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
   }
 
-  if (socket_ == INVALID_SOCKET) {
-   close();
-   THROW( TTransportException::NOT_OPEN, "TSocket::open() socket()",  SOCKETERRNO )
+  if (socket_ == -1) {
+    int errno_copy = errno;
+    GlobalOutput.perror("TSocket::open() socket() " + getSocketInfo(), errno_copy);
+    throw TTransportException(TTransportException::NOT_OPEN, "socket()", errno_copy);
   }
 
   // Send timeout
@@ -256,23 +240,26 @@ void TSocket::openConnection(struct addrinfo *res) {
   }
 #endif
 
-
 #ifndef _WIN32
 
   // Set the socket to be non blocking for connect if a timeout exists
   int flags = fcntl(socket_, F_GETFL, 0);
   if (connTimeout_ > 0) {
     if (-1 == fcntl(socket_, F_SETFL, flags | O_NONBLOCK)) {
-      THROW( TTransportException::NOT_OPEN, "TSocket::open() fcntl()",  SOCKETERRNO )
+      int errno_copy = errno;
+      GlobalOutput.perror("TSocket::open() fcntl() " + getSocketInfo(), errno_copy);
+      throw TTransportException(TTransportException::NOT_OPEN, "fcntl() failed", errno_copy);
     }
   } else {
     if (-1 == fcntl(socket_, F_SETFL, flags & ~O_NONBLOCK)) {
-      THROW( TTransportException::NOT_OPEN, "TSocket::open() fcntl()",  SOCKETERRNO )
+      int errno_copy = errno;
+      GlobalOutput.perror("TSocket::open() fcntl " + getSocketInfo(), errno_copy);
+      throw TTransportException(TTransportException::NOT_OPEN, "fcntl() failed", errno_copy);
     }
   }
 
 #else
-    
+
   u_long arg = connTimeout_ > 0 ? 1 : 0;
   if( ioctlsocket(socket_, FIONBIO, &arg) == SOCKET_ERROR ) {
      THROW( TTransportException::NOT_OPEN, "TSocket::open() ioctlsocket() FIONBIO",  SOCKETERRNO )
@@ -282,26 +269,30 @@ void TSocket::openConnection(struct addrinfo *res) {
 
   // Connect the socket
   int ret;
+  if (! path_.empty()) {
 
 #ifndef _WIN32
 
-  if (! path_.empty()) {
     struct sockaddr_un address;
     socklen_t len;
 
     if (path_.length() > sizeof(address.sun_path)) {
-      THROW( TTransportException::NOT_OPEN, "TSocket::open() Unix Domain socket path too long", SOCKETERRNO )
+      int errno_copy = errno;
+      GlobalOutput.perror("TSocket::open() Unix Domain socket path too long", errno_copy);
+      throw TTransportException(TTransportException::NOT_OPEN, " Unix Domain socket path too long");
     }
 
     address.sun_family = AF_UNIX;
-    sprintf(address.sun_path, path_.c_str());
+    snprintf(address.sun_path, sizeof(address.sun_path), "%s", path_.c_str());
     len = sizeof(address);
     ret = connect(socket_, (struct sockaddr *) &address, len);
-  } else 
 
+#else
+    GlobalOutput.perror("TSocket::open() Unix Domain socket path not supported on windows", -99);
+    throw TTransportException(TTransportException::NOT_OPEN, " Unix Domain socket path not supported");
 #endif
 
-  {
+  } else {
     ret = connect(socket_, res->ai_addr, res->ai_addrlen);
   }
 
@@ -310,12 +301,10 @@ void TSocket::openConnection(struct addrinfo *res) {
     goto done;
   }
 
-#ifndef _WIN32
-  if (SOCKETERRNO != EINPROGRESS) {
-#else
-   if (SOCKETERRNO != WSAEINPROGRESS && SOCKETERRNO != WSAEWOULDBLOCK) {
-#endif
-    THROW( TTransportException::NOT_OPEN, "TSocket::open() connect()", SOCKETERRNO )
+  if ((errno != EINPROGRESS) && (errno != EWOULDBLOCK)) {
+    int errno_copy = errno;
+    GlobalOutput.perror("TSocket::open() connect() " + getSocketInfo(), errno_copy);
+    throw TTransportException(TTransportException::NOT_OPEN, "connect() failed", errno_copy);
   }
 
 #ifndef _WIN32
@@ -328,22 +317,22 @@ void TSocket::openConnection(struct addrinfo *res) {
 
 #else
 
-    WSAEVENT wait = WSACreateEvent();  
-    if( (ret = WSAEventSelect(socket_, wait, FD_CONNECT)) == 0 ) {
-        switch( WaitForSingleObject(wait, connTimeout_) ) {
-            case WAIT_OBJECT_0:
-                ret = 1;
-                break;
-            case WAIT_TIMEOUT:
-                ret = 0;
-                break;
-            default:
-                WSACloseEvent( wait );
-                close();
-                THROW( TTransportException::NOT_OPEN, "TSocket::open() WaitForSingleObject()", GetLastError() )
-                break;
-        }
-        WSAEventSelect( socket_, 0, 0 );
+    WSAEVENT wait = WSACreateEvent();
+    if ((ret = WSAEventSelect(socket_, wait, FD_CONNECT)) == 0) {
+      switch( WaitForSingleObject(wait, connTimeout_) ) {
+        case WAIT_OBJECT_0:
+          ret = 1;
+          break;
+        case WAIT_TIMEOUT:
+          ret = 0;
+          break;
+        default:
+          WSACloseEvent( wait );
+          close();
+          THROW( TTransportException::NOT_OPEN, "TSocket::open() WaitForSingleObject()", GetLastError() )
+          break;
+      }
+      WSAEventSelect( socket_, 0, 0 );
     }
     else {
         WSACloseEvent( wait );
@@ -359,30 +348,28 @@ void TSocket::openConnection(struct addrinfo *res) {
     int val;
     socklen_t lon;
     lon = sizeof(int);
-#ifndef _WIN32
-    int ret2 = getsockopt(socket_, SOL_SOCKET, SO_ERROR, (void *)&val, &lon);
-#else
-    int ret2 = getsockopt(socket_, SOL_SOCKET, SO_ERROR, (char *)&val, &lon);
-#endif
+    int ret2 = getsockopt(socket_, SOL_SOCKET, SO_ERROR, cast_sockopt(&val), &lon);
     if (ret2 == -1) {
-      close();
-      THROW( TTransportException::NOT_OPEN, "TSocket::open() getsockopt()", SOCKETERRNO )
+      int errno_copy = errno;
+      GlobalOutput.perror("TSocket::open() getsockopt() " + getSocketInfo(), errno_copy);
+      throw TTransportException(TTransportException::NOT_OPEN, "getsockopt()", errno_copy);
     }
     // no errors on socket, go to town
     if (val == 0) {
       goto done;
     }
-    THROW( TTransportException::NOT_OPEN, "TSocket::open() error on socket (after poll)", val )
+    GlobalOutput.perror("TSocket::open() error on socket (after poll) " + getSocketInfo(), val);
+    throw TTransportException(TTransportException::NOT_OPEN, "socket open() error", val);
   } else if (ret == 0) {
     // socket timed out
     string errStr = "TSocket::open() timed out " + getSocketInfo();
     GlobalOutput(errStr.c_str());
-    close();
-    throw TTransportException(TTransportException::NOT_OPEN, errStr);
+    throw TTransportException(TTransportException::NOT_OPEN, "open() timed out");
   } else {
     // error on poll()
-    close();
-    THROW( TTransportException::NOT_OPEN, "TSocket::open() poll()", SOCKETERRNO )
+    int errno_copy = errno;
+    GlobalOutput.perror("TSocket::open() poll() " + getSocketInfo(), errno_copy);
+    throw TTransportException(TTransportException::NOT_OPEN, "poll() failed", errno_copy);
   }
 
 done:
@@ -396,23 +383,24 @@ done:
 
   arg = 0;
   if( ioctlsocket(socket_, FIONBIO, &arg) == SOCKET_ERROR ) {
-     close();
-     THROW( TTransportException::NOT_OPEN, "TSocket::open() ioctlsocket() FIONBIO", SOCKETERRNO )
+    close();
+    THROW( TTransportException::NOT_OPEN, "TSocket::open() ioctlsocket() FIONBIO", SOCKETERRNO )
   }
 
 #endif
+
+  if (path_.empty()) {
+    setCachedAddress(res->ai_addr, res->ai_addrlen);
+  }
 }
 
 void TSocket::open() {
   if (isOpen()) {
     return;
   }
-#ifndef _WIN32
   if (! path_.empty()) {
     unix_open();
-  } else
-#endif
-  {
+  } else {
     local_open();
   }
 }
@@ -425,6 +413,11 @@ void TSocket::unix_open(){
 }
 
 void TSocket::local_open(){
+
+#ifdef _WIN32
+    TWinsockSingleton::create();
+#endif // _WIN32
+
   if (isOpen()) {
     return;
   }
@@ -440,7 +433,7 @@ void TSocket::local_open(){
   int error;
   char port[sizeof("65535")];
   std::memset(&hints, 0, sizeof(hints));
-  hints.ai_family = PF_INET;
+  hints.ai_family = PF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
   sprintf(port, "%d", port_);
@@ -460,7 +453,7 @@ void TSocket::local_open(){
     try {
       openConnection(res);
       break;
-    } catch (TTransportException& ) {
+    } catch (TTransportException&) {
       if (res->ai_next) {
         close();
       } else {
@@ -476,19 +469,29 @@ void TSocket::local_open(){
 }
 
 void TSocket::close() {
-  if (socket_ != INVALID_SOCKET) {
-    shutdown(socket_, SHUT_RDWR);
-#ifndef _WIN32
-    ::close(socket_);
+  if (socket_ >= 0) {
+
+#ifdef _WIN32
+      shutdown(socket_, SD_BOTH);
+      ::closesocket(socket_);
 #else
-    ::closesocket(socket_);
+      shutdown(socket_, SHUT_RDWR);
+      ::close(socket_);
 #endif
+
   }
-  socket_ = INVALID_SOCKET;
+  socket_ = -1;
+}
+
+void TSocket::setSocketFD(int socket) {
+  if (socket_ >= 0) {
+    close();
+  }
+  socket_ = socket;
 }
 
 uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
-  if (socket_ == INVALID_SOCKET) {
+  if (socket_ < 0) {
     throw TTransportException(TTransportException::NOT_OPEN, "Called read on non-open socket");
   }
 
@@ -506,26 +509,33 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
     eagainThresholdMicros = (recvTimeout_*1000)/ ((maxRecvRetries_>0) ? maxRecvRetries_ : 2);
   }
 
-  DWORD dwt = ::GetTickCount();
  try_again:
   // Read from the socket
-  int64_t begin = concurrency::Util::currentTimeTicks(1000);
-#ifndef _WIN32
-  int got = recv(socket_, buf, len, 0);
-#else
-  int got = recv(socket_, (char*)buf, len, 0);
-#endif
-  int errno_copy = SOCKETERRNO;
+  struct timeval begin;
+  if (recvTimeout_ > 0) {
+    gettimeofday(&begin, NULL);
+  } else {
+    // if there is no read timeout we don't need the TOD to determine whether
+    // an EAGAIN is due to a timeout or an out-of-resource condition.
+    begin.tv_sec = begin.tv_usec = 0;
+  }
+  int got = recv(socket_, cast_sockopt(buf), len, 0);
+  int errno_copy = errno; //gettimeofday can change errno
   ++g_socket_syscalls;
 
   // Check for error on read
   if (got < 0) {
-
-#ifndef _WIN32
-
     if (errno_copy == EAGAIN) {
+      // if no timeout we can assume that resource exhaustion has occurred.
+      if (recvTimeout_ == 0) {
+        throw TTransportException(TTransportException::TIMED_OUT,
+                                    "EAGAIN (unavailable resources)");
+      }
       // check if this is the lack of resources or timeout case
-      uint32_t readElapsedMicros = concurrency::Util::currentTimeTicks(1000) - begin;
+      struct timeval end;
+      gettimeofday(&end, NULL);
+      uint32_t readElapsedMicros =  (((end.tv_sec - begin.tv_sec) * 1000 * 1000)
+                                     + (((uint64_t)(end.tv_usec - begin.tv_usec))));
 
       if (!eagainThresholdMicros || (readElapsedMicros < eagainThresholdMicros)) {
         if (retries++ < maxRecvRetries_) {
@@ -542,14 +552,8 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
       }
     }
 
-#endif
-
     // If interrupted, try again
-#ifndef _WIN32
     if (errno_copy == EINTR && retries++ < maxRecvRetries_) {
-#else
-    if (errno_copy == WSAEINTR && retries++ < maxRecvRetries_) {
-#endif
       goto try_again;
     }
 
@@ -557,16 +561,20 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
     if (errno_copy == ECONNRESET) {
       /* shigin: freebsd doesn't follow POSIX semantic of recv and fails with
        * ECONNRESET if peer performed shutdown 
+       * edhall: eliminated close() since we do that in the destructor.
        */
-      close();
       return 0;
     }
     #endif
 
-    // Now it's not a try again case, but a real probblem
-    GlobalOutput.perror("TSocket::read() recv() " + getSocketInfo() + " " + STRERROR(errno_copy), errno_copy);
+#ifdef _WIN32
+    if(errno_copy == WSAECONNRESET) {
+      return 0; // EOF
+    }
+#endif
 
-#ifndef _WIN32
+    // Now it's not a try again case, but a real probblez
+    GlobalOutput.perror("TSocket::read() recv() " + getSocketInfo(), errno_copy);
 
     // If we disconnect with no linger time
     if (errno_copy == ECONNRESET) {
@@ -583,36 +591,14 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
       throw TTransportException(TTransportException::TIMED_OUT, "ETIMEDOUT");
     }
 
-#else
-
-    // If we disconnect with no linger time
-    if (errno_copy == WSAECONNRESET) {
-      close();
-      throw TTransportException(TTransportException::NOT_OPEN, "ECONNRESET");
-    }
-
-    // This ish isn't open
-    if (errno_copy == WSAENOTCONN) {
-      close();
-      throw TTransportException(TTransportException::NOT_OPEN, "ENOTCONN");
-    }
-
-    // Timed out!
-    if (errno_copy == WSAETIMEDOUT) {
-      close();
-      throw TTransportException(TTransportException::TIMED_OUT, "ETIMEDOUT");
-    }
-
-#endif
-
     // Some other error, whatevz
-    close();
     throw TTransportException(TTransportException::UNKNOWN, "Unknown", errno_copy);
   }
 
   // The remote host has closed the socket
   if (got == 0) {
-    close();
+    // edhall: we used to call close() here, but our caller may want to deal
+    // with the socket fd and we'll close() in our destructor in any case.
     return 0;
   }
 
@@ -621,51 +607,58 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
 }
 
 void TSocket::write(const uint8_t* buf, uint32_t len) {
-  if (socket_ == INVALID_SOCKET) {
+  uint32_t sent = 0;
+
+  while (sent < len) {
+    uint32_t b = write_partial(buf + sent, len - sent);
+    if (b == 0) {
+      // This should only happen if the timeout set with SO_SNDTIMEO expired.
+      // Raise an exception.
+      throw TTransportException(TTransportException::TIMED_OUT,
+                                "send timeout expired");
+    }
+    sent += b;
+  }
+}
+
+uint32_t TSocket::write_partial(const uint8_t* buf, uint32_t len) {
+  if (socket_ < 0) {
     throw TTransportException(TTransportException::NOT_OPEN, "Called write on non-open socket");
   }
 
   uint32_t sent = 0;
 
-  while (sent < len) {
+  int flags = 0;
+#ifdef MSG_NOSIGNAL
+  // Note the use of MSG_NOSIGNAL to suppress SIGPIPE errors, instead we
+  // check for the EPIPE return condition and close the socket in that case
+  flags |= MSG_NOSIGNAL;
+#endif // ifdef MSG_NOSIGNAL
 
-    int flags = 0;
-    #ifdef MSG_NOSIGNAL
-    // Note the use of MSG_NOSIGNAL to suppress SIGPIPE errors, instead we
-    // check for the EPIPE return condition and close the socket in that case
-    flags |= MSG_NOSIGNAL;
-    #endif // ifdef MSG_NOSIGNAL
+  int b = send(socket_, const_cast_sockopt(buf + sent), len - sent, flags);
+  ++g_socket_syscalls;
 
-#ifndef _WIN32
-    int b = send(socket_, buf + sent, len - sent, flags);
-#else
-    int b = send(socket_, (char*)(buf + sent), len - sent, flags);
-#endif
-    ++g_socket_syscalls;
-
+  if (b < 0) {
+    if (errno == EWOULDBLOCK || errno == EAGAIN) {
+      return 0;
+    }
     // Fail on a send error
-    if (b < 0) {
-      int errno_copy = SOCKETERRNO;
-      GlobalOutput.perror("TSocket::write() send() " + getSocketInfo() + " " + STRERROR(errno_copy), errno_copy);
-      close();
-#ifndef _WIN32
-      if (errno_copy == EPIPE || errno_copy == ECONNRESET || errno_copy == ENOTCONN) {
-#else
-      if (errno_copy == WSAECONNRESET || errno_copy == WSAENOTCONN) {
-#endif
-        throw TTransportException(TTransportException::NOT_OPEN, "write() send()", errno_copy);
-      }
+    int errno_copy = errno;
+    GlobalOutput.perror("TSocket::write_partial() send() " + getSocketInfo(), errno_copy);
 
-      throw TTransportException(TTransportException::UNKNOWN, "write() send()", errno_copy);
+    if (errno_copy == EPIPE || errno_copy == ECONNRESET || errno_copy == ENOTCONN) {
+      close();
+      throw TTransportException(TTransportException::NOT_OPEN, "write() send()", errno_copy);
     }
 
-    // Fail on blocked send
-    if (b == 0) {
-      close();
-      throw TTransportException(TTransportException::NOT_OPEN, "Socket send returned 0.");
-    }
-    sent += b;
+    throw TTransportException(TTransportException::UNKNOWN, "write() send()", errno_copy);
   }
+  
+  // Fail on blocked send
+  if (b == 0) {
+    throw TTransportException(TTransportException::NOT_OPEN, "Socket send returned 0.");
+  }
+  return b;
 }
 
 std::string TSocket::getHost() {
@@ -687,30 +680,30 @@ void TSocket::setPort(int port) {
 void TSocket::setLinger(bool on, int linger) {
   lingerOn_ = on;
   lingerVal_ = linger;
-  if (socket_ == INVALID_SOCKET) {
+  if (socket_ < 0) {
     return;
   }
 
   struct linger l = {(lingerOn_ ? 1 : 0), lingerVal_};
-  int ret = setsockopt(socket_, SOL_SOCKET, SO_LINGER, &l, sizeof(l));
+  int ret = setsockopt(socket_, SOL_SOCKET, SO_LINGER, cast_sockopt(&l), sizeof(l));
   if (ret == -1) {
-    int errno_copy = SOCKETERRNO;  // Copy errno because we're allocating memory.
-    GlobalOutput.perror("TSocket::setLinger() setsockopt() " + getSocketInfo() + " " + STRERROR(errno_copy), errno_copy);
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::setLinger() setsockopt() " + getSocketInfo(), errno_copy);
   }
 }
 
 void TSocket::setNoDelay(bool noDelay) {
   noDelay_ = noDelay;
-  if (socket_ == INVALID_SOCKET) {
+  if (socket_ < 0 || !path_.empty()) {
     return;
   }
 
   // Set socket to NODELAY
   int v = noDelay_ ? 1 : 0;
-  int ret = setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &v, sizeof(v));
+  int ret = setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, cast_sockopt(&v), sizeof(v));
   if (ret == -1) {
-    int errno_copy = SOCKETERRNO;  // Copy errno because we're allocating memory.
-    GlobalOutput.perror("TSocket::setNoDelay() setsockopt() " + getSocketInfo() + " " + STRERROR(errno_copy), errno_copy);
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::setNoDelay() setsockopt() " + getSocketInfo(), errno_copy);
   }
 }
 
@@ -727,7 +720,7 @@ void TSocket::setRecvTimeout(int ms) {
   }
   recvTimeout_ = ms;
 
-  if (socket_ == INVALID_SOCKET) {
+  if (socket_ < 0) {
     return;
   }
 
@@ -737,14 +730,13 @@ void TSocket::setRecvTimeout(int ms) {
   // Copy because poll may modify
 #ifndef _WIN32
   struct timeval r = recvTimeval_;
-  int ret = setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &r, sizeof(r));
 #else
-  DWORD recvTimeout( recvTimeout_ );
-  int ret = setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &recvTimeout, sizeof(recvTimeout));
+  DWORD r( recvTimeout_ );
 #endif
+  int ret = setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, cast_sockopt(&r), sizeof(r));
   if (ret == -1) {
-    int errno_copy = SOCKETERRNO;  // Copy errno because we're allocating memory.
-    GlobalOutput.perror("TSocket::setRecvTimeout() setsockopt() " + getSocketInfo() + " " + STRERROR(errno_copy), errno_copy);
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::setRecvTimeout() setsockopt() " + getSocketInfo(), errno_copy);
   }
 }
 
@@ -757,21 +749,20 @@ void TSocket::setSendTimeout(int ms) {
   }
   sendTimeout_ = ms;
 
-  if (socket_ == INVALID_SOCKET) {
+  if (socket_ < 0) {
     return;
   }
 
 #ifndef _WIN32
   struct timeval s = {(int)(sendTimeout_/1000),
                       (int)((sendTimeout_%1000)*1000)};
-  int ret = setsockopt(socket_, SOL_SOCKET, SO_SNDTIMEO, &s, sizeof(s));
 #else
-  DWORD sendTimeout( sendTimeout_ );
-  int ret = setsockopt(socket_, SOL_SOCKET, SO_SNDTIMEO, &sendTimeout, sizeof(sendTimeout));
+  DWORD s( sendTimeout_ );
 #endif
+  int ret = setsockopt(socket_, SOL_SOCKET, SO_SNDTIMEO, cast_sockopt(&s), sizeof(s));
   if (ret == -1) {
-    int errno_copy = SOCKETERRNO;  // Copy errno because we're allocating memory.
-    GlobalOutput.perror("TSocket::setSendTimeout() setsockopt() " + getSocketInfo() + " " + STRERROR(errno_copy), errno_copy);
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::setSendTimeout() setsockopt() " + getSocketInfo(), errno_copy);
   }
 }
 
@@ -781,29 +772,41 @@ void TSocket::setMaxRecvRetries(int maxRecvRetries) {
 
 string TSocket::getSocketInfo() {
   std::ostringstream oss;
-  oss << "<Host: " << host_ << " Port: " << port_ << ">";
+  if (host_.empty() || port_ == 0) {
+    oss << "<Host: " << getPeerAddress();
+    oss << " Port: " << getPeerPort() << ">";
+  } else {
+    oss << "<Host: " << host_ << " Port: " << port_ << ">";
+  }
   return oss.str();
 }
 
 std::string TSocket::getPeerHost() {
-  if (peerHost_.empty()) {
+  if (peerHost_.empty() && path_.empty()) {
     struct sockaddr_storage addr;
-    socklen_t addrLen = sizeof(addr);
+    struct sockaddr* addrPtr;
+    socklen_t addrLen;
 
-    if (socket_ == INVALID_SOCKET) {
+    if (socket_ < 0) {
       return host_;
     }
 
-    int rv = getpeername(socket_, (sockaddr*) &addr, &addrLen);
+    addrPtr = getCachedAddress(&addrLen);
 
-    if (rv != 0) {
-      return peerHost_;
+    if (addrPtr == NULL) {
+      addrLen = sizeof(addr);
+      if (getpeername(socket_, (sockaddr*) &addr, &addrLen) != 0) {
+        return peerHost_;
+      }
+      addrPtr = (sockaddr*)&addr;
+
+      setCachedAddress(addrPtr, addrLen);
     }
 
     char clienthost[NI_MAXHOST];
     char clientservice[NI_MAXSERV];
 
-    getnameinfo((sockaddr*) &addr, addrLen,
+    getnameinfo((sockaddr*) addrPtr, addrLen,
                 clienthost, sizeof(clienthost),
                 clientservice, sizeof(clientservice), 0);
 
@@ -813,24 +816,31 @@ std::string TSocket::getPeerHost() {
 }
 
 std::string TSocket::getPeerAddress() {
-  if (peerAddress_.empty()) {
+  if (peerAddress_.empty() && path_.empty()) {
     struct sockaddr_storage addr;
-    socklen_t addrLen = sizeof(addr);
+    struct sockaddr* addrPtr;
+    socklen_t addrLen;
 
-    if (socket_ == INVALID_SOCKET) {
+    if (socket_ < 0) {
       return peerAddress_;
     }
 
-    int rv = getpeername(socket_, (sockaddr*) &addr, &addrLen);
+    addrPtr = getCachedAddress(&addrLen);
 
-    if (rv != 0) {
-      return peerAddress_;
+    if (addrPtr == NULL) {
+      addrLen = sizeof(addr);
+      if (getpeername(socket_, (sockaddr*) &addr, &addrLen) != 0) {
+        return peerAddress_;
+      }
+      addrPtr = (sockaddr*)&addr;
+
+      setCachedAddress(addrPtr, addrLen);
     }
 
     char clienthost[NI_MAXHOST];
     char clientservice[NI_MAXSERV];
 
-    getnameinfo((sockaddr*) &addr, addrLen,
+    getnameinfo(addrPtr, addrLen,
                 clienthost, sizeof(clienthost),
                 clientservice, sizeof(clientservice),
                 NI_NUMERICHOST|NI_NUMERICSERV);
@@ -845,6 +855,41 @@ int TSocket::getPeerPort() {
   getPeerAddress();
   return peerPort_;
 }
+
+void TSocket::setCachedAddress(const sockaddr* addr, socklen_t len) {
+  if (!path_.empty()) {
+    return;
+  }
+
+  switch (addr->sa_family) {
+  case AF_INET:
+    if (len == sizeof(sockaddr_in)) {
+      memcpy((void*)&cachedPeerAddr_.ipv4, (void*)addr, len);
+    }
+    break;
+
+  case AF_INET6:
+    if (len == sizeof(sockaddr_in6)) {
+      memcpy((void*)&cachedPeerAddr_.ipv6, (void*)addr, len);
+    }
+    break;
+  }
+}
+
+sockaddr* TSocket::getCachedAddress(socklen_t* len) const {
+  switch (cachedPeerAddr_.ipv4.sin_family) {
+  case AF_INET:
+    *len = sizeof(sockaddr_in);
+    return (sockaddr*) &cachedPeerAddr_.ipv4;
+
+  case AF_INET6:
+    *len = sizeof(sockaddr_in6);
+    return (sockaddr*) &cachedPeerAddr_.ipv6;
+
+  default:
+    return NULL;
+  }
+} 
 
 bool TSocket::useLowMinRto_ = false;
 void TSocket::setUseLowMinRto(bool useLowMinRto) {

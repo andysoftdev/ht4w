@@ -194,7 +194,7 @@ static uint8_t hexVal(uint8_t ch) {
     return ch - '0';
   }
   else if ((ch >= 'a') && (ch <= 'f')) {
-    return ch - 'a';
+    return ch - 'a' + 10;
   }
   else {
     throw TProtocolException(TProtocolException::INVALID_DATA,
@@ -211,7 +211,7 @@ static uint8_t hexChar(uint8_t val) {
     return val + '0';
   }
   else {
-    return val + 'a';
+    return val - 10 + 'a';
   }
 }
 
@@ -255,6 +255,7 @@ class TJSONContext {
    * Write context data to the transport. Default is to do nothing.
    */
   virtual uint32_t write(TTransport &trans) {
+    (void) trans;
     return 0;
   };
 
@@ -262,6 +263,7 @@ class TJSONContext {
    * Read context data from the transport. Default is to do nothing.
    */
   virtual uint32_t read(TJSONProtocol::LookaheadReader &reader) {
+    (void) reader;
     return 0;
   };
 
@@ -357,7 +359,8 @@ public:
 
 
 TJSONProtocol::TJSONProtocol(boost::shared_ptr<TTransport> ptrans) :
-  TProtocol(ptrans),
+  TVirtualProtocol<TJSONProtocol>(ptrans),
+  trans_(ptrans.get()),
   context_(new TJSONContext()),
   reader_(*ptrans) {
 }
@@ -560,6 +563,7 @@ uint32_t TJSONProtocol::writeMessageEnd() {
 }
 
 uint32_t TJSONProtocol::writeStructBegin(const char* name) {
+  (void) name;
   return writeJSONObjectStart();
 }
 
@@ -570,6 +574,7 @@ uint32_t TJSONProtocol::writeStructEnd() {
 uint32_t TJSONProtocol::writeFieldBegin(const char* name,
                                         const TType fieldType,
                                         const int16_t fieldId) {
+  (void) name;
   uint32_t result = writeJSONInteger(fieldId);
   result += writeJSONObjectStart();
   result += writeJSONString(getTypeNameForTypeID(fieldType));
@@ -864,7 +869,7 @@ uint32_t TJSONProtocol::readMessageBegin(std::string& name,
   result += readJSONInteger(tmpVal);
   messageType = (TMessageType)tmpVal;
   result += readJSONInteger(tmpVal);
-  seqid = tmpVal;
+  seqid = (int32_t)tmpVal;
   return result;
 }
 
@@ -873,6 +878,7 @@ uint32_t TJSONProtocol::readMessageEnd() {
 }
 
 uint32_t TJSONProtocol::readStructBegin(std::string& name) {
+  (void) name;
   return readJSONObjectStart();
 }
 
@@ -883,6 +889,7 @@ uint32_t TJSONProtocol::readStructEnd() {
 uint32_t TJSONProtocol::readFieldBegin(std::string& name,
                                        TType& fieldType,
                                        int16_t& fieldId) {
+  (void) name;
   uint32_t result = 0;
   // Check if we hit the end of the list
   uint8_t ch = reader_.peek();
@@ -893,7 +900,7 @@ uint32_t TJSONProtocol::readFieldBegin(std::string& name,
     uint64_t tmpVal = 0;
     std::string tmpStr;
     result += readJSONInteger(tmpVal);
-    fieldId = tmpVal;
+    fieldId = (int16_t)tmpVal;
     result += readJSONObjectStart();
     result += readJSONString(tmpStr);
     fieldType = getTypeIDForTypeName(tmpStr);
@@ -916,7 +923,7 @@ uint32_t TJSONProtocol::readMapBegin(TType& keyType,
   result += readJSONString(tmpStr);
   valType = getTypeIDForTypeName(tmpStr);
   result += readJSONInteger(tmpVal);
-  size = tmpVal;
+  size = (uint32_t)tmpVal;
   result += readJSONObjectStart();
   return result;
 }
@@ -933,7 +940,7 @@ uint32_t TJSONProtocol::readListBegin(TType& elemType,
   result += readJSONString(tmpStr);
   elemType = getTypeIDForTypeName(tmpStr);
   result += readJSONInteger(tmpVal);
-  size = tmpVal;
+  size = (uint32_t)tmpVal;
   return result;
 }
 
@@ -949,7 +956,7 @@ uint32_t TJSONProtocol::readSetBegin(TType& elemType,
   result += readJSONString(tmpStr);
   elemType = getTypeIDForTypeName(tmpStr);
   result += readJSONInteger(tmpVal);
-  size = tmpVal;
+  size = (uint32_t)tmpVal;
   return result;
 }
 

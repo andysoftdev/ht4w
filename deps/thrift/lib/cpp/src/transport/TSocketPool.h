@@ -49,7 +49,7 @@ class TSocketPoolServer {
   int port_;
 
   // Socket for the server
-  socket_t socket_;
+  int socket_;
 
   // Last time connecting to this server failed
   int lastFailTime_;

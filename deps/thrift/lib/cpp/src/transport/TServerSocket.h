@@ -20,26 +20,6 @@
 #ifndef _THRIFT_TRANSPORT_TSERVERSOCKET_H_
 #define _THRIFT_TRANSPORT_TSERVERSOCKET_H_ 1
 
-#ifdef _WIN32
-
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock2.h>
-#include <mswsock.h>
-#include <ws2tcpip.h>
-
-typedef int socket_t; // should be SOCKET, but SOCKET is unsigned 32/64
-
-#else 
-
-typedef int socket_t;
-#define INVALID_SOCKET -1
-
-#endif
-
 #include "TServerTransport.h"
 #include <boost/shared_ptr.hpp>
 
@@ -56,17 +36,14 @@ class TServerSocket : public TServerTransport {
  public:
   TServerSocket(int port);
   TServerSocket(int port, int sendTimeout, int recvTimeout);
-
-#ifndef _WIN32
-
   TServerSocket(std::string path);
-
-#endif
 
   ~TServerSocket();
 
   void setSendTimeout(int sendTimeout);
   void setRecvTimeout(int recvTimeout);
+
+  void setAcceptTimeout(int accTimeout);
 
   void setRetryLimit(int retryLimit);
   void setRetryDelay(int retryDelay);
@@ -81,38 +58,37 @@ class TServerSocket : public TServerTransport {
 
  protected:
   boost::shared_ptr<TTransport> acceptImpl();
+  virtual boost::shared_ptr<TSocket> createSocket(int client);
 
  private:
-  int port_;  
-#ifndef _WIN32
+  int port_;
   std::string path_;
-#endif
-  socket_t serverSocket_;
-
+  int serverSocket_;
   int acceptBacklog_;
   int sendTimeout_;
   int recvTimeout_;
+  int accTimeout_;
   int retryLimit_;
   int retryDelay_;
   int tcpSendBuffer_;
-  int tcpRecvBuffer_;  
+  int tcpRecvBuffer_;
+
+  int intSock1_;
+  int intSock2_;
 
   #ifdef _WIN32
 
   struct addrinfo server_addr_info_;
   LPFN_ACCEPTEX lpfnAcceptEx_;
   static HANDLE hIOCP_;
-
   void init();
 
   #else
 
-  int intSock1_;
-  int intSock2_;
-
   void init() {}
 
   #endif
+
 };
 
 }}} // apache::thrift::transport

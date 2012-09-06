@@ -17,11 +17,16 @@
  * under the License.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Mutex.h"
 #include "Util.h"
 
 #include <assert.h>
+#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include <signal.h>
 
 using boost::shared_ptr;
@@ -189,6 +194,7 @@ void Mutex::DEFAULT_INITIALIZER(void* arg) {
   assert(ret == 0);
 }
 
+#if defined(PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP) || defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP)
 static void init_with_kind(pthread_mutex_t* mutex, int kind) {
   pthread_mutexattr_t mutexattr;
   int ret = pthread_mutexattr_init(&mutexattr);
@@ -204,6 +210,7 @@ static void init_with_kind(pthread_mutex_t* mutex, int kind) {
   ret = pthread_mutexattr_destroy(&mutexattr);
   assert(ret == 0);
 }
+#endif
 
 #ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
 void Mutex::ADAPTIVE_INITIALIZER(void* arg) {

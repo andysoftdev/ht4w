@@ -19,12 +19,14 @@
 
 #include "server/TThreadedServer.h"
 #include "transport/TTransportException.h"
-#include "concurrency/PosixThreadFactory.h"
+#include <concurrency/PlatformThreadFactory.h>
 
 #include <string>
 #include <iostream>
-#include <pthread.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 namespace apache { namespace thrift { namespace server {
 
@@ -42,11 +44,13 @@ public:
   Task(TThreadedServer& server,
        shared_ptr<TProcessor> processor,
        shared_ptr<TProtocol> input,
-       shared_ptr<TProtocol> output) :
+       shared_ptr<TProtocol> output,
+       shared_ptr<TTransport> transport) :
     server_(server),
     processor_(processor),
     input_(input),
-    output_(output) {
+    output_(output),
+    transport_(transport) {
   }
 
   ~Task() {}
@@ -54,26 +58,33 @@ public:
   void run() {
     boost::shared_ptr<TServerEventHandler> eventHandler =
       server_.getEventHandler();
+    void* connectionContext = NULL;
     if (eventHandler != NULL) {
-      eventHandler->clientBegin(input_, output_);
+      connectionContext = eventHandler->createContext(input_, output_);
     }
     try {
-      while (processor_->process(input_, output_)) {
-        if (!input_->getTransport()->peek()) {
+      for (;;) {
+        if (eventHandler != NULL) {
+          eventHandler->processContext(connectionContext, transport_);
+        }
+        if (!processor_->process(input_, output_, connectionContext) ||
+            !input_->getTransport()->peek()) {
           break;
         }
       }
-    } catch (TTransportException& ttx) {
-      string errStr = string("TThreadedServer client died: ") + ttx.what();
-      GlobalOutput(errStr.c_str());
-    } catch (TException& x) {
-      string errStr = string("TThreadedServer exception: ") + x.what();
-      GlobalOutput(errStr.c_str());
+    } catch (const TTransportException& ttx) {
+      if (ttx.getType() != TTransportException::END_OF_FILE) {
+        string errStr = string("TThreadedServer client died: ") + ttx.what();
+        GlobalOutput(errStr.c_str());
+      }
+    } catch (const std::exception &x) {
+      GlobalOutput.printf("TThreadedServer exception: %s: %s",
+                          typeid(x).name(), x.what());
     } catch (...) {
       GlobalOutput("TThreadedServer uncaught exception.");
     }
     if (eventHandler != NULL) {
-      eventHandler->clientEnd(input_, output_);
+      eventHandler->deleteContext(connectionContext, input_, output_);
     }
 
     try {
@@ -107,26 +118,15 @@ public:
   shared_ptr<TProcessor> processor_;
   shared_ptr<TProtocol> input_;
   shared_ptr<TProtocol> output_;
+  shared_ptr<TTransport> transport_;
 };
 
+void TThreadedServer::init() {
+  stop_ = false;
 
-TThreadedServer::TThreadedServer(shared_ptr<TProcessor> processor,
-                                 shared_ptr<TServerTransport> serverTransport,
-                                 shared_ptr<TTransportFactory> transportFactory,
-                                 shared_ptr<TProtocolFactory> protocolFactory):
-  TServer(processor, serverTransport, transportFactory, protocolFactory),
-  stop_(false) {
-  threadFactory_ = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
-}
-
-TThreadedServer::TThreadedServer(boost::shared_ptr<TProcessor> processor,
-                                 boost::shared_ptr<TServerTransport> serverTransport,
-                                 boost::shared_ptr<TTransportFactory> transportFactory,
-                                 boost::shared_ptr<TProtocolFactory> protocolFactory,
-                                 boost::shared_ptr<ThreadFactory> threadFactory):
-  TServer(processor, serverTransport, transportFactory, protocolFactory),
-  threadFactory_(threadFactory),
-  stop_(false) {
+  if (!threadFactory_) {
+    threadFactory_.reset(new PlatformThreadFactory);
+  }
 }
 
 TThreadedServer::~TThreadedServer() {}
@@ -170,10 +170,14 @@ void TThreadedServer::serve() {
       inputProtocol = inputProtocolFactory_->getProtocol(inputTransport);
       outputProtocol = outputProtocolFactory_->getProtocol(outputTransport);
 
+      shared_ptr<TProcessor> processor = getProcessor(inputProtocol,
+                                                      outputProtocol, client);
+
       TThreadedServer::Task* task = new TThreadedServer::Task(*this,
-                                                              processor_,
+                                                              processor,
                                                               inputProtocol,
-                                                              outputProtocol);
+                                                              outputProtocol,
+                                                              client);
 
       // Create a task
       shared_ptr<Runnable> runnable =
