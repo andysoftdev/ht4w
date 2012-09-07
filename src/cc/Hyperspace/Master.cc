@@ -137,13 +137,12 @@ Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
                ServerKeepaliveHandlerPtr &keepalive_handler,
                ApplicationQueuePtr &app_queue_ptr)
   : m_verbose(false), m_next_handle_number(1), m_next_session_id(1),
-    m_maintenance_outstanding(false), m_lease_credit(0),
-    m_shutdown(false), m_bdb_fs(0) {
+    m_maintenance_outstanding(false), m_compact_state_db(false),
+    m_lease_credit(0), m_shutdown(false), m_bdb_fs(0) {
 
   m_verbose = props->get_bool("verbose");
   m_lease_interval = props->get_i32("Hyperspace.Lease.Interval");
   m_keep_alive_interval = props->get_i32("Hyperspace.KeepAlive.Interval");
-  m_maintenance_interval = props->get_i32("Hyperspace.Maintenance.Interval");
 
   Path base_dir(props->get_str("Hyperspace.Replica.Dir"));
 
@@ -1866,9 +1865,15 @@ void Master::do_maintenance() {
 
   m_bdb_fs->do_checkpoint();
 
+  if (m_compact_state_db)
+    m_bdb_fs->compact_state_db();
+  else
+    m_bdb_fs->compact_namespace_db();
+
   {
     ScopedLock lock(m_maintenance_mutex);
     m_maintenance_outstanding = false;
+    m_compact_state_db = !m_compact_state_db;
   }
 
 }

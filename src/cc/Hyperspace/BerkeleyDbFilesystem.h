@@ -160,6 +160,8 @@ namespace Hyperspace {
 
     void open_db_handles();
     void do_checkpoint();
+    void compact_state_db();
+    void compact_namespace_db();
     bool is_master() {
       // its the master if we're not doing replication or this is the replication master
       return (!m_replication_info.do_replication || m_replication_info.is_master);
