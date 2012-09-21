@@ -588,38 +588,6 @@ void BerkeleyDbFilesystem::do_checkpoint() {
 
 }
 
-void BerkeleyDbFilesystem::compact_state_db() {
-  if (!is_master())
-    return;
-
-  try {
-    int result;
-    BDbHandlesPtr db_handles = get_db_handles();
-    if (result = db_handles->m_handle_state_db->compact(0, 0, 0, 0, DB_FREE_SPACE, 0)) {
-      HT_ERROR_OUT << "Error compacting state db (" << result << ")" << HT_END;
-    }
-  }
-  catch (DbException &e) {
-    HT_ERROR_OUT << "Error compacting state db: " << e.what() << HT_END;
-  }
-}
-
-void BerkeleyDbFilesystem::compact_namespace_db() {
-  if (!is_master())
-    return;
-
-  try {
-    int result;
-    BDbHandlesPtr db_handles = get_db_handles();
-    if (result = db_handles->m_handle_namespace_db->compact(0, 0, 0, 0, DB_FREE_SPACE, 0)) {
-      HT_ERROR_OUT << "Error compacting namespace db (" << result << ")" << HT_END;
-    }
-  }
-  catch (DbException &e) {
-    HT_ERROR_OUT << "Error compacting namespace db: " << e.what() << HT_END;
-  }
-}
-
 void BerkeleyDbFilesystem::start_transaction(BDbTxn &txn) {
 
   // begin transaction

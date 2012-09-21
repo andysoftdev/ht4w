@@ -326,7 +326,6 @@ namespace Hyperspace {
     Mutex         m_last_tick_mutex;
     Mutex         m_maintenance_mutex;
     bool          m_maintenance_outstanding;
-    bool          m_compact_state_db;
     boost::xtime  m_last_tick;
     uint64_t      m_lease_credit;
     bool          m_shutdown;
