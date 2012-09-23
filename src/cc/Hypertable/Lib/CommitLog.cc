@@ -317,13 +317,12 @@ int CommitLog::purge(int64_t revision, std::set<int64_t> remove_ok, int generati
     return Error::CLOSED;
 
   // Process "reap" set
-  std::set<CommitLogFileInfo *>::iterator rm_iter, iter = m_reap_set.begin();
+  std::set<CommitLogFileInfo *>::iterator iter = m_reap_set.begin();
   while (iter != m_reap_set.end()) {
     if ((*iter)->references == 0 && (*iter)->generation <= generation) {
       remove_file_info(*iter);
       delete *iter;
-      rm_iter = iter++;
-      m_reap_set.erase(rm_iter);
+      iter = m_reap_set.erase(iter);
     }
     else
       ++iter;
