@@ -164,12 +164,8 @@ bool CellCacheManager::immutable_cache_empty() {
 }
 
 int64_t CellCacheManager::memory_used() {
-  if (m_read_cache->memory_used() == 0)
-    return m_write_cache->memory_used() + 
-      (m_immutable_cache ? m_immutable_cache->memory_used() : 0);
-  else
-    return m_read_cache->memory_used() + 
-      (m_immutable_cache ? m_immutable_cache->memory_used() : 0);
+  return m_read_cache->memory_used() + m_write_cache->memory_used() +
+    (m_immutable_cache ? m_immutable_cache->memory_used() : 0);
 }
 
 int64_t CellCacheManager::immutable_memory_used() {
@@ -200,8 +196,8 @@ void CellCacheManager::freeze() {
   m_read_cache->merge(m_write_cache.get());
   m_immutable_cache = m_read_cache;
   m_immutable_cache->freeze();
-  m_read_cache = new CellCache();
-  m_write_cache = new CellCache(m_read_cache->arena());
+  CellCachePtr cell_cache = new CellCache();
+  install_new_cell_cache(cell_cache);
 }
 
 void CellCacheManager::populate_key_set(KeySet &keys) {

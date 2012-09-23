@@ -93,10 +93,7 @@ namespace Hypertable {
      */
     int64_t memory_used() {
       ScopedLock lock(m_mutex);
-      int64_t used = m_arena.used();
-      if (used < 0)
-        HT_WARN_OUT << "[Issue 339] Mem usage for CellCache=" << used << HT_END;
-      return used;
+      return m_key_bytes + m_value_bytes;
     }
 
     /**
@@ -104,7 +101,8 @@ namespace Hypertable {
      */
     uint64_t memory_allocated() {
       ScopedLock lock(m_mutex);
-      return m_arena.total();
+      // return only the freeable amount of memory allocated
+      return m_arena.freeable();
     }
 
     void add_counts(size_t *cellsp, int64_t *key_bytesp, int64_t *value_bytesp) {
@@ -140,6 +138,11 @@ namespace Hypertable {
                      std::less<const SerializedKey>, Alloc> CellMap;
 
   protected:
+
+    void swap(CellCache &other);
+    void clear();
+    void inc_key_values_bytes(const CellMap::value_type& v);
+    void dec_key_values_bytes(const CellMap::value_type& v);
 
     Mutex              m_mutex;
     CellCacheArena     m_arena_base;

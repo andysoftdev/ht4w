@@ -85,7 +85,6 @@ class PageArena : boost::noncopyable {
   size_t m_used;        // total number of bytes allocated by users
   size_t m_page_limit;  // capacity in bytes of an empty page
   size_t m_page_size;   // page size in number of bytes
-  size_t m_pages;       // number of pages allocated
   size_t m_total;       // total number of bytes occupied by pages
   PageAllocatorT m_page_allocator;
 
@@ -132,7 +131,6 @@ class PageArena : boost::noncopyable {
     else // don't leak it
       m_cur_page = page;
 
-    ++m_pages;
     m_total += sz;
 
     return page;
@@ -160,7 +158,7 @@ class PageArena : boost::noncopyable {
   PageArena(size_t page_size = DEFAULT_PAGE_SIZE,
             const PageAllocatorT &alloc = PageAllocatorT())
     : m_cur_page(0), m_used(0), m_page_limit(0), m_page_size(page_size),
-      m_pages(0), m_total(0), m_page_allocator(alloc), m_gappy_limit(0) {
+      m_total(0), m_page_allocator(alloc), m_gappy_limit(0) {
     BOOST_STATIC_ASSERT(sizeof(CharT) == 1);
     HT_ASSERT(page_size > sizeof(Page));
   }
@@ -177,9 +175,9 @@ class PageArena : boost::noncopyable {
   CharT *
   alloc(size_t sz) {
     CharT *tiny;
+    m_used += sz;
     if ((tiny = m_tinybuf.alloc(sz)))
       return tiny;
-    m_used += sz;
     ensure_cur_page();
 
     if (m_gappy_limit >= sz) {
@@ -215,9 +213,9 @@ class PageArena : boost::noncopyable {
   CharT *
   alloc_down(size_t sz) {
     CharT *tiny;
+    m_used += sz;
     if ((tiny = m_tinybuf.alloc(sz)))
       return tiny;
-    m_used += sz;
     ensure_cur_page();
 
     // common case
@@ -281,7 +279,7 @@ class PageArena : boost::noncopyable {
       m_page_allocator.deallocate(page);
     }
     m_page_allocator.freed(m_total);
-    m_pages = m_total = m_used = 0;
+    m_total = m_used = 0;
 
     m_tinybuf.fill = 0;
     m_gappy_pages.clear();
@@ -294,7 +292,6 @@ class PageArena : boost::noncopyable {
     std::swap(m_cur_page, x.m_cur_page);
     std::swap(m_page_limit, x.m_page_limit);
     std::swap(m_page_size, x.m_page_size);
-    std::swap(m_pages, x.m_pages);
     std::swap(m_total, x.m_total);
     std::swap(m_used, x.m_used);
     std::swap(m_tinybuf, x.m_tinybuf);
@@ -305,18 +302,17 @@ class PageArena : boost::noncopyable {
   /** dump some allocator stats */
   std::ostream&
   dump_stat(std::ostream& out) const {
-    out <<"pages="<< m_pages
-      <<", total="<< m_total
-      <<", used="<< m_used
-      <<"("<< m_used * 100. / m_total
+    out <<", total="<< total()
+      <<", used="<< used()
+      <<"("<< used() * 100. / total()
       <<"%)";
     return out;
   }
 
   /** stats accessors */
-  size_t used() const { return m_used + m_tinybuf.fill; }
-  size_t pages() const { return m_pages; }
+  size_t used() const { return m_used; }
   size_t total() const { return m_total + TinyBuffer::SIZE; }
+  size_t freeable() const { return m_total; }
 };
 
 typedef PageArena<> CharArena;

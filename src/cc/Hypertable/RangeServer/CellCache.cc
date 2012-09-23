@@ -78,6 +78,7 @@ void CellCache::add(const Key &key, const ByteString value) {
   CellMap::value_type v(new_key, key.length);
   std::pair<CellMap::iterator, bool> r = m_cell_map.insert(v);
   if (!r.second) {
+    dec_key_values_bytes(*r.first);
     m_cell_map.erase(r.first);
     m_cell_map.insert(v);
     m_collisions++;
@@ -212,18 +213,54 @@ void CellCache::merge(CellCache *other) {
   HT_ASSERT(&m_arena == &(other->m_arena));
   Locker<CellCache> write_lock(*other);
   if (m_cell_map.empty())
-    m_cell_map.swap(other->m_cell_map);
+    swap(*other);
   else {
     for (CellMap::const_iterator iter = other->m_cell_map.begin();
-	 iter != other->m_cell_map.end(); ++iter) {
+         iter != other->m_cell_map.end(); ++iter) {
+      inc_key_values_bytes(*iter);
       std::pair<CellMap::iterator, bool> r = m_cell_map.insert(*iter);
       if (!r.second) {
+        dec_key_values_bytes(*r.first);
         m_cell_map.erase(r.first);
         m_cell_map.insert(*iter);
         m_collisions++;
         HT_WARNF("Collision detected merge (row = %s)", iter->first.row());
       }
     }
-    other->m_cell_map.clear();
+    other->clear();
   }
+}
+
+void CellCache::swap(CellCache &other) {
+  // frozen state remains
+  m_cell_map.swap(other.m_cell_map);
+  std::swap(m_deletes, other.m_deletes);
+  std::swap(m_collisions, other.m_collisions);
+  std::swap(m_key_bytes, other.m_key_bytes);
+  std::swap(m_value_bytes, other.m_value_bytes);
+  std::swap(m_have_counter_deletes, other.m_have_counter_deletes);
+}
+
+void CellCache::clear() {
+  // frozen state remains
+  m_cell_map.clear();
+  m_deletes = 0;
+  m_collisions = 0;
+  m_key_bytes = 0;
+  m_value_bytes = 0;
+  m_have_counter_deletes = false;
+}
+
+void CellCache::inc_key_values_bytes(const CellMap::value_type& v) {
+  Key key(v.first);
+  ByteString value(key.serial.ptr + v.second);
+  m_key_bytes += key.length;
+  m_value_bytes += value.length();
+}
+
+void CellCache::dec_key_values_bytes(const CellMap::value_type& v) {
+  Key key(v.first);
+  ByteString value(key.serial.ptr + v.second);
+  m_key_bytes -= key.length;
+  m_value_bytes -= value.length();
 }
