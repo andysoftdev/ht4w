@@ -299,9 +299,16 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
 
   if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (const char*)&one, sizeof(one)) == SOCKET_ERROR)
     HT_ERRORF("setting SO_REUSEADDR: %s", winapi_strerror(WSAGetLastError()));
-  if ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) == SOCKET_ERROR)
-    HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
-    addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
+  int bind_attempts = 0;
+  while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) == SOCKET_ERROR) {
+    if (bind_attempts == 6)
+      HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
+       addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
+      HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
+       addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
+      poll(0, 0, 10000);
+    bind_attempts++;
+  }
   if (::listen(sd, 1000) == SOCKET_ERROR)
     HT_THROWF(Error::COMM_LISTEN_ERROR, "listening: %s", winapi_strerror(WSAGetLastError()));
 
@@ -484,20 +491,31 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
   }
 
   // bind socket
+  int bind_attempts = 0;
 
 #ifdef _WIN32
 
-  if ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) == SOCKET_ERROR)
-    HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
-    addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
+  while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) == SOCKET_ERROR) {
+    if (bind_attempts == 6)
+      HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
+       addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
+      HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
+       addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
 
 #else
 
-  if ((bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0)
-    HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
-    addr.to_str().c_str(), strerror(errno));
+  while ((bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0)
+    if (bind_attempts == 6)
+      HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
+       addr.to_str().c_str(), strerror(errno));
+      HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
+       addr.to_str().c_str(), strerror(errno));
 
 #endif
+
+    poll(0, 0, 10000);
+    bind_attempts++;
+  }
 
   handler = dg_handler = new IOHandlerDatagram(sd, addr.inet, dhp);
 
