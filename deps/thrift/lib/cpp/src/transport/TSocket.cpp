@@ -358,7 +358,13 @@ void TSocket::openConnection(struct addrinfo *res) {
     if (val == 0) {
       goto done;
     }
-    GlobalOutput.perror("TSocket::open() error on socket (after poll) " + getSocketInfo(), val);
+#ifndef _WIN32
+    if (val != ECONNREFUSED) {
+#else
+    if (val != WSAECONNREFUSED) {
+#endif
+      GlobalOutput.perror("TSocket::open() error on socket (after poll) " + getSocketInfo(), val);
+    }
     throw TTransportException(TTransportException::NOT_OPEN, "socket open() error", val);
   } else if (ret == 0) {
     // socket timed out
