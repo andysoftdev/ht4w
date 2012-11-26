@@ -185,6 +185,28 @@ typedef hash_map< ::int64_t, FuturePtr> FutureMap;
 typedef std::vector<ThriftGen::Cell> ThriftCells;
 typedef std::vector<CellAsArray> ThriftCellsAsArrays;
 
+template<typename T>
+bool remove_from_map(Mutex& mutex, hash_map<::int64_t, T> map, ::int64_t id) {
+  T value;
+  bool removed = false;
+  {
+    ScopedLock lock(mutex);
+    removed = remove_from_map(map, id, value);
+  }
+  return removed;
+}
+
+template<typename T>
+bool remove_from_map(hash_map<::int64_t, T> map, ::int64_t id, T& value) {
+  hash_map<::int64_t, T>::iterator it = map.find(id);
+  if (it != map.end()) {
+    value = it->second;
+    map.erase(it);
+    return true;
+  }
+  return false;
+}
+
 int64_t
 cell_str_to_num(const std::string &from, const char *label,
         int64_t min_num = INT64_MIN, int64_t max_num = INT64_MAX) {
@@ -1429,7 +1451,7 @@ public:
         reader.get(hcell);
         cb.add(hcell, false);
       }
-	  get_mutator(mutator)->set_cells(cb.get());
+    get_mutator(mutator)->set_cells(cb.get());
       if (flush || reader.flush())
         get_mutator(mutator)->flush();
     } RETHROW(" mutator="<< mutator <<" cell.size="<< cells.size())
@@ -1590,7 +1612,7 @@ public:
         cb.add(hcell, false);
       }
       TableMutatorAsyncPtr mutator_ptr = get_mutator_async(mutator);
-	    mutator_ptr->set_cells(cb.get());
+      mutator_ptr->set_cells(cb.get());
       if (flush || reader.flush() || mutator_ptr->needs_flush())
         mutator_ptr->flush();
 
@@ -2225,11 +2247,7 @@ public:
   }
 
   void remove_scanner(int64_t id) {
-    ScopedLock lock(m_scanner_mutex);
-    ScannerMap::iterator it = m_scanner_map.find(id);
-
-    if (it != m_scanner_map.end()) {
-      m_scanner_map.erase(it);
+    if (remove_from_map(m_scanner_mutex, m_scanner_map, id)) {
       return;
     }
 
@@ -2239,14 +2257,10 @@ public:
   }
 
   void remove_scanner_async(int64_t id) {
+    TableScannerAsyncPtr scanner_async;
     ScopedLock lock(m_scanner_async_mutex);
-    ScannerAsyncMap::iterator it = m_scanner_async_map.find(id);
-    int64_t scanner_async = 0;
-
-    if (it != m_scanner_async_map.end()) {
-      scanner_async = (int64_t)(it->second.get());
-      m_scanner_async_map.erase(it);
-      m_reverse_scanner_async_map.erase(scanner_async);
+    if (remove_from_map(m_scanner_async_map, id, scanner_async)) {
+      m_reverse_scanner_async_map.erase((int64_t)scanner_async.get());
       return;
     }
 
@@ -2349,11 +2363,7 @@ public:
   }
 
   void remove_future_from_map(int64_t id) {
-    ScopedLock lock(m_future_mutex);
-    FutureMap::iterator it = m_future_map.find(id);
-
-    if (it != m_future_map.end()) {
-      m_future_map.erase(it);
+    if (remove_from_map(m_future_mutex, m_future_map, id)) {
       return;
     }
 
@@ -2363,11 +2373,7 @@ public:
   }
 
   void remove_namespace_from_map(int64_t id) {
-    ScopedLock lock(m_namespace_mutex);
-    NamespaceMap::iterator it = m_namespace_map.find(id);
-
-    if (it != m_namespace_map.end()) {
-      m_namespace_map.erase(it);
+    if (remove_from_map(m_namespace_mutex, m_namespace_map, id)) {
       return;
     }
 
@@ -2377,11 +2383,7 @@ public:
   }
 
   void remove_mutator(int64_t id) {
-    ScopedLock lock(m_mutator_mutex);
-    MutatorMap::iterator it = m_mutator_map.find(id);
-
-    if (it != m_mutator_map.end()) {
-      m_mutator_map.erase(it);
+    if (remove_from_map(m_mutator_mutex, m_mutator_map, id)) {
       return;
     }
 
@@ -2391,11 +2393,7 @@ public:
   }
 
   void remove_mutator_async(int64_t id) {
-    ScopedLock lock(m_mutator_async_mutex);
-    MutatorAsyncMap::iterator it = m_mutator_async_map.find(id);
-
-    if (it != m_mutator_async_map.end()) {
-      m_mutator_async_map.erase(it);
+    if (remove_from_map(m_mutator_async_mutex, m_mutator_async_map, id)) {
       return;
     }
 
