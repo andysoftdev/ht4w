@@ -47,7 +47,7 @@ using namespace Hypertable::Config;
 
 namespace {
   struct RangeDataAscending {
-    bool operator()(const RangeData x, const RangeData y) const {
+    bool operator()(const RangeData& x, const RangeData& y) const {
       return x.data->priority < y.data->priority;
     }
   };
@@ -211,7 +211,7 @@ void MaintenanceScheduler::schedule() {
 
       log_dir_hashes.insert(range_data[i].data->log_hash);
 
-      if (range_data[i].data->needs_major_compaction && priority <= m_move_compactions_per_interval) {
+      if (!low_memory && range_data[i].data->needs_major_compaction && priority <= m_move_compactions_per_interval) {
         range_data[i].data->priority = priority++;
         range_data[i].data->maintenance_flags = MaintenanceFlag::COMPACT_MOVE;
       }
