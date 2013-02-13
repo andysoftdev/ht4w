@@ -5,7 +5,7 @@
   <?define ProductName = "Hypertable"?>
   <?define Manufacturer="ht4w.softdev.ch"?>
   <?define Description="Hypertable for Windows"?>
-  <?define Copyright="ht4w, Copyright © 2010-2012"?>
+  <?define Copyright="ht4w, Copyright © 2010-2013"?>
 
   <!-- ProductVersion/ProductCode passed by hypertable-msi.wixproj -->
   <?define RTMProductVersion="0.0.0.1" ?>
