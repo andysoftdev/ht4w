@@ -220,18 +220,6 @@
     <ClCompile Include="RangeRecoveryReplayPlan.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CommitLog.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CommitLogBase.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CommitLogBlockStream.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CommitLogReader.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">
@@ -508,18 +496,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ScanLimitState.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CommitLog.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CommitLogBase.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CommitLogBlockStream.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CommitLogReader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
