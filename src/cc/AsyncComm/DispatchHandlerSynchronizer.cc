@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,12 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Definitions for DispatchHandlerSynchronizer.
+ * This file contains method definitions for DispatchHandlerSynchronizer, a
+ * class used to synchronzie with response messages.
+ */
+
 #include "Common/Compat.h"
 #include "Common/Error.h"
 #include "Common/Logger.h"
@@ -29,19 +35,10 @@
 using namespace Hypertable;
 
 
-/**
- *
- */
-DispatchHandlerSynchronizer::DispatchHandlerSynchronizer()
-  : m_receive_queue(), m_mutex(), m_cond() {
+DispatchHandlerSynchronizer::DispatchHandlerSynchronizer() {
   return;
 }
 
-
-
-/**
- *
- */
 void DispatchHandlerSynchronizer::handle(EventPtr &event_ptr) {
   ScopedLock lock(m_mutex);
   m_receive_queue.push(event_ptr);
@@ -49,10 +46,6 @@ void DispatchHandlerSynchronizer::handle(EventPtr &event_ptr) {
 }
 
 
-
-/**
- *
- */
 bool DispatchHandlerSynchronizer::wait_for_reply(EventPtr &event_ptr) {
   ScopedLock lock(m_mutex);
 

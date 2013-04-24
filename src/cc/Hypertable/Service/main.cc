@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   try {
     Config::init(argc, argv);
     if (Config::silent())
-      Logger::set_level(Logger::Priority::FATAL);
+      Logger::get()->set_level(Logger::Priority::FATAL);
 
     if (Config::stop_all_services())
       ServiceUtils::stop_all_services();

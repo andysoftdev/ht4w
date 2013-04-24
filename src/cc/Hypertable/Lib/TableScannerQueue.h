@@ -27,7 +27,7 @@
 
 #include "Common/Thread.h"
 #include "Common/Mutex.h"
-#include "AsyncComm/ApplicationQueue.h"
+#include "AsyncComm/ApplicationQueueInterface.h"
 
 #include "ScanCells.h"
 
@@ -38,13 +38,11 @@ namespace Hypertable {
    * of requests and a pool of threads that pull requests off the queue and
    * carry them out.
    */
-  class TableScannerQueue : public ApplicationQueue {
+  class TableScannerQueue : public ApplicationQueueInterface {
 
   public:
 
-    /**
-     *
-     * @param results_capacity max number of ScanCells that can be enqueued
+    /** Default constructor.
      */
     TableScannerQueue() : m_error(Error::OK), m_error_shown(false) { }
 
@@ -57,6 +55,8 @@ namespace Hypertable {
       m_work_queue.push_back(app_handler);
       m_cond.notify_one();
     }
+
+    virtual void add_unlocked(ApplicationHandler *app_handler) { }
 
     void next_result(ScanCellsPtr &cells, int *error, String &error_msg) {
       ApplicationHandler *app_handler;
@@ -96,7 +96,6 @@ namespace Hypertable {
       HT_ASSERT(cells != 0 || *error != Error::OK);
     }
 
-
     void add_cells(ScanCellsPtr &cells) {
       ScopedLock lock(m_mutex);
       m_cells_queue.push_back(cells);
@@ -109,14 +108,6 @@ namespace Hypertable {
       m_error_msg = error_msg;
       m_error_shown = false;
     }
-
-    /**
-     * Override unused inherited methods
-     */
-    virtual void stop() { }
-    virtual void start() { }
-    virtual void join() { }
-    virtual void shutdown() { }
 
   private:
 

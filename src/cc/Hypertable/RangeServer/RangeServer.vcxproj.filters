@@ -184,18 +184,6 @@
     <ClCompile Include="RequestHandlerLoadRange.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RequestHandlerReplayBegin.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerReplayCommit.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerReplayLoadRange.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerReplayUpdate.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RequestHandlerStatus.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -325,6 +313,51 @@
     <ClCompile Include="..\Lib\CommitLogBase.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CellListScannerBuffer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FragmentData.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PhantomRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PhantomRangeMap.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ReplayBuffer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ReplayDispatchHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerDumpPseudoTable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerPhantomCommitRanges.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerPhantomLoad.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerPhantomPrepareRanges.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerPhantomUpdate.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerReplayFragments.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackAcknowledgeLoad.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResponseCallbackPhantomUpdate.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeReplayBuffer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -349,9 +382,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="CellStore.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CellStoreBlockIndexMap.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="CellStoreFactory.h">
@@ -543,18 +573,6 @@
     <ClInclude Include="RequestHandlerLoadRange.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerReplayBegin.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerReplayCommit.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerReplayLoadRange.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerReplayUpdate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="RequestHandlerStatus.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -595,9 +613,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TimerHandler.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TimerInterface.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="GroupCommit.h">
@@ -703,6 +718,54 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MaintenanceTaskWorkQueue.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellListScannerBuffer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FragmentData.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PhantomRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PhantomRangeMap.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ReplayBuffer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ReplayDispatchHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerDumpPseudoTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerPhantomCommitRanges.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerPhantomLoad.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerPhantomPrepareRanges.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerPhantomUpdate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerReplayFragments.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackAcknowledgeLoad.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackPhantomUpdate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogEntityTask.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeReplayBuffer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

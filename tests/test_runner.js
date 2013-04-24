@@ -382,11 +382,6 @@ function container_test(logfile, testName) {
     return run_target(logfile, testName, "--components smalldeque smallvector bigdeque bigvector");
 }
 
-function context_test(logfile, testName) {
-    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
-    return run_target(logfile, testName);
-}
-
 function failure_inducer_test(logfile, testName) {
     prepare_target(testName, ["failure_inducer_test.golden"]);
     var status = run_target(logfile, testName);
@@ -550,6 +545,8 @@ function op_dependency_test(logfile, testName) {
 }
 
 function op_test_driver(logfile, testName) {
+    file_copy(solutionDir + "\\sed.exe", targetDir);
+    prepare_target(testName, ["balance_plan_authority_test.golden"]);
     run_servers("--no-hypertable --no-rangeserver --no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
     var status = run_target(logfile, testName, "initialize --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
     if (status != 0) {
@@ -576,12 +573,24 @@ function op_test_driver(logfile, testName) {
         clean_target();
         return status;
     }
+    status = run_target(logfile, testName, "create_table_with_index --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
     status = run_target(logfile, testName, "rename_table --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
     if (status != 0) {
         clean_target();
         return status;
     }
-    return run_target(logfile, testName, "move_range --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
+    status = run_target(logfile, testName, "move_range --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "balance_plan_authority --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
+    files_delete(["sed.exe"]);
+    return status;
 }
 
 function periodic_flush_test(logfile, testName) {
@@ -671,7 +680,6 @@ all_tests.add("comm_timer_test", comm_timer_test);
 all_tests.add("commit_log_test", commit_log_test);
 all_tests.add("compressor_test", compressor_test);
 all_tests.add("container_test", container_test);
-all_tests.add("context_test", context_test);
 all_tests.add("escape_test", run_target);
 all_tests.add("escaper_test", run_target);
 all_tests.add("exception_test", run_target);

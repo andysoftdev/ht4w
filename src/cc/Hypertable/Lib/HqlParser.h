@@ -105,6 +105,7 @@ namespace Hypertable {
       COMMAND_COMPACT,
       COMMAND_METADATA_SYNC,
       COMMAND_STOP,
+      COMMAND_DUMP_PSEUDO_TABLE,
       COMMAND_MAX
     };
 
@@ -282,6 +283,7 @@ namespace Hypertable {
       int command;
       String ns;
       String table_name;
+      String pseudo_table_name;
       String clone_table_name;
       String new_table_name;
       String str;
@@ -396,8 +398,17 @@ namespace Hypertable {
     struct set_table_name {
       set_table_name(ParserState &state) : state(state) { }
       void operator()(char const *str, char const *end) const {
-        state.table_name = String(str, end-str);
-        trim_if(state.table_name, is_any_of("'\""));
+        String name = String(str, end-str);
+        const char *pseudo = strstr(name.c_str(), "^.");
+        if (pseudo) {
+          state.table_name = String(name.c_str(), pseudo);
+          trim_if(state.table_name, is_any_of("'\""));
+          state.pseudo_table_name = String(pseudo+1);
+        }
+        else {
+          state.table_name = name;
+          trim_if(state.table_name, is_any_of("'\""));
+        }
       }
       ParserState &state;
     };
@@ -1933,6 +1944,7 @@ namespace Hypertable {
           Token COMPRESSOR   = as_lower_d["compressor"];
           Token GROUP_COMMIT_INTERVAL   = as_lower_d["group_commit_interval"];
           Token DUMP         = as_lower_d["dump"];
+          Token PSEUDO       = as_lower_d["pseudo"];
           Token STATS        = as_lower_d["stats"];
           Token STARTS       = as_lower_d["starts"];
           Token WITH         = as_lower_d["with"];
@@ -2002,6 +2014,10 @@ namespace Hypertable {
             | double_string_literal
             ;
 
+          pseudo_table_reference
+            = lexeme_d["^." >> +alnum_p >> *('.' >> +alnum_p)]
+            ;
+
           parameter_list
             = ch_p('(') >> ch_p(')')
             ;
@@ -2015,6 +2031,10 @@ namespace Hypertable {
           user_identifier
             = identifier
             | string_literal
+            ;
+
+          table_identifier
+            = user_identifier >> *pseudo_table_reference
             ;
 
           regexp_literal
@@ -2045,6 +2065,7 @@ namespace Hypertable {
             | load_range_statement[set_command(self.state, COMMAND_LOAD_RANGE)]
             | dump_statement[set_command(self.state, COMMAND_DUMP)]
             | dump_table_statement[set_command(self.state, COMMAND_DUMP_TABLE)]
+            | dump_pseudo_table_statement[set_command(self.state, COMMAND_DUMP_PSEUDO_TABLE)]
             | update_statement[set_command(self.state, COMMAND_UPDATE)]
             | create_scanner_statement[set_command(self.state,
                 COMMAND_CREATE_SCANNER)]
@@ -2197,10 +2218,15 @@ namespace Hypertable {
             ;
 
           dump_table_statement
-	          = DUMP >> TABLE >> user_identifier[set_table_name(self.state)]
+	          = DUMP >> TABLE >> table_identifier[set_table_name(self.state)]
             >> !(COLUMNS >> ('*' | (column_selection >> *(COMMA >> column_selection))))
 		        >> !(dump_where_clause)
 		        >> *(dump_table_option_spec)
+            ;
+
+          dump_pseudo_table_statement
+            = DUMP >> PSEUDO >> TABLE >> table_identifier[set_table_name(self.state)]
+                   >> INTO >> FILE >> string_literal[set_output_file(self.state)]
             ;
 
           range_spec
@@ -2329,7 +2355,7 @@ namespace Hypertable {
           table_option
             = COMPRESSOR >> *EQUAL >> string_literal[
                 set_table_compressor(self.state)]
-            | GROUP_COMMIT_INTERVAL >> EQUAL >> uint_p[set_group_commit_interval(self.state)]
+            | GROUP_COMMIT_INTERVAL >> *EQUAL >> uint_p[set_group_commit_interval(self.state)]
             | table_option_in_memory[set_table_in_memory(self.state)]
             | table_option_blocksize
             | table_option_replication
@@ -2765,6 +2791,7 @@ namespace Hypertable {
           BOOST_SPIRIT_DEBUG_RULE(dump_where_predicate);
           BOOST_SPIRIT_DEBUG_RULE(dump_table_option_spec);
           BOOST_SPIRIT_DEBUG_RULE(dump_table_statement);
+          BOOST_SPIRIT_DEBUG_RULE(dump_pseudo_table_statement);
           BOOST_SPIRIT_DEBUG_RULE(range_spec);
           BOOST_SPIRIT_DEBUG_RULE(update_statement);
           BOOST_SPIRIT_DEBUG_RULE(create_scanner_statement);
@@ -2787,6 +2814,8 @@ namespace Hypertable {
           BOOST_SPIRIT_DEBUG_RULE(metadata_sync_option_spec);
           BOOST_SPIRIT_DEBUG_RULE(stop_statement);
           BOOST_SPIRIT_DEBUG_RULE(range_type);
+          BOOST_SPIRIT_DEBUG_RULE(table_identifier);
+          BOOST_SPIRIT_DEBUG_RULE(pseudo_table_reference);
 #endif
         }
 
@@ -2830,7 +2859,8 @@ namespace Hypertable {
           balance_statement, range_move_spec_list, range_move_spec,
           balance_option_spec, heapcheck_statement, compact_statement,
           metadata_sync_statement, metadata_sync_option_spec, stop_statement,
-          range_type;
+          range_type, table_identifier, pseudo_table_reference,
+          dump_pseudo_table_statement;
       };
 
       ParserState &state;

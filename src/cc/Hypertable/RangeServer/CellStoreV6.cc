@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,6 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Definitions for CellStoreV6.
+ * This file contains the variable and method definitions for CellStoreV6, a
+ * class for creating and loading version 6 cell store files.
  */
 
 #include "Common/Compat.h"
@@ -63,9 +69,9 @@ CellStoreV6::CellStoreV6(Filesystem *filesys, Schema *schema)
     m_64bit_index(false), m_compressor(0), m_buffer(0),
     m_outstanding_appends(0), m_offset(0), m_file_length(0),
     m_disk_usage(0), m_file_id(0), m_uncompressed_blocksize(0),
-    m_bloom_filter_mode(BLOOM_FILTER_DISABLED), m_bloom_filter(0),
-    m_bloom_filter_items(0), m_filter_false_positive_prob(0.0),
-    m_restricted_range(false), m_column_ttl(0), m_replaced_files_loaded(false) {
+    m_bloom_filter_mode(BLOOM_FILTER_DISABLED), m_bloom_filter_items(0),
+    m_filter_false_positive_prob(0.0), m_restricted_range(false),
+    m_column_ttl(0), m_replaced_files_loaded(false), m_bloom_filter(0) {
   m_file_id = FileBlockCache::get_next_file_id();
   assert(sizeof(float) == 4);
 }
@@ -98,24 +104,50 @@ KeyDecompressor *CellStoreV6::create_key_decompressor() {
   return new KeyDecompressorPrefix();
 }
 
-
-const char *CellStoreV6::get_split_row() {
-  if (m_split_row != "")
-    return m_split_row.c_str();
+void CellStoreV6::split_row_estimate_data(SplitRowDataMapT &split_row_data) {
+  ScopedLock lock(m_mutex);
   if (m_index_stats.block_index_memory == 0)
     load_block_index();
-  if (m_split_row != "")
-    return m_split_row.c_str();
-  return 0;
+  if (m_trailer.index_entries == 0) {
+    HT_WARNF("%s has 0 index entries", m_filename.c_str());
+    return;
+  }
+  int32_t keys_per_block = (int32_t)(m_trailer.total_entries / m_trailer.index_entries);
+  if (m_64bit_index)
+    m_index_map64.unique_row_count_estimate(split_row_data, keys_per_block);
+  else
+    m_index_map32.unique_row_count_estimate(split_row_data, keys_per_block);
 }
+
+void CellStoreV6::populate_index_pseudo_table_scanner(CellListScannerBuffer *scanner) {
+  ScopedLock lock(m_mutex);
+  if (m_index_stats.block_index_memory == 0) {
+    load_block_index();
+    scanner->add_disk_read(m_trailer.filter_offset-m_trailer.fix_index_offset);
+  }
+  if (m_trailer.index_entries == 0) {
+    HT_WARNF("%s has 0 index entries", m_filename.c_str());
+    return;
+  }
+  int32_t keys_per_block = m_trailer.total_entries / m_trailer.index_entries;
+  if (m_64bit_index)
+    m_index_map64.populate_pseudo_table_scanner(scanner, m_filename,
+                             keys_per_block, m_trailer.compression_ratio);
+  else
+    m_index_map32.populate_pseudo_table_scanner(scanner, m_filename,
+                             keys_per_block, m_trailer.compression_ratio);
+}
+
 
 CellListScanner *CellStoreV6::create_scanner(ScanContextPtr &scan_ctx) {
   bool need_index =  m_restricted_range || scan_ctx->restricted_range || scan_ctx->single_row;
 
   if (need_index) {
+    ScopedLock lock(m_mutex);
     m_index_stats.block_index_access_counter = ++Global::access_counter;
     if (m_index_stats.block_index_memory == 0)
       load_block_index();
+    m_index_refcount++;
   }
 
   if (m_64bit_index)
@@ -220,7 +252,7 @@ CellStoreV6::create(const char *fname, size_t max_entries,
       if (!(has_num_hashes && has_bits_per_item)) {
         HT_WARN("Bloom filter option --bits-per-item must be used with "
                 "--num-hashes, defaulting to false probability of 0.01");
-        m_filter_false_positive_prob = 0.1f;
+        m_filter_false_positive_prob = 0.1;
       }
       else {
         m_trailer.bloom_filter_hash_count = props->get_i32("num-hashes");
@@ -269,6 +301,7 @@ void CellStoreV6::create_bloom_filter(bool is_approx) {
 }
 
 const std::vector<String> &CellStoreV6::get_replaced_files() {
+  ScopedLock lock(m_mutex);
   if (!m_replaced_files_loaded)
     load_replaced_files();
   return m_replaced_files;
@@ -381,20 +414,24 @@ void CellStoreV6::load_bloom_filter() {
 uint64_t CellStoreV6::purge_indexes() {
   uint64_t memory_purged = 0;
 
-  if (m_index_stats.bloom_filter_memory > 0) {
-    memory_purged = m_index_stats.bloom_filter_memory;
-    delete m_bloom_filter;
-    m_bloom_filter = 0;
-    m_index_stats.bloom_filter_memory = 0;
-  }
+  {
+    ScopedLock lock(m_mutex);
 
-  if (m_index_stats.block_index_memory > 0) {
-    memory_purged += m_index_stats.block_index_memory;
-    if (m_64bit_index)
-      m_index_map64.clear();
-    else
-      m_index_map32.clear();
-    m_index_stats.block_index_memory = 0;
+    if (m_index_stats.bloom_filter_memory > 0) {
+      memory_purged = m_index_stats.bloom_filter_memory;
+      delete m_bloom_filter;
+      m_bloom_filter = 0;
+      m_index_stats.bloom_filter_memory = 0;
+    }
+
+    if (m_index_refcount == 0 && m_index_stats.block_index_memory > 0) {
+      memory_purged += m_index_stats.block_index_memory;
+      if (m_64bit_index)
+        m_index_map64.clear();
+      else
+        m_index_map32.clear();
+      m_index_stats.block_index_memory = 0;
+    }
   }
 
   Global::memory_tracker->subtract( memory_purged );
@@ -496,11 +533,8 @@ void CellStoreV6::add(const Key &key, const ByteString value) {
       if (m_trailer.total_entries == m_max_approx_items - 1) {
         m_trailer.filter_items_estimate = (size_t)(((double)m_max_entries
             / (double)m_max_approx_items) * m_bloom_filter_items->size());
-        if (m_trailer.filter_items_estimate == 0) {
-          HT_INFOF("max_entries = %lld, max_approx_items = %lld, bloom_filter_items_size = %lld",
-                   (Lld)m_max_entries, (Lld)m_max_approx_items, (Lld)m_bloom_filter_items->size());
-          HT_ASSERT(m_trailer.filter_items_estimate);
-        }
+        if (m_trailer.filter_items_estimate == 0)
+          m_trailer.filter_items_estimate = 1;
         create_bloom_filter(true);
       }
     }
@@ -691,9 +725,12 @@ void CellStoreV6::finalize(TableIdentifier *table_identifier) {
                        m_index_builder.variable_buf(),
                        m_trailer.fix_index_offset);
     m_trailer.index_entries = m_index_map64.index_entries();
-    record_split_row( m_index_map64.middle_key() );
     index_memory = m_index_map64.memory_used();
     m_trailer.flags |= CellStoreTrailerV6::INDEX_64BIT;
+    m_disk_usage = m_index_map64.disk_used() +
+      (int64_t)((double)(m_offset-m_trailer.fix_index_offset) *
+		m_index_map64.fraction_covered());
+    m_block_count = m_index_map64.index_entries();
   }
   else {
     m_index_map32.load(m_index_builder.fixed_buf(),
@@ -701,7 +738,10 @@ void CellStoreV6::finalize(TableIdentifier *table_identifier) {
                        m_trailer.fix_index_offset);
     m_trailer.index_entries = m_index_map32.index_entries();
     index_memory = m_index_map32.memory_used();
-    record_split_row( m_index_map32.middle_key() );
+    m_disk_usage = m_index_map32.disk_used() +
+      (int64_t)((double)(m_offset-m_trailer.fix_index_offset)
+		* m_index_map32.fraction_covered());
+    m_block_count = m_index_map32.index_entries();
   }
 
   // deallocate fix index data
@@ -748,12 +788,6 @@ void CellStoreV6::finalize(TableIdentifier *table_identifier) {
 
   /** Re-open file for reading **/
   m_fd = m_filesys->open(m_filename, Filesystem::OPEN_FLAG_DIRECTIO);
-
-  // If compacting due to a split, estimate the disk usage at 1/2
-  if (m_trailer.flags & CellStoreTrailerV6::SPLIT)
-    m_disk_usage = m_file_length / 2;
-  else
-    m_disk_usage = m_file_length;
 
   m_index_stats.block_index_memory = index_memory;
 
@@ -838,12 +872,6 @@ CellStoreV6::open(const String &fname, const String &start_row,
 
   m_trailer = *static_cast<CellStoreTrailerV6 *>(trailer);
 
-  // If compacting due to a split, estimate the disk usage at 1/2
-  if (m_trailer.flags & CellStoreTrailerV6::SPLIT)
-    m_disk_usage = m_file_length / 2;
-  else
-    m_disk_usage = m_file_length;
-
   m_bloom_filter_mode = (BloomFilterMode)m_trailer.bloom_filter_mode;
 
   /** Sanity check trailer **/
@@ -859,9 +887,46 @@ CellStoreV6::open(const String &fname, const String &start_row,
               "length=%llu, file='%s'", (unsigned)m_fd, (Lld)m_trailer.fix_index_offset,
            (Lld)m_trailer.var_index_offset, (Llu)m_file_length, fname.c_str());
 
+  // This is necessary to get m_disk_usage and m_block_count set properly
+  load_block_index();
+
   Global::memory_tracker->add( sizeof(CellStoreV6) + sizeof(CellStoreInfo) );
 
 }
+
+
+
+void
+CellStoreV6::rescope(const String &start_row, const String &end_row) {
+  ScopedLock lock(m_mutex);
+  HT_ASSERT(m_start_row.compare(start_row)<0 || m_end_row.compare(end_row)>0);
+  m_start_row = start_row;
+  m_end_row = end_row;
+  m_restricted_range = true;
+  if (m_index_stats.block_index_memory != 0) {
+    Global::memory_tracker->subtract( m_index_stats.block_index_memory );
+    if (m_64bit_index) {
+      m_index_map64.rescope(m_start_row, m_end_row);
+      m_index_stats.block_index_memory = m_index_map64.memory_used();
+      m_disk_usage = m_index_map64.disk_used() + 
+        (int64_t)((double)(m_file_length-m_trailer.fix_index_offset) *
+		  m_index_map64.fraction_covered());
+      m_block_count = m_index_map64.index_entries();
+    }
+    else {
+      m_index_map32.rescope(m_start_row, m_end_row);
+      m_index_stats.block_index_memory = m_index_map32.memory_used();
+      m_disk_usage = m_index_map32.disk_used() + 
+        (int64_t)((double)(m_file_length-m_trailer.fix_index_offset) *
+		  m_index_map32.fraction_covered());
+      m_block_count = m_index_map32.index_entries();
+    }
+    Global::memory_tracker->add( m_index_stats.block_index_memory );
+  }
+  else
+    load_block_index();
+}
+
 
 
 void CellStoreV6::load_block_index() {
@@ -940,15 +1005,21 @@ void CellStoreV6::load_block_index() {
     m_index_map64.load(m_index_builder.fixed_buf(),
                        m_index_builder.variable_buf(),
                        m_trailer.fix_index_offset, m_start_row, m_end_row);
-    record_split_row( m_index_map64.middle_key() );
     m_index_stats.block_index_memory = m_index_map64.memory_used();
+    m_disk_usage = m_index_map64.disk_used() + 
+      (int64_t)((double)(m_file_length-m_trailer.fix_index_offset) *
+		m_index_map64.fraction_covered());
+    m_block_count = m_index_map64.index_entries();
   }
   else {
     m_index_map32.load(m_index_builder.fixed_buf(),
                        m_index_builder.variable_buf(),
                        m_trailer.fix_index_offset, m_start_row, m_end_row);
-    record_split_row( m_index_map32.middle_key() );
     m_index_stats.block_index_memory = m_index_map32.memory_used();
+    m_disk_usage = m_index_map32.disk_used() + 
+      (int64_t)((double)(m_file_length-m_trailer.fix_index_offset) *
+		m_index_map32.fraction_covered());
+    m_block_count = m_index_map32.index_entries();
   }
 
   m_index_builder.release_fixed_buf();
@@ -963,68 +1034,61 @@ bool CellStoreV6::may_contain(ScanContextPtr &scan_context) {
     return true;
   else if (m_trailer.filter_length == 0) // bloom filter is empty
     return false;
-  else if (m_bloom_filter == 0)
-    load_bloom_filter();
 
-  m_index_stats.bloom_filter_access_counter = ++Global::access_counter;
+  {
+    ScopedLock lock(m_mutex);
+    if (m_bloom_filter == 0)
+      load_bloom_filter();
 
-  switch (m_bloom_filter_mode) {
+    m_index_stats.bloom_filter_access_counter = ++Global::access_counter;
+
+    switch (m_bloom_filter_mode) {
     case BLOOM_FILTER_ROWS:
-      return may_contain(scan_context->start_row);
+      m_index_stats.bloom_filter_access_counter = ++Global::access_counter;
+      return m_bloom_filter->may_contain(scan_context->start_row.data(),
+                                         scan_context->start_row.size());
     case BLOOM_FILTER_ROWS_COLS:
-      if (may_contain(scan_context->start_row)) {
+      m_index_stats.bloom_filter_access_counter = ++Global::access_counter;
+      if (m_bloom_filter->may_contain(scan_context->start_row.data(),
+                                      scan_context->start_row.size())) {
         SchemaPtr &schema = scan_context->schema;
         size_t rowlen = scan_context->start_row.length();
+        uint8_t column_family_id;
+        const char *ptr;
         boost::scoped_array<char> rowcol(new char[rowlen + 2]);
         memcpy(rowcol.get(), scan_context->start_row.c_str(), rowlen + 1);
 
         foreach_ht(const char *col, scan_context->spec->columns) {
-          uint8_t column_family_id = schema->get_column_family(col)->id;
+          if ((ptr = strchr(col, ':')) != 0) {
+            String family(col, (size_t)(ptr-col));
+            column_family_id = schema->get_column_family(family.c_str())->id;
+          }
+          else
+            column_family_id = schema->get_column_family(col)->id;
+
           rowcol[rowlen + 1] = column_family_id;
 
-          if (may_contain(rowcol.get(), rowlen + 2))
+          m_index_stats.bloom_filter_access_counter = ++Global::access_counter;
+          if (m_bloom_filter->may_contain(rowcol.get(), rowlen + 2))
             return true;
         }
       }
       return false;
     default:
       HT_ASSERT(!"unpossible bloom filter mode!");
+    }
   }
   return false; // silence stupid compilers
 }
 
 
-bool CellStoreV6::may_contain(const void *ptr, size_t len) {
-
-  if (m_bloom_filter_mode == BLOOM_FILTER_DISABLED)
-    return true;
-  else if (m_trailer.filter_length == 0) // bloom filter is empty
-    return false;
-  else if (m_bloom_filter == 0)
-    load_bloom_filter();
-
-  m_index_stats.bloom_filter_access_counter = ++Global::access_counter;
-  bool may_contain = m_bloom_filter->may_contain(ptr, len);
-  return may_contain;
-}
-
-
 
 void CellStoreV6::display_block_info() {
+  ScopedLock lock(m_mutex);
   if (m_index_stats.block_index_memory == 0)
     load_block_index();
   if (m_64bit_index)
     m_index_map64.display();
   else
     m_index_map32.display();
-}
-
-
-
-void CellStoreV6::record_split_row(const SerializedKey key) {
-  if (key.ptr) {
-    std::string split_row = key.row();
-    if (split_row > m_start_row && split_row < m_end_row)
-      m_split_row = split_row;
-  }
 }

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,12 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Declarations for ConnectionInitializer.
+ * This file contains type declarations for ConnectionInitializer, an abstract
+ * base class for classes that handle connection initialization handshake.
+ */
+
 #ifndef HYPERTABLE_CONNECTIONINITIALIZER_H
 #define HYPERTABLE_CONNECTIONINITIALIZER_H
 
@@ -30,14 +36,38 @@ namespace Hypertable {
 
   class Event;
 
+  /** @addtogroup AsyncComm
+   *  @{
+   */
+
+  /** Driver interface for connection initialization handshake in ConnectionManager.
+   */
   class ConnectionInitializer : public ReferenceCount {
   public:
+
+    /** Creates a connection initialization message.
+     * @return Initialization message (freed by caller)
+     */
     virtual CommBuf *create_initialization_request() = 0;
+    
+    /** Process response to initialization message.
+     * @param event Pointer to event object holding response message
+     * @return <i>true</i> on success, <i>false</i> on failure
+     */
     virtual bool process_initialization_response(Event *event) = 0;
+
+    /** Command code (see CommHeader::command) for initialization response
+     * message.
+     * This method is used by the ConnectionManager to determine if a received
+     * message is part of the initialization handshake.
+     * @return Initialization command code
+     */
     virtual uint64_t initialization_command() = 0;
   };
-  typedef boost::intrusive_ptr<ConnectionInitializer> ConnectionInitializerPtr;
 
+  /// Smart pointer to ConnectionInitializer
+  typedef boost::intrusive_ptr<ConnectionInitializer> ConnectionInitializerPtr;
+  /** @}*/
 }
 
 #endif // HYPERTABLE_CONNECTIONINITIALIZER_H

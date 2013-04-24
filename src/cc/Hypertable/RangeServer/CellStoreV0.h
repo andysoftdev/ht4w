@@ -38,7 +38,6 @@
 #include "Common/DynamicBuffer.h"
 #include "Common/BloomFilter.h"
 #include "Common/BlobHashSet.h"
-#include "Common/Mutex.h"
 #include "Common/Filesystem.h"
 
 #include "Hypertable/Lib/BlockCompressionCodec.h"
@@ -65,8 +64,9 @@ namespace Hypertable {
     CellStoreV0(Filesystem *filesys);
     virtual ~CellStoreV0();
 
-    virtual void create(const char *fname, size_t max_entries, PropertiesPtr &,
-        const TableIdentifier *table_id=0);
+    virtual void create(const char *fname, size_t max_entries,
+                        PropertiesPtr &props,
+                        const TableIdentifier *table_id=0);
     virtual void add(const Key &key, const ByteString value);
     virtual void finalize(TableIdentifier *table_identifier);
     virtual void open(const String &fname, const String &start_row,
@@ -86,7 +86,6 @@ namespace Hypertable {
       return m_disk_usage;
     }
     virtual float compression_ratio() { return m_trailer.compression_ratio; }
-    virtual const char *get_split_row();
     virtual int64_t get_total_entries() { return m_trailer.total_entries; }
     virtual std::string &get_filename() { return m_filename; }
     virtual int get_file_id() { return m_file_id; }
@@ -117,14 +116,12 @@ namespace Hypertable {
 
   protected:
     void add_index_entry(const SerializedKey key, uint32_t offset);
-    void record_split_row(const SerializedKey key);
     void create_bloom_filter(bool is_approx = false);
     void load_index();
 
     typedef std::map<SerializedKey, uint32_t> IndexMap;
     typedef BlobHashSet<> BloomFilterItems;
 
-    Mutex                  m_mutex;
     Filesystem            *m_filesys;
     int32_t                m_fd;
     std::string            m_filename;
@@ -142,7 +139,6 @@ namespace Hypertable {
     ByteString             m_last_key;
     int64_t                m_file_length;
     int64_t                m_disk_usage;
-    std::string            m_split_row;
     int                    m_file_id;
     float                  m_uncompressed_data;
     float                  m_compressed_data;

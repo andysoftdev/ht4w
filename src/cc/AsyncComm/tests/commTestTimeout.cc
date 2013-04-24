@@ -177,12 +177,13 @@ int main(int argc, char **argv) {
   Comm *comm;
   int error;
   EventPtr event_ptr;  
+  TestHarness harness("commTestTimeout");
   bool golden = false;
   ResponseHandler *resp_handler = new ResponseHandler();
   DispatchHandlerPtr dhp(resp_handler);
+  int diff_exit = 0;
 
-  Config::init(argc, argv);
-  TestHarness harness("commTestTimeout");
+  Config::init(0, 0);
 
   {
     ServerLauncher slauncher;
@@ -233,9 +234,11 @@ int main(int argc, char **argv) {
     poll(0, 0, 8000);
 
     if (!golden)
-      return harness.validate("commTestTimeout.golden");
+      diff_exit = harness.validate("commTestTimeout.golden");
   }
 
+  if (!golden)
+    _exit(diff_exit);
   harness.regenerate_golden_file("commTestTimeout.golden");
   return 0;
 }

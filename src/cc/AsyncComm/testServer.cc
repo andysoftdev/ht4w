@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,6 +28,9 @@
 extern "C" {
 #include <arpa/inet.h>
 #include <poll.h>
+#ifndef _WIN32
+#include <pthread.h>
+#endif
 #include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -91,11 +94,11 @@ namespace {
 
     virtual void run() {
       CommHeader header;
-      header.initialize_from_request_header(m_event_ptr->header);
-      CommBufPtr cbp(new CommBuf(header, m_event_ptr->payload_len));
-      cbp->append_bytes((uint8_t *)m_event_ptr->payload,
-                        m_event_ptr->payload_len);
-      int error = m_comm->send_response(m_event_ptr->addr, cbp);
+      header.initialize_from_request_header(m_event->header);
+      CommBufPtr cbp(new CommBuf(header, m_event->payload_len));
+      cbp->append_bytes((uint8_t *)m_event->payload,
+                        m_event->payload_len);
+      int error = m_comm->send_response(m_event->addr, cbp);
       if (error != Error::OK) {
         HT_ERRORF("Comm::send_response returned %s", Error::get_text(error));
       }

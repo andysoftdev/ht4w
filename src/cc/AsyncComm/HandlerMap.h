@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,6 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Declarations for HandlerMap.
+ * This file contains type declarations for HandlerMap, a data structure
+ * for mapping socket addresses to I/O handlers.
  */
 
 #ifndef HYPERTABLE_HANDLERMAP_H
@@ -44,344 +50,406 @@
 
 namespace Hypertable {
 
+  /** @addtogroup AsyncComm
+   *  @{
+   */
+
+  class IOHandlerAccept;
+
+  /** Data structure for mapping socket addresses to I/O handlers.
+   * An I/O handler is associated with each socket connection and is used
+   * to handle polling events on the socket descriptor.  Examples incude
+   * writing a message to the socket, reading a message from the socket,
+   * or completing a connection request.  This class maintains three maps,
+   * one for TCP socket connections, UDP socket connections, and one for
+   * accept sockets.  The Comm methods use this map to locate the I/O
+   * handler for a given address.
+   */
   class HandlerMap : public ReferenceCount {
 
   public:
 
-  HandlerMap() : m_proxies_loaded(false) { }
+    /** Constructor. */
+    HandlerMap() : m_proxies_loaded(false) { }
 
-    int32_t insert_handler(IOHandler *handler) {
-      ScopedLock lock(m_mutex);
-      if (m_handler_map.find(handler->get_address()) != m_handler_map.end())
-        return Error::COMM_ALREADY_CONNECTED;
-      m_handler_map[handler->get_address()] = handler;
-      return Error::OK;
-    }
-
-    int32_t insert_handler(IOHandlerData *handler) {
-      ScopedLock lock(m_mutex);
-      if (m_handler_map.find(handler->get_address()) != m_handler_map.end())
-        return Error::COMM_ALREADY_CONNECTED;
-      m_handler_map[handler->get_address()] = handler;
-      if (ReactorFactory::proxy_master) {
-	CommBufPtr comm_buf = m_proxy_map.create_update_message();
-	comm_buf->write_header_and_reset();
-	return handler->send_message(comm_buf);
-      }
-      return Error::OK;
-    }
-
-    int set_alias(const InetAddr &addr, const InetAddr &alias) {
-      ScopedLock lock(m_mutex);
-      SockAddrMap<IOHandlerPtr>::iterator iter;
-
-      if (m_handler_map.find(alias) != m_handler_map.end())
-        return Error::COMM_CONFLICTING_ADDRESS;
-
-      if ((iter = m_handler_map.find(addr)) == m_handler_map.end())
-        return Error::COMM_NOT_CONNECTED;
-
-      (*iter).second->set_alias(alias);
-      m_handler_map[alias] = (*iter).second;
-
-      return Error::OK;
-    }
-
-    int add_proxy(const String &proxy, const String &hostname, const InetAddr &addr) {
-      ScopedLock lock(m_mutex);
-      ProxyMapT new_map, invalidated_map;
-
-      m_proxy_map.update_mapping(proxy, hostname, addr, invalidated_map, new_map);
-
-      foreach_ht(const ProxyMapT::value_type &v, invalidated_map) {
-	IOHandler *handler = lookup_handler(v.second.addr);
-	if (handler)
-	  handler->set_proxy("");
-      }
-
-      foreach_ht(const ProxyMapT::value_type &v, new_map) {
-	IOHandler *handler = lookup_handler(v.second.addr);
-	if (handler)
-	  handler->set_proxy(v.first);
-      }
-
-      return propagate_mappings(new_map);
-    }
-
-    /**
-     * Returns the proxy map
-     *
-     * @param proxy_map reference to proxy map to be filled in
+    /** Inserts an accept handler.
+     * Uses IOHandler#m_local_addr as the key
+     * @param handler Accept I/O handler to insert
+     * @return Error::OK
      */
-    void get_proxy_map(ProxyMapT &proxy_map) {
-      m_proxy_map.get_map(proxy_map);
+    int32_t insert_handler(IOHandlerAccept *handler);
+
+    /** Inserts a data (TCP) handler.
+     * Uses IOHandler#m_addr as the key.  If program is the proxy master,
+     * a proxy map update message with the new mapping is broadcast to
+     * all connections.
+     * @param handler Data (TCP) I/O handler to insert
+     * @return Error::OK on success, or Error::COMM_BROKEN_CONNECTION on
+     * proxy map broadcast failure.
+     */
+    int32_t insert_handler(IOHandlerData *handler);
+
+    /** Inserts a datagram (UDP) handler.
+     * Uses IOHandler#m_local_addr as the key.
+     * @param handler Datagram (UDP) I/O handler to insert
+     * @return Error::OK
+     */
+    int32_t insert_handler(IOHandlerDatagram *handler);
+
+    /** Checks out accept I/O handler associated with <code>addr</code>.
+     * First translates <code>addr</code> to socket address and then
+     * looks up translated address in accept map.  If an entry is found,
+     * then its reference count is incremented and it is returned
+     * in <code>handler</code>.
+     * @param addr Connection address
+     * @param handler Address of handler pointer returned
+     * @return Error::OK on success, Error::COMM_INVALID_PROXY if
+     * <code>addr</code> is of type CommAddress::PROXY and no translation
+     * exists, or Error::COMM_NOT_CONNECTED if no mapping found for
+     * translated address.
+     */
+    int checkout_handler(const CommAddress &addr, IOHandlerAccept **handler);
+
+    /** Checks out data (TCP) I/O handler associated with <code>addr</code>.
+     * First translates <code>addr</code> to socket address and then
+     * looks up translated address in data map.  If an entry is found,
+     * then its reference count is incremented and it is returned
+     * in <code>handler</code>.
+     * @param addr Connection address
+     * @param handler Address of handler pointer returned
+     * @return Error::OK on success, Error::COMM_INVALID_PROXY if
+     * <code>addr</code> is of type CommAddress::PROXY and no translation
+     * exists, or Error::COMM_NOT_CONNECTED if no mapping found for
+     * translated address.
+     */
+    int checkout_handler(const CommAddress &addr, IOHandlerData **handler);
+
+    /** Checks out datagram (UDP) I/O handler associated with <code>addr</code>.
+     * First translates <code>addr</code> to socket address and then
+     * looks up translated address in datagram map.  If an entry is found,
+     * then its reference count is incremented and it is returned
+     * in <code>handler</code>.
+     * @param addr Connection address
+     * @param handler Address of handler pointer returned
+     * @return Error::OK on success, Error::COMM_INVALID_PROXY if
+     * <code>addr</code> is of type CommAddress::PROXY and no translation
+     * exists, or Error::COMM_NOT_CONNECTED if no mapping found for
+     * translated address.
+     */
+    int checkout_handler(const CommAddress &addr, IOHandlerDatagram **handler);
+
+    /** Checks to see if <code>addr</code> is contained in map.
+     * First translates <code>addr</code> to socket address and then
+     * looks up translated address in data map.
+     * @param addr Connection address
+     * @return Error::OK if found, Error::COMM_INVALID_PROXY if
+     * <code>addr</code> is of type CommAddress::PROXY and no translation
+     * exists, or Error::COMM_NOT_CONNECTED if no mapping found for
+     * translated address.
+     */
+    int contains_data_handler(const CommAddress &addr);
+
+#ifdef _WIN32
+
+    /** Increments the reference count of <code>handler</code>.
+     * The incrementing of a handler's reference count is done by this method
+     * with #m_mutex locked which avoids a race condition between checking
+     * out handlers and purging them.
+     * @param handler Pointer to I/O handler for which to increment reference
+     * count
+     */
+    void increment_reference_count(IOHandler *handler);
+
+#endif
+
+    /** Decrements the reference count of <code>handler</code>.
+     * The decrementing of a handler's reference count is done by this method
+     * with #m_mutex locked which avoids a race condition between checking
+     * out handlers and purging them.
+     * @param handler Pointer to I/O handler for which to decrement reference
+     * count
+     */
+    void decrement_reference_count(IOHandler *handler);
+
+    /** Sets an alias address for an existing TCP address in map.
+     * RangeServers listen on a well-known port defined by the
+     * <code>Hypertable.RangeServer.Port</code> configuration property
+     * (default = 38060).  However, RangeServers connect to the master using
+     * an ephemeral port due to a bind conflict with its listen socket.  So that
+     * the Master can refer to the RangeServer using the well-known port, an
+     * alias address can be registered and subsequently used to reference the
+     * connection.  This method adds an entry to the data (TCP) map for
+     * <code>alias</code> which references the IOHandlerData object previously
+     * registered under <code>addr</code>.
+     * @param addr Address of previously registered data handler
+     * @param alias Alias address to add
+     * @return Error::OK on success, or Error::COMM_CONFLICTING_ADDRESS if
+     * <code>alias</code> is already in the data map, or
+     * Error::COMM_NOT_CONNECTED if <code>addr</code> is not found in the data
+     * map.
+     */
+    int set_alias(const InetAddr &addr, const InetAddr &alias);
+
+    /** Removes <code>handler</code> from map.  This method removes
+     * <code>handler</code> from the data, datagram, or accept map, depending
+     * on the type of handler.  If <code>handler</code> refers to a data
+     * handler, then its alias address entry is also removed from the data map.
+     * @param handler IOHandler to remove
+     * @return Error::OK on success, or Error::COMM_NOT_CONNECTED if
+     * <code>handler</code> is not found in any of the maps.
+     */
+    int remove_handler(IOHandler *handler);
+
+    /** Decomissions <code>handler</code>.  Since handler pointers are passed
+     * into the polling mechanism and asynchronously referenced by reactor
+     * threads, care must be taken to not delete a handler until it has
+     * be removed from the polling mechanism.  This is accomplished by
+     * introducing a two-step removal process.  First a handler is decomissioned
+     * (by this method) by removing it from the associated map, adding it to the
+     * #m_decomissioned_handlers set and marking it decomissioned.  Once there
+     * are no more references to the handler, it may be safely removed.  The
+     * removal is accomplished via #purge_handler which is called by the reactor
+     * thread after it has been removed from the polling interface.
+     * @param handler Pointer to IOHandler to decomission
+     */
+    void decomission_handler_unlocked(IOHandler *handler);
+
+    /** Decomissions <code>handler</code> with #m_mutex locked.
+     * This method locks #m_mutex and calls #decomission_handler_unlocked
+     * @param handler Pointer to IOHandler to decomission
+     */
+    void decomission_handler(IOHandler *handler) {
+      ScopedRecLock lock(m_mutex);
+      decomission_handler_unlocked(handler);
     }
 
+    /** Decomissions all handlers.  This method is called by the ~Comm to
+     * decomission all of the handlers in the map.
+     * @note It doesn't look like the Comm object ever gets deleted and
+     * therefore this method never gets called.  See issue 1031.
+     */
+    void decomission_all();
 
-    void update_proxies(const char *message, size_t message_len) {
-      ScopedLock lock(m_mutex);
-      String mappings(message, message_len);
-      ProxyMapT new_map, invalidated_map;
+    /** Determines if <code>handler</code> can be destoryed.  
+     * @return <i>true</i> if <code>handler</code> is decomissioned and
+     * has a reference count of 0.
+     */
+    bool destroy_ok(IOHandler *handler);
 
-      HT_ASSERT(!ReactorFactory::proxy_master);
+    /** Translates <code>proxy_addr</code> to its corresponding IPV4 address.
+     * This method fetches the mapping for <code>proxy_addr</code> from
+     * #m_proxy_map and returns the associated IPV4 address in
+     * <code>addr</code>.
+     * @param proxy_addr Reference to proxy address
+     * @param addr Reference to return IPV4 address
+     * @return <i>true</i> if mapping found and address translated, <i>false</i>
+     * if not.
+     */
+    bool translate_proxy_address(const CommAddress &proxy_addr, CommAddress &addr);
 
-      m_proxy_map.update_mappings(mappings, invalidated_map, new_map);
+    /** Purges (removes) <code>handler</code>.  This method removes
+     * <code>handler</code> from the #m_decomissioned_handlers set, signals
+     * #m_cond if #m_decomissioned_handlers becomes empty, calls
+     * <code>hander->disconnect()</code>, and then deletes the handler.
+     * This method must only be called from a reactor thread after the handler
+     * has been removed from the polling interface and #destroy_ok returns
+     * true for the handler.
+     * @param handler Handler to purge
+     */
+    void purge_handler(IOHandler *handler);
 
-      foreach_ht(const ProxyMapT::value_type &v, invalidated_map) {
-	IOHandler *handler = lookup_handler(v.second.addr);
-	if (handler)
-	  handler->set_proxy("");
-      }
-
-      foreach_ht(const ProxyMapT::value_type &v, new_map) {
-	IOHandler *handler = lookup_handler(v.second.addr);
-	if (handler)
-	  handler->set_proxy(v.first);
-      }
-
-      m_proxies_loaded = true;
-      m_cond.notify_all();
-    }
-
-    bool wait_for_proxy_load(Timer &timer) {
-      ScopedLock lock(m_mutex);
-      boost::xtime drop_time;
-
-      timer.start();
-
-      while (!m_proxies_loaded) {
-        boost::xtime_get(&drop_time, boost::TIME_UTC_);
-        xtime_add_millis(drop_time, timer.remaining());
-        if (!m_cond.timed_wait(lock, drop_time))
-          return false;
-      }
-      return true;
-    }
-
-    int contains_data_handler(const CommAddress &addr) {
-      IOHandlerDataPtr data_handler;
-      return lookup_data_handler(addr, data_handler);
-    }
-
-    int lookup_data_handler(const CommAddress &addr,
-			    IOHandlerDataPtr &io_handler_data) {
-      ScopedLock lock(m_mutex);
-      InetAddr inet_addr;
-      int error;
-
-      if ((error = translate_address(addr, &inet_addr)) != Error::OK)
-	return error;
-
-      IOHandler *handler = lookup_handler(inet_addr);
-      if (handler) {
-        io_handler_data = dynamic_cast<IOHandlerData *>(handler);
-        if (io_handler_data)
-          return Error::OK;
-      }
-      return Error::COMM_NOT_CONNECTED;
-    }
-
-    int32_t insert_datagram_handler(IOHandler *handler) {
-      ScopedLock lock(m_mutex);
-      if (m_datagram_handler_map.find(handler->get_local_address())
-          != m_datagram_handler_map.end())
-        return Error::COMM_ALREADY_CONNECTED;        
-      m_datagram_handler_map[handler->get_local_address()] = handler;
-      return Error::OK;
-    }
-
-    int lookup_datagram_handler(const CommAddress &addr,
-				IOHandlerDatagramPtr &io_handler_dg) {
-      ScopedLock lock(m_mutex);
-      InetAddr inet_addr;
-      int error;
-
-      if ((error = translate_address(addr, &inet_addr)) != Error::OK)
-	return error;
-
-      SockAddrMap<IOHandlerPtr>::iterator iter =
-	m_datagram_handler_map.find(inet_addr);
-
-      if (iter == m_datagram_handler_map.end())
-	return Error::COMM_NOT_CONNECTED;
-
-      io_handler_dg = (IOHandlerDatagram *)(*iter).second.get();
-
-      return Error::OK;
-    }
-
-    int remove_handler(const CommAddress &addr, IOHandlerPtr &handler) {
-      SockAddrMap<IOHandlerPtr>::iterator iter;
-      InetAddr inet_addr;
-      int error;
-
-      if ((error = translate_address(addr, &inet_addr)) != Error::OK)
-	return error;
-
-      if ((iter = m_handler_map.find(inet_addr)) != m_handler_map.end()) {
-        handler = (*iter).second;
-        m_handler_map.erase(iter);
-        InetAddr other = handler->get_address();
-
-	if (inet_addr == other)
-	  handler->get_alias(&other);
-
-        if (other.sin_port != 0) {
-          if ((iter = m_handler_map.find(other)) != m_handler_map.end())
-            m_handler_map.erase(iter);
-          else {
-            HT_ERRORF("Unable to find mapping for %s in HandlerMap",
-                      InetAddr::format(other).c_str());
-          }
-        }
-      }
-      else if ((iter = m_datagram_handler_map.find(inet_addr))
-                != m_datagram_handler_map.end()) {
-        handler = (*iter).second;
-        m_datagram_handler_map.erase(iter);
-      }
-      else
-	return Error::COMM_NOT_CONNECTED;
-      return Error::OK;
-    }
-
-    bool decomission_handler(const CommAddress &addr, IOHandlerPtr &handler) {
-      ScopedLock lock(m_mutex);
-
-      if (remove_handler(addr, handler) == Error::OK) {
-        m_decomissioned_handlers.insert(handler);
-        return true;
-      }
-      return false;
-    }
-
-    bool decomission_handler(const CommAddress &addr) {
-      IOHandlerPtr handler;
-      return decomission_handler(addr, handler);
-    }
-
-    bool translate_proxy_address(const CommAddress &proxy_addr, CommAddress &addr) {
-      InetAddr inet_addr;
-      String hostname;
-      HT_ASSERT(proxy_addr.is_proxy());
-      if (!m_proxy_map.get_mapping(proxy_addr.proxy, hostname, inet_addr))
-        return false;
-      addr.set_inet(inet_addr);
-      return true;
-    }
-
-    void purge_handler(IOHandler *handler) {
-      ScopedLock lock(m_mutex);
-      m_decomissioned_handlers.erase(handler);
-      if (m_decomissioned_handlers.empty())
-        m_cond.notify_all();
-    }
-
-    void decomission_all(std::set<IOHandler *> &handlers) {
-      ScopedLock lock(m_mutex);
-      SockAddrMap<IOHandlerPtr>::iterator iter;
-
-      // TCP handlers
-      for (iter = m_handler_map.begin(); iter != m_handler_map.end(); ++iter) {
-        m_decomissioned_handlers.insert((*iter).second);
-        handlers.insert((*iter).second.get());
-      }
-      m_handler_map.clear();
-
-      // UDP handlers
-      for (iter = m_datagram_handler_map.begin();
-           iter != m_datagram_handler_map.end(); ++iter) {
-        m_decomissioned_handlers.insert((*iter).second);
-        handlers.insert((*iter).second.get());
-      }
-      m_datagram_handler_map.clear();
-    }
-
-    void wait_for_empty() {
-      ScopedLock lock(m_mutex);
-      if (!m_decomissioned_handlers.empty())
-        m_cond.wait(lock);
-    }
+    /** Waits for map to become empty.  This method assumes that all of the
+     * handlers in the map have been decomissioned.  It waits for the
+     * #m_decomissioned_handlers set to become empty, waiting on #m_cond
+     * until it does.
+     */
+    void wait_for_empty();
 
     template<typename duration_type>
     void wait_for_empty(const duration_type& wait_duration) {
-      ScopedLock lock(m_mutex);
+      ScopedRecLock lock(m_mutex);
       if (!m_decomissioned_handlers.empty())
         m_cond.timed_wait(lock, wait_duration);
     }
 
-    int propagate_mappings(ProxyMapT &mappings) {
-      int last_error = Error::OK;
+    /** Adds or updates proxy information.  This method adds or updates proxy
+     * information in #m_proxy_map.  For the data handler to which
+     * <code>addr</code> refers, it updates its proxy name via a call to
+     * IOHandler::set_proxy and then calls #propagate_proxy_map with the newly
+     * added/updated proxy information to update all active data connections
+     * with the new proxy information.
+     * @note This method should only be called by the proxy master.
+     * @param proxy Proxy name of new/updated mapping
+     * @param hostname Hostname of new/updated mapping
+     * @param addr InetAddr of new/updated mapping
+     * @return Error::OK on success, or Error::COMM_NOT_CONNECTED or
+     * Error::COMM_BROKEN_CONNECTION if an error was encountered while
+     * propagating the new mapping information over any of the active data
+     * connections.
+     */
+    int add_proxy(const String &proxy, const String &hostname, const InetAddr &addr);
 
-      if (mappings.empty())
-	return Error::OK;
+    /** Removes a proxy name from the proxy map.  This method removes
+     * <code>proxy</code> from #m_proxy_map and then calls #propagate_proxy_map
+     * to propagate the removed mapping information to all connections.
+     * @note This method should only be called by the proxy master.
+     * @param proxy Proxy name to remove
+     * @return Error::OK on success, or Error::COMM_NOT_CONNECTED or
+     * Error::COMM_BROKEN_CONNECTION if an error was encountered while
+     * propagating the new mapping information over any of the active data
+     * connections.
+     */
+    int remove_proxy(const String &proxy);
 
-      SockAddrMap<IOHandlerPtr>::iterator iter;
-      String mapping;
+    /** Returns the proxy map
+     * @param proxy_map reference to returned proxy map
+     */
+    void get_proxy_map(ProxyMapT &proxy_map);
 
-      foreach_ht(const ProxyMapT::value_type &v, mappings)
-	mapping += v.first + "\t" + v.second.hostname + "\t" + InetAddr::format(v.second.addr) + "\n";
+    /** Updates the proxy map with a proxy map update message received from the
+     * proxy master.  If any of the proxy names have changed, the corresponding
+     * data handlers are updated with a call to IOHandler::set_proxy.  After
+     * the proxy map has been successfuly updated, the #m_proxies_loaded flag is
+     * set to <i>true</i> and the #m_cond_proxy condition variable is signalled.
+     * @param message Pointer to proxy map update message
+     * @param message_len Length of proxy map update message
+     */
+    void update_proxy_map(const char *message, size_t message_len);
 
-      uint8_t *buffer = new uint8_t [ mapping.length() + 1 ];
-      strcpy((char *)buffer, mapping.c_str());
-      boost::shared_array<uint8_t> payload(buffer);
-      CommHeader header;
-      header.flags |= CommHeader::FLAGS_BIT_PROXY_MAP_UPDATE;
-      for (iter = m_handler_map.begin(); iter != m_handler_map.end(); ++iter) {
-	IOHandlerData *io_handler_data = dynamic_cast<IOHandlerData *>((*iter).second.get());
-	if (io_handler_data) {
-	  CommBufPtr comm_buf = new CommBuf(header, 0, payload, mapping.length()+1);
-	  comm_buf->write_header_and_reset();
-	  int error = io_handler_data->send_message(comm_buf);
-	  if (error != Error::OK) {
-	    HT_ERRORF("Unable to propagate proxy mappings to %s - %s",
-		      InetAddr(io_handler_data->get_address()).format().c_str(),
-		      Error::get_text(error));
-	    last_error = error;
-	  }
-	}
-      }
-      return last_error;
-    }
+    /** Waits for proxy map to get updated from a proxy map update message
+     * received from the master.  This method waits on #m_cond_proxy for
+     * #m_proxies_loaded to become <i>true</i> or <code>timer</code> expires.
+     * @param timer Deadline timer
+     * @return <i>true</i> if proxy map was loaded, <i>false</i> if
+     * <code>timer</code> expired before proxy map was loaded.
+     */
+    bool wait_for_proxy_map(Timer &timer);
 
   private:
 
-    /**
-     * Translates CommAddress into INET socket address
+    /** Propagates proxy map information in <code>mappings</code> to
+     * all active data (TCP) connections.  This method creates a proxy
+     * map update message from the mappings in <code>mappings</code>.
+     * The update message is just a list of mapping entries in the
+     * following format:
+     * @verbatim <proxy> '\t' <hostname> '\t' <addr> '\n' @endverbatim
+     * Then the proxy map update message is sent via each of the handlers in
+     * the data (TCP) handler map.  If an error is encountered on a
+     * handler when trying to send the proxy map, it will be decomissioned.
+     * @param mappings Proxy map information to propagate.
+     * @return Error::OK on success, or Error::COMM_NOT_CONNECTED or
+     * Error::COMM_BROKEN_CONNECTION if an error was encountered while
+     * sending the proxy map update message over any of the active data
+     * connections.
      */
-    int translate_address(const CommAddress &addr, InetAddr *inet_addr) {
-      String hostname;
+    int propagate_proxy_map(ProxyMapT &mappings);
 
-      HT_ASSERT(addr.is_set());
+    /** Translates <code>addr</code> to an InetAddr (IP address).
+     * If <code>addr</code> is of type CommAddress::PROXY, then the
+     * #m_proxy_map is consulted to translate the proxy name to an IP address,
+     * otherwise if <code>addr</code> is of type CommAddress::INET, the IP
+     * address held in <code>addr</code> is copied to <code>inet_addr</code>.
+     * @param addr Address to translate
+     * @param inet_addr Pointer to valid InetAddr object to hold translated
+     * address
+     * @param Error::OK on success, Error::COMM_INVALID_PROXY if
+     * <code>addr</code> is of type CommAddress::PROXY and no mapping is found.
+     */
+    int translate_address(const CommAddress &addr, InetAddr *inet_addr);
 
-      if (addr.is_proxy()) {
-	if (!m_proxy_map.get_mapping(addr.proxy, hostname, *inet_addr))
-	  return Error::COMM_INVALID_PROXY;
-      }
-      else
-	memcpy(inet_addr, &addr.inet, sizeof(InetAddr));
+    /** Removes <code>handler</code> from map without locking #m_mutex.  This
+     * method removes <code>handler</code> from the data, datagram, or accept
+     * map, depending on the type of handler.  If <code>handler</code> refers to
+     * a data handler, then its alias address entry is also removed from the
+     * data map.
+     * @param handler IOHandler to remove
+     * @return Error::OK on success, or Error::COMM_NOT_CONNECTED if
+     * <code>handler</code> is not found in any of the maps.
+     */
+    int remove_handler_unlocked(IOHandler *handler);
 
-      return Error::OK;
-    }
+    /** Finds <i>accept</i> I/O handler associated with <code>addr</code>.
+     * This method looks up <code>addr</code> in #m_accept_handler_map and
+     * returns the handler, if found.
+     * @param addr Address of accept handler to locate
+     * @return Pointer to IOHandlerAccept object associated with
+     * <code>addr</code>, or 0 if not found.
+     */
+    IOHandlerAccept *lookup_accept_handler(const InetAddr &addr);
 
-    IOHandler *lookup_handler(const InetAddr &addr) {
-      SockAddrMap<IOHandlerPtr>::iterator iter = m_handler_map.find(addr);
-      if (iter == m_handler_map.end())
-        return 0;
-      return (*iter).second.get();
-    }
+    /** Finds <i>data (TCP)</i> I/O handler associated with <code>addr</code>.
+     * This method looks up <code>addr</code> in #m_data_handler_map and
+     * returns the handler, if found.
+     * @param addr Address of data handler to locate
+     * @return Pointer to IOHandlerData object associated with
+     * <code>addr</code>, or 0 if not found.
+     */
+    IOHandlerData *lookup_data_handler(const InetAddr &addr);
 
-    Mutex                      m_mutex;
-    boost::condition           m_cond;
-    SockAddrMap<IOHandlerPtr>  m_handler_map;
-    SockAddrMap<IOHandlerPtr>  m_datagram_handler_map;
-    std::set<IOHandlerPtr, ltiohp>  m_decomissioned_handlers;
-    ProxyMap                   m_proxy_map;
-    bool                       m_proxies_loaded;
+    /** Finds <i>datagram</i> I/O handler associated with <code>addr</code>.
+     * This method looks up <code>addr</code> in #m_datagram_handler_map and
+     * returns the handler, if found.
+     * @param addr Address of datagram handler to locate
+     * @return Pointer to IOHandlerDatagram object associated with
+     * <code>addr</code>, or 0 if not found.
+     */
+    IOHandlerDatagram *lookup_datagram_handler(const InetAddr &addr);
+
+    /// %Mutex for serializing concurrent access
+    RecMutex m_mutex;
+
+    /// Condition variable for signalling empty map
+    boost::condition m_cond;
+
+    /// Condition variable for signalling proxy map load
+    boost::condition m_cond_proxy;
+
+    /// Accept map (InetAddr-to-IOHandlerAccept)
+    SockAddrMap<IOHandlerAccept *> m_accept_handler_map;
+
+    /// Data (TCP) map (InetAddr-to-IOHandlerData)
+    SockAddrMap<IOHandlerData *> m_data_handler_map;
+
+    /// Datagram (UDP) map (InetAddr-to-IOHandlerDatagram)
+    SockAddrMap<IOHandlerDatagram *> m_datagram_handler_map;
+
+    /// Decomissioned handler set
+    std::set<IOHandler *> m_decomissioned_handlers;
+
+    /// Proxy map
+    ProxyMap m_proxy_map;
+
+    /// Flag indicating if proxy map has been loaded
+    bool m_proxies_loaded;
+
   };
+
+  /// Smart pointer to HandlerMap
   typedef boost::intrusive_ptr<HandlerMap> HandlerMapPtr;
 
-}
+#ifdef _WIN32
 
+  inline void intrusive_ptr_add_ref(IOHandler *handler) {
+    HandlerMap* handler_map = handler->m_handler_map;
+    if (handler_map)
+      handler_map->increment_reference_count(handler);
+    else
+      handler->increment_reference_count(handler_map);
+  }
+
+  inline void intrusive_ptr_release(IOHandler *handler) {
+    HandlerMap* handler_map = handler->m_handler_map;
+    if (handler_map)
+      handler_map->decrement_reference_count(handler);
+    else
+      handler->decrement_reference_count();
+  }
+
+  typedef boost::intrusive_ptr<IOHandler> IOHandlerPtr;
+
+#endif
+
+  /** @}*/
+}
 
 #endif // HYPERTABLE_HANDLERMAP_H

@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "Common/Error.h"
-#include "Common/StringExt.h"
+#include "Common/String.h"
 
 #include "Table.h"
 #include "TableScannerAsync.h"
@@ -41,7 +41,7 @@ using namespace Hypertable;
  *
  */
 TableScannerAsync::TableScannerAsync(Comm *comm, 
-      ApplicationQueuePtr &app_queue, Table *table,
+      ApplicationQueueInterfacePtr &app_queue, Table *table,
       RangeLocatorPtr &range_locator, const ScanSpec &scan_spec, 
       uint32_t timeout_ms, ResultCallback *cb, int flags)
   : m_bytes_scanned(0), m_current_scanner(0), m_outstanding(0), 
@@ -217,7 +217,7 @@ void TableScannerAsync::add_index_row(ScanSpecBuilder &ssb, const char *row)
                     ri.end, ri.end_inclusive);
 }
 
-void TableScannerAsync::init(Comm *comm, ApplicationQueuePtr &app_queue, 
+void TableScannerAsync::init(Comm *comm, ApplicationQueueInterfacePtr &app_queue, 
         Table *table, RangeLocatorPtr &range_locator, 
         const ScanSpec &scan_spec, uint32_t timeout_ms, ResultCallback *cb)
 {
@@ -393,7 +393,7 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
   if (m_error != Error::OK || cancelled) {
     maybe_callback_error(scanner_id, next);
     if (next && scanner_id == m_current_scanner)
-      move_to_next_interval_scanner(scanner_id, cancelled);
+      move_to_next_interval_scanner(scanner_id);
     return;
   }
   else if (abort) {
@@ -403,10 +403,10 @@ void TableScannerAsync::handle_error(int scanner_id, int error, const String &er
     HT_ERROR_OUT << e << HT_END;
     maybe_callback_error(scanner_id, next);
     if (next && scanner_id == m_current_scanner)
-      move_to_next_interval_scanner(scanner_id, cancelled);
+      move_to_next_interval_scanner(scanner_id);
   }
   else if (next && scanner_id == m_current_scanner) {
-    move_to_next_interval_scanner(scanner_id, cancelled);
+    move_to_next_interval_scanner(scanner_id);
   }
 }
 
@@ -427,7 +427,7 @@ void TableScannerAsync::handle_timeout(int scanner_id, const String &error_msg, 
   m_error = Error::REQUEST_TIMEOUT;
   maybe_callback_error(scanner_id, next);
   if (next && scanner_id == m_current_scanner)
-    move_to_next_interval_scanner(scanner_id, cancelled);
+    move_to_next_interval_scanner(scanner_id);
 
 }
 
@@ -436,6 +436,7 @@ void TableScannerAsync::handle_result(int scanner_id, EventPtr &event, bool is_c
   bool cancelled = is_cancelled();
   ScopedLock lock(m_mutex);
   ScanCellsPtr cells;
+
   // abort interval scanners if we've seen an error previously or scanned has been cancelled
   bool abort = (m_error != Error::OK || cancelled);
 
@@ -468,13 +469,13 @@ void TableScannerAsync::handle_result(int scanner_id, EventPtr &event, bool is_c
     }
 
     if (next)
-      move_to_next_interval_scanner(current_scanner, cancelled);
+      move_to_next_interval_scanner(current_scanner);
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
     m_error = e.code();
     m_error_msg = e.what();
-    next = m_interval_scanners[current_scanner]->has_outstanding_requests();
+    next = !m_interval_scanners[current_scanner]->has_outstanding_requests();
     maybe_callback_error(current_scanner, next);
     throw;
   }
@@ -522,7 +523,7 @@ void TableScannerAsync::maybe_callback_ok(int scanner_id, bool next, bool do_cal
     m_cb->scan_ok(this, cells);
   }
 
-  if (eos) {
+  if (m_outstanding==0) {
     m_cb->deregister_scanner(this);
     m_cb->decrement_outstanding();
     m_cond.notify_all();
@@ -539,8 +540,9 @@ String TableScannerAsync::get_table_name() const {
   return m_table->get_name();
 }
 
-void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool cancelled) {
+void TableScannerAsync::move_to_next_interval_scanner(int current_scanner) {
   bool next = true;
+  bool cancelled = is_cancelled();
   bool do_callback;
   ScanCellsPtr cells;
   bool abort = cancelled || (m_error != Error::OK);
@@ -562,7 +564,8 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool 
       // or failed with an error
       if (next 
           && m_outstanding==1 
-          && abort) {
+          && ((cancelled && m_error == Error::OK)
+            || m_error != Error::OK)) {
         do_callback = true;
         cells = new ScanCells;
       }
@@ -581,3 +584,4 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner, bool 
     m_current_scanner = (int)m_interval_scanners.size() - 1;
   }
 }
+

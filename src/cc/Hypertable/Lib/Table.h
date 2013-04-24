@@ -25,7 +25,7 @@
 #include "Common/ReferenceCount.h"
 #include "Common/Mutex.h"
 
-#include "AsyncComm/ApplicationQueue.h"
+#include "AsyncComm/ApplicationQueueInterface.h"
 
 #include "NameIdMapper.h"
 #include "Schema.h"
@@ -71,7 +71,7 @@ namespace Hypertable {
     Table(PropertiesPtr &, ConnectionManagerPtr &, Hyperspace::SessionPtr &,
           NameIdMapperPtr &namemap, const String &name, int32_t flags=0);
     Table(PropertiesPtr &, RangeLocatorPtr &, ConnectionManagerPtr &,
-          Hyperspace::SessionPtr &, ApplicationQueuePtr &, NameIdMapperPtr &,
+          Hyperspace::SessionPtr &, ApplicationQueueInterfacePtr &, NameIdMapperPtr &,
           const String &name, int32_t flags, uint32_t default_timeout_ms);
     virtual ~Table();
 
@@ -91,6 +91,7 @@ namespace Hypertable {
     /**
      * Creates an asynchronous mutator on this table
      *
+     * @param cb Pointer to result callback
      * @param timeout_ms maximum time in milliseconds to allow
      *        mutator methods to execute before throwing an exception
      * @param flags mutator flags
@@ -105,7 +106,7 @@ namespace Hypertable {
      * @param scan_spec scan specification
      * @param timeout_ms maximum time in milliseconds to allow
      *        scanner methods to execute before throwing an exception
-     * @param scanner flags
+     * @param flags scanner flags
      * @return pointer to scanner object
      */
     TableScanner *create_scanner(const ScanSpec &scan_spec,
@@ -115,11 +116,11 @@ namespace Hypertable {
     /**
      * Creates an asynchronous scanner on this table
      *
-     * @param cb callback to be notified when scan results arrive
+     * @param cb Callback to be notified when scan results arrive
      * @param scan_spec scan specification
      * @param timeout_ms maximum time in milliseconds to allow
      *        scanner methods to execute before throwing an exception
-     * @param scanner flags
+     * @param flags Scanner flags
      * @return pointer to scanner object
      */
     TableScannerAsync *create_scanner_async(ResultCallback *cb,
@@ -237,6 +238,8 @@ namespace Hypertable {
       return m_namespace;
     }
 
+    RangeLocatorPtr get_range_locator() { return m_range_locator; }
+
   private:
     void initialize();
 
@@ -247,7 +250,7 @@ namespace Hypertable {
     Hyperspace::SessionPtr m_hyperspace;
     SchemaPtr              m_schema;
     RangeLocatorPtr        m_range_locator;
-    ApplicationQueuePtr    m_app_queue;
+    ApplicationQueueInterfacePtr m_app_queue;
     NameIdMapperPtr        m_namemap;
     String                 m_name;
     TableIdentifierManaged m_table;

@@ -43,7 +43,7 @@
 #include "Global.h"
 #include "HyperspaceSessionHandler.h"
 #include "RangeServer.h"
-#include "TimerHandler.h"
+#include "IndexUpdater.h"
 
 #ifdef _WIN32
 #include "Common/ServerLaunchEvent.h"
@@ -110,10 +110,11 @@ int main(int argc, char **argv) {
     RangeServerPtr range_server= new RangeServer(properties,
         conn_manager, app_queue, Global::hyperspace);
 
-    // install maintenance timer
-    TimerHandlerPtr timer_handler = new TimerHandler(comm, range_server.get());
-
     app_queue->join();
+
+    IndexUpdaterFactory::close();
+
+    range_server = 0;
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

@@ -34,7 +34,7 @@ using namespace Hypertable;
 
 #define WINAPI_ERROR( msg ) \
 { \
-  if (Logger::logger) { \
+  if (Logger::get()) { \
     DWORD err = GetLastError(); \
     HT_ERRORF(msg, winapi_strerror(err)); \
     SetLastError(err); \

@@ -20,7 +20,6 @@
  */
 
 #include "Common/Compat.h"
-
 #include "Common/Error.h"
 #include "Common/Logger.h"
 #include "Common/System.h"

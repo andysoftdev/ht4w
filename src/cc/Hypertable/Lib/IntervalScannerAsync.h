@@ -55,15 +55,13 @@ namespace Hypertable {
      * @param scanner pointer to table scanner
      * @param id scanner id
      */
-    IntervalScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue, Table *table,
+    IntervalScannerAsync(Comm *comm, ApplicationQueueInterfacePtr &app_queue, Table *table,
                          RangeLocatorPtr &range_locator,
                          const ScanSpec &scan_spec, uint32_t timeout_ms,
                          bool current, TableScannerAsync *scanner, int id);
 
     virtual ~IntervalScannerAsync();
 
-    int32_t get_rows_seen() { return m_rows_seen; }
-    void    set_rows_seen(int32_t n) { m_rows_seen = n; }
     bool abort(bool is_create);
     // if we can't retry then abort scanner
     bool retry_or_abort(bool refresh, bool hard, bool is_create, 
@@ -82,6 +80,7 @@ namespace Hypertable {
     void set_result(EventPtr &event, ScanCellsPtr &cells, bool is_create=false);
     void load_result(ScanCellsPtr &cells);
     void set_range_spec(DynamicBuffer &dbuf, RangeSpec &range);
+    void restart_scan(bool refresh=false);
 
     Comm               *m_comm;
     Table              *m_table;
@@ -89,10 +88,10 @@ namespace Hypertable {
     RangeLocatorPtr     m_range_locator;
     LocationCachePtr    m_loc_cache;
     ScanSpecBuilder     m_scan_spec_builder;
+    ScanLimitState      m_scan_limit_state;
     RangeServerClient   m_range_server;
     TableIdentifierManaged m_table_identifier;
     bool                m_eos;
-    String              m_cur_row;
     String              m_create_scanner_row;
     RangeLocationInfo   m_range_info;
     RangeLocationInfo   m_next_range_info;
@@ -102,7 +101,6 @@ namespace Hypertable {
     String              m_start_row;
     String              m_end_row;
     bool                m_end_inclusive;
-    int32_t             m_rows_seen;
     uint32_t            m_timeout_ms;
     bool                m_current;
     int64_t             m_bytes_scanned;
@@ -115,8 +113,10 @@ namespace Hypertable {
     Timer               m_fetch_timer;
     bool                m_cur_scanner_finished;
     int                 m_cur_scanner_id;
+    int                 m_state;
+    Key                 m_last_key;
+    DynamicBuffer       m_last_key_buf;
     bool                m_create_event_saved;
-    bool                m_aborted;
     bool                m_invalid_scanner_id_ok;
   };
 

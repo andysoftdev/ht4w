@@ -84,7 +84,7 @@ namespace Hypertable {
         return new QualifierString(spec);
       else
         HT_ASSERT(!"Invalid qualifier type");
-	    return 0;
+      return 0;
     }
   };
 

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,13 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Definitions for ResponseCallback.
+ * This file contains method definitions for ResponseCallback, a class that
+ * is used to generate and send standard success/error response messages back to
+ * clients.
+ */
+
 #include "Common/Compat.h"
 
 #include <limits>
@@ -33,7 +40,7 @@ using namespace Hypertable;
 
 int ResponseCallback::error(int error, const String &msg) {
   CommHeader header;
-  header.initialize_from_request_header(m_event_ptr->header);
+  header.initialize_from_request_header(m_event->header);
   CommBufPtr cbp;
   size_t max_msg_size = std::numeric_limits<int16_t>::max();
   if (msg.length() < max_msg_size)
@@ -41,14 +48,14 @@ int ResponseCallback::error(int error, const String &msg) {
   else {
     cbp = Protocol::create_error_message(header, error, msg.substr(0, max_msg_size).c_str());
   }
-  return m_comm->send_response(m_event_ptr->addr, cbp);
+  return m_comm->send_response(m_event->addr, cbp);
 }
 
 int ResponseCallback::response_ok() {
   CommHeader header;
-  header.initialize_from_request_header(m_event_ptr->header);
+  header.initialize_from_request_header(m_event->header);
   CommBufPtr cbp(new CommBuf(header, 4));
   cbp->append_i32(Error::OK);
-  return m_comm->send_response(m_event_ptr->addr, cbp);
+  return m_comm->send_response(m_event->addr, cbp);
 }
 

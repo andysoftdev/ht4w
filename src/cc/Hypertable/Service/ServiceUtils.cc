@@ -283,19 +283,17 @@ void ServiceUtils::init_service() {
       { 0, 0 }
     };
 
-    std::ofstream* lf = 0;
+    FILE* lf = 0;
     String logfile = Config::logging_directory();
     if (!logfile.empty()) {
       logfile += "\\Hypertable.Service.log";
-      lf = new std::ofstream(logfile.c_str(), std::ios::out|std::ios::app);
-      Logger::redirect(*lf, true);
+      lf = freopen(logfile.c_str(), "w", stdout);
       HT_INFOF("Redirect to %s", logfile.c_str());
     }
     if (!StartServiceCtrlDispatcher(st))
       WINAPI_ERROR("StartServiceCtrlDispatcher failed - %s");
     if (lf) {
-      Logger::logger->removeAllAppenders();
-      delete lf;
+      fclose(lf);
     }
   }
   else

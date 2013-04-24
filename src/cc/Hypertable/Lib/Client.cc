@@ -29,6 +29,7 @@ extern "C" {
 
 #include <boost/algorithm/string.hpp>
 
+#include "AsyncComm/ApplicationQueue.h"
 #include "AsyncComm/Comm.h"
 #include "AsyncComm/ReactorFactory.h"
 
@@ -245,7 +246,7 @@ void Client::initialize_with_hyperspace() {
     if (timer.expired())
       HT_THROW_(Error::CONNECT_ERROR_HYPERSPACE);
 
-    HT_INFO_OUT << "Waiting for connection to Hyperspace..." << HT_END;
+    HT_INFO("Waiting for connection to Hyperspace...");
 
     remaining = timer.remaining();
     wait_time = (remaining < interval) ? remaining : interval;

@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,13 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Declarations for CommBuf.
+ * This file contains type declarations for CommBuf, a class to create and
+ * manipulate messages to be transmitted over a network.
+ */
+
+
 #ifndef HYPERTABLE_COMMBUF_H
 #define HYPERTABLE_COMMBUF_H
 
@@ -37,15 +44,16 @@
 
 namespace Hypertable {
 
-  /**
-   * Message buffer sent over the network
-   * by the AsyncComm subsystem.  It consists of a primary
-   * buffer and an extended buffer and also contains buffer pointers
-   * that keep track of how much data has already been written
-   * in the case of partial writes.  These pointers are managed by
-   * the AsyncComm subsytem iteslf.  The following example
-   * illustrates how to build a request message using the
-   * CommBuf.
+  /** @addtogroup AsyncComm
+   *  @{
+   */
+
+  /** Message buffer for holding data to be transmitted over a network.
+   * The CommBuf class contains a primary buffer and an extended buffer along
+   * with buffer pointers to keep track of how much data has been written into
+   * the buffers. These pointers are managed by the IOHandler while the buffer
+   * is being transmitted. The following example illustrates how to build a
+   * request message using the CommBuf.  
    *
    * <pre>
    *   CommHeader header(COMMAND_FETCH_SCANBLOCK);
@@ -59,26 +67,24 @@ namespace Hypertable {
    *
    * <pre>
    *   CommHeader header;
-   *   header.initialize_from_request_header(m_event_ptr->header);
+   *   header.initialize_from_request_header(m_event->header);
    *   CommBufPtr cbp(new CommBuf( header, 10, ext));
    *   cbp->append_i32(Error::OK);
    *   cbp->append_i16(moreflag);
    *   cbp->append_i32(id);
-   *   error = m_comm->send_response(m_event_ptr->addr, cbp);
+   *   error = m_comm->send_response(m_event->addr, cbp);
    * </pre>
    *
    */
   class CommBuf : public ReferenceCount {
   public:
 
-    /**
-     * This constructor initializes the CommBuf object by allocating a
-     * primary buffer of length len and writing the header into it.
+    /** Constructor.  This constructor initializes the CommBuf object by
+     * allocating a primary buffer of length len and writing the header into it.
      * The internal pointer into the primary buffer is positioned to
      * just after the header.
-     *
-     * @param hdr comm header
-     * @param len the length of the primary buffer to allocate
+     * @param hdr Comm header
+     * @param len Length of the primary buffer to allocate
      */
     CommBuf(CommHeader &hdr, uint32_t len=0) : header(hdr), ext_ptr(0) {
       len += header.encoded_length();
@@ -87,17 +93,15 @@ namespace Hypertable {
       header.set_total_length(len);
     }
 
-    /**
-     * This constructor initializes the CommBuf object by allocating a
-     * primary buffer of length len and writing the header into it.
+    /** Constructor. This constructor initializes the CommBuf object by
+     * allocating a primary buffer of length len and writing the header into it.
      * It also sets the extended buffer to ext and takes ownership of it.
      * The total length written into the header is len plus ext.size.  The
      * internal pointer into the primary buffer is positioned to just after
      * the header.
-     *
-     * @param hdr comm header
-     * @param len the length of the primary buffer to allocate
-     * @param buffer extended buffer
+     * @param hdr Comm header
+     * @param len Length of the primary buffer to allocate
+     * @param buffer Extended buffer
      */
     CommBuf(CommHeader &hdr, uint32_t len, StaticBuffer &buffer)
       : ext(buffer), header(hdr) {
@@ -109,18 +113,16 @@ namespace Hypertable {
     }
 
 
-    /**
-     * This constructor initializes the CommBuf object by allocating a
-     * primary buffer of length len and writing the header into it.
+    /** Constructor. This constructor initializes the CommBuf object by
+     * allocating a primary buffer of length len and writing the header into it.
      * It also sets the extended buffer to the buffer pointed to by ext_buffer.
      * The total length written into the header is len plus ext_len.  The
      * internal pointer into the primary buffer is positioned to just after
      * the header.
-     *
-     * @param hdr comm header
-     * @param len the length of the primary buffer to allocate
-     * @param ext_buffer shared array pointer to extended buffer
-     * @param ext_len length of valid data in ext_buffer
+     * @param hdr Comm header
+     * @param len Length of the primary buffer to allocate
+     * @param ext_buffer Shared array pointer to extended buffer
+     * @param ext_len Length of valid data in ext_buffer
      */
     CommBuf(CommHeader &hdr, uint32_t len,
 	    boost::shared_array<uint8_t> &ext_buffer, uint32_t ext_len) :
@@ -135,69 +137,59 @@ namespace Hypertable {
       ext_ptr = ext.base;
     }
 
-    /**
-     * Encodes the header at the beginning of the primary buffer and
-     * resets the primary and extended data pointers to point to the
+    /** Encodes the header at the beginning of the primary buffer.
+     * This method resets the primary and extended data pointers to point to the
      * beginning of their respective buffers.  The AsyncComm layer
      * uses these pointers to track how much data has been sent and
      * what is remaining to be sent.
      */
     void write_header_and_reset() {
       uint8_t *buf = data.base;
-      HT_ASSERT((data_ptr - data.base) == (int)data.size);
+      HT_ASSERT((data_ptr-data.base) == (int)data.size || data_ptr == data.base);
       header.encode(&buf);
       data_ptr = data.base;
       ext_ptr = ext.base;
     }
 
-    /**
-     * Returns the primary buffer internal data pointer
+    /** Returns the primary buffer internal data pointer
      */
     void *get_data_ptr() { return data_ptr; }
 
-    /**
-     * Returns address of the primary buffer internal data pointer
+    /** Returns address of the primary buffer internal data pointer
      */
     uint8_t **get_data_ptr_address() { return &data_ptr; }
 
-    /**
-     * Advance the primary buffer internal data pointer by len bytes
-     *
+    /** Advance the primary buffer internal data pointer by <code>len</code>
+     * bytes
      * @param len the number of bytes to advance the pointer by
      * @return returns the advanced internal data pointer
      */
     void *advance_data_ptr(size_t len) { data_ptr += len; return data_ptr; }
 
-    /**
-     * Append a boolean value to the primary buffer, advancing the
-     * primary buffer internal data pointer by 1
-     *
-     * @param bval boolean value to append into buffer
+    /** Appends a boolean value to the primary buffer.  After appending, this
+     * method advances the primary buffer internal data pointer by 1
+     * @param bval Boolean value to append to primary buffer
      */
     void append_bool(bool bval) { Serialization::encode_bool(&data_ptr, bval); }
 
-    /**
-     * Append a byte of data to the primary buffer, advancing the
-     * primary buffer internal data pointer by 1
-     *
+    /** Appends a byte of data to the primary buffer.  After appending, this
+     * method advances the primary buffer internal data pointer by 1
      * @param bval byte value to append into buffer
      */
     void append_byte(uint8_t bval) { *data_ptr++ = bval; }
 
-    /**
-     * Appends a sequence of bytes to the primary buffer, advancing
-     * the primary buffer internal data pointer by the number of bytes appended
-     *
-     * @param bytes starting address of byte sequence
-     * @param len number of bytes in sequence
+    /** Appends a sequence of bytes to the primary buffer.  After appending,
+     * this method advances the primary buffer internal data pointer by the
+     * number of bytes appended
+     * @param bytes Starting address of byte sequence
+     * @param len Number of bytes in sequence
      */
     void append_bytes(const uint8_t *bytes, uint32_t len) {
       memcpy(data_ptr, bytes, len);
       data_ptr += len;
     }
 
-    /**
-     * Appends a c-style string to the primary buffer.  A string is encoded
+    /** Appends a c-style string to the primary buffer.  A string is encoded
      * as a 16-bit length, followed by the characters, followed by
      * a terminating '\\0'.
      *
@@ -221,74 +213,67 @@ namespace Hypertable {
     }
 
     /**
-     * Appends a 16-bit integer to the primary buffer in little endian order,
-     * advancing the primary buffer internal data pointer
-     *
-     * @param sval two byte short value to append into buffer
+     * Appends a 16-bit integer to the primary buffer.  The integer is encoded
+     * in little endian order and the primary buffer internal data pointer is
+     * advanced to the position immediately following the encoded integer.
+     * @param sval Two-byte short integer to append into buffer
      */
     void append_i16(uint16_t sval) {
       Serialization::encode_i16(&data_ptr, sval);
     }
 
-    /**
-     * Appends a 32-bit integer to the primary buffer in little endian order,
-     * advancing the primary buffer internal data pointer
-     *
-     * @param ival 4 byte integer value to append into buffer
+    /** Appends a 32-bit integer to the primary buffer.  The integer is encoded
+     * in little endian order and the primary buffer internal data pointer is
+     * advanced to the position immediately following the encoded integer.
+     * @param ival Four-byte integer value to append into buffer
      */
     void append_i32(uint32_t ival) {
       Serialization::encode_i32(&data_ptr, ival);
     }
 
-    /**
-     * Appends a 64-bit integer to the primary buffer in little endian order,
-     * advancing the primary buffer internal data pointer
-     *
-     * @param lval 8 byte long integer value to append into buffer
+    /** Appends a 64-bit integer to the primary buffer.  The integer is encoded
+     * in little endian order and the primary buffer pointer is advanced
+     * to the position immediately following the encoded integer.
+     * @param lval Eight-byte long integer value to append into buffer
      */
     void append_i64(uint64_t lval) {
       Serialization::encode_i64(&data_ptr, lval);
     }
 
-    /**
-     * Appends a c-style string to the primary buffer.  A string is encoded
+    /** Appends a c-style string to the primary buffer.  A string is encoded
      * as a vint64 length, followed by the characters, followed by
      * a terminating '\\0'.
      *
-     * @param str c-style string to append
+     * @param str C-style string to append
      * @see Serialization::encode_vstr
      */
     void append_vstr(const char *str) {
       Serialization::encode_vstr(&data_ptr, str);
     }
 
-    /**
-     * Appends a String to the primary buffer.  A string is encoded as
+    /** Appends a String to the primary buffer.  A string is encoded as
      * a vint64 length, followed by the characters, followed by
      * a terminating '\\0'.
-     *
-     * @param str std string to append
+     * @param str C++ string to append
      * @see Serialization::encode_vstr
      */
     void append_vstr(const String &str) {
       Serialization::encode_vstr(&data_ptr, str);
     }
 
-    /**
-     * Appends a variable sized string to the primary buffer.  The
-     * string is encoded as a vint64 length, followed by the bytes
+    /** Appends a variable sized string to the primary buffer.  The
+     * string is encoded as a vint length, followed by the bytes
      * (followed by a terminating '\\0').
      *
-     * @param str string to encode
-     * @param len length of string
+     * @param str C-style string to encode
+     * @param len Length of string
      * @see Serialization::encode_vstr
      */
     void append_vstr(const void *str, uint32_t len) {
       Serialization::encode_vstr(&data_ptr, str, len);
     }
 
-    /**
-     * Appends an InetAddr structure
+    /** Appends an InetAddr structure to the primary buffer.
      *
      * @param addr address structure
      * @see Serialization::encode_inet_addr
@@ -300,18 +285,25 @@ namespace Hypertable {
     friend class IOHandlerData;
     friend class IOHandlerDatagram;
 
-    StaticBuffer data;
-    StaticBuffer ext;
-    CommHeader header;
+    StaticBuffer data; //!< Primary data buffer
+    StaticBuffer ext;  //!< Extended buffer
+    CommHeader header; //!< Comm header
 
   protected:
+
+    /// Write pointer into #data buffer
     uint8_t *data_ptr;
+
+    /// Write pointer into #ext buffer
     const uint8_t *ext_ptr;
+
+    /// Smart pointer to extended buffer memory
     boost::shared_array<uint8_t> ext_shared_array;
   };
 
+  /// Smart pointer to CommBuf
   typedef intrusive_ptr<CommBuf> CommBufPtr;
-
+  /** @}*/
 } // namespace Hypertable
 
 

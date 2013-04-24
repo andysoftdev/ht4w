@@ -1,7 +1,7 @@
 set :source_machine, "test00"
 set :install_dir,  "/opt/hypertable"
-set :hypertable_version, "0.9.6.5"
-set :default_pkg, "/tmp/hypertable-0.9.6.5-linux-x86_64.deb"
+set :hypertable_version, "0.9.7.2"
+set :default_pkg, "/tmp/hypertable-0.9.7.2-linux-x86_64.deb"
 set :default_dfs, "hadoop"
 set :default_config, "/home/doug/benchmark/perftest-hypertable.cfg"
 set :default_additional_args, ""
@@ -171,7 +171,7 @@ task :install_package, :roles => [:master, :hyperspace, :slave, :thriftbroker, :
       raise "Package #{pkg} is not a .tar.bz2 archive"
     end
     dir_basename = pkg_basename[0..ext_index-1]
-    run("tar -xjv -f #{install_dir}/#{pkg_basename} -C #{install_dir}")
+    run("tar xjv -f #{install_dir}/#{pkg_basename} -C #{install_dir}")
     run("mv #{install_dir}/#{dir_basename}/opt/hypertable/#{hypertable_version} #{install_dir}");
     run("/bin/rm -rf #{install_dir}/#{dir_basename}");
   end

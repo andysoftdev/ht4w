@@ -47,15 +47,16 @@ namespace Hypertable {
      * Constructs a TableScannerAsync object.
      *
      * @param comm pointer to the Comm layer
-     * @param app_queue pointer to ApplicationQueue
+     * @param app_queue pointer to ApplicationQueueInterface
      * @param table pointer to the table object
      * @param range_locator smart pointer to range locator
      * @param scan_spec reference to scan specification object
      * @param timeout_ms maximum time in milliseconds to allow scanner
      *        methods to execute before throwing an exception
      * @param cb callback to be notified when results arrive
+     * @param flags Scanner flags
      */
-    TableScannerAsync(Comm *comm, ApplicationQueuePtr &app_queue, Table *table,
+    TableScannerAsync(Comm *comm, ApplicationQueueInterfacePtr &app_queue, Table *table,
                       RangeLocatorPtr &range_locator,
                       const ScanSpec &scan_spec, uint32_t timeout_ms,
                       ResultCallback *cb, int flags = 0);
@@ -76,14 +77,14 @@ namespace Hypertable {
       ScopedLock lock(m_mutex);
       return m_outstanding == 0;
     }
-
+    
     /**
      * Deal with results of a scanner
      * @param scanner_id id of the scanner which triggered the error
      * @param event event with results
      * @param is_create true if this is event is for a create_scanner request
      */
-    void handle_result(int scanner_id, EventPtr &event, bool is_result);
+    void handle_result(int scanner_id, EventPtr &event, bool is_create);
 
     /**
      * Deal with errors
@@ -129,14 +130,14 @@ namespace Hypertable {
   private:
     friend class IndexScannerCallback;
 
-    void init(Comm *comm, ApplicationQueuePtr &app_queue, Table *table,
+    void init(Comm *comm, ApplicationQueueInterfacePtr &app_queue, Table *table,
             RangeLocatorPtr &range_locator, const ScanSpec &scan_spec, 
             uint32_t timeout_ms, ResultCallback *cb);
     void maybe_callback_ok(int scanner_id, bool next, 
             bool do_callback, ScanCellsPtr &cells);
     void maybe_callback_error(int scanner_id, bool next);
     void wait_for_completion();
-    void move_to_next_interval_scanner(int current_scanner, bool cancelled);
+    void move_to_next_interval_scanner(int current_scanner);
     bool use_index(TablePtr table, const ScanSpec &primary_spec, 
             ScanSpecBuilder &index_spec, bool *use_qualifier);
     void add_index_row(ScanSpecBuilder &ssb, const char *row);

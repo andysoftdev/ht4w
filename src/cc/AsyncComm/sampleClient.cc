@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -31,7 +31,9 @@ extern "C" {
 #include <netdb.h>
 #include <errno.h>
 #include <poll.h>
-//#include <pthread.h>
+#ifndef _WIN32
+#include <pthread.h>
+#endif
 #include <stdint.h>
 #include <string.h>
 #include <time.h>

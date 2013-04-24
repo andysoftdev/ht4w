@@ -27,6 +27,12 @@
 #include <algorithm>
 #include <cassert>
 
+extern "C" {
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+}
+
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_array.hpp>
 
@@ -136,8 +142,21 @@ void Writer::purge_old_log_files(std::vector<int32_t> &file_ids, size_t keep_cou
 
       // remove local backup
       tmp_name = m_backup_path + String("/") + file_ids[i];
-      if (FileUtils::exists(tmp_name))
-	FileUtils::unlink(tmp_name);
+      if (FileUtils::exists(tmp_name)) {
+
+#ifndef _WIN32
+
+        FileUtils::unlink(tmp_name);
+
+#else
+
+        ::DeleteFile(tmp_name.c_str());
+        if (GetLastError() == ERROR_ACCESS_DENIED) {
+          HT_WARNF("Permission denied, deleting %s", tmp_name.c_str());
+        }
+#endif
+
+      }
     }
     file_ids.resize(keep_count);
   }

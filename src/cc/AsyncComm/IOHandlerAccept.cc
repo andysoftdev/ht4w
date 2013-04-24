@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,12 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Definitions for IOHandlerAccept.
+ * This file contains method definitions for IOHandlerAccept, a class for
+ * processing I/O events for accept (listen) sockets.
+ */
+
 #include "Common/Compat.h"
 
 #include <iostream>
@@ -30,6 +36,7 @@ extern "C" {
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 }
 
 #define HT_DISABLE_LOG_DEBUG 1
@@ -42,10 +49,12 @@ extern "C" {
 #include "IOHandlerAccept.h"
 #include "IOHandlerData.h"
 #include "ReactorFactory.h"
+#include "ReactorRunner.h"
 
 #ifdef _WIN32
 
 #include "Comm.h"
+#include "IOOP.h"
 
 #endif
 
@@ -58,6 +67,7 @@ bool
 IOHandlerAccept::handle_event(struct pollfd *event, time_t arival_time) {
   if (event->revents & POLLIN)
     return handle_incoming_connection();
+  ReactorRunner::handler_map->decomission_handler(this);
   return true;
 }
 
@@ -71,6 +81,7 @@ bool IOHandlerAccept::handle_event(struct kevent *event, time_t) {
   //DisplayEvent(event);
   if (event->filter == EVFILT_READ)
     return handle_incoming_connection();
+  ReactorRunner::handler_map->decomission_handler(this);
   return true;
 }
 #elif defined(__linux__)
@@ -82,12 +93,13 @@ bool IOHandlerAccept::handle_event(struct epoll_event *event, time_t) {
 bool IOHandlerAccept::handle_event(port_event_t *event, time_t) {
   if (event->portev_events == POLLIN)
     return handle_incoming_connection();
+  ReactorRunner::handler_map->decomission_handler(this);
   return true;
 }
 #elif defined(_WIN32)
 
-bool IOHandlerAccept::handle_event(IOOP *pol, time_t) {
-  const socket_t sd = pol->sd;
+bool IOHandlerAccept::handle_event(IOOP *ioop, time_t) {
+  const socket_t sd = ioop->sd;
   const int one = 1;
 
   HT_DEBUGF("IOHandlerAccept::handle_event(%d)", pol);
@@ -95,7 +107,7 @@ bool IOHandlerAccept::handle_event(IOOP *pol, time_t) {
   struct sockaddr_in *sa_local=NULL, *sa_remote=NULL;
   int socklen_local=0, socklen_remote=0;
 
-  Comm::pfnGetAcceptExSockaddrs(&pol->addresses, 0,
+  Comm::pfnGetAcceptExSockaddrs(&ioop->addresses, 0,
                         sizeof(struct sockaddr_in) + 16,
                         sizeof(struct sockaddr_in) + 16,
                         (LPSOCKADDR*)&sa_local, &socklen_local,
@@ -119,10 +131,10 @@ bool IOHandlerAccept::handle_event(IOOP *pol, time_t) {
     HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", winapi_strerror(WSAGetLastError()));
 
   DispatchHandlerPtr dhp;
-  m_handler_factory_ptr->get_instance(dhp);
-  IOHandlerData *data_handler = new IOHandlerData(pol->sd, *sa_remote, dhp, true);
+  m_handler_factory->get_instance(dhp);
+  IOHandlerData *data_handler = new IOHandlerData(ioop->sd, *sa_remote, dhp, true);
   IOHandlerPtr handler(data_handler);
-  m_handler_map_ptr->insert_handler(data_handler);
+  m_handler_map->insert_handler(data_handler);
   data_handler->start_polling();
   data_handler->async_recv_header();
   deliver_event(new Event(Event::CONNECTION_ESTABLISHED, *sa_remote, Error::OK));
@@ -148,12 +160,12 @@ bool IOHandlerAccept::async_accept() {
   }
 
   DWORD bytesReceived = 0;
-  IOOP* pol = new IOOP(sd2, IOOP::ACCEPT, this);
-  if (!Comm::pfnAcceptEx(m_sd, sd2, &pol->addresses, 0,
+  IOOP* ioop = new IOOP(sd2, IOOP::ACCEPT, this);
+  if (!Comm::pfnAcceptEx(m_sd, sd2, &ioop->addresses, 0,
                   sizeof(struct sockaddr_in) + 16,
                   sizeof(struct sockaddr_in) + 16,
                   &bytesReceived,
-                  pol)) {
+                  ioop)) {
     int err = WSAGetLastError();
     if (err != ERROR_IO_PENDING) {
       HT_ERRORF("AcceptEx failed - %s", winapi_strerror(err));
@@ -161,8 +173,8 @@ bool IOHandlerAccept::async_accept() {
     }
   }
   else {
-    handle_event(pol, 0);
-    delete pol;
+    handle_event(ioop, 0);
+    delete ioop;
   }
   return true;
 }
@@ -174,7 +186,7 @@ bool IOHandlerAccept::handle_incoming_connection() {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(sockaddr_in);
   int one = 1;
-  IOHandlerData *data_handler;
+  IOHandlerData *handler;
 
   while (true) {
 
@@ -211,19 +223,26 @@ bool IOHandlerAccept::handle_incoming_connection() {
       HT_WARNF("setsockopt(SO_RCVBUF) failed - %s", strerror(errno));
 
     DispatchHandlerPtr dhp;
-    m_handler_factory_ptr->get_instance(dhp);
+    m_handler_factory->get_instance(dhp);
 
-    data_handler = new IOHandlerData(sd, addr, dhp, true);
+    handler = new IOHandlerData(sd, addr, dhp, true);
 
-    IOHandlerPtr handler(data_handler);
-    int32_t error = m_handler_map_ptr->insert_handler(data_handler);
+    int32_t error = m_handler_map->insert_handler(handler);
     if (error != Error::OK) {
       HT_ERRORF("Problem registering accepted connection in handler map - %s",
                 Error::get_text(error));
-      ::close(sd);
-      return false;
+      delete handler;
+      ReactorRunner::handler_map->decomission_handler(this);
+      return true;
     }
-    data_handler->start_polling(Reactor::READ_READY|Reactor::WRITE_READY);
+    if ((error = handler->start_polling(Reactor::READ_READY |
+                                        Reactor::WRITE_READY)) != Error::OK) {
+      HT_ERRORF("Problem starting polling on incoming connection - %s",
+                Error::get_text(error));
+      delete handler;
+      ReactorRunner::handler_map->decomission_handler(this);
+      return true;
+    }
 
     deliver_event(new Event(Event::CONNECTION_ESTABLISHED, addr, Error::OK));
   }

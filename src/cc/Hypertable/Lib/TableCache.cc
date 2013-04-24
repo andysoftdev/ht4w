@@ -28,7 +28,7 @@ using namespace std;
 
 TableCache::TableCache(PropertiesPtr &props, RangeLocatorPtr &range_locator,
     ConnectionManagerPtr &conn_manager, Hyperspace::SessionPtr &hyperspace,
-    ApplicationQueuePtr &app_queue, NameIdMapperPtr &namemap, 
+    ApplicationQueueInterfacePtr &app_queue, NameIdMapperPtr &namemap, 
     uint32_t default_timeout_ms)
   : m_props(props), m_range_locator(range_locator), 
     m_comm(conn_manager->get_comm()), m_conn_manager(conn_manager), 
@@ -40,6 +40,10 @@ TableCache::TableCache(PropertiesPtr &props, RangeLocatorPtr &range_locator,
 
 TablePtr TableCache::get(const String &table_name, int32_t flags) {
   ScopedLock lock(m_mutex);
+  return get_unlocked(table_name, flags);
+}
+
+TablePtr TableCache::get_unlocked(const String &table_name, int32_t flags) {
   String id;
 
   TableMap::iterator it = m_table_map.find(table_name);

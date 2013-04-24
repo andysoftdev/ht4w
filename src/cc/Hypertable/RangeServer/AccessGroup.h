@@ -51,6 +51,10 @@
 
 namespace Hypertable {
 
+  /** @addtogroup RangeServer
+   * @{
+   */
+
   class AccessGroup : public CellList {
 
   public:
@@ -104,10 +108,18 @@ namespace Hypertable {
 
     virtual void add(const Key &key, const ByteString value);
 
-    virtual const char *get_split_row();
-    virtual void get_split_rows(std::vector<String> &split_rows,
-                                bool include_cache);
-    virtual void get_cached_rows(std::vector<String> &rows);
+    void split_row_estimate_data_cached(SplitRowDataMapT &split_row_data);
+
+    void split_row_estimate_data_stored(SplitRowDataMapT &split_row_data);
+
+    /** Populates <code>scanner</code> with data for <i>.cellstore.index</i>
+     * pseudo table.  For each CellStore that is part of the access group,
+     * the CellStore::populate_index_pseudo_table_scanner method is called
+     * with <code>scanner</code> to gather <i>.cellstore.index</i> pseudo
+     * table data.
+     * @param scanner Pointer to CellListScannerBuffer to hold data
+     */
+    void populate_cellstore_index_pseudo_table_scanner(CellListScannerBuffer *scanner);
 
     virtual int64_t get_total_entries() {
       boost::mutex::scoped_lock lock(m_mutex);
@@ -185,11 +197,11 @@ namespace Hypertable {
     void range_dir_initialize();
     void recompute_compression_ratio(int64_t *total_index_entriesp=0);
     bool find_merge_run(size_t *indexp=0, size_t *lenp=0);
-    bool needs_merging();
     void sort_cellstores_by_timestamp();
 
     Mutex                m_mutex;
     Mutex                m_outstanding_scanner_mutex;
+    boost::condition     m_outstanding_scanner_cond;
     int32_t              m_outstanding_scanner_count;
     TableIdentifierManaged m_identifier;
     SchemaPtr            m_schema;
@@ -224,6 +236,8 @@ namespace Hypertable {
   typedef boost::intrusive_ptr<AccessGroup> AccessGroupPtr;
 
   std::ostream &operator<<(std::ostream &os, const AccessGroup::MaintenanceData &mdata);
+
+  /** @}*/
 
 } // namespace Hypertable
 

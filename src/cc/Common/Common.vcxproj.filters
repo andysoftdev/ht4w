@@ -121,6 +121,9 @@
     <ClCompile Include="Debug.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Crontab.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Abi.h">
@@ -364,6 +367,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Debug.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Crontab.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StlAllocator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

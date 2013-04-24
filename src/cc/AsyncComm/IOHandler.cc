@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,6 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Definitions for IOHandler.
+ * This file contains method definitions for IOHandler, an abstract base class
+ * from which I/O handlers are derived.
  */
 
 #include "Common/Compat.h"
@@ -39,17 +45,23 @@ extern "C" {
 
 #include "IOHandler.h"
 #include "Reactor.h"
+#include "ReactorRunner.h"
+#ifdef _WIN32
+#include "Comm.h"
+#include "IOOP.h"
+#endif
+
 using namespace Hypertable;
 
 #ifndef _WIN32
 
 #define HANDLE_POLL_INTERFACE_MODIFY \
   if (ReactorFactory::use_poll) \
-    return m_reactor_ptr->modify_poll_interest(m_sd, poll_events(m_poll_interest));
+    return m_reactor->modify_poll_interest(m_sd, poll_events(m_poll_interest));
 
 #define HANDLE_POLL_INTERFACE_ADD \
   if (ReactorFactory::use_poll) \
-    return m_reactor_ptr->add_poll_interest(m_sd, poll_events(m_poll_interest), this);
+    return m_reactor->add_poll_interest(m_sd, poll_events(m_poll_interest), this);
 
 void IOHandler::display_event(struct pollfd *event) {
   char buf[128];
@@ -82,6 +94,34 @@ void IOHandler::display_event(struct pollfd *event) {
   clog << "poll events = " << buf << endl;
 }
 
+int IOHandler::start_polling(int mode) {
+  if (ReactorFactory::use_poll) {
+    m_poll_interest = mode;
+    return m_reactor->add_poll_interest(m_sd, poll_events(mode), this);
+  }
+#if defined(__APPLE__) || defined(__sun__) || defined(__FreeBSD__)
+  return add_poll_interest(mode);
+#elif defined(__linux__)
+  struct epoll_event event;
+  memset(&event, 0, sizeof(struct epoll_event));
+  event.data.ptr = this;
+  if (mode & Reactor::READ_READY)
+    event.events |= EPOLLIN;
+  if (mode & Reactor::WRITE_READY)
+    event.events |= EPOLLOUT;
+  if (ReactorFactory::ms_epollet)
+    event.events |= POLLRDHUP | EPOLLET;
+  m_poll_interest = mode;
+  if (epoll_ctl(m_reactor->poll_fd, EPOLL_CTL_ADD, m_sd, &event) < 0) {
+    HT_DEBUGF("epoll_ctl(%d, EPOLL_CTL_ADD, %d, %x) failed : %s",
+              m_reactor->poll_fd, m_sd, event.events, strerror(errno));
+    return Error::COMM_POLL_ERROR;
+  }
+#endif
+  return Error::OK;
+}
+
+
 #if defined(__linux__)
 
 int IOHandler::add_poll_interest(int mode) {
@@ -101,13 +141,10 @@ int IOHandler::add_poll_interest(int mode) {
     if (m_poll_interest & Reactor::WRITE_READY)
       event.events |= EPOLLOUT;
 
-    if (epoll_ctl(m_reactor_ptr->poll_fd, EPOLL_CTL_MOD, m_sd, &event) < 0) {
-      /**
-         HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_MOD, sd=%d) (mode=%x) : %s",
-         m_reactor_ptr->poll_fd, m_sd, mode, strerror(errno));
-         *((int *)0) = 1;
-         **/
-      return Error::COMM_POLL_ERROR;      
+    if (epoll_ctl(m_reactor->poll_fd, EPOLL_CTL_MOD, m_sd, &event) < 0) {
+      HT_DEBUGF("epoll_ctl(%d, EPOLL_CTL_MOD, sd=%d) (mode=%x, interest=%x) : %s",
+                m_reactor->poll_fd, m_sd, mode, m_poll_interest, strerror(errno));
+      return Error::COMM_POLL_ERROR;
     }
   }
   return Error::OK;
@@ -131,8 +168,8 @@ int IOHandler::remove_poll_interest(int mode) {
     if (m_poll_interest & Reactor::WRITE_READY)
       event.events |= EPOLLOUT;
 
-    if (epoll_ctl(m_reactor_ptr->poll_fd, EPOLL_CTL_MOD, m_sd, &event) < 0) {
-      HT_ERRORF("epoll_ctl(EPOLL_CTL_MOD, sd=%d) (mode=%x) : %s",
+    if (epoll_ctl(m_reactor->poll_fd, EPOLL_CTL_MOD, m_sd, &event) < 0) {
+      HT_DEBUGF("epoll_ctl(EPOLL_CTL_MOD, sd=%d) (mode=%x) : %s",
                 m_sd, mode, strerror(errno));
       return Error::COMM_POLL_ERROR;
     }
@@ -189,16 +226,18 @@ int IOHandler::add_poll_interest(int mode) {
     events |= POLLIN;
 
   if (events) {
-    if (port_associate(m_reactor_ptr->poll_fd, PORT_SOURCE_FD,
-		       m_sd, events, this) < 0)
-      HT_ERRORF("port_associate(%d, POLLIN, %d) - %s", m_reactor_ptr->poll_fd, m_sd,
+    if (port_associate(m_reactor->poll_fd, PORT_SOURCE_FD,
+		       m_sd, events, this) < 0) {
+      HT_DEBUGF("port_associate(%d, POLLIN, %d) - %s", m_reactor->poll_fd, m_sd,
 		strerror(errno));
-    return Error::COMM_POLL_ERROR;
+      return Error::COMM_POLL_ERROR;
+    }
   }
   return Error::OK;
 }
 
 int IOHandler::remove_poll_interest(int mode) {
+  int error = Error::OK;
 
   if ((m_poll_interest & mode) == 0)
     return Error::OK;
@@ -208,15 +247,15 @@ int IOHandler::remove_poll_interest(int mode) {
   HANDLE_POLL_INTERFACE_MODIFY;
 
   if (m_poll_interest)
-    reset_poll_interest();
+    error = reset_poll_interest();
   else {
-    if (port_dissociate(m_reactor_ptr->poll_fd, PORT_SOURCE_FD, m_sd) < 0) {
-      HT_ERRORF("port_dissociate(%d, PORT_SOURCE_FD, %d) - %s",
-		m_reactor_ptr->poll_fd, m_sd, strerror(errno));
+    if (port_dissociate(m_reactor->poll_fd, PORT_SOURCE_FD, m_sd) < 0) {
+      HT_DEBUGF("port_dissociate(%d, PORT_SOURCE_FD, %d) - %s",
+		m_reactor->poll_fd, m_sd, strerror(errno));
       return Error::COMM_POLL_ERROR;
     }
   }
-  return Error::OK;
+  return error;
 }
 
 void IOHandler::display_event(port_event_t *event) {
@@ -272,8 +311,8 @@ int IOHandler::add_poll_interest(int mode) {
   }
   assert(count > 0);
 
-  if (kevent(m_reactor_ptr->kqd, events, count, 0, 0, 0) == -1) {
-    HT_ERRORF("kevent(sd=%d) (mode=%x) : %s", m_sd, mode, strerror(errno));
+  if (kevent(m_reactor->kqd, events, count, 0, 0, 0) == -1) {
+    HT_DEBUGF("kevent(sd=%d) (mode=%x) : %s", m_sd, mode, strerror(errno));
     return Error::COMM_POLL_ERROR;
   }
   return Error::OK;
@@ -298,9 +337,9 @@ int IOHandler::remove_poll_interest(int mode) {
     count++;
   }
 
-  if (kevent(m_reactor_ptr->kqd, devents, count, 0, 0, 0) == -1
+  if (kevent(m_reactor->kqd, devents, count, 0, 0, 0) == -1
       && errno != ENOENT) {
-    HT_ERRORF("kevent(sd=%d) (mode=%x) : %s", m_sd, mode, strerror(errno));
+    HT_DEBUGF("kevent(sd=%d) (mode=%x) : %s", m_sd, mode, strerror(errno));
     return Error::COMM_POLL_ERROR;
   }
   return Error::OK;
@@ -409,52 +448,29 @@ void IOHandler::display_event(struct kevent *event) {
 
 #else
 
-#include "ReactorRunner.h"
-
-bool IOHandler::is_shutdown() const {
-  return m_shutdown || ReactorRunner::shutdown;
-}
-
-void IOHandler::display_event(IOOP *pol) {
-  clog << pol->to_str() << endl;
-}
-
-
-String IOOP::to_str() const {
-  switch(op) {
-  case CONNECT:
-    if(err!=NOERROR)
-      return format("CONNECT error - %s", winapi_strerror(err));
-    return "CONNECT";
-
-  case ACCEPT:
-    if(err!=NOERROR)
-      return format("ACCEPT error - %s", winapi_strerror(err));
-    return "ACCEPT";
-
-  case RECV:
-    if(err!=NOERROR)
-      return format("RECV error - %s", winapi_strerror(err));
-    return format("RECV %d bytes", numberOfBytes);
-
-  case SEND:
-    if(err!=NOERROR)
-      return format("SEND error - %s", winapi_strerror(err));
-    return format("SEND %d bytes", numberOfBytes);
-
-  case RECVFROM:
-    if(err!=NOERROR)
-      return format("RECVFROM error - %s", winapi_strerror(err));
-    return format("RECVFROM %d bytes", numberOfBytes);
-
-  case SENDTO:
-    if(err!=NOERROR)
-      return format("SENDTO error - %s", winapi_strerror(err));
-    return format("SENDTO %d bytes", numberOfBytes);
-
-  default:
-    HT_ASSERT(false);
+int IOHandler::start_polling() {
+  HANDLE hcp = CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_sd),
+                                      ReactorFactory::hIOCP,
+                                      (ULONG_PTR)this,
+                                      0);
+  if (ReactorFactory::hIOCP != hcp) {
+      HT_ERRORF("CreateIoCompletionPort failed : %s", winapi_strerror(WSAGetLastError()));
+      return Error::COMM_POLL_ERROR;
   }
+  return Error::OK;
+}
+
+void IOHandler::close() {
+  ScopedLock lock(m_mutex);
+  if(m_sd != INVALID_SOCKET) {
+    HT_DEBUGF("closesocket(%d)", m_sd);
+    closesocket(m_sd);
+    m_sd = INVALID_SOCKET;
+  }
+}
+
+void IOHandler::display_event(IOOP *ioop) {
+  clog << ioop->to_str() << endl;
 }
 
 #endif

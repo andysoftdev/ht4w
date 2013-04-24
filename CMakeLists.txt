@@ -22,8 +22,8 @@ project(HYPERTABLE)
 # Hypertable version components
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
-set(VERSION_MICRO "6")
-set(VERSION_PATCH "5")
+set(VERSION_MICRO "7")
+set(VERSION_PATCH "2")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
@@ -112,7 +112,6 @@ find_package(Python)
 find_package(Boost REQUIRED)
 find_package(BerkeleyDB REQUIRED)
 find_package(EXPAT REQUIRED)
-find_package(Log4cpp REQUIRED)
 find_package(Editline REQUIRED)
 find_package(SIGAR REQUIRED)
 find_package(ZLIB REQUIRED)
@@ -163,7 +162,7 @@ endif ()
 
 # include directories
 include_directories(src/cc ${HYPERTABLE_BINARY_DIR}/src/cc
-    ${ZLIB_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} ${Log4cpp_INCLUDE_DIR}
+    ${ZLIB_INCLUDE_DIR} ${Boost_INCLUDE_DIRS}
     ${EXPAT_INCLUDE_DIRS} ${BDB_INCLUDE_DIR} ${EDITLINE_INCLUDE_DIR}
     ${SIGAR_INCLUDE_DIR})
 
@@ -210,10 +209,23 @@ configure_file(bin/prerm.in prerm @ONLY)
 file(GLOB CONFS conf/[^.]*)
 install(FILES ${CONFS} DESTINATION conf)
 install(PROGRAMS ${HYPERTABLE_BINARY_DIR}/ht DESTINATION bin)
+
+# common jars
 file(GLOB JARS lib/*.jar lib/*.txt)
 install(FILES ${JARS} DESTINATION lib/java)
-install(FILES ${HYPERTABLE_BINARY_DIR}/java/hypertable-${VERSION}.jar
-          DESTINATION lib/java OPTIONAL)
+
+# cdh3 jars
+file(GLOB JARS lib/cdh3/*.jar)
+install(FILES ${JARS} DESTINATION lib/java/cdh3)
+install(FILES ${HYPERTABLE_BINARY_DIR}/java/cdh3/hypertable-${VERSION}.jar
+          DESTINATION lib/java/cdh3 OPTIONAL)
+
+# cdh4 jars
+file(GLOB JARS lib/cdh4/*.jar)
+install(FILES ${JARS} DESTINATION lib/java/cdh4)
+install(FILES ${HYPERTABLE_BINARY_DIR}/java/cdh4/hypertable-${VERSION}.jar
+          DESTINATION lib/java/cdh4 OPTIONAL)
+
 install(PROGRAMS bin/jrun DESTINATION bin)
 
 # Copy Thrift files
@@ -234,11 +246,12 @@ endif ()
 
 # Copy C++ Thrift files
 install(DIRECTORY ${Thrift_INCLUDE_DIR} DESTINATION include USE_SOURCE_PERMISSIONS)
-install(DIRECTORY ${Log4cpp_INCLUDE_DIR}/log4cpp DESTINATION include USE_SOURCE_PERMISSIONS)
 
 if (NOT HT_COMPONENT_INSTALL)
-  install(FILES ${HYPERTABLE_BINARY_DIR}/java/hypertable-${VERSION}-examples.jar
-          DESTINATION lib/java OPTIONAL)
+  install(FILES ${HYPERTABLE_BINARY_DIR}/java/cdh3/hypertable-${VERSION}-examples.jar
+          DESTINATION lib/java/cdh3 OPTIONAL)
+  install(FILES ${HYPERTABLE_BINARY_DIR}/java/cdh4/hypertable-${VERSION}-examples.jar
+          DESTINATION lib/java/cdh4 OPTIONAL)
   file(GLOB SCRIPTS bin/*.sh)
   install(PROGRAMS ${SCRIPTS} DESTINATION bin)
   install(DIRECTORY examples/apache_log DESTINATION examples

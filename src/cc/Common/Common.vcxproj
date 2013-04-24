@@ -176,6 +176,7 @@
     <ClCompile Include="Abi.cc" />
     <ClCompile Include="Checksum.cc" />
     <ClCompile Include="Config.cc" />
+    <ClCompile Include="Crontab.cc" />
     <ClCompile Include="Debug.cc" />
     <ClCompile Include="DiscreteRandomGenerator.cc" />
     <ClCompile Include="DiscreteRandomGeneratorFactory.cc" />
@@ -230,6 +231,7 @@
     <ClInclude Include="compat-c.h" />
     <ClInclude Include="Compat.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Crontab.h" />
     <ClInclude Include="CstrHashMap.h" />
     <ClInclude Include="CstrHashTraits.h" />
     <ClInclude Include="Debug.h" />
@@ -278,6 +280,7 @@
     <ClInclude Include="StaticBuffer.h" />
     <ClInclude Include="StatsSerializable.h" />
     <ClInclude Include="StatsSystem.h" />
+    <ClInclude Include="StlAllocator.h" />
     <ClInclude Include="StlHash.h" />
     <ClInclude Include="Stopwatch.h" />
     <ClInclude Include="String.h" />

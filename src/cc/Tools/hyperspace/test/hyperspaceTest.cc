@@ -29,6 +29,7 @@ extern "C" {
 #include <unistd.h>
 }
 
+#include "Common/InetAddr.h"
 #include "Common/Init.h"
 #include "Common/Error.h"
 #include "Common/InetAddr.h"
@@ -126,8 +127,10 @@ int main(int argc, char **argv) {
   std::vector<const char *> client_args;
   Comm *comm;
   CommAddress addr;
-  struct sockaddr_in inet_addr;
+  InetAddr inet_addr;
   DispatchHandlerPtr dhp;
+  String notification_address_arg;
+  String hyperspace_replica_port_arg;
 
   Config::init(0, 0);
 
@@ -146,6 +149,10 @@ int main(int argc, char **argv) {
   if (!InetAddr::initialize(&inet_addr, "23451"))
     exit(1);
 
+  comm->find_available_udp_port(inet_addr);
+  notification_address_arg = format("--notification-address=%d",
+                                    (int)ntohs(inet_addr.sin_port));
+
   addr.set_inet(inet_addr);
   comm->create_datagram_receive_socket(addr, 0x10, dhp);
 
@@ -160,8 +167,8 @@ int main(int argc, char **argv) {
     HT_ERROR("Unable to create ./hsroot directory");
     exit(1);
   }
-
-#else
+  
+ #else
 
   if (system("if exist .\\hsroot rd /S /Q .\\hsroot") != 0) {
     HT_ERROR("Problem removing ./hsroot directory");
@@ -177,12 +184,18 @@ int main(int argc, char **argv) {
 
 #endif
 
+  inet_addr = InetAddr(INADDR_ANY, 48122);
+  comm->find_available_tcp_port(inet_addr);
+  hyperspace_replica_port_arg = format("--Hyperspace.Replica.Port=%d",
+                                       (int)ntohs(inet_addr.sin_port));
+
   master_args.push_back("Hyperspace.Master");
 #ifdef _WIN32
   master_args.push_back(data_root_dir.c_str());
   master_args.push_back("--logging-level=fatal");
 #endif
   master_args.push_back("--config=./hyperspaceTest.cfg");
+  master_args.push_back(hyperspace_replica_port_arg.c_str());
   master_args.push_back("--verbose");
   master_args.push_back((const char *)0);
 
@@ -193,7 +206,8 @@ int main(int argc, char **argv) {
 #endif
   client_args.push_back("--config=./hyperspaceTest.cfg");
   client_args.push_back("--test-mode");
-  client_args.push_back("--notification-address=23451");
+  client_args.push_back(hyperspace_replica_port_arg.c_str());
+  client_args.push_back(notification_address_arg.c_str());
   client_args.push_back((const char *)0);
 
 #ifndef _WIN32
@@ -258,7 +272,7 @@ int main(int argc, char **argv) {
   if (system("diff ./client3.out ./client3.golden"))
     return 1;
 
-#else
+  #else
 
   if (system("fc client1.out client1.golden"))
     return 1;
@@ -276,7 +290,7 @@ int main(int argc, char **argv) {
 
 #endif
 
-  return 0;
+  _exit(0);
 }
 
 

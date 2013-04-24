@@ -180,6 +180,7 @@ void ScanSpec::decode(const uint8_t **bufp, size_t *remainp) {
 }
 
 
+/** @relates RowInterval */
 ostream &Hypertable::operator<<(ostream &os, const RowInterval &ri) {
   os <<"{RowInterval: ";
   if (ri.start)
@@ -202,6 +203,7 @@ ostream &Hypertable::operator<<(ostream &os, const RowInterval &ri) {
   return os;
 }
 
+/** @relates CellInterval */
 ostream &Hypertable::operator<<(ostream &os, const CellInterval &ci) {
   os <<"{CellInterval: ";
   if (ci.start_row)
@@ -225,6 +227,7 @@ ostream &Hypertable::operator<<(ostream &os, const CellInterval &ci) {
 }
 
 
+/** @relates ScanSpec */
 ostream &Hypertable::operator<<(ostream &os, const ScanSpec &scan_spec) {
   os <<"\n{ScanSpec: row_limit="<< scan_spec.row_limit
      <<" cell_limit="<< scan_spec.cell_limit
@@ -335,6 +338,23 @@ void ScanSpec::parse_column(const char *column_str, String &family,
         }
       }
     }
+  }
+}
+
+void ScanSpec::throw_if_invalid() const {
+  // check if the ColumnPredicate column is identical to the retrieved column
+  if (columns.empty() || column_predicates.empty())
+    return;
+  if (columns.size() != 1)
+    HT_THROW(Error::HQL_PARSE_ERROR, "Column predicate name not "
+            "identical with selected column");
+
+  const char *colon;
+  if ((colon = strchr(columns[0], ':'))) {
+    String s(columns[0], colon);
+    if (s != column_predicates[0].column_family)
+      HT_THROW(Error::HQL_PARSE_ERROR, "Column predicate name not "
+              "identical with selected column");
   }
 }
 

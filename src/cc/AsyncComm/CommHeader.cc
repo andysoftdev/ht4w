@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -18,6 +18,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
+
+/** @file
+ * Definitions for CommHeader.
+ * This file contains method definitions for CommHeader, a class that manages
+ * construction, serialization, and deserialization of an AsyncComm message
+ * header.
+ */
+
 #include "Common/Compat.h"
 #include "Common/Checksum.h"
 #include "Common/Error.h"

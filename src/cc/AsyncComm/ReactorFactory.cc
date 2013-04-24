@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -39,6 +39,7 @@ extern "C" {
 
 std::vector<ReactorPtr> ReactorFactory::ms_reactors;
 boost::thread_group ReactorFactory::ms_threads;
+boost::mt19937 ReactorFactory::rng(1);
 Mutex        ReactorFactory::ms_mutex;
 atomic_t     ReactorFactory::ms_next_reactor = ATOMIC_INIT(0);
 #ifndef _WIN32
@@ -55,7 +56,7 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
   ScopedLock lock(ms_mutex);
   if (!ms_reactors.empty())
     return;
-  ReactorPtr reactor_ptr;
+  ReactorPtr reactor;
   ReactorRunner rrunner;
   ReactorRunner::handler_map = new HandlerMap();
 
@@ -97,9 +98,9 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
 #endif
 
   for (uint16_t i=0; i<=reactor_count; i++) {
-    reactor_ptr = new Reactor();
-    ms_reactors.push_back(reactor_ptr);
-    rrunner.set_reactor(reactor_ptr);
+    reactor = new Reactor();
+    ms_reactors.push_back(reactor);
+    rrunner.set_reactor(reactor);
     ms_threads.create_thread(rrunner);
   }
 }

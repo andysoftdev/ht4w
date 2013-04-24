@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
         CellStorePtr cellstore = CellStoreFactory::open(fname, 0, 0);
         std::cout << fname << ": ok" << std::endl;
       }
-      catch (Exception &ex) {
+      catch (Exception &) {
         std::cout << fname << ": corrupt" << std::endl;
         _exit(-1);
       }
@@ -274,10 +274,7 @@ int main(int argc, char **argv) {
     cout << endl;
     cout << "TRAILER:" << endl;
     trailer->display_multiline(cout);
-
     cout << endl;
-    cout << "OTHER:" << endl;
-    cout << "split row '" << cellstore->get_split_row() << "'" << endl;
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

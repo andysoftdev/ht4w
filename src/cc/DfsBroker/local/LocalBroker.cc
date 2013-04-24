@@ -482,16 +482,31 @@ void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
     }
   }
   else {
+
 #ifndef _WIN32
+
     if (unlink(abspath.c_str()) == -1) {
-#else
-    if (!DeleteFile(abspath.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) {
-#endif
       report_error(cb);
       HT_ERRORF("unlink failed: file='%s' - %s", abspath.c_str(),
                 IO_ERROR);
       return;
     }
+
+#else
+
+    if (!DeleteFile(abspath.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND) {
+      if (GetLastError() != ERROR_ACCESS_DENIED) {
+        report_error(cb);
+        HT_ERRORF("unlink failed: file='%s' - %s", abspath.c_str(),
+                  IO_ERROR);
+        return;
+      }
+      else
+        HT_WARNF("Permission denied, deleting %s", abspath.c_str());
+    }
+
+#endif
+
   }
 
   if ((error = cb->response_ok()) != Error::OK)

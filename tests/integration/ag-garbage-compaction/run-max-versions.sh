@@ -9,7 +9,6 @@ SCRIPT_DIR=`dirname $0`
 
 . $HT_HOME/bin/ht-env.sh
 
-$HT_HOME/bin/start-dfsbroker.sh ${HT_TEST_DFS}
 $HT_HOME/bin/start-test-servers.sh --no-rangeserver --no-thriftbroker --clear
 
 $HT_HOME/bin/Hypertable.RangeServer --verbose --pidfile=$PIDFILE \
@@ -38,6 +37,7 @@ for ((i=1; i<10; i++)) ; do
 done
 
 kill -9 `cat $PIDFILE`
+\rm -f $PIDFILE
 
 n=`fgrep "Switching from minor to major" rangeserver.output | wc -l`
 if [ $n -eq 0 ] ; then

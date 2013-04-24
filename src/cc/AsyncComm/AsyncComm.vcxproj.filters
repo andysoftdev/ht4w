@@ -64,6 +64,12 @@
     <ClCompile Include="ResponseCallback.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HandlerMap.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IOOP.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationHandler.h">
@@ -145,6 +151,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ConnectionInitializer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationQueueInterface.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IOOP.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

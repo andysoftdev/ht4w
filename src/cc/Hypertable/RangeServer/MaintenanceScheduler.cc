@@ -54,25 +54,29 @@ namespace {
 }
 
 
-MaintenanceScheduler::MaintenanceScheduler(MaintenanceQueuePtr &queue, RSStatsPtr &server_stats,
+MaintenanceScheduler::MaintenanceScheduler(MaintenanceQueuePtr &queue,
+                                           RSStatsPtr &server_stats,
                                            RangeStatsGathererPtr &gatherer)
-  : m_initialized(false), m_scheduling_needed(false), m_queue(queue),
-    m_server_stats(server_stats), m_stats_gatherer(gatherer),
+  : m_queue(queue), m_server_stats(server_stats), m_stats_gatherer(gatherer),
     m_prioritizer_log_cleanup(server_stats),
-    m_prioritizer_low_memory(server_stats) {
+    m_prioritizer_low_memory(server_stats), m_start_offset(0),
+    m_initialized(false), m_low_memory_mode(false) {
   m_prioritizer = &m_prioritizer_log_cleanup;
   m_maintenance_interval = get_i32("Hypertable.RangeServer.Maintenance.Interval");
   m_query_cache_memory = get_i64("Hypertable.RangeServer.QueryCache.MaxMemory");
+  m_low_memory_prioritization = get_bool("Hypertable.RangeServer.Maintenance.LowMemoryPrioritization");
+
   // Setup to immediately schedule maintenance
-  boost::xtime_get(&m_last_maintenance, TIME_UTC_);
-  memcpy(&m_last_low_memory, &m_last_maintenance, sizeof(boost::xtime));
-  memcpy(&m_last_check, &m_last_maintenance, sizeof(boost::xtime));
-  m_last_maintenance.sec -= m_maintenance_interval / 1000;
+  boost::xtime_get(&m_last_low_memory, TIME_UTC_);
+  memcpy(&m_last_check, &m_last_low_memory, sizeof(boost::xtime));
   m_low_memory_limit_percentage = get_i32("Hypertable.RangeServer.LowMemoryLimit.Percentage");
   m_merging_delay = get_i32("Hypertable.RangeServer.Maintenance.MergingCompaction.Delay");
   m_merges_per_interval = get_i32("Hypertable.RangeServer.Maintenance.MergesPerInterval",
                                   std::numeric_limits<int32_t>::max());
   m_move_compactions_per_interval = get_i32("Hypertable.RangeServer.Maintenance.MoveCompactionsPerInterval");
+
+  m_maintenance_queue_worker_count = 
+    (int32_t)Global::maintenance_queue->worker_count();
 
   /** 
    * This code adds hashes for the four primary commit log
@@ -97,7 +101,6 @@ MaintenanceScheduler::MaintenanceScheduler(MaintenanceQueuePtr &queue, RSStatsPt
     FileUtils::mkdirs(data_dir.string());
 
 #endif
-
 }
 
 
@@ -111,9 +114,16 @@ void MaintenanceScheduler::schedule() {
   String trace_str;
   int64_t excess = 0;
   MaintenancePrioritizer::MemoryState memory_state;
-  bool low_memory = low_memory_mode();
   int32_t priority = 1;
   int log_generation;
+  bool low_memory = low_memory_mode();
+  bool do_scheduling = true;
+  bool debug = false;
+  boost::xtime now;
+
+  boost::xtime_get(&now, TIME_UTC_);
+
+  debug = debug_signal_file_exists(now);
 
   memory_state.balance = Global::memory_tracker->balance();
   memory_state.limit = Global::memory_limit;
@@ -128,25 +138,26 @@ void MaintenanceScheduler::schedule() {
   }
 
   if (low_memory) {
-    if (Global::maintenance_queue->pending() < Global::maintenance_queue->workers())
-      m_scheduling_needed = true;
-    bool exceeded = memory_state.balance > memory_state.limit;
-    excess = exceeded ? memory_state.balance - memory_state.limit : 0;
-    memory_state.needed = ((memory_state.limit * (exceeded ? m_low_memory_limit_percentage : m_low_memory_limit_percentage / 2)) / 100) + excess;
+    if (Global::maintenance_queue->full())
+      do_scheduling = false;
+    excess = (memory_state.balance > memory_state.limit) ? memory_state.balance - memory_state.limit : 0;
+    memory_state.needed = ((memory_state.limit * m_low_memory_limit_percentage) / 100) + excess;
   }
 
-  trace_str += String("low_memory\t") + (low_memory ? "true" : "false") + "\n";
-  trace_str += String("Global::memory_tracker->balance()\t") + Global::memory_tracker->balance() + "\n";
-  trace_str += String("Global::memory_limit\t") + Global::memory_limit + "\n";
-  trace_str += String("Global::memory_limit_ensure_unused_current\t") + Global::memory_limit_ensure_unused_current + "\n";
-  trace_str += String("m_query_cache_memory\t") + m_query_cache_memory + "\n";
-  trace_str += String("excess\t") + excess + "\n";
-  trace_str += String("Global::maintenance_queue->pending()\t") + (int)Global::maintenance_queue->pending() + "\n";
-  trace_str += String("Global::maintenance_queue->workers()\t") + (int)Global::maintenance_queue->workers() + "\n";
-  trace_str += String("m_low_memory_limit_percentage\t") + m_low_memory_limit_percentage + "\n";
-  trace_str += String("memory_state.balance\t") + memory_state.balance + "\n";
-  trace_str += String("memory_state.limit\t") + memory_state.limit + "\n";
-  trace_str += String("memory_state.needed\t") + memory_state.needed + "\n";
+  if (debug) {
+    trace_str += String("low_memory\t") + (low_memory ? "true" : "false") + "\n";
+    trace_str += String("Global::memory_tracker->balance()\t") + Global::memory_tracker->balance() + "\n";
+    trace_str += String("Global::memory_limit\t") + Global::memory_limit + "\n";
+    trace_str += String("Global::memory_limit_ensure_unused_current\t") + Global::memory_limit_ensure_unused_current + "\n";
+    trace_str += String("m_query_cache_memory\t") + m_query_cache_memory + "\n";
+    trace_str += String("excess\t") + excess + "\n";
+    trace_str += String("Global::maintenance_queue->full()\t") + (Global::maintenance_queue->full() ? "true" : "false") + "\n";
+    trace_str += String("m_low_memory_limit_percentage\t") + m_low_memory_limit_percentage + "\n";
+    trace_str += String("memory_state.balance\t") + memory_state.balance + "\n";
+    trace_str += String("memory_state.limit\t") + memory_state.limit + "\n";
+    trace_str += String("memory_state.needed\t") + memory_state.needed + "\n";
+  }
+
   {
     uint64_t max_memory = 0;
     uint64_t available_memory = 0;
@@ -154,33 +165,32 @@ void MaintenanceScheduler::schedule() {
     uint64_t hits = 0;
     if (Global::block_cache)
       Global::block_cache->get_stats(&max_memory, &available_memory, &accesses, &hits);
-    trace_str += String("FileBlockCache-max_memory\t") + max_memory + "\n";
-    trace_str += String("FileBlockCache-available_memory\t") + available_memory + "\n";
-    trace_str += String("FileBlockCache-accesses\t") + accesses + "\n";
-    trace_str += String("FileBlockCache-hits\t") + hits + "\n";
+    if (debug) {
+      trace_str += String("FileBlockCache-max_memory\t") + max_memory + "\n";
+      trace_str += String("FileBlockCache-available_memory\t") + available_memory + "\n";
+      trace_str += String("FileBlockCache-accesses\t") + accesses + "\n";
+      trace_str += String("FileBlockCache-hits\t") + hits + "\n";
+    }
   }
 
-  boost::xtime now;
-  boost::xtime_get(&now, TIME_UTC_);
-  int64_t millis_since_last_maintenance =
-    xtime_diff_millis(m_last_maintenance, now);
-
   int collector_id = RSStats::STATS_COLLECTOR_MAINTENANCE;
-  bool do_merges = !low_memory && 
-    ((m_server_stats->get_update_bytes(collector_id) < 1000 && m_server_stats->get_scan_count(collector_id) < 5) ||
-     xtime_diff_millis(m_last_low_memory, now) >= (int64_t)m_merging_delay);
 
-  if (!m_scheduling_needed &&
-      millis_since_last_maintenance < m_maintenance_interval)
+  if (!do_scheduling)
     return;
 
-  Global::maintenance_queue->clear();
+  Global::maintenance_queue->drop_range_tasks();
 
   m_stats_gatherer->fetch(range_data, 0, &log_generation);
 
-  if (range_data.empty()) {
-    m_scheduling_needed = false;
+  if (range_data.empty())
     return;
+
+  // Rotate the starting point to avoid compaction starvation during high write
+  // activity with many ranges.
+  if (!low_memory) {
+    m_start_offset %= range_data.size();
+    range_data.rotate(m_start_offset);
+    m_start_offset += m_maintenance_queue_worker_count;
   }
 
   HT_ASSERT(m_prioritizer);
@@ -202,16 +212,18 @@ void MaintenanceScheduler::schedule() {
     AccessGroup::CellStoreMaintenanceData *cs_data;
     std::set<int64_t> log_dir_hashes = m_log_hashes;
 
-    trace_str += String("before revision_root\t") + revision_root + "\n";
-    trace_str += String("before revision_metadata\t") + revision_metadata + "\n";
-    trace_str += String("before revision_system\t") + revision_system + "\n";
-    trace_str += String("before revision_user\t") + revision_user + "\n";
+    if (debug) {
+      trace_str += String("before revision_root\t") + revision_root + "\n";
+      trace_str += String("before revision_metadata\t") + revision_metadata + "\n";
+      trace_str += String("before revision_system\t") + revision_system + "\n";
+      trace_str += String("before revision_user\t") + revision_user + "\n";
+    }
 
     for (size_t i=0; i<range_data.size(); i++) {
 
       log_dir_hashes.insert(range_data[i].data->log_hash);
 
-      if (!low_memory && range_data[i].data->needs_major_compaction && priority <= m_move_compactions_per_interval) {
+      if (range_data[i].data->needs_major_compaction && priority <= m_move_compactions_per_interval) {
         range_data[i].data->priority = priority++;
         range_data[i].data->maintenance_flags = MaintenanceFlag::COMPACT_MOVE;
       }
@@ -250,10 +262,12 @@ void MaintenanceScheduler::schedule() {
       }
     }
 
-    trace_str += String("after revision_root\t") + revision_root + "\n";
-    trace_str += String("after revision_metadata\t") + revision_metadata + "\n";
-    trace_str += String("after revision_system\t") + revision_system + "\n";
-    trace_str += String("after revision_user\t") + revision_user + "\n";
+    if (debug) {
+      trace_str += String("after revision_root\t") + revision_root + "\n";
+      trace_str += String("after revision_metadata\t") + revision_metadata + "\n";
+      trace_str += String("after revision_system\t") + revision_system + "\n";
+      trace_str += String("after revision_user\t") + revision_user + "\n";
+    }
 
     if (Global::root_log)
       Global::root_log->purge(revision_root, log_dir_hashes, log_generation);
@@ -289,17 +303,19 @@ void MaintenanceScheduler::schedule() {
              cell_cache_pct, shadow_cache_pct, query_cache_pct);
   }
 
-  String dummy_str;
-  m_prioritizer->prioritize(range_data, memory_state, priority, dummy_str);
+  if (debug)
+    trace_str += "\nScheduling Decisions:\n";
 
-  check_file_dump_statistics(now, range_data, trace_str);
+  m_prioritizer->prioritize(range_data, memory_state, priority, debug ? &trace_str : 0);
+
+  if (debug)
+    write_debug_output(now, range_data, trace_str);
 
   boost::xtime schedule_time;
   boost::xtime_get(&schedule_time, boost::TIME_UTC_);
 
   if (not_acknowledged) {
-    HT_INFO_OUT << "Found load_acknowledged=false in " << not_acknowledged
-        << " ranges" << HT_END;
+    HT_INFOF("Found load_acknowledged=false in %d ranges", (int)not_acknowledged);
   }
 
   // if this is the first time around, just enqueue work that
@@ -356,7 +372,7 @@ void MaintenanceScheduler::schedule() {
                 MaintenanceFlag::gc_compaction(ag_data->maintenance_flags))
               task->add_subtask(ag_data->ag, ag_data->maintenance_flags);
             else if (MaintenanceFlag::merging_compaction(ag_data->maintenance_flags)) {
-              if (do_merges && merges_created < m_merges_per_interval) {
+              if (merges_created < m_merges_per_interval) {
                 task->add_subtask(ag_data->ag, ag_data->maintenance_flags);
                 merges_created++;
               }
@@ -394,8 +410,6 @@ void MaintenanceScheduler::schedule() {
     Global::maintenance_queue->add(task);
 
   //cout << flush << trace_str << flush;
-
-  m_scheduling_needed = false;
 }
 
 int MaintenanceScheduler::get_level(RangeData &rd) {
@@ -409,36 +423,44 @@ int MaintenanceScheduler::get_level(RangeData &rd) {
 }
 
 
-void MaintenanceScheduler::check_file_dump_statistics(boost::xtime now, RangeDataVector &range_data,
-                                                      const String &header_str) {
-  AccessGroup::MaintenanceData *ag_data;
-
+bool MaintenanceScheduler::debug_signal_file_exists(boost::xtime now) {
   if (xtime_diff_millis(m_last_check, now) >= (int64_t)60000) {
+    m_last_check = now;
 #ifndef _WIN32
-    if (FileUtils::exists(System::install_dir + "/run/debug-scheduler")) {
-      String output_fname = System::install_dir + "/run/scheduler.output";
+    return FileUtils::exists(System::install_dir + "/run/debug-scheduler");
 #else
     Path data_dir = properties->get_str("Hypertable.DataDirectory");
     data_dir /= "/run";
-    if (FileUtils::exists(data_dir.string() + "/debug-scheduler")) {
-      String output_fname = data_dir.string() + "/scheduler.output";
+    return FileUtils::exists(data_dir.string() + "/debug-scheduler");
 #endif
-      ofstream out;
-      out.open(output_fname.c_str());
-      out << header_str << "\n";
-      for (size_t i=0; i<range_data.size(); i++) {
-        out << *range_data[i].data << "\n";
-        for (ag_data = range_data[i].data->agdata; ag_data; ag_data = ag_data->next)
-          out << *ag_data << "\n";
-      }
-      out.close();
-#ifndef _WIN32
-      FileUtils::unlink(System::install_dir + "/run/debug-scheduler");
-#else
-      FileUtils::unlink(data_dir.string() + "/debug-scheduler");
-#endif
-    }
-    m_last_check = now;
   }
-  
+  return false;
+}
+
+
+void MaintenanceScheduler::write_debug_output(boost::xtime now, RangeDataVector &range_data,
+                                              const String &trace_str) {
+  AccessGroup::MaintenanceData *ag_data;
+#ifndef _WIN32
+  String output_fname = System::install_dir + "/run/scheduler.output";
+#else
+  Path data_dir = properties->get_str("Hypertable.DataDirectory");
+  data_dir /= "/run";
+  String output_fname = data_dir.string() + "/scheduler.output";
+#endif
+  ofstream out;
+  out.open(output_fname.c_str());
+  out << trace_str << "\n";
+  for (size_t i=0; i<range_data.size(); i++) {
+    out << *range_data[i].data << "\n";
+    for (ag_data = range_data[i].data->agdata; ag_data; ag_data = ag_data->next)
+      out << *ag_data << "\n";
+  }
+  out.close();
+
+#ifndef _WIN32
+  FileUtils::unlink(System::install_dir + "/run/debug-scheduler");
+#else
+  FileUtils::unlink(data_dir.string() + "/debug-scheduler");
+#endif
 }

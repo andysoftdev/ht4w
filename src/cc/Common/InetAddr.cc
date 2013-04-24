@@ -30,6 +30,9 @@ extern "C" {
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#ifndef _WIN32
+#include <sigar.h>
+#endif
 }
 
 #include "Logger.h"
@@ -103,8 +106,8 @@ bool InetAddr::initialize(sockaddr_in *addr, const char *host, uint16_t port) {
           HT_ERRORF("gethostbyname '%s': error: %s", host, winapi_strerror(WSAGetLastError()));
           return false;
         }
-      } else
-      {
+      }
+      else {
         HT_ERRORF("gethostbyname '%s': error: %s", host, winapi_strerror(err));
         return false;
       }

@@ -250,6 +250,9 @@ int CommitLog::link_log(CommitLogBase *log_base) {
     }
     log_base->fragment_queue().clear();
 
+    struct LtClfip swo;
+    sort(m_fragment_queue.begin(), m_fragment_queue.end(), swo);
+
   }
   catch (Hypertable::Exception &e) {
     HT_ERRORF("Problem linking external log into commit log - %s", e.what());
@@ -317,12 +320,13 @@ int CommitLog::purge(int64_t revision, std::set<int64_t> remove_ok, int generati
     return Error::CLOSED;
 
   // Process "reap" set
-  std::set<CommitLogFileInfo *>::iterator iter = m_reap_set.begin();
+  std::set<CommitLogFileInfo *>::iterator rm_iter, iter = m_reap_set.begin();
   while (iter != m_reap_set.end()) {
     if ((*iter)->references == 0 && (*iter)->generation <= generation) {
       remove_file_info(*iter);
       delete *iter;
-      iter = m_reap_set.erase(iter);
+      rm_iter = iter++;
+      m_reap_set.erase(rm_iter);
     }
     else
       ++iter;
@@ -332,8 +336,7 @@ int CommitLog::purge(int64_t revision, std::set<int64_t> remove_ok, int generati
   while (!m_fragment_queue.empty()) {
     fi = m_fragment_queue.front();
     if (fi->revision < revision && fi->generation <= generation &&
-	(!m_range_reference_required || remove_ok.count(fi->log_dir_hash) > 0)) {
-
+       (!m_range_reference_required || remove_ok.count(fi->log_dir_hash) > 0)) {
       if (fi->references == 0) {
         remove_file_info(fi);
         delete fi;
@@ -345,9 +348,12 @@ int CommitLog::purge(int64_t revision, std::set<int64_t> remove_ok, int generati
     }
     else {
       if (revision != m_purge_report_revision) {
-        HT_INFOF("purge('%s') breaking because %lld >= %lld",
-                 m_log_dir.c_str(), (Lld)fi->revision, (Lld)revision);
-        m_purge_report_revision = revision;
+        HT_INFOF("purge('%s') breaking on fragment %u (rev=%llu gen=%d); "
+                 "rev=%llu gen=%d; ref_req=%s rm_ok=%s", m_log_dir.c_str(),
+                 (unsigned)fi->num, (Llu)fi->revision, fi->generation,
+                 (Llu)revision, generation,
+                 m_range_reference_required ? "yes" : "no",
+                 remove_ok.count(fi->log_dir_hash) ? "yes" : "no");
       }
       break;
     }

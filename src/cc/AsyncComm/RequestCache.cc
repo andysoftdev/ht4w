@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,6 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Definitions for RequestCache.
+ * This file contains method definitions for RequestCache, a class
+ * that is used to hold pending request data.
  */
 
 #include "Common/Compat.h"
@@ -136,9 +142,14 @@ RequestCache::get_next_timeout(boost::xtime &now, IOHandler *&handlerp,
 void RequestCache::purge_requests(IOHandler *handler, int32_t error) {
   for (CacheNode *node = m_tail; node != 0; node = node->next) {
     if (node->handler == handler) {
+      String proxy = handler->get_proxy();
+      Event *event;
       HT_DEBUGF("Purging request id %d", node->id);
-      handler->deliver_event(new Event(Event::ERROR, ((IOHandlerData *)handler)->get_address(),
-                                       error), node->dh);
+      if (proxy.empty())
+        event = new Event(Event::ERROR, handler->get_address(), error);
+      else
+        event = new Event(Event::ERROR, handler->get_address(), proxy, error);
+      handler->deliver_event(event, node->dh);
       node->handler = 0;  // mark for deletion
     }
   }

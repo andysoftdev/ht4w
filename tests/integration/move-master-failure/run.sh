@@ -35,18 +35,29 @@ $HT_HOME/bin/ht ht_load_generator update \
     --Field.value.size=1000 \
     --max-bytes=$WRITE_SIZE
 
+echo "wait for maintenance; quit;" | $HT_HOME/bin/ht rsclient localhost:38061
+echo "wait for maintenance; quit;" | $HT_HOME/bin/ht rsclient localhost:38060
+
+echo "" > metadata.a
 echo "use sys; select * from METADATA MAX_VERSIONS 1;" | $HT_HOME/bin/ht shell --batch > metadata.b
+diff metadata.a metadata.b > /dev/null
 while [ $? != 0 ]; do
-  sleep 7
+  sleep 5
   cp metadata.b metadata.a
   echo "use sys; select * from METADATA MAX_VERSIONS 1;" | $HT_HOME/bin/ht shell --batch > metadata.b
   diff metadata.a metadata.b > /dev/null
 done
 
+echo "wait for maintenance; quit;" | $HT_HOME/bin/ht rsclient localhost:38061
+echo "wait for maintenance; quit;" | $HT_HOME/bin/ht rsclient localhost:38060
+
+$HT_HOME/bin/stop-servers.sh master
+
 echo "shutdown; quit;" | $HT_HOME/bin/ht rsclient localhost:38061
 echo "shutdown; quit;" | $HT_HOME/bin/ht rsclient localhost:38060
 sleep 1
 kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
+\rm -f $HT_HOME/run/Hypertable.RangeServer.rs?.pid
 
 $HT_HOME/bin/start-test-servers.sh --no-rangeserver \
   --induce-failure="relinquish-acknowledge-INITIAL-a:pause(3000):0;relinquish-acknowledge-INITIAL-b:exit:0"
@@ -62,17 +73,32 @@ $HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS2_PIDFILE \
 # Wait for RangeServers to come up
 echo "use '/'; select * from LoadTest KEYS_ONLY;" | $HT_HOME/bin/ht shell --batch > /dev/null
 
+sleep 7
+
 # Move a range from one RangeServer to the other
 HQL_COMMAND=`$SCRIPT_DIR/generate_range_move.py 4`
 echo $HQL_COMMAND
 echo $HQL_COMMAND | $HT_HOME/bin/ht shell --batch --Hypertable.Request.Timeout=10000
 
-sleep 5
-
+# Wait for the Master to die
+let j=0
 $HT_HOME/bin/ht serverup master
-if [ $? == 0 ]; then
-  echo "Master did not die as it should have.  Exitting..."
+while [ $? -eq 0 ] && [ $j -lt 12 ]; do
+    sleep 10
+    let j++
+    $HT_HOME/bin/ht serverup master
+done
+
+if [ $j -eq 6 ]; then
+  echo "Master did not die as it should have.  Exiting..."
+  touch $HT_HOME/run/debug-op
+  sleep 60
+  cp $HT_HOME/run/op.output .
   kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
+  \rm -f $HT_HOME/run/Hypertable.RangeServer.rs?.pid
+  pstack `cat $HT_HOME/run/Hypertable.Master.pid` > master.stack
+  cp $HT_HOME/log/Hypertable.Master.log .
+  cp $HT_HOME/run/monitoring/mop.dot .
   $HT_HOME/bin/stop-servers.sh
   exit 1
 fi
@@ -102,6 +128,7 @@ $HT_HOME/bin/ht ht_load_generator update \
 RET=$?
 
 kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
+\rm -f $HT_HOME/run/Hypertable.RangeServer.rs?.pid
 $HT_HOME/bin/stop-servers.sh
 
 exit $RET

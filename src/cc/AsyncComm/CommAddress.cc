@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -18,6 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
+
+/** @file
+ * Definitions for CommAddress.
+ * This file contains method definitions for CommAddress, an abstraction class
+ * for holding an arbitrary address type.
+ */
+
 #include "Common/Compat.h"
 
 #include "CommAddress.h"

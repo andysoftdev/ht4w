@@ -37,9 +37,6 @@
     <ClCompile Include="HqlInterpreter.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="IntervalScanner.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Key.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -211,6 +208,30 @@
     <ClCompile Include="TableCallback.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MetaLogEntityRange.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PseudoTables.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeRecoveryReceiverPlan.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeRecoveryReplayPlan.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommitLog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommitLogBase.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommitLogBlockStream.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommitLogReader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">
@@ -259,9 +280,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="HqlParser.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IntervalScanner.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Key.h">
@@ -372,9 +390,6 @@
     <ClInclude Include="TableMutatorIntervalHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="TableMutatorSendBuffer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="TableMutatorShared.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -475,6 +490,36 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="IndexScannerCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogEntityRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PseudoTables.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeRecoveryPlan.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeRecoveryReceiverPlan.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeRecoveryReplayPlan.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScanLimitState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommitLog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommitLogBase.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommitLogBlockStream.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommitLogReader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

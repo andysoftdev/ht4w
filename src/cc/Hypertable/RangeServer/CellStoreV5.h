@@ -38,7 +38,6 @@
 #include "Common/DynamicBuffer.h"
 #include "Common/BloomFilterWithChecksum.h"
 #include "Common/BlobHashSet.h"
-#include "Common/Mutex.h"
 
 #include "Hypertable/Lib/BlockCompressionCodec.h"
 #include "Hypertable/Lib/SerializedKey.h"
@@ -80,7 +79,8 @@ namespace Hypertable {
     CellStoreV5(Filesystem *filesys, Schema *schema=0);
     virtual ~CellStoreV5();
 
-    virtual void create(const char *fname, size_t max_entries, PropertiesPtr &,
+    virtual void create(const char *fname, size_t max_entries,
+                        PropertiesPtr &props,
                         const TableIdentifier *table_id=0);
     virtual void add(const Key &key, const ByteString value);
     virtual void finalize(TableIdentifier *table_identifier);
@@ -95,7 +95,7 @@ namespace Hypertable {
     virtual bool may_contain(ScanContextPtr &);
     virtual uint64_t disk_usage() { return m_disk_usage; }
     virtual float compression_ratio() { return m_trailer.compression_ratio; }
-    virtual const char *get_split_row();
+    virtual void split_row_estimate_data(SplitRowDataMapT &split_row_data);
     virtual int64_t get_total_entries() { return m_trailer.total_entries; }
     virtual std::string &get_filename() { return m_filename; }
     virtual int get_file_id() { return m_file_id; }
@@ -127,7 +127,6 @@ namespace Hypertable {
     virtual CellStoreTrailer *get_trailer() { return &m_trailer; }
 
   protected:
-    void record_split_row(const SerializedKey key);
     void create_bloom_filter(bool is_approx = false);
     void load_bloom_filter();
     void load_block_index();
@@ -135,7 +134,6 @@ namespace Hypertable {
 
     typedef BlobHashSet<> BloomFilterItems;
 
-    Mutex                  m_mutex;
     Filesystem            *m_filesys;
     SchemaPtr              m_schema;
     int32_t                m_fd;
@@ -152,7 +150,6 @@ namespace Hypertable {
     int64_t                m_offset;
     int64_t                m_file_length;
     int64_t                m_disk_usage;
-    std::string            m_split_row;
     int                    m_file_id;
     float                  m_uncompressed_data;
     float                  m_compressed_data;

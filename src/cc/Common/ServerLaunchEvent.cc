@@ -33,7 +33,7 @@ using namespace Hypertable;
 
 #define WINAPI_ERROR( msg ) \
 { \
-  if (Logger::logger) { \
+  if (Logger::get()) { \
     DWORD err = GetLastError(); \
     HT_ERRORF(msg, winapi_strerror(err)); \
     SetLastError(err); \
@@ -137,7 +137,7 @@ HANDLE ServerLaunchEvent::create_event(const char* preffix, DWORD pid, bool& alr
   }
   else if (!already_exists) {
     if (!SecurityUtils::set_security_info(evt, WinBuiltinUsersSid, EVENT_ALL_ACCESS))
-      if (Logger::logger)
+      if (Logger::get())
         HT_ERROR("set_security_info failed");
   }
   return evt;

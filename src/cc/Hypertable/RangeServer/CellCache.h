@@ -34,6 +34,9 @@
 
 #include "CellCacheAllocator.h"
 
+#define HT_CELLCACHE_ARENA_USED
+#define HT_CELLCACHE_ARENA_TOTAL
+
 namespace Hypertable {
 
   struct key_revision_lt {
@@ -68,11 +71,7 @@ namespace Hypertable {
 
     virtual void add_counter(const Key &key, const ByteString value);
 
-    virtual const char *get_split_row();
-
-    virtual void get_split_rows(std::vector<std::string> &split_rows);
-
-    virtual void get_rows(std::vector<std::string> &rows);
+    virtual void split_row_estimate_data(SplitRowDataMapT &split_row_data);
 
     virtual int64_t get_total_entries() { return m_cell_map.size(); }
 
@@ -93,7 +92,14 @@ namespace Hypertable {
      */
     int64_t memory_used() {
       ScopedLock lock(m_mutex);
-      return m_key_bytes + m_value_bytes;
+#ifdef HT_CELLCACHE_ARENA_USED
+      int64_t used = m_arena.used();
+#else
+      int64_t used = m_key_bytes + m_value_bytes;
+#endif
+      if (used < 0)
+        HT_WARN_OUT << "[Issue 339] Mem usage for CellCache=" << used << HT_END;
+      return used;
     }
 
     /**
@@ -101,8 +107,11 @@ namespace Hypertable {
      */
     uint64_t memory_allocated() {
       ScopedLock lock(m_mutex);
-      // return only the freeable amount of memory allocated
+#ifdef HT_CELLCACHE_ARENA_TOTAL
+      return m_arena.total();
+#else
       return m_arena.freeable();
+#endif
     }
 
     void add_counts(size_t *cellsp, int64_t *key_bytesp, int64_t *value_bytesp) {

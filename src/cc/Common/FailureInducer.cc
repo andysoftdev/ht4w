@@ -118,6 +118,9 @@ void FailureInducer::parse_option_single(String option) {
   size_t failure_type_len = strlen(failure_type);
   failure_inducer_state *statep = new failure_inducer_state;
 
+  statep->error_code = 0;
+  statep->pause_millis = 0;
+
   if (!strcmp(failure_type, "exit"))
     statep->failure_type = FAILURE_TYPE_EXIT;
   else if (!strcmp(failure_type, "signal"))
@@ -134,7 +137,10 @@ void FailureInducer::parse_option_single(String option) {
     statep->error_code = Error::INDUCED_FAILURE;
     if (failure_type_len > 5 && failure_type[5] == '(') {
       const char *error_code = failure_type + 6;
-      statep->error_code = (int)strtol(error_code, NULL, 0);
+      if (boost::algorithm::istarts_with(error_code, "0x"))
+        statep->error_code = (int)strtol(error_code, NULL, 16);
+      else
+        statep->error_code = (int)strtol(error_code, NULL, 0);
     }
   }
   else

@@ -39,6 +39,7 @@ extern "C" {
 #include "RequestHandlerCompact.h"
 #include "RequestHandlerDestroyScanner.h"
 #include "RequestHandlerDump.h"
+#include "RequestHandlerDumpPseudoTable.h"
 #include "RequestHandlerGetStatistics.h"
 #include "RequestHandlerLoadRange.h"
 #include "RequestHandlerUpdateSchema.h"
@@ -49,15 +50,16 @@ extern "C" {
 #include "RequestHandlerDropTable.h"
 #include "RequestHandlerMetadataSync.h"
 #include "RequestHandlerStatus.h"
-#include "RequestHandlerReplayBegin.h"
-#include "RequestHandlerReplayLoadRange.h"
-#include "RequestHandlerReplayUpdate.h"
-#include "RequestHandlerReplayCommit.h"
 #include "RequestHandlerDropRange.h"
 #include "RequestHandlerRelinquishRange.h"
 #include "RequestHandlerShutdown.h"
 #include "RequestHandlerCommitLogSync.h"
 #include "RequestHandlerWaitForMaintenance.h"
+#include "RequestHandlerReplayFragments.h"
+#include "RequestHandlerPhantomLoad.h"
+#include "RequestHandlerPhantomUpdate.h"
+#include "RequestHandlerPhantomPrepareRanges.h"
+#include "RequestHandlerPhantomCommitRanges.h"
 
 #include "ConnectionHandler.h"
 #include "RangeServer.h"
@@ -131,22 +133,6 @@ void ConnectionHandler::handle(EventPtr &event) {
         handler = new RequestHandlerDropTable(m_comm, m_range_server_ptr.get(),
                                               event);
         break;
-      case RangeServerProtocol::COMMAND_REPLAY_BEGIN:
-        handler = new RequestHandlerReplayBegin(m_comm,
-            m_range_server_ptr.get(), event);
-        break;
-      case RangeServerProtocol::COMMAND_REPLAY_LOAD_RANGE:
-        handler = new RequestHandlerReplayLoadRange(m_comm,
-            m_range_server_ptr.get(), event);
-        break;
-      case RangeServerProtocol::COMMAND_REPLAY_UPDATE:
-        handler = new RequestHandlerReplayUpdate(m_comm,
-            m_range_server_ptr.get(), event);
-        break;
-      case RangeServerProtocol::COMMAND_REPLAY_COMMIT:
-        handler = new RequestHandlerReplayCommit(m_comm,
-            m_range_server_ptr.get(), event);
-        break;
       case RangeServerProtocol::COMMAND_DROP_RANGE:
         handler = new RequestHandlerDropRange(m_comm, m_range_server_ptr.get(),
                                               event);
@@ -156,7 +142,6 @@ void ConnectionHandler::handle(EventPtr &event) {
         handler = new RequestHandlerRelinquishRange(m_comm, m_range_server_ptr.get(),
                                                     event);
         break;
-        
       case RangeServerProtocol::COMMAND_STATUS:
         handler = new RequestHandlerStatus(m_comm, m_range_server_ptr.get(),
                                            event);
@@ -172,6 +157,10 @@ void ConnectionHandler::handle(EventPtr &event) {
       case RangeServerProtocol::COMMAND_DUMP:
         handler = new RequestHandlerDump(m_comm, m_range_server_ptr.get(),
                                          event);
+        break;
+      case RangeServerProtocol::COMMAND_DUMP_PSEUDO_TABLE:
+        handler = new RequestHandlerDumpPseudoTable(m_comm, m_range_server_ptr.get(),
+                                                    event);
         break;
       case RangeServerProtocol::COMMAND_GET_STATISTICS:
         handler = new RequestHandlerGetStatistics(m_comm,
@@ -191,6 +180,31 @@ void ConnectionHandler::handle(EventPtr &event) {
       case RangeServerProtocol::COMMAND_METADATA_SYNC:
         handler = new RequestHandlerMetadataSync(m_comm, m_range_server_ptr.get(),
                                                  event);
+        break;
+
+      case RangeServerProtocol::COMMAND_REPLAY_FRAGMENTS:
+        handler = new RequestHandlerReplayFragments(m_comm, m_range_server_ptr.get(),
+                                                    event);
+        break;
+
+      case RangeServerProtocol::COMMAND_PHANTOM_RECEIVE:
+        handler = new RequestHandlerPhantomLoad(m_comm, m_range_server_ptr.get(),
+                                                   event);
+        break;
+
+      case RangeServerProtocol::COMMAND_PHANTOM_UPDATE:
+        handler = new RequestHandlerPhantomUpdate(m_comm, m_range_server_ptr.get(),
+                                                  event);
+        break;
+
+      case RangeServerProtocol::COMMAND_PHANTOM_PREPARE_RANGES:
+        handler = new RequestHandlerPhantomPrepareRanges(m_comm, m_range_server_ptr.get(),
+                                                         event);
+        break;
+
+      case RangeServerProtocol::COMMAND_PHANTOM_COMMIT_RANGES:
+        handler = new RequestHandlerPhantomCommitRanges(m_comm, m_range_server_ptr.get(),
+                                                        event);
         break;
 
       default:

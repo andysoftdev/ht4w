@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,14 +19,23 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Declarations for ReactorFactory.
+ * This file contains type declarations for ReactorFactory, a static
+ * class used to create and manage I/O reactor threads.
+ */
+
 
 #ifndef HYPERTABLE_REACTORFACTORY_H
 #define HYPERTABLE_REACTORFACTORY_H
 
+#include <boost/random.hpp>
+#include <boost/random/uniform_01.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 
 #include <cassert>
+#include <set>
 #include <vector>
 
 #include "Common/atomic.h"
@@ -35,18 +44,24 @@
 
 namespace Hypertable {
 
-  /**
-   * This class is a static class that is used to setup and manage I/O
-   * reactors.  Since the I/O reactor threads are a process-wide resource, the
-   * methods of this class are static.
+  /** @addtogroup AsyncComm
+   *  @{
+   */
+
+  /** Static class used to setup and manage I/O reactors.  Since the I/O reactor
+   * threads are a process-wide resource, the methods of this class are static.
    */
   class ReactorFactory {
 
   public:
 
-    /** This method creates and initializes the I/O reactor threads and must be
-     * called once by an application prior to creating the Comm object.
-     *
+    /** Initializes I/O reactors.  This method creates and initializes
+     * <code>reactor_count</code> reactors, plus an additional dedicated timer
+     * reactor.  It also initializes the #use_poll member based on the
+     * <code>Comm.UsePoll</code> property and sets the #ms_epollet
+     * ("edge triggered") flag to <i>false</i> if running on Linux version older
+     * than 2.6.17.  It also allocates a HandlerMap and initializes
+     * ReactorRunner::handler_map to point to it.
      * @param reactor_count number of reactor threads to create
      */
     static void initialize(uint16_t reactor_count);
@@ -57,41 +72,52 @@ namespace Hypertable {
 
     /** This method returns the 'next' reactor.  It returns pointers to
      * reactors in round-robin fashion and is used by the Comm subsystem to
-     * evenly distribute descriptors across all of the reactors.
+     * evenly distribute descriptors across all of the reactors.  The
+     * atomic integer variable #ms_next_reactor is used to keep track
+     * of the next reactor in the list.
+     * @param reactor Smart pointer reference to returned Reactor
      */
-    static void get_reactor(ReactorPtr &reactor_ptr) {
+    static void get_reactor(ReactorPtr &reactor) {
       assert(ms_reactors.size() > 0);
-      reactor_ptr = ms_reactors[atomic_inc_return(&ms_next_reactor)
-                                % (ms_reactors.size() - 1)];
+      reactor = ms_reactors[atomic_inc_return(&ms_next_reactor)
+                            % (ms_reactors.size() - 1)];
     }
 
-    /** This method returns the reserved timer reactor.
+    /** This method returns the timer reactor.
+     * @param reactor Smart pointer reference to returned Reactor
      */
-    static void get_timer_reactor(ReactorPtr &reactor_ptr) {
+    static void get_timer_reactor(ReactorPtr &reactor) {
       assert(ms_reactors.size() > 0);
-      reactor_ptr = ms_reactors.back();
+      reactor = ms_reactors.back();
     }
 
-    /** vector of reactors */
+    /// Vector of reactors (last position is timer reactor)
     static std::vector<ReactorPtr> ms_reactors;
 
+    /// Boost thread_group for managing reactor threads
     static boost::thread_group ms_threads;
 
+    static boost::mt19937 rng; //!< Pseudo random number generator
 #ifdef _WIN32
     static HANDLE hIOCP;
 #else
-    static bool ms_epollet;
-    static bool use_poll;
+    static bool ms_epollet;    //!< Use "edge triggered" epoll
+    static bool use_poll;      //!< Use POSIX poll() as polling mechanism
 #endif
-        
+    
+    /// Set to <i>true</i> if this process is acting as "Proxy Master"       
     static bool proxy_master;
 
   private:
+
+    /// Mutex to serialize calls to #initialize
     static Mutex    ms_mutex;
+
+    /// Atomic integer used for round-robin assignment of reactors
     static atomic_t ms_next_reactor;
 
   };
-
+  /** @}*/
 }
 
 #endif // HYPERTABLE_REACTORFACTORY_H

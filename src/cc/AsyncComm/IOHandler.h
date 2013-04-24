@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,11 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Declarations for IOHandler.
+ * This file contains type declarations for IOHandler, an abstract base class
+ * from which I/O handlers are derived.
+ */
 
 #ifndef HYPERTABLE_IOHANDLER_H
 #define HYPERTABLE_IOHANDLER_H
@@ -40,6 +45,7 @@ extern "C" {
 #elif defined(__sun__)
 #include <port.h>
 #include <sys/port_impl.h>
+#include <unistd.h>
 #endif
 }
 
@@ -54,6 +60,7 @@ extern "C" {
 
 #ifdef _WIN32
 
+#include "Common/Atomic.h"
 #include "CommBuf.h"
 
 #endif
@@ -62,25 +69,49 @@ namespace Hypertable {
 
 #ifdef _WIN32
 
-struct IOOP;
+  struct IOOP;
+  class HandlerMap;
 
 #endif
 
-  /**
-   *
+  /** @addtogroup AsyncComm
+   *  @{
    */
-  class IOHandler : public ReferenceCount {
+
+  /** Base class for socket descriptor I/O handlers.
+   * When a socket is created, an I/O handler object is allocated to handle
+   * events that occur on the socket.  Events are encapsulated in the Event
+   * class and are delivered to the application through a DispatchHandler.  For
+   * example, a TCP socket will have an associated IOHandlerData object that
+   * reads messages off the socket and sends then to the application via the
+   * installed DispatchHandler object.
+   */
+  class IOHandler {
 
   public:
 
-    IOHandler(socket_t sd, const InetAddr &addr, DispatchHandlerPtr &dhp)
-      : m_free_flag(0), m_addr(addr), m_sd(sd), m_dispatch_handler_ptr(dhp) {
-      ReactorFactory::get_reactor(m_reactor_ptr);
+    /** Constructor.
+     * Initializes the I/O handler, assigns it a Reactor, and sets m_local_addr
+     * to the locally bound address (IPv4:port) of <code>sd</code> (see
+     * <code>getsockname</code>).
+     * @param sd Socket descriptor
+     * @param dhp Dispatch handler
+     */
+    IOHandler(socket_t sd, DispatchHandlerPtr &dhp)
+      : m_free_flag(0), m_error(Error::OK),
+        m_sd(sd), m_dispatch_handler(dhp), m_decomissioned(false) {
+      ReactorFactory::get_reactor(m_reactor);
 
 #ifndef _WIN32
+
+      m_reference_count = 0;
       m_poll_interest = 0;
+
 #else
-      m_shutdown = false;
+
+      atomic_set(&m_reference_count, 0);
+      m_handler_map = 0;
+
 #endif
 
       socklen_t namelen = sizeof(m_local_addr);
@@ -90,51 +121,70 @@ struct IOOP;
 
 #ifndef _WIN32
 
-    // define default poll() interface for everyone since it is chosen at runtime
-    virtual bool handle_event(struct pollfd *event, time_t arival_time=0) = 0;
+    /** Event handler method for Unix <i>poll</i> interface.
+     * @param event Pointer to pollfd structure describing event
+     * @param arrival_time Arrival time of event
+     * @return <i>true</i> if socket should be closed, <i>false</i> otherwise
+     */
+    virtual bool handle_event(struct pollfd *event, time_t arrival_time=0) = 0;
+    
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
-    virtual bool handle_event(struct kevent *event, time_t arival_time=0) = 0;
+    /** Event handler method for <i>kqueue</i> interface (OSX, FreeBSD).
+     * @param event Pointer to <code>kevent</code> structure describing event
+     * @param arrival_time Arrival time of event
+     * @return <i>true</i> if socket should be closed, <i>false</i> otherwise
+     */
+    virtual bool handle_event(struct kevent *event, time_t arrival_time=0) = 0;
 #elif defined(__linux__)
-    virtual bool handle_event(struct epoll_event *event, time_t arival_time=0) = 0;
+    /** Event handler method for Linux <i>epoll</i> interface.
+     * @param event Pointer to <code>epoll_event</code> structure describing event
+     * @param arrival_time Arrival time of event
+     * @return <i>true</i> if socket should be closed, <i>false</i> otherwise
+     */
+    virtual bool handle_event(struct epoll_event *event, time_t arrival_time=0) = 0;
 #elif defined(__sun__)
-    virtual bool handle_event(port_event_t *event, time_t arival_time=0) = 0;
-
+    /** Event handler method for <i>port_associate</i> interface (Solaris).
+     * @param event Pointer to <code>port_event_t</code> structure describing event
+     * @param arrival_time Arrival time of event
+     * @return <i>true</i> if socket should be closed, <i>false</i> otherwise
+     */
+    virtual bool handle_event(port_event_t *event, time_t arrival_time=0) = 0;
 #elif defined(_WIN32)
-	virtual bool handle_event(IOOP *event, time_t arival_time) = 0;
+    virtual bool handle_event(IOOP *event, time_t arival_time) = 0;
 #else
-    ImplementMe;
+    // Implement me!!!
 #endif
 
+    /** Destructor.
+     */
     virtual ~IOHandler() {
-      HT_EXPECT(m_free_flag != 0xdeadbeef, Error::FAILED_EXPECTATION);
+      HT_ASSERT(m_free_flag != 0xdeadbeef);
       m_free_flag = 0xdeadbeef;
+      close();
       return;
     }
 
-    void deliver_event(Event *event) {
-      memcpy(&event->local_addr, &m_local_addr, sizeof(m_local_addr));
-      if (!m_dispatch_handler_ptr) {
-        HT_INFOF("%s", event->to_str().c_str());
-        delete event;
-      }
-      else {
-        EventPtr event_ptr(event);
-        m_dispatch_handler_ptr->handle(event_ptr);
-      }
-    }
-
-    void deliver_event(Event *event, DispatchHandler *dh) {
+    /** Convenience method for delivering event to application.
+     * This method will deliver <code>event</code> to the application via the
+     * event handler <code>dh</code> if supplied, otherwise the event will be
+     * delivered via the default event handler, or no default event handler
+     * exists, it will just log the event.  This method is (and should always)
+     * by called from a reactor thread.
+     * @param event pointer to Event (deleted by this method)
+     * @param dh Event handler via which to deliver event
+     */
+    void deliver_event(Event *event, DispatchHandler *dh=0) {
       memcpy(&event->local_addr, &m_local_addr, sizeof(m_local_addr));
       if (!dh) {
-        if (!m_dispatch_handler_ptr) {
+        if (!m_dispatch_handler) {
           HT_INFOF("%s", event->to_str().c_str());
           delete event;
         }
         else {
           EventPtr event_ptr(event);
-          m_dispatch_handler_ptr->handle(event_ptr);
+          m_dispatch_handler->handle(event_ptr);
         }
       }
       else {
@@ -145,134 +195,284 @@ struct IOOP;
 
 #ifdef _WIN32
 
-    bool start_polling() {
-      HANDLE hcp = CreateIoCompletionPort(reinterpret_cast<HANDLE>(m_sd),
-                                          ReactorFactory::hIOCP,
-                                          (ULONG_PTR)this,
-                                          0);
-      if( ReactorFactory::hIOCP != hcp ) {
-          HT_ERRORF("CreateIoCompletionPort failed : %s", winapi_strerror(WSAGetLastError()));
-          return false;
-      }
-      return true;
-    }
+    int start_polling();
 
-    inline bool is_closed() const {
+    bool is_closed() const {
       return m_sd == INVALID_SOCKET;
     }
 
-    bool is_shutdown() const;
-
-    void close() {
-      ScopedLock lock(m_mutex);
-      if(m_sd != INVALID_SOCKET) {
-        HT_DEBUGF("closesocket(%d)", m_sd);
-        closesocket(m_sd);
-        m_sd = INVALID_SOCKET;
-      }
-    }
+    void close();
 
 #else
 
-    int start_polling(int mode=Reactor::READ_READY) {
-      if (ReactorFactory::use_poll) {
-	m_poll_interest = mode;
-	return m_reactor_ptr->add_poll_interest(m_sd, poll_events(mode), this);
-      }
-#if defined(__APPLE__) || defined(__sun__) || defined(__FreeBSD__)
-      return add_poll_interest(mode);
-#elif defined(__linux__)
-      struct epoll_event event;
-      memset(&event, 0, sizeof(struct epoll_event));
-      event.data.ptr = this;
-      if (mode & Reactor::READ_READY)
-        event.events |= EPOLLIN;
-      if (mode & Reactor::WRITE_READY)
-        event.events |= EPOLLOUT;
-      if (ReactorFactory::ms_epollet)
-        event.events |= POLLRDHUP | EPOLLET;
-      m_poll_interest = mode;
-      if (epoll_ctl(m_reactor_ptr->poll_fd, EPOLL_CTL_ADD, m_sd, &event) < 0) {
-        HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_ADD, %d, %x) failed : %s",
-                  m_reactor_ptr->poll_fd, m_sd, event.events, strerror(errno));
-        return Error::COMM_POLL_ERROR;
-      }
-#endif
-      return Error::OK;
-    }
+    /** Start polling on the handler with the poll interest specified in
+     * <code>mode</code>.
+     * This method registers the poll interest, specified in <code>mode</code>,
+     * with the polling interface and sets #m_poll_interest to
+     * <code>mode</code>.  If an error is encountered, #m_error is
+     * set to the approprate error code.
+     * @return Error::OK on success, or one of Error::COMM_POLL_ERROR,
+     * Error::COMM_SEND_ERROR, or Error::COMM_RECEIVE_ERROR on error
+     */
+    int start_polling(int mode=Reactor::READ_READY);
 
+    /** Adds the poll interest specified in <code>mode</code> to the polling
+     * interface for this handler.
+     * This method adds the poll interest, specified in <code>mode</code>,
+     * to the polling interface for this handler and merges <code>mode</code>
+     * into #m_poll_interest using bitwise OR (|).  If an error is encountered,
+     * #m_error is set to the approprate error code.
+     * @return Error::OK on success, or one of Error::COMM_POLL_ERROR,
+     * Error::COMM_SEND_ERROR, or Error::COMM_RECEIVE_ERROR on error
+     */
     int add_poll_interest(int mode);
 
+    /** Removes the poll interest specified in <code>mode</code> to the polling
+     * interface for this handler.
+     * This method removes the poll interest, specified in <code>mode</code>,
+     * from the polling interface for this handler and strips <code>mode</code>
+     * from #m_poll_interest using boolean operations.  If an error is
+     * encountered, #m_error is set to the approprate error code.
+     * @return Error::OK on success, or one of Error::COMM_POLL_ERROR,
+     * Error::COMM_SEND_ERROR, or Error::COMM_RECEIVE_ERROR on error
+     */
     int remove_poll_interest(int mode);
 
+    /** Resets poll interest by adding #m_poll_interest to the polling interface
+     * for this handler.  If an error is encountered, #m_error is set to the
+     * approprate error code.
+     * @return Error::OK on success, or one of Error::COMM_POLL_ERROR,
+     * Error::COMM_SEND_ERROR, or Error::COMM_RECEIVE_ERROR on error
+     */
     int reset_poll_interest() {
       return add_poll_interest(m_poll_interest);
     }
 
 #endif
 
-    InetAddr &get_address() { return m_addr; }
+    /** Gets the handler socket address.  The socket address is the
+     * address of the remote end of the connection for data (TCP) handlers,
+     * and the local socket address for datagram and accept handlers.
+     * @return Handler socket address
+     */
+    InetAddr get_address() { return m_addr; }
 
-    InetAddr &get_local_address() { return m_local_addr; }
+    /** Get local socket address for connection.
+     * @return Local socket address for connection.
+     */
+    InetAddr get_local_address() { return m_local_addr; }
 
-    void get_local_address(InetAddr *addrp) {
-      *addrp = m_local_addr;
-    }
-
-    void set_alias(const InetAddr &alias) {
-      m_alias = alias;
-    }
-
-    void get_alias(InetAddr *aliasp) {
-      *aliasp = m_alias;
-    }
-
+    /** Sets the proxy name for this connection.
+     * @param proxy Proxy name to set for this connection.
+     */
     void set_proxy(const String &proxy) {
       ScopedLock lock(m_mutex);
       m_proxy = proxy;
     }
 
+    /** Gets the proxy name for this connection.
+     * @return Proxy name for this connection.
+     */
     String get_proxy() {
       ScopedLock lock(m_mutex);
       return m_proxy;
     }
 
+    /** Gets the socket descriptor for this connection.
+     * @return Socket descriptor for this connection.
+     */
     socket_t get_sd() { return m_sd; }
 
-    void get_reactor(ReactorPtr &reactor_ptr) { reactor_ptr = m_reactor_ptr; }
-
-    void shutdown() {
-      ExpireTimer timer;
-      m_reactor_ptr->schedule_removal(this);
-      boost::xtime_get(&timer.expire_time, boost::TIME_UTC_);
-      timer.expire_time.nsec += 200000000LL;
-      timer.handler = 0;
-      m_reactor_ptr->add_timer(timer);
-#ifdef _WIN32
-      m_shutdown = true;
-#endif
-    }
+    /** Get the reactor that this handler is assigned to.
+     * @param reactor Reference to returned reactor pointer
+     */
+    void get_reactor(ReactorPtr &reactor) { reactor = m_reactor; }
 
 #ifndef _WIN32
 
+    /** Display polling event from <code>poll()</code> interface to
+     * <i>stderr</i>.
+     * @param event Pointer to <code>pollfd</code> structure describing
+     * <code>poll()</code> event.
+     */
     void display_event(struct pollfd *event);
 
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
+    /** Display polling event from <code>kqueue</code> interface to
+     * <i>stderr</i>.
+     * @param event Pointer to <code>kevent</code> structure describing
+     * <code>kqueue()</code> event.
+     */
     void display_event(struct kevent *event);
 #elif defined(__linux__)
+    /** Display polling event from <code>epoll()</code> interface to
+     * <i>stderr</i>.
+     * @param event Pointer to <code>epoll_event</code> structure describing
+     * <code>epoll()</code> event.
+     */
     void display_event(struct epoll_event *event);
 #elif defined(__sun__)
+    /** Display polling event from <code>port_associate()</code> interface to
+     * <i>stderr</i>.
+     * @param event Pointer to <code>port_event_t</code> structure describing
+     * <code>port_associate()</code> event.
+     */
     void display_event(port_event_t *event);
 #elif defined(_WIN32)
     void display_event(IOOP *event);
 #endif
 
+    friend class HandlerMap;
+
   protected:
+
+    /** Sets #m_error to <code>error</code> if it has not already been set.
+     * This method checks to see if #m_error is set to Error::OK and if so, it
+     * sets #m_error to <code>error</code> and returns <i>true</i>.  Otherwise
+     * it does nothing and returns false.
+     * @return <i>true</i> if #m_error was set to <code>error</code>,
+     * <i>false</i> otherwise.
+     */
+    bool test_and_set_error(int32_t error) {
+      ScopedLock lock(m_mutex);
+      if (m_error == Error::OK) {
+        m_error = error;
+        return true;
+      }
+      return false;
+    }
+
+    /** Returns first error code encountered by handler.
+     * When an error is encountered during handler methods, the first error code
+     * that is encountered is recorded in #m_error.  This method returns that
+     * error or Error::OK if no error has been encountered.
+     * @return First error code encountered by this handler, or Error::OK if
+     * no error has been encountered
+     */
+    int32_t get_error() {
+      ScopedLock lock(m_mutex);
+      return m_error;
+    }
+
+    /** Get alias address for this connection.
+     * @return Alias address for this connection.
+     */
+    InetAddr get_alias() {
+      return m_alias;
+    }
+
+    /** Set alias address for this connection.
+     * @param alias Reference to return alias address.
+     */
+    void set_alias(const InetAddr &alias) {
+      m_alias = alias;
+    }
+
+    /** Increment reference count.
+     * @note This method assumes the caller is serializing access to this and
+     * related methods with a mutex lock.
+     * @see #decrement_reference_count, #reference_count, and #decomission
+     */
+#ifndef _WIN32
+
+    void increment_reference_count() {
+      m_reference_count++;
+    }
+
+#else
+
+    void increment_reference_count(HandlerMap* handler_map) {
+      m_handler_map = handler_map;
+      atomic_inc(&m_reference_count);
+    }
+
+#endif
+
+    /** Decrement reference count.
+     * If reference count drops to 0 and the handler is decomissioned
+     * then it is scheduled for removal with a call to
+     * <code>m_reactor->schedule_removal(this)</code>.
+     * @note This method assumes the caller is serializing access to this and
+     * related methods with a mutex lock.
+     * @see #increment_reference_count, #reference_count, and #decomission
+     */
+    void decrement_reference_count() {
 
 #ifndef _WIN32
 
+      HT_ASSERT(m_reference_count > 0);
+      m_reference_count--;
+      if (m_reference_count == 0 && m_decomissioned)
+        m_reactor->schedule_removal(this);
+
+#else
+
+      if (atomic_dec_and_test(&m_reference_count) && m_decomissioned)
+        m_reactor->schedule_removal(this);
+
+#endif
+
+    }
+
+    /** Return reference count
+     * @note This method assumes the caller is serializing access to this and
+     * related methods with a mutex lock.
+     * @see #increment_reference_count, #decrement_reference_count, and
+     * #decomission
+     */
+    size_t reference_count() {
+
+#ifndef _WIN32
+
+      return m_reference_count;
+
+#else
+
+       return atomic_read(&m_reference_count);
+
+#endif
+    }
+
+    /** Decomission handler.
+     * This method decomissions the handler by setting the #m_decomissioned
+     * flag to <i>true</i>.  If the reference count is 0, the handler is
+     * also scheduled for removal with a call to
+     * <code>m_reactor->schedule_removal(this)</code>.
+     * @note This method assumes the caller is serializing access to this and
+     * related methods with a mutex lock.
+     * @see #increment_reference_count, #decrement_reference_count,
+     * #reference_count, and #is_decomissioned
+     */
+    void decomission() {
+      if (!m_decomissioned) {
+        m_decomissioned = true;
+        if (reference_count() == 0)
+          m_reactor->schedule_removal(this);
+      }
+    }
+
+    /** Checks to see if handler is decomissioned.
+     * @return <i>true</i> if it is decomissioned, <i>false</i> otherwise.
+     */
+    bool is_decomissioned() {
+      return m_decomissioned;
+    }
+
+    /** Disconnect connection.
+     */
+    virtual void disconnect() { }
+
+#ifndef _WIN32
+
+    /** Return <code>poll()</code> interface events corresponding to the
+     * normalized polling interest in <code>mode</code>.  <code>mode</code>
+     * is some bitwise combination of the flags Reactor::READ_READY and
+     * Reactor::WRITE_READY.
+     * @return <code>poll()</code> events correspond to polling interest
+     * specified in <code>mode</code>.
+     */
     short poll_events(int mode) {
       short events = 0;
       if (mode & Reactor::READ_READY)
@@ -282,19 +482,22 @@ struct IOOP;
       return events;
     }
 
+    /** Stops polling by removing socket from polling interface.
+     * Clears #m_poll_interest.
+     */
     void stop_polling() {
       if (ReactorFactory::use_poll) {
 	m_poll_interest = 0;
-	m_reactor_ptr->modify_poll_interest(m_sd, 0);
+	m_reactor->modify_poll_interest(m_sd, 0);
 	return;
       }
 #if defined(__APPLE__) || defined(__sun__) || defined(__FreeBSD__)
       remove_poll_interest(Reactor::READ_READY|Reactor::WRITE_READY);
 #elif defined(__linux__)
       struct epoll_event event;  // this is necessary for < Linux 2.6.9
-      if (epoll_ctl(m_reactor_ptr->poll_fd, EPOLL_CTL_DEL, m_sd, &event) < 0) {
+      if (epoll_ctl(m_reactor->poll_fd, EPOLL_CTL_DEL, m_sd, &event) < 0) {
         HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_DEL, %d) failed : %s",
-                     m_reactor_ptr->poll_fd, m_sd, strerror(errno));
+                     m_reactor->poll_fd, m_sd, strerror(errno));
         exit(1);
       }
       m_poll_interest = 0;
@@ -303,83 +506,75 @@ struct IOOP;
 
 #endif
 
-    Mutex               m_mutex;
-    uint32_t            m_free_flag;
-    String              m_proxy;
-    InetAddr            m_addr;
-    InetAddr            m_local_addr;
-    InetAddr            m_alias;
-    socket_t            m_sd;
-    DispatchHandlerPtr  m_dispatch_handler_ptr;
-    ReactorPtr          m_reactor_ptr;
+    /// %Mutex for serializing concurrent access
 
+    Mutex m_mutex;
+
+    /** Reference count.  Calls to methods that reference this member
+     * must be mutex protected by caller.
+     */
 #ifndef _WIN32
 
-    int                 m_poll_interest;
+    size_t m_reference_count;
 
 #else
 
-    bool                m_shutdown;
+    atomic_t m_reference_count;
 
 #endif
-  };
-  typedef boost::intrusive_ptr<IOHandler> IOHandlerPtr;
 
-  struct ltiohp {
-    bool operator()(const IOHandlerPtr &p1, const IOHandlerPtr &p2) const {
-      return p1.get() < p2.get();
-    }
-  };
+    /// Free flag (for testing)
+    uint32_t m_free_flag;
 
-  #ifdef _WIN32
+    /// Error code
+    int32_t m_error;
 
-  struct IOOP : OVERLAPPED {
+    /// Proxy name for this connection
+    String m_proxy;
 
-    enum OP {
-      CONNECT,
-      ACCEPT,
-      RECV,
-      SEND,
-      RECVFROM,
-      SENDTO
-    };
+    /// Handler socket address
+    InetAddr m_addr;
 
-    IOOP(socket_t _sd, OP _op, IOHandler* _handler) :
-        sd(_sd),
-        op(_op),
-        handler(_handler),
-        numberOfBytes(0),
-        commbuf(0),
-        err(NOERROR)
-   {
-      ZeroMemory(this, sizeof(OVERLAPPED));
-    }
+    /// Local address of connection
+    InetAddr m_local_addr;
 
-    IOOP(socket_t _sd, OP _op, IOHandler* _handler, CommBufPtr& _commbuf) :
-        sd(_sd),
-        op(_op),
-        handler(_handler),
-        numberOfBytes(0),
-        commbuf(_commbuf),
-        err(NOERROR)
-    {
-      ZeroMemory(this, sizeof(OVERLAPPED));
-    }
+    /// Address alias for connection
+    InetAddr m_alias;
 
-    const socket_t sd;
-    const OP op;
-    IOHandlerPtr handler; // prevent Handler to be deleted until all the IOCP done
-    DWORD numberOfBytes;  // from GetQueuedCompletionStatus
-    CommBufPtr commbuf;   // buffer to be freed after WSASend (or WSASentTo) is complete
-    BYTE addresses[(sizeof(struct sockaddr_in) + 16)*2]; // for AcceptEx
-    DWORD err;            // GetLastError just after GetQueuedCompletionStatus
+    /// Socket descriptor
+    socket_t m_sd;
 
-    String to_str() const;
-  };
+    /// Default dispatch hander for connection
+    DispatchHandlerPtr m_dispatch_handler;
+
+    /// Reactor to which this handler is assigned
+    ReactorPtr m_reactor;
+
+#ifndef _WIN32
+
+    /** Current polling interest.  The polling interest is some bitwise
+     * combination of the flags Reactor::READ_READY and
+     * Reactor::WRITE_READY.
+     */
+    int m_poll_interest;
+
+#else
+
+    HandlerMap* m_handler_map;
+
+    friend void intrusive_ptr_add_ref(IOHandler *handler);
+    friend void intrusive_ptr_release(IOHandler *handler);
 
 #endif
+
+    /** Decomissioned flag.  Calls to methods that reference this member
+     * must be mutex protected by caller.
+     */
+    bool m_decomissioned;
+
+  };
+  /** @}*/
 
 }
-
 
 #endif // HYPERTABLE_IOHANDLER_H

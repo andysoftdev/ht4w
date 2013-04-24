@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,12 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Declarations for Range.
+ * This file contains the type declarations for Range, a class used to
+ * access and manage a range of table data.
+ */
+
 #ifndef HYPERTABLE_RANGE_H
 #define HYPERTABLE_RANGE_H
 
@@ -36,6 +42,7 @@
 #include "Hypertable/Lib/Schema.h"
 #include "Hypertable/Lib/Timestamp.h"
 #include "Hypertable/Lib/Types.h"
+#include "Hypertable/Lib/MetaLogEntityRange.h"
 
 #include "AccessGroup.h"
 #include "CellStore.h"
@@ -50,6 +57,10 @@
 #include "RangeTransferInfo.h"
 
 namespace Hypertable {
+
+  /** @addtogroup RangeServer
+   * @{
+   */
 
   /**
    * Represents a table row range.
@@ -99,8 +110,8 @@ namespace Hypertable {
       bool     relinquish;
       bool     needs_major_compaction;
       bool     needs_split;
-      int64_t  log_hash;
       bool     load_acknowledged;
+      int64_t  log_hash;
     };
 
     typedef std::map<String, AccessGroup *> AccessGroupMap;
@@ -124,9 +135,30 @@ namespace Hypertable {
     void lock();
     void unlock();
 
+    MetaLog::EntityRange *metalog_entity() { return m_metalog_entity.get(); }
+
     uint64_t disk_usage();
 
     CellListScanner *create_scanner(ScanContextPtr &scan_ctx);
+
+    /** Creates a scanner over the pseudo-table indicated by
+     * <code>table_name</code>.  The following pseudo-tables are supported:
+     *
+     *   - .cellstore.index
+     *
+     * This method creates a CellListScannerBuffer and passes it into the 
+     * AccessGroup::populate_cellstore_index_pseudo_table_scanner method of each
+     * one of its access groups AccessGroups, populating it with the
+     * pseudo-table cells.
+     *
+     * @note The scanner that is returned by this method will be owned by the
+     * caller and must be freed by the caller to prevent a memory leak.
+     * @param scan_ctx ScanContext object
+     * @param table_name Pseudo-table name
+     * @return Pointer to CellListScanner (to be freed by caller)
+     */
+    CellListScanner *create_scanner_pseudo_table(ScanContextPtr &scan_ctx,
+                                                 const String &table_name);
 
     String start_row() {
       ScopedLock lock(m_mutex);
@@ -210,7 +242,7 @@ namespace Hypertable {
 
     /**
      * @param transfer_info
-     * @param split_log
+     * @param transfer_log
      * @param latest_revisionp
      * @param wait_for_maintenance true if this range has exceeded its capacity and
      *        future requests to this range need to be throttled till split/compaction reduces
@@ -262,6 +294,8 @@ namespace Hypertable {
 
     bool is_root() { return m_is_root; }
 
+    bool is_metadata() { return m_is_metadata; }
+
     void drop() {
       Barrier::ScopedActivator block_updates(m_update_barrier);
       Barrier::ScopedActivator block_scans(m_scan_barrier);
@@ -282,7 +316,12 @@ namespace Hypertable {
       return m_metalog_entity->state.state;
     }
 
-    int32_t get_error() { return m_error; }
+    int32_t get_error() {
+      ScopedLock lock(m_mutex);
+      if (!m_metalog_entity->load_acknowledged)
+        return Error::RANGESERVER_RANGE_NOT_YET_ACKNOWLEDGED;
+      return m_error;
+    }
 
     void set_needs_compaction(bool needs_compaction) {
       ScopedLock lock(m_mutex);
@@ -327,7 +366,7 @@ namespace Hypertable {
     void relinquish_install_log();
     void relinquish_compact_and_finish();
 
-    bool determine_split_row_from_cached_keys(AccessGroupVector &ag_vector);
+    bool estimate_split_row(SplitRowDataMapT &split_row_data, String &row);
 
     void split_install_log();
     void split_compact_and_shrink();
@@ -367,6 +406,8 @@ namespace Hypertable {
     Barrier          m_update_barrier;
     Barrier          m_scan_barrier;
     bool             m_is_root;
+    bool             m_is_metadata;
+    bool             m_unsplittable;
     uint64_t         m_added_deletes[KEYSPEC_DELETE_MAX];
     uint64_t         m_added_inserts;
     RangeSet        *m_range_set;
@@ -383,6 +424,8 @@ namespace Hypertable {
   typedef intrusive_ptr<Range> RangePtr;
 
   std::ostream &operator<<(std::ostream &os, const Range::MaintenanceData &mdata);
+
+  /** @}*/
 
 } // namespace Hypertable
 

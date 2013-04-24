@@ -36,6 +36,18 @@
 #include "Range.h"
 #include "TableInfo.h"
 
+#ifndef _WIN32
+
+namespace __gnu_cxx {
+  template<> struct hash<Hypertable::Range *>  {
+    size_t operator()(const Hypertable::Range *x) const {
+      return (size_t)x;
+    }
+  };
+}
+
+#endif
+
 namespace Hypertable {
 
   struct SendBackRec {
@@ -155,7 +167,5 @@ namespace Hypertable {
   typedef boost::intrusive_ptr<GroupCommitInterface> GroupCommitInterfacePtr;
 }
 
-#ifndef _WIN32
-#endif
 #endif // HYPERSPACE_GROUPCOMMITINTERFACE_H
 

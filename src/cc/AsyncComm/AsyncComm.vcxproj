@@ -36,10 +36,12 @@
     <ClCompile Include="ConnectionManager.cc" />
     <ClCompile Include="DispatchHandlerSynchronizer.cc" />
     <ClCompile Include="Event.cc" />
+    <ClCompile Include="HandlerMap.cc" />
     <ClCompile Include="IOHandler.cc" />
     <ClCompile Include="IOHandlerAccept.cc" />
     <ClCompile Include="IOHandlerData.cc" />
     <ClCompile Include="IOHandlerDatagram.cc" />
+    <ClCompile Include="IOOP.cc" />
     <ClCompile Include="Protocol.cc" />
     <ClCompile Include="ProxyMap.cc" />
     <ClCompile Include="Reactor.cc" />
@@ -51,6 +53,7 @@
   <ItemGroup>
     <ClInclude Include="ApplicationHandler.h" />
     <ClInclude Include="ApplicationQueue.h" />
+    <ClInclude Include="ApplicationQueueInterface.h" />
     <ClInclude Include="Comm.h" />
     <ClInclude Include="CommAddress.h" />
     <ClInclude Include="CommBuf.h" />
@@ -68,6 +71,7 @@
     <ClInclude Include="IOHandlerAccept.h" />
     <ClInclude Include="IOHandlerData.h" />
     <ClInclude Include="IOHandlerDatagram.h" />
+    <ClInclude Include="IOOP.h" />
     <ClInclude Include="PollTimeout.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="ProxyMap.h" />

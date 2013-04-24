@@ -84,7 +84,7 @@ CellStoreV5::~CellStoreV5() {
     HT_ERROR_OUT << e << HT_END;
   }
 
-  Global::memory_tracker->subtract(sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.bloom_filter_memory + m_index_stats.block_index_memory);
+  Global::memory_tracker->subtract( sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.bloom_filter_memory + m_index_stats.block_index_memory );
 
 }
 
@@ -98,15 +98,18 @@ KeyDecompressor *CellStoreV5::create_key_decompressor() {
   return new KeyDecompressorPrefix();
 }
 
-
-const char *CellStoreV5::get_split_row() {
-  if (m_split_row != "")
-    return m_split_row.c_str();
+void CellStoreV5::split_row_estimate_data(SplitRowDataMapT &split_row_data) {
   if (m_index_stats.block_index_memory == 0)
     load_block_index();
-  if (m_split_row != "")
-    return m_split_row.c_str();
-  return 0;
+  if (m_trailer.index_entries == 0) {
+    HT_WARNF("%s has 0 index entries", m_filename.c_str());
+    return;
+  }
+  int32_t keys_per_block = m_trailer.total_entries / m_trailer.index_entries;
+  if (m_64bit_index)
+    m_index_map64.unique_row_count_estimate(split_row_data, keys_per_block);
+  else
+    m_index_map32.unique_row_count_estimate(split_row_data, keys_per_block);
 }
 
 CellListScanner *CellStoreV5::create_scanner(ScanContextPtr &scan_ctx) {
@@ -220,7 +223,7 @@ CellStoreV5::create(const char *fname, size_t max_entries,
       if (!(has_num_hashes && has_bits_per_item)) {
         HT_WARN("Bloom filter option --bits-per-item must be used with "
                 "--num-hashes, defaulting to false probability of 0.01");
-        m_filter_false_positive_prob = 0.1f;
+        m_filter_false_positive_prob = 0.1;
       }
       else {
         m_trailer.bloom_filter_hash_count = props->get_i32("num-hashes");
@@ -397,7 +400,7 @@ uint64_t CellStoreV5::purge_indexes() {
     m_index_stats.block_index_memory = 0;
   }
 
-  Global::memory_tracker->subtract(memory_purged);
+  Global::memory_tracker->subtract( memory_purged );
 
   return memory_purged;
 }
@@ -691,7 +694,6 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
                        m_index_builder.variable_buf(),
                        m_trailer.fix_index_offset);
     m_trailer.index_entries = m_index_map64.index_entries();
-    record_split_row( m_index_map64.middle_key() );
     index_memory = m_index_map64.memory_used();
     m_trailer.flags |= CellStoreTrailerV5::INDEX_64BIT;
   }
@@ -701,7 +703,6 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
                        m_trailer.fix_index_offset);
     m_trailer.index_entries = m_index_map32.index_entries();
     index_memory = m_index_map32.memory_used();
-    record_split_row( m_index_map32.middle_key() );
   }
 
   // deallocate fix index data
@@ -763,7 +764,7 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
   delete [] m_column_ttl;
   m_column_ttl = 0;
 
-  Global::memory_tracker->add(sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.block_index_memory + m_index_stats.bloom_filter_memory);
+  Global::memory_tracker->add( sizeof(CellStoreV5) + sizeof(CellStoreInfo) + m_index_stats.block_index_memory + m_index_stats.bloom_filter_memory );
 }
 
 
@@ -859,7 +860,7 @@ CellStoreV5::open(const String &fname, const String &start_row,
               "length=%llu, file='%s'", (unsigned)m_fd, (Lld)m_trailer.fix_index_offset,
            (Lld)m_trailer.var_index_offset, (Llu)m_file_length, fname.c_str());
 
-  Global::memory_tracker->add(sizeof(CellStoreV5) + sizeof(CellStoreInfo));
+  Global::memory_tracker->add( sizeof(CellStoreV5) + sizeof(CellStoreInfo) );
 
 }
 
@@ -940,20 +941,18 @@ void CellStoreV5::load_block_index() {
     m_index_map64.load(m_index_builder.fixed_buf(),
                        m_index_builder.variable_buf(),
                        m_trailer.fix_index_offset, m_start_row, m_end_row);
-    record_split_row( m_index_map64.middle_key() );
     m_index_stats.block_index_memory = m_index_map64.memory_used();
   }
   else {
     m_index_map32.load(m_index_builder.fixed_buf(),
                        m_index_builder.variable_buf(),
                        m_trailer.fix_index_offset, m_start_row, m_end_row);
-    record_split_row( m_index_map32.middle_key() );
     m_index_stats.block_index_memory = m_index_map32.memory_used();
   }
 
   m_index_builder.release_fixed_buf();
 
-  Global::memory_tracker->add(m_index_stats.block_index_memory);
+  Global::memory_tracker->add( m_index_stats.block_index_memory );
 }
 
 
@@ -1017,14 +1016,4 @@ void CellStoreV5::display_block_info() {
     m_index_map64.display();
   else
     m_index_map32.display();
-}
-
-
-
-void CellStoreV5::record_split_row(const SerializedKey key) {
-  if (key.ptr) {
-    std::string split_row = key.row();
-    if (split_row > m_start_row && split_row < m_end_row)
-      m_split_row = split_row;
-  }
 }

@@ -44,7 +44,6 @@ Future.cc
 HqlCommandInterpreter.cc
 HqlHelpText.cc
 HqlInterpreter.cc
-IntervalScanner.cc
 IntervalScannerAsync.cc
 Key.cc
 KeySpec.cc
@@ -61,15 +60,19 @@ MasterProtocol.cc
 MetaLog.cc
 MetaLogEntity.cc
 MetaLogEntityHeader.cc
+MetaLogEntityRange.cc
 MetaLogReader.cc
 MetaLogWriter.cc
 NameIdMapper.cc
 Namespace.cc
 NamespaceCache.cc
+PseudoTables.cc
 RangeLocator.cc
 RangeMoveSpec.cc
 RangeServerClient.cc
 RangeServerProtocol.cc
+RangeRecoveryReceiverPlan.cc
+RangeRecoveryReplayPlan.cc
 RangeState.cc
 Result.cc
 RootFileHandler.cc
@@ -173,6 +176,10 @@ target_link_libraries(future_mutator_cancel_test Hypertable)
 add_executable(future_test tests/future_test.cc)
 target_link_libraries(future_test Hypertable)
 
+# key_spec_test 
+add_executable(key_spec_test tests/key_spec_test.cc)
+target_link_libraries(key_spec_test Hypertable)
+
 # scan_spec_test
 add_executable(scan_spec_test tests/scan_spec_test.cc)
 target_link_libraries(scan_spec_test Hypertable)
@@ -270,6 +277,7 @@ add_test(Client-async-api async_api_test)
 add_test(Client-future future_test)
 add_test(Client-row-delete row_delete_test)
 add_test(Client-periodic-flush periodic_flush_test)
+add_test(Keyspec env INSTALL_DIR=${INSTALL_DIR} ${CMAKE_CURRENT_BINARY_DIR}/key_spec_test)
 add_test(NameIdMapper name_id_mapper_test --config=${DST_DIR}/name_id_mapper_test.cfg)
 add_test(StatsRangeServer-serialize rangeserver_serialize_test)
 add_test(ScanSpec-basic-tests scan_spec_test)

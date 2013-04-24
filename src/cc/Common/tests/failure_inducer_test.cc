@@ -51,7 +51,7 @@ void hit_labels(ofstream &os) {
   }
 }
 
-void test(const String &outfile) {
+void test1(const String &outfile) {
   FailureInducer::instance = new FailureInducer();
 
   FailureInducer::instance->parse_option("label-1:throw:1");
@@ -71,7 +71,24 @@ void test(const String &outfile) {
   }
 }
 
+void test2(const String &outfile) {
+  FailureInducer::instance = new FailureInducer();
+
+  FailureInducer::instance->parse_option("label-1:throw:1;label-2:throw(4):2;label-3:throw(0x5001B):3;label-5:signal:6");
+
+  ofstream os(outfile.c_str());
+
+  for (int ii=0; ii < 10; ++ii) {
+    try {
+      hit_labels(os);
+    }
+    catch (Exception &e) {
+      os << "Caught exception with code " << e.code() << "-" << e.what() << endl;
+    }
+  }
 }
+
+} // namespace
 
 int main(int argc, char *argv[]) {
   Config::init(argc, argv);
@@ -83,12 +100,25 @@ int main(int argc, char *argv[]) {
       _exit(1);
     }
   }
-  test(outfile);
+  test1(outfile);
+  
 #ifndef _WIN32
   String cmd_str = "diff failure_inducer_test.out failure_inducer_test.golden";
 #else
   String cmd_str = "fc failure_inducer_test.out failure_inducer_test.golden";
 #endif
+
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  test2(outfile);
+
+#ifndef _WIN32
+  cmd_str = "diff failure_inducer_test.out failure_inducer_test.golden";
+#else
+  cmd_str = "fc failure_inducer_test.out failure_inducer_test.golden";
+#endif
+
   if (system(cmd_str.c_str()) != 0)
     _exit(1);
 

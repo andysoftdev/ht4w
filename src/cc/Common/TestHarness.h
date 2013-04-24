@@ -22,9 +22,6 @@
 #ifndef HYPERTABLE_TESTHARNESS_H
 #define HYPERTABLE_TESTHARNESS_H
 
-#include <log4cpp/FileAppender.hh>
-#include <log4cpp/Layout.hh>
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -46,7 +43,7 @@ namespace Hypertable {
       // open temporary output file
       sprintf(m_output_file, "%s%d", name, (int)getpid());
 
-      if ((m_fd = open(m_output_file, O_CREAT | O_TRUNC | O_WRONLY, 0644))
+      if ((m_fd = open(m_output_file, O_CREAT | O_TRUNC | O_RDWR, 0644))
           < 0) {
 #ifndef _WIN32
         HT_ERRORF("open(%s) failed - %s", m_output_file, strerror(errno));
@@ -56,9 +53,11 @@ namespace Hypertable {
         exit(1);
       }
 
-      Logger::set_test_mode(name, m_fd);
+      Logger::get()->set_test_mode(m_fd);
     }
+
     ~TestHarness() {
+      close();
       if (!m_error)
         unlink(m_output_file);
     }
@@ -71,10 +70,7 @@ namespace Hypertable {
     }
 
     int validate(const char *golden_file) {
-#ifdef _WIN32
-      _commit(m_fd);
-#endif
-      Logger::logger->removeAllAppenders();
+      close();
 #ifndef _WIN32
       String command = (String)"diff " + m_output_file + " " + golden_file;
 #else
@@ -90,29 +86,29 @@ namespace Hypertable {
     }
 
     void regenerate_golden_file(const char *golden_file) {
+      close();
       String command = (String)"mv " + m_output_file + " " + golden_file;
       HT_ASSERT(system(command.c_str()) == 0);
     }
 
-    void clear_output() {
-      if (!m_appender->reopen()) {
-        HT_ERRORF("Problem re-opening logging output file %s", m_output_file);
-        display_error_and_exit();
-      }
-    }
-
     void display_error_and_exit() {
-      close(m_fd);
+      close();
       std::cerr << "Error, see '" << m_output_file << "'" << std::endl;
       _exit(1);
     }
 
   private:
     char m_output_file[128];
-    log4cpp::FileAppender *m_appender;
     const char *m_name;
     int m_fd;
     int m_error;
+
+    void close() {
+      if (m_fd != -1) {
+        Logger::get()->close();
+        m_fd = -1;
+      }
+    }
   };
 
 } // namespace Hypertable

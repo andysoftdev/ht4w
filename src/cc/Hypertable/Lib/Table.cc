@@ -29,6 +29,8 @@
 #include "Common/Error.h"
 #include "Common/Logger.h"
 
+#include "AsyncComm/ApplicationQueue.h"
+
 #include "Hyperspace/HandleCallback.h"
 #include "Hyperspace/Session.h"
 
@@ -37,6 +39,7 @@
 #include "TableMutator.h"
 #include "TableMutatorShared.h"
 #include "TableMutatorAsync.h"
+#include "ScanSpec.h"
 
 using namespace Hypertable;
 using namespace Hyperspace;
@@ -60,7 +63,7 @@ Table::Table(PropertiesPtr &props, ConnectionManagerPtr &conn_manager,
 
 Table::Table(PropertiesPtr &props, RangeLocatorPtr &range_locator,
              ConnectionManagerPtr &conn_manager, 
-             Hyperspace::SessionPtr &hyperspace, ApplicationQueuePtr &app_queue,
+             Hyperspace::SessionPtr &hyperspace, ApplicationQueueInterfacePtr &app_queue,
              NameIdMapperPtr &namemap, const String &name, 
              int32_t flags, uint32_t timeout_ms)
   : m_props(props), m_comm(conn_manager->get_comm()),
@@ -186,6 +189,8 @@ Table::create_mutator_async(ResultCallback *cb, uint32_t timeout_ms, uint32_t fl
 TableScanner *
 Table::create_scanner(const ScanSpec &scan_spec, uint32_t timeout_ms,
                       int32_t flags) {
+  scan_spec.throw_if_invalid();
+
   return new TableScanner(m_comm, this, m_range_locator, scan_spec,
                           timeout_ms ? timeout_ms : m_timeout_ms);
 }
@@ -195,6 +200,8 @@ Table::create_scanner_async(ResultCallback *cb, const ScanSpec &scan_spec, uint3
                             int32_t flags) {
   HT_ASSERT(needs_index_table() ? has_index_table() : true);
   HT_ASSERT(needs_qualifier_index_table() ? has_qualifier_index_table() : true);
+
+  scan_spec.throw_if_invalid();
 
   return new TableScannerAsync(m_comm, m_app_queue, this, m_range_locator, scan_spec,
                                 timeout_ms ? timeout_ms : m_timeout_ms, cb,

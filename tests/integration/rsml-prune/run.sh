@@ -5,7 +5,6 @@ HT_TEST_DFS=${HT_TEST_DFS:-local}
 
 PIDFILE=$HYPERTABLE_HOME/run/Hypertable.RangeServer.pid
 
-$HYPERTABLE_HOME/bin/start-dfsbroker.sh $HT_TEST_DFS
 $HYPERTABLE_HOME/bin/start-test-servers.sh --clean --no-thriftbroker
 
 sleep 5
@@ -21,6 +20,7 @@ $HYPERTABLE_HOME/bin/ht_load_generator update --spec-file=data.spec --max-bytes=
 
 for ((i=0; i<15; i++)) ; do
     kill -9 `cat $PIDFILE`
+    \rm -f $PIDFILE
     $HYPERTABLE_HOME/bin/start-rangeserver.sh
     sleep 2
 done

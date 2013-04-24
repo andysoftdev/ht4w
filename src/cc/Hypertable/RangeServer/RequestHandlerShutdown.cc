@@ -36,7 +36,9 @@ using namespace Hypertable;
  *
  */
 void RequestHandlerShutdown::run() {
+  ResponseCallback cb(m_comm, m_event);
   m_range_server->shutdown();
+  cb.response_ok();
   poll(0, 0, 2000);
   HT_INFO("Exiting RangeServer.");
   _exit(0);

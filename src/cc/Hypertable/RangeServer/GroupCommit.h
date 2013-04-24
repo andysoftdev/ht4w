@@ -64,7 +64,6 @@ namespace Hypertable {
     FlyweightString m_flyweight_strings;
 
     typedef std::map<TableIdentifier, TableUpdate *, lttid> TableUpdateMap;
-
     TableUpdateMap m_table_map;
   };
 }

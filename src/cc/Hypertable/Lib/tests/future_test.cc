@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
             }
 
             HT_ASSERT(result->is_update());
-            HT_INFO_OUT <<  "Flush complete" << HT_END;
+            HT_INFO("Flush complete");
             HT_ASSERT(outstanding > 0);
             outstanding--;
           }
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
       bool finished = false;
       while (!finished) {
         if (ff.is_full())
-          HT_INFO_OUT << "Future queue is full" << HT_END;
+          HT_INFO("Future queue is full");
         ff.get(result);
         if (result->is_error()) {
           int error;
@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
         result->get_cells(cells);
         for (size_t ii=0; ii< cells.size(); ++ii) {
           md5_update(&md5_ctx, (unsigned char *)cells[ii].value, cells[ii].value_len);
-          HT_INFO_OUT <<  "Got cell with key=" << cells[ii].row_key << HT_END;
+          HT_INFOF("Got cell with key=%s", cells[ii].row_key);
           num_cells++;
           if (num_cells>=50) {
             ff.cancel();
@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
         HT_ERROR("MD5 digest mismatch between sent and received");
         _exit(1);
       }
-      HT_INFO_OUT << "cancel test finished" << HT_END;
+      HT_INFO("cancel test finished");
 
       // this time let the scan run through till completion
       memset(&md5_ctx, 0, sizeof(md5_ctx));
@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
         result->get_cells(cells);
         for (size_t ii=0; ii< cells.size(); ++ii) {
           md5_update(&md5_ctx, (unsigned char *)cells[ii].value, cells[ii].value_len);
-          HT_INFO_OUT <<  "Got cell with key=" << cells[ii].row_key << HT_END;
+          HT_INFOF("Got cell with key=%s", cells[ii].row_key);
         }
       }
 
@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
         HT_ERROR("MD5 digest mismatch between sent and received");
         _exit(1);
       }
-      HT_INFO_OUT << "full scan test finished" << HT_END;
+      HT_INFO("full scan test finished");
 
       // this time cancel individual scanners
       memset(&md5_ctx, 0, sizeof(md5_ctx));
@@ -298,7 +298,7 @@ int main(int argc, char **argv) {
           result->get_cells(cells);
           for (size_t ii=0; ii< cells.size(); ++ii) {
             md5_update(&md5_ctx, (unsigned char *)cells[ii].value, cells[ii].value_len);
-            HT_INFO_OUT <<  "Got cell with key=" << cells[ii].row_key << HT_END;
+            HT_INFOF("Got cell with key=%s", cells[ii].row_key);
           }
         }
         else {
@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
         HT_ERROR("MD5 digest mismatch between sent and received");
         _exit(1);
       }
-      HT_INFO_OUT << "cancel scanner test finished" << HT_END;
+      HT_INFO("cancel scanner test finished");
 
       scanner_a_ptr = scanner_b_ptr = scanner_c_ptr = 0;
     }

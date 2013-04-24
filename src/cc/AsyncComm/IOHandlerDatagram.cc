@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,6 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Definitions for IOHandlerDatagram.
+ * This file contains method definitions for IOHandlerDatagram, a class for
+ * processing I/O events for datagram sockets.
  */
 
 #include "Common/Compat.h"
@@ -41,7 +47,10 @@ extern "C" {
 #include "Common/FileUtils.h"
 
 #include "IOHandlerDatagram.h"
-#include "HandlerMap.h"
+#include "ReactorRunner.h"
+#ifdef _WIN32
+#include "IOOP.h"
+#endif
 
 using namespace Hypertable;
 using namespace std;
@@ -49,13 +58,15 @@ using namespace std;
 #ifndef _WIN32
 
 bool 
-IOHandlerDatagram::handle_event(struct pollfd *event, time_t) {
+IOHandlerDatagram::handle_event(struct pollfd *event, time_t arrival_time) {
   int error;
 
   //DisplayEvent(event);
 
   if (event->revents & POLLOUT) {
     if ((error = handle_write_readiness()) != Error::OK) {
+      test_and_set_error(error);
+      ReactorRunner::handler_map->decomission_handler(this);
       deliver_event(new Event(Event::ERROR, m_addr, error));
       return true;
     }
@@ -71,11 +82,12 @@ IOHandlerDatagram::handle_event(struct pollfd *event, time_t) {
 
       Event *event = new Event(Event::MESSAGE, addr, Error::OK);
 
-      event->load_header(m_sd, m_message, (size_t)m_message[1]);
+      event->load_message_header(m_message, (size_t)m_message[1]);
 
       payload_len = nread - (ssize_t)event->header.header_len;
       event->payload_len = payload_len;
       event->payload = new uint8_t [payload_len];
+      event->arrival_time = arrival_time;
       memcpy((void *)event->payload, m_message + event->header.header_len,
              payload_len);
       deliver_event( event );
@@ -86,7 +98,7 @@ IOHandlerDatagram::handle_event(struct pollfd *event, time_t) {
       HT_ERRORF("FileUtils::recvfrom(%d) failure : %s", m_sd, strerror(errno));
       deliver_event(new Event(Event::ERROR, addr,
                               Error::COMM_RECEIVE_ERROR));
-      return true;
+      ReactorRunner::handler_map->decomission_handler(this);
     }
 
     return false;
@@ -96,6 +108,7 @@ IOHandlerDatagram::handle_event(struct pollfd *event, time_t) {
     HT_WARN_OUT << "Received EPOLLERR on descriptor " << m_sd << " ("
                 << m_addr.format() << ")" << HT_END;
     deliver_event(new Event(Event::ERROR, m_addr, Error::COMM_POLL_ERROR));
+    ReactorRunner::handler_map->decomission_handler(this);
     return true;
   }
 
@@ -108,7 +121,8 @@ IOHandlerDatagram::handle_event(struct pollfd *event, time_t) {
 
 #if defined(__linux__)
 
-bool IOHandlerDatagram::handle_event(struct epoll_event *event, time_t) {
+bool IOHandlerDatagram::handle_event(struct epoll_event *event,
+                                     time_t arrival_time) {
   int error;
 
   //DisplayEvent(event);
@@ -116,6 +130,7 @@ bool IOHandlerDatagram::handle_event(struct epoll_event *event, time_t) {
   if (event->events & EPOLLOUT) {
     if ((error = handle_write_readiness()) != Error::OK) {
       deliver_event(new Event(Event::ERROR, m_addr, error));
+      ReactorRunner::handler_map->decomission_handler(this);
       return true;
     }
   }
@@ -131,7 +146,7 @@ bool IOHandlerDatagram::handle_event(struct epoll_event *event, time_t) {
       Event *event = new Event(Event::MESSAGE, addr, Error::OK);
       
       try {
-        event->load_header(m_sd, m_message, (size_t)m_message[1]);
+        event->load_message_header(m_message, (size_t)m_message[1]);
       }
       catch (Hypertable::Exception &e) {
         HT_ERROR_OUT << e << " - from " << addr.format() << HT_END;
@@ -142,6 +157,7 @@ bool IOHandlerDatagram::handle_event(struct epoll_event *event, time_t) {
       payload_len = nread - (ssize_t)event->header.header_len;
       event->payload_len = payload_len;
       event->payload = new uint8_t [payload_len];
+      event->arrival_time = arrival_time;
       memcpy((void *)event->payload, m_message + event->header.header_len,
              payload_len);
       deliver_event( event );
@@ -152,6 +168,7 @@ bool IOHandlerDatagram::handle_event(struct epoll_event *event, time_t) {
       HT_ERRORF("FileUtils::recvfrom(%d) failure : %s", m_sd, strerror(errno));
       deliver_event(new Event(Event::ERROR, addr,
                               Error::COMM_RECEIVE_ERROR));
+      ReactorRunner::handler_map->decomission_handler(this);
       return true;
     }
 
@@ -162,6 +179,7 @@ bool IOHandlerDatagram::handle_event(struct epoll_event *event, time_t) {
     HT_WARN_OUT << "Received EPOLLERR on descriptor " << m_sd << " ("
                 << m_addr.format() << ")" << HT_END;
     deliver_event(new Event(Event::ERROR, m_addr, Error::COMM_POLL_ERROR));
+    ReactorRunner::handler_map->decomission_handler(this);
     return true;
   }
 
@@ -169,7 +187,8 @@ bool IOHandlerDatagram::handle_event(struct epoll_event *event, time_t) {
 }
 
 #elif defined(__sun__)
-bool IOHandlerDatagram::handle_event(port_event_t *event, time_t) {
+bool
+IOHandlerDatagram::handle_event(port_event_t *event, time_t arrival_time) {
   int error;
 
   //DisplayEvent(event);
@@ -179,6 +198,7 @@ bool IOHandlerDatagram::handle_event(port_event_t *event, time_t) {
     if (event->portev_events == POLLOUT) {
       if ((error = handle_write_readiness()) != Error::OK) {
 	deliver_event(new Event(Event::ERROR, m_addr, error));
+        ReactorRunner::handler_map->decomission_handler(this);
 	return true;
       }
     }
@@ -193,11 +213,12 @@ bool IOHandlerDatagram::handle_event(port_event_t *event, time_t) {
 
 	Event *event = new Event(Event::MESSAGE, addr, Error::OK);
 
-	event->load_header(m_sd, m_message, (size_t)m_message[1]);
+	event->load_message_header(m_message, (size_t)m_message[1]);
 
 	payload_len = nread - (ssize_t)event->header.header_len;
 	event->payload_len = payload_len;
 	event->payload = new uint8_t [payload_len];
+        event->arrival_time = arrival_time;
 	memcpy((void *)event->payload, m_message + event->header.header_len,
 	       payload_len);
 	deliver_event( event );
@@ -208,6 +229,7 @@ bool IOHandlerDatagram::handle_event(port_event_t *event, time_t) {
 	HT_ERRORF("FileUtils::recvfrom(%d) failure : %s", m_sd, strerror(errno));
 	deliver_event(new Event(Event::ERROR, addr,
 				Error::COMM_RECEIVE_ERROR));
+        ReactorRunner::handler_map->decomission_handler(this);
 	return true;
       }
 
@@ -218,30 +240,32 @@ bool IOHandlerDatagram::handle_event(port_event_t *event, time_t) {
       HT_WARN_OUT << "Received EPOLLERR on descriptor " << m_sd << " ("
 		  << m_addr.format() << ")" << HT_END;
       deliver_event(new Event(Event::ERROR, m_addr, Error::COMM_POLL_ERROR));
+      ReactorRunner::handler_map->decomission_handler(this);
       return true;
     }
 
     if (event->portev_events == POLLREMOVE) {
       HT_DEBUGF("Received POLLREMOVE on descriptor %d (%s:%d)", m_sd,
                 inet_ntoa(m_addr.sin_addr), ntohs(m_addr.sin_port));
+      ReactorRunner::handler_map->decomission_handler(this);
       return true;
     }
     
   }
   catch (Hypertable::Exception &e) {
     HT_ERROR_OUT << e << HT_END;
+    ReactorRunner::handler_map->decomission_handler(this);
     return true;
   }
 
   return false;
   
 }
+
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 
-/**
- *
- */
-bool IOHandlerDatagram::handle_event(struct kevent *event, time_t) {
+bool
+IOHandlerDatagram::handle_event(struct kevent *event, time_t arrival_time) {
   int error;
 
   //DisplayEvent(event);
@@ -253,6 +277,7 @@ bool IOHandlerDatagram::handle_event(struct kevent *event, time_t) {
   if (event->filter == EVFILT_WRITE) {
     if ((error = handle_write_readiness()) != Error::OK) {
       deliver_event(new Event(Event::ERROR, m_addr, error));
+      ReactorRunner::handler_map->decomission_handler(this);
       return true;
     }
   }
@@ -269,22 +294,22 @@ bool IOHandlerDatagram::handle_event(struct kevent *event, time_t) {
                 (int)available, strerror(errno));
       deliver_event(new Event(Event::ERROR, addr,
                               Error::COMM_RECEIVE_ERROR));
+      ReactorRunner::handler_map->decomission_handler(this);
       return true;
     }
 
     Event *event = new Event(Event::MESSAGE, addr, Error::OK);
 
-    event->load_header(m_sd, m_message, (size_t)m_message[1]);
+    event->load_message_header(m_message, (size_t)m_message[1]);
 
     payload_len = nread - (ssize_t)event->header.header_len;
     event->payload_len = payload_len;
     event->payload = new uint8_t [payload_len];
+    event->arrival_time = arrival_time;
     memcpy((void *)event->payload, m_message + event->header.header_len,
            payload_len);
 
     deliver_event( event );
-
-    return false;
   }
 
   return false;
@@ -297,7 +322,7 @@ bool IOHandlerDatagram::async_recvfrom() {
   // try to receive message, result will be in ReactorRunner,
   // then in IOHandlerDatagram::handle_event
   DWORD flags = 0;
-  IOOP* pol = new IOOP(m_sd, IOOP::RECVFROM, this);
+  IOOP* ioop = new IOOP(m_sd, IOOP::RECVFROM, this);
 
   WSABUF wsabuf;
   wsabuf.buf = (char*)m_message;
@@ -306,11 +331,11 @@ bool IOHandlerDatagram::async_recvfrom() {
   m_whencelen = sizeof(struct sockaddr_in);
 
   if (WSARecvFrom(m_sd, &wsabuf, 1, 0, &flags, (struct sockaddr *)&m_whence,
-                  &m_whencelen, pol, NULL) == SOCKET_ERROR) {
+                  &m_whencelen, ioop, 0) == SOCKET_ERROR) {
     int err = WSAGetLastError();
     if (err != WSA_IO_PENDING) {
       HT_ERRORF("WSARecvFrom err is %d\n", winapi_strerror(err));
-      delete pol;
+      delete ioop;
       return false;
     }
   }
@@ -320,17 +345,17 @@ bool IOHandlerDatagram::async_recvfrom() {
 /**
  *
  */
-bool IOHandlerDatagram::handle_event(IOOP *pol, time_t) {
-  if (pol->op == IOOP::RECVFROM) {
-    if (pol->err != NOERROR) {
-      HT_INFOF("IOOP::RECVFROM - %s", winapi_strerror(pol->err));
+bool IOHandlerDatagram::handle_event(IOOP *ioop, time_t) {
+  if (ioop->op == IOOP::RECVFROM) {
+    if (ioop->err != NOERROR) {
+      HT_INFOF("IOOP::RECVFROM - %s", winapi_strerror(ioop->err));
       deliver_event(new Event(Event::ERROR, m_addr, Error::COMM_RECEIVE_ERROR));
       return true;
     }
 
     Event *event = new Event(Event::MESSAGE, m_whence, Error::OK);
-    event->load_header(m_sd, m_message, (size_t)m_message[1]);
-    event->payload_len = pol->numberOfBytes - (ssize_t)event->header.header_len;
+    event->load_message_header(m_message, (size_t)m_message[1]);
+    event->payload_len = ioop->numberOfBytes - (ssize_t)event->header.header_len;
     event->payload = new uint8_t [event->payload_len];
     memcpy((void *)event->payload, m_message + event->header.header_len,
            event->payload_len);
@@ -338,15 +363,15 @@ bool IOHandlerDatagram::handle_event(IOOP *pol, time_t) {
     deliver_event(event);
     async_recvfrom();
   }
-  else if (pol->op == IOOP::SENDTO) {
-    if (pol->err != NOERROR) {
-      HT_INFOF("IOOP::SENDTO - %s", winapi_strerror(pol->err));
+  else if (ioop->op == IOOP::SENDTO) {
+    if (ioop->err != NOERROR) {
+      HT_INFOF("IOOP::SENDTO - %s", winapi_strerror(ioop->err));
       deliver_event(new Event(Event::ERROR, m_addr, Error::COMM_SEND_ERROR));
       return true;
     }
   }
   else
-    HT_ERRORF("Unhandled I/O operation - %d", pol->op);
+    HT_ERRORF("Unhandled I/O operation - %d", ioop->op);
 
   return false;
 }
@@ -358,19 +383,19 @@ ImplementMe;
 
 int IOHandlerDatagram::send_message(const InetAddr &addr, CommBufPtr &cbp) {
   WSABUF wsabuf;
-  IOOP* pol = new IOOP(m_sd, IOOP::SENDTO, this, cbp);
+  IOOP* ioop = new IOOP(m_sd, IOOP::SENDTO, this, cbp);
   wsabuf.buf = (char*)cbp->data_ptr;
   wsabuf.len = cbp->data.size - (cbp->data_ptr - cbp->data.base);
 
-  if (WSASendTo(pol->sd, &wsabuf, 1, 0, 0
-                , (const sockaddr*)&addr, sizeof(struct sockaddr_in), pol, 0) == SOCKET_ERROR) {
+  if (WSASendTo(ioop->sd, &wsabuf, 1, 0, 0
+                , (const sockaddr*)&addr, sizeof(struct sockaddr_in), ioop, 0) == SOCKET_ERROR) {
     int err = WSAGetLastError();
     if (err != WSA_IO_PENDING) {
       HT_ERRORF("WSASendTo(len=%d, addr=%s:%d) failed - %s",
                 wsabuf.len, inet_ntoa(addr.sin_addr),
                 ntohs(addr.sin_port),
                 winapi_strerror(err));
-      delete pol;
+      delete ioop;
       return Error::COMM_BROKEN_CONNECTION;
     }
   }
@@ -383,21 +408,27 @@ int IOHandlerDatagram::handle_write_readiness() {
   ScopedLock lock(m_mutex);
   int error;
 
-  if ((error = flush_send_queue()) != Error::OK)
+  if ((error = flush_send_queue()) != Error::OK) {
+    if (m_error == Error::OK)
+      m_error = error;
     return error;
+  }
 
   // is this necessary?
   if (m_send_queue.empty())
-    remove_poll_interest(Reactor::WRITE_READY);
+    error = remove_poll_interest(Reactor::WRITE_READY);
 
-  return Error::OK;
+  if (error != Error::OK && m_error == Error::OK)
+    m_error = error;
+
+  return error;
 }
 
 
 
 int IOHandlerDatagram::send_message(const InetAddr &addr, CommBufPtr &cbp) {
   ScopedLock lock(m_mutex);
-  int error;
+  int error = Error::OK;
   bool initially_empty = m_send_queue.empty() ? true : false;
 
   HT_LOG_ENTER;
@@ -407,21 +438,26 @@ int IOHandlerDatagram::send_message(const InetAddr &addr, CommBufPtr &cbp) {
 
   m_send_queue.push_back(SendRec(addr, cbp));
 
-  if ((error = flush_send_queue()) != Error::OK)
+  if ((error = flush_send_queue()) != Error::OK) {
+    if (m_error == Error::OK)
+      m_error = error;
     return error;
+  }
 
   if (initially_empty && !m_send_queue.empty()) {
-    add_poll_interest(Reactor::WRITE_READY);
+    error = add_poll_interest(Reactor::WRITE_READY);
     //HT_INFO("Adding Write interest");
   }
   else if (!initially_empty && m_send_queue.empty()) {
-    remove_poll_interest(Reactor::WRITE_READY);
+    error = remove_poll_interest(Reactor::WRITE_READY);
     //HT_INFO("Removing Write interest");
   }
 
-  return Error::OK;
-}
+  if (error != Error::OK && m_error == Error::OK)
+    m_error = error;
 
+  return error;
+}
 
 
 int IOHandlerDatagram::flush_send_queue() {

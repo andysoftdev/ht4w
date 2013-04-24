@@ -1,6 +1,5 @@
 /** -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
- * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -34,7 +33,7 @@ using namespace Hypertable;
  *
  */
 void RequestHandlerGetStatistics::run() {
-  ResponseCallbackGetStatistics cb(m_comm, m_event_ptr);
+  ResponseCallbackGetStatistics cb(m_comm, m_event);
 
   try {
     m_range_server->get_statistics(&cb);

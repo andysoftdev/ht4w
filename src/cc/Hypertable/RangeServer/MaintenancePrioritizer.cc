@@ -37,6 +37,23 @@ using namespace std;
 
 namespace {
 
+  class StatsRec {
+  public:
+    StatsRec(AccessGroup::MaintenanceData *agdata_,
+             Range::MaintenanceData *rangedata_) :
+      agdata(agdata_), rangedata(rangedata_) { }
+    AccessGroup::MaintenanceData *agdata;
+    Range::MaintenanceData *rangedata;
+  };
+
+  struct StatsRecOrderingDescending {
+    bool operator()(const StatsRec &x, const StatsRec &y) const {
+      if (x.agdata->mem_used == y.agdata->mem_used)
+	return x.agdata->mem_used > y.agdata->mem_used;
+      return x.agdata->mem_used > y.agdata->mem_used;
+    }
+  };
+
   struct ShadowCacheSortOrdering {
     bool operator()(const AccessGroup::CellStoreMaintenanceData *x,
 		    const AccessGroup::CellStoreMaintenanceData *y) const {
@@ -72,27 +89,44 @@ namespace {
 
 bool
 MaintenancePrioritizer::schedule_inprogress_operations(RangeDataVector &range_data,
-            MemoryState &memory_state, int32_t &priority, String &trace_str) {
+            MemoryState &memory_state, int32_t &priority, String *trace) {
   AccessGroup::MaintenanceData *ag_data;
   AccessGroup::CellStoreMaintenanceData *cs_data;
   bool in_progress;
 
   for (size_t i=0; i<range_data.size(); i++) {
 
-    if (range_data[i].data->busy)
+    if (range_data[i].data->busy) {
+      if (trace)
+        *trace += format("%d busy %s\n", __LINE__,
+                         range_data[i].range->get_name().c_str());
       continue;
+    }
 
     in_progress = false;
     if (range_data[i].data->state == RangeState::RELINQUISH_LOG_INSTALLED) {
+      if (trace)
+        *trace += format("%d mid-relinquish %s (state=%d, priority=%d"
+                         ", mem_needed=%lld)\n", __LINE__,
+                         range_data[i].range->get_name().c_str(),
+                         range_data[i].data->state, priority,
+                         (Lld)memory_state.needed);
       HT_INFOF("Adding maintenance for range %s because mid-relinquish(%d)",
                range_data[i].range->get_name().c_str(), range_data[i].data->state);
       range_data[i].data->maintenance_flags |= MaintenanceFlag::RELINQUISH;
       in_progress = true;
     }
     else if (range_data[i].data->state == RangeState::SPLIT_LOG_INSTALLED ||
-        range_data[i].data->state == RangeState::SPLIT_SHRUNK) {
+             range_data[i].data->state == RangeState::SPLIT_SHRUNK) {
+      if (trace)
+        *trace += format("%d mid-split %s (state=%d, priority=%d"
+                         ", mem_needed=%lld)\n", __LINE__,
+                         range_data[i].range->get_name().c_str(),
+                         range_data[i].data->state, priority,
+                         (Lld)memory_state.needed);
       HT_INFOF("Adding maintenance for range %s because mid-split(%d)",
-               range_data[i].range->get_name().c_str(), range_data[i].data->state);
+               range_data[i].range->get_name().c_str(),
+               range_data[i].data->state);
       range_data[i].data->maintenance_flags |= MaintenanceFlag::SPLIT;
       in_progress = true;
     }
@@ -116,15 +150,19 @@ MaintenancePrioritizer::schedule_inprogress_operations(RangeDataVector &range_da
 
 bool
 MaintenancePrioritizer::schedule_splits_and_relinquishes(RangeDataVector &range_data,
-            MemoryState &memory_state, int32_t &priority, String &trace_str) {
+            MemoryState &memory_state, int32_t &priority, String *trace) {
   AccessGroup::MaintenanceData *ag_data;
   AccessGroup::CellStoreMaintenanceData *cs_data;
   int64_t disk_total, mem_total;
 
   for (size_t i=0; i<range_data.size(); i++) {
 
-    if (range_data[i].data->busy || range_data[i].data->priority)
+    if (range_data[i].data->busy || range_data[i].data->priority) {
+      if (range_data[i].data->busy && trace)
+        *trace += format("%d busy %s\n", __LINE__,
+                         range_data[i].range->get_name().c_str());
       continue;
+    }
 
     mem_total = 0;
     disk_total = 0;
@@ -142,6 +180,10 @@ MaintenancePrioritizer::schedule_splits_and_relinquishes(RangeDataVector &range_
 
     if (range_data[i].range->get_error() != Error::RANGESERVER_ROW_OVERFLOW) {
       if (range_data[i].data->relinquish) {
+        if (trace)
+          *trace += format("%d relinquish %s (priority=%d, mem_needed=%lld)\n",
+                           __LINE__, range_data[i].range->get_name().c_str(),
+                           priority, (Lld)memory_state.needed);
         HT_INFOF("Adding maintenance for range %s because marked for relinquish(%d)",
             range_data[i].range->get_name().c_str(), range_data[i].data->state);
         memory_state.decrement_needed(mem_total);
@@ -149,6 +191,12 @@ MaintenancePrioritizer::schedule_splits_and_relinquishes(RangeDataVector &range_
         range_data[i].data->maintenance_flags |= MaintenanceFlag::RELINQUISH;
       }
       else if (range_data[i].data->needs_split && !range_data[i].range->is_root()) {
+        if (trace)
+          *trace += format("%d disk_total %lld exceeds threshold %s "
+                           " (priority=%d, mem_needed=%lld)\n",
+                           __LINE__, (Lld)disk_total,
+                           range_data[i].range->get_name().c_str(),
+                           priority, (Lld)memory_state.needed);
         HT_INFOF("Adding maintenance for range %s because disk_total %d exceeds split threshold",
             range_data[i].range->get_name().c_str(), (int)disk_total);
         memory_state.decrement_needed(mem_total);
@@ -163,51 +211,25 @@ MaintenancePrioritizer::schedule_splits_and_relinquishes(RangeDataVector &range_
 bool
 MaintenancePrioritizer::schedule_necessary_compactions(RangeDataVector &range_data,
                  CommitLog *log, int64_t prune_threshold, MemoryState &memory_state,
-                 int32_t &priority, String &trace_str) {
+                 int32_t &priority, String *trace) {
   CommitLog::CumulativeSizeMap cumulative_size_map;
   CommitLog::CumulativeSizeMap::iterator iter;
   AccessGroup::MaintenanceData *ag_data;
-  int64_t disk_total;
-  const int16_t flag_memory_purge_shadow_cache = Global::enable_shadow_cache ?
-                                                 MaintenanceFlag::MEMORY_PURGE_SHADOW_CACHE : 0;
+
+  // First do log cleanup compactions
 
   log->load_cumulative_size_map(cumulative_size_map);
 
   for (size_t i=0; i<range_data.size(); i++) {
 
-    if (range_data[i].data->busy)
+    if (range_data[i].data->busy) {
+      if (trace)
+        *trace += format("%d busy %s\n", __LINE__,
+                         range_data[i].range->get_name().c_str());
       continue;
-
-    disk_total = 0;
+    }
 
     for (ag_data = range_data[i].data->agdata; ag_data; ag_data = ag_data->next) {
-
-      // Schedule compaction for AGs that need garbage collection
-      if (ag_data->gc_needed) {
-        range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT;
-        ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_GC;
-        if (range_data[i].data->priority == 0)
-          range_data[i].data->priority = priority++;
-        continue;
-      }
-
-      // Compact LARGE CellCaches
-      if (!ag_data->in_memory && ag_data->mem_allocated > Global::access_group_max_mem) {
-        if (memory_state.need_more()) {
-          range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT|MaintenanceFlag::MEMORY_PURGE;
-          ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR|flag_memory_purge_shadow_cache;
-          memory_state.decrement_needed(ag_data->mem_allocated);
-        }
-        else {
-          range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT;
-          ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR;
-        }
-        if (range_data[i].data->priority == 0)
-          range_data[i].data->priority = priority++;
-        continue;
-      }
-
-      disk_total += ag_data->disk_estimate;
 
       if (ag_data->earliest_cached_revision != TIMESTAMP_MAX && !cumulative_size_map.empty()) {
 
@@ -226,20 +248,27 @@ MaintenancePrioritizer::schedule_necessary_compactions(RangeDataVector &range_da
           errstr += String("PERROR revision ") +
             ag_data->earliest_cached_revision + " not found in map\n";
           cout << flush << errstr << flush;
-          trace_str += String("STAT *** This should never happen, ecr = ") +
-            ag_data->earliest_cached_revision + " ***\n";
+          if (trace)
+            *trace += format("%d THIS SHOULD NEVER HAPPEN, ecr=%lld\n",
+                             __LINE__, (Lld)ag_data->earliest_cached_revision);
           continue;
         }
 
         if ((*iter).second.cumulative_size > prune_threshold) {
-          trace_str += String("STAT ") + ag_data->ag->get_full_name()+" cumulative_size "
-            + (*iter).second.cumulative_size + " > prune_threshold " + prune_threshold + "\n";
           if (ag_data->mem_used > 0) {
+            if (trace)
+              *trace+=format("%d prune compact %s (cumulative_size=%lld, prune_"
+                             "threshold=%lld, priority=%d, mem_needed=%lld)\n",
+                             __LINE__, ag_data->ag->get_full_name(),
+                             (Lld)(*iter).second.cumulative_size,
+                             (Lld)prune_threshold,
+                             range_data[i].data->priority ? range_data[i].data->priority : priority,
+                             (Lld)memory_state.needed);
             if (range_data[i].data->priority == 0)
               range_data[i].data->priority = priority++;
             if (memory_state.need_more()) {
               range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT|MaintenanceFlag::MEMORY_PURGE;
-              ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR|flag_memory_purge_shadow_cache;
+              ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR|MaintenanceFlag::MEMORY_PURGE_SHADOW_CACHE;
               memory_state.decrement_needed(ag_data->mem_allocated);
             }
             else {
@@ -248,20 +277,69 @@ MaintenancePrioritizer::schedule_necessary_compactions(RangeDataVector &range_da
             }
           }
         }
-        else
-          trace_str += String("STAT ") + ag_data->ag->get_full_name()+" cumulative_size "
-            + (*iter).second.cumulative_size + " <= prune_threshold " + prune_threshold + "\n";
       }
+    }
+  }
 
-      // memory purge takes precedent over merging compactions
-      if (ag_data->needs_merging &&
-          (range_data[i].data->maintenance_flags & MaintenanceFlag::MEMORY_PURGE) == 0) {
+  // Other compactions
+
+  for (size_t i=0; i<range_data.size(); i++) {
+
+    if (range_data[i].data->busy)
+      continue;
+
+    for (ag_data = range_data[i].data->agdata; ag_data; ag_data = ag_data->next) {
+
+      // Maintenance already scheduled for this AG
+      if (ag_data->maintenance_flags != 0)
+        continue;
+
+      // Schedule compaction for AGs that need garbage collection
+      if (ag_data->gc_needed) {
+        range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT;
+        ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_GC;
+        if (range_data[i].data->priority == 0)
+          range_data[i].data->priority = priority++;
+        if (trace)
+          *trace +=format("%d GC needed %s (priority=%d, mem_needed=%lld)\n",
+                          __LINE__, ag_data->ag->get_full_name(),
+                          range_data[i].data->priority,
+                          (Lld)memory_state.needed);
+
+      }
+      // Compact LARGE CellCaches
+      else if (!ag_data->in_memory && ag_data->mem_used > Global::access_group_max_mem) {
+        if (memory_state.need_more()) {
+          range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT|MaintenanceFlag::MEMORY_PURGE;
+          ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR|MaintenanceFlag::MEMORY_PURGE_SHADOW_CACHE;
+          memory_state.decrement_needed(ag_data->mem_allocated);
+        }
+        else {
+          range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT;
+          ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR;
+        }
+        if (range_data[i].data->priority == 0)
+          range_data[i].data->priority = priority++;
+        if (trace)
+          *trace += format("%d large CellCache %s (mem_used=%lld, "
+                           "priority=%d, mem_needed=%lld)\n", __LINE__,
+                           ag_data->ag->get_full_name(),
+                           (Lld)ag_data->mem_used, range_data[i].data->priority,
+                           (Lld)memory_state.needed);
+      }
+      // Merging compactions
+      else if (ag_data->needs_merging) {
         if (range_data[i].data->priority == 0)
           range_data[i].data->priority = priority++;
         range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT;
         ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_MERGING;
+        if (trace)
+          *trace += format("%d needs merging %s (priority=%d, "
+                           "mem_needed=%lld)\n", __LINE__,
+                           ag_data->ag->get_full_name(),
+                           range_data[i].data->priority,
+                           (Lld)memory_state.needed);
       }
-
     }
   }
 
@@ -271,14 +349,11 @@ MaintenancePrioritizer::schedule_necessary_compactions(RangeDataVector &range_da
 
 bool
 MaintenancePrioritizer::purge_shadow_caches(RangeDataVector &range_data,
-            MemoryState &memory_state, int32_t &priority, String &trace_str) {
+            MemoryState &memory_state, int32_t &priority, String *trace) {
   Range::MaintenanceData *range_maintenance_data;
   AccessGroup::MaintenanceData *ag_data;
   AccessGroup::CellStoreMaintenanceData *cs_data;
   std::vector<AccessGroup::CellStoreMaintenanceData *> csmd;
-
-  if (!Global::enable_shadow_cache)
-    return true;
 
   csmd.clear();
   for (size_t i=0; i<range_data.size(); i++) {
@@ -307,6 +382,12 @@ MaintenancePrioritizer::purge_shadow_caches(RangeDataVector &range_data,
     range_maintenance_data->maintenance_flags |= MaintenanceFlag::MEMORY_PURGE;
     if (range_maintenance_data->priority == 0)
       range_maintenance_data->priority = priority++;
+    if (trace)
+      *trace += format("%d shadow cache purge %s (priority=%d, "
+                       "mem_needed=%lld)\n", __LINE__,
+                       ag_data->ag->get_full_name(),
+                       range_data[i].data->priority,
+                       (Lld)memory_state.needed);
     csmd[i]->maintenance_flags |= MaintenanceFlag::MEMORY_PURGE_SHADOW_CACHE;
     memory_state.decrement_needed(csmd[i]->shadow_cache_size);
     if (!memory_state.need_more())
@@ -318,7 +399,7 @@ MaintenancePrioritizer::purge_shadow_caches(RangeDataVector &range_data,
 
 bool
 MaintenancePrioritizer::purge_cellstore_indexes(RangeDataVector &range_data,
-          MemoryState &memory_state, int32_t &priority, String &trace_str) {
+          MemoryState &memory_state, int32_t &priority, String *trace) {
   Range::MaintenanceData *range_maintenance_data;
   AccessGroup::MaintenanceData *ag_data;
   AccessGroup::CellStoreMaintenanceData *cs_data;
@@ -354,6 +435,12 @@ MaintenancePrioritizer::purge_cellstore_indexes(RangeDataVector &range_data,
     memory_used = csmd[i]->index_stats.block_index_memory + csmd[i]->index_stats.bloom_filter_memory;
     if (range_maintenance_data->priority == 0)
       range_maintenance_data->priority = priority++;
+    if (trace)
+      *trace += format("%d cellstore index purge %s (priority=%d, "
+                       "mem_needed=%lld)\n", __LINE__,
+                       ag_data->ag->get_full_name(),
+                       range_data[i].data->priority,
+                       (Lld)memory_state.needed);
     csmd[i]->maintenance_flags |= MaintenanceFlag::MEMORY_PURGE_CELLSTORE;
     memory_state.decrement_needed(memory_used);
     if (!memory_state.need_more())
@@ -367,9 +454,9 @@ namespace {
 
   struct CellCacheCompactionSortOrdering {
     bool operator()(const AccessGroup::MaintenanceData *x,
-                   const AccessGroup::MaintenanceData *y) const {
+		    const AccessGroup::MaintenanceData *y) const {
       if (x->mem_used == y->mem_used)
-        return x->mem_allocated > y->mem_allocated;
+	return x->mem_used > y->mem_used;
       return x->mem_used > y->mem_used;
     }
   };
@@ -378,12 +465,9 @@ namespace {
 bool
 MaintenancePrioritizer::compact_cellcaches(RangeDataVector &range_data,
                                            MemoryState &memory_state, int32_t &priority,
-                                           String &trace_str) {
+                                           String *trace) {
   AccessGroup::MaintenanceData *ag_data;
   std::vector<AccessGroup::MaintenanceData *> md;
-
-  const int16_t flag_memory_purge_shadow_cache = Global::enable_shadow_cache ?
-                                                 MaintenanceFlag::MEMORY_PURGE_SHADOW_CACHE : 0;
 
   for (size_t i=0; i<range_data.size(); i++) {
 
@@ -393,7 +477,7 @@ MaintenancePrioritizer::compact_cellcaches(RangeDataVector &range_data,
 
     for (ag_data = range_data[i].data->agdata; ag_data; ag_data = ag_data->next) {
       if (!MaintenanceFlag::major_compaction(ag_data->maintenance_flags) &&
-	  !ag_data->in_memory && ag_data->mem_allocated > 0) {
+	  !ag_data->in_memory && ag_data->mem_used > 0) {
         ag_data->user_data = range_data[i].data;
 	md.push_back(ag_data);
       }
@@ -408,7 +492,13 @@ MaintenancePrioritizer::compact_cellcaches(RangeDataVector &range_data,
   for (size_t i=0; i<md.size(); i++) {
     if (((Range::MaintenanceData *)md[i]->user_data)->priority == 0)
       ((Range::MaintenanceData *)md[i]->user_data)->priority = priority++;
-    md[i]->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR|flag_memory_purge_shadow_cache;
+    if (trace)
+      *trace += format("%d minor compaction %s (priority=%d, "
+                       "mem_needed=%lld)\n", __LINE__,
+                       md[i]->ag->get_full_name(),
+                       ((Range::MaintenanceData *)md[i]->user_data)->priority,
+                       (Lld)memory_state.needed);
+    md[i]->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR|MaintenanceFlag::MEMORY_PURGE_SHADOW_CACHE;
     ((Range::MaintenanceData *)md[i]->user_data)->maintenance_flags |= MaintenanceFlag::COMPACT|MaintenanceFlag::MEMORY_PURGE;
     memory_state.decrement_needed(md[i]->mem_allocated);
     if (!memory_state.need_more())

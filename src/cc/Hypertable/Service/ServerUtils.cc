@@ -32,6 +32,7 @@
 #include "Common/Config.h"
 #include "Common/ProcessUtils.h"
 #include "Common/ServerLaunchEvent.h"
+#include "AsyncComm/ApplicationQueue.h"
 #include "DfsBroker/Lib/Client.h"
 #include "Hypertable/Lib/RangeServerClient.h"
 #include "Hypertable/Lib/MasterClient.h"
@@ -469,7 +470,7 @@ bool ServerUtils::shutdown_master(DWORD pid) {
         conn_mgr->remove_all();
         HT_THROW(Error::REQUEST_TIMEOUT, "Unable to connect to hyperspace");
       }
-      ApplicationQueuePtr app_queue = new ApplicationQueue(1);
+      ApplicationQueueInterfacePtr app_queue = new ApplicationQueue(1);
       String toplevel_dir = Config::properties->get_str("Hypertable.Directory");
       boost::trim_if(toplevel_dir, boost::is_any_of("/"));
       toplevel_dir = String("/") + toplevel_dir;

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,12 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Definitions for Reactor.
+ * This file contains variable and method definitions for Reactor, a class
+ * to manage state for a polling thread.
+ */
+
 #include "Common/Compat.h"
 
 #include <cassert>
@@ -35,6 +41,7 @@ extern "C" {
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/event.h>
 #endif
@@ -48,14 +55,12 @@ extern "C" {
 #include "IOHandlerData.h"
 #include "Reactor.h"
 #include "ReactorFactory.h"
+#include "ReactorRunner.h"
 
 using namespace Hypertable;
 using namespace std;
 
 #ifndef _WIN32
-
-const int Reactor::READ_READY   = 0x01;
-const int Reactor::WRITE_READY  = 0x02;
 
 #else
 
@@ -66,11 +71,9 @@ boost::xtime Reactor::m_next_wakeup;
 std::set<IOHandler *> Reactor::m_removed_handlers;
 
 #endif
-
 /**
  *
  */
-
 #ifdef _WIN32
 
 Reactor::Reactor() {
@@ -78,7 +81,7 @@ Reactor::Reactor() {
 
 #else
 
-Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
+Reactor::Reactor() : m_interrupt_in_progress(false) {
   struct sockaddr_in addr;
 
   if (!ReactorFactory::use_poll) {
@@ -97,56 +100,63 @@ Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
 #endif
   }
 
-  /**
-   * The following logic creates a UDP socket that is used to
-   * interrupt epoll_wait so that it can reset its timeout
-   * value
-   */
-  if ((m_interrupt_sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-    HT_ERRORF("socket() failure: %s", strerror(errno));
-    exit(1);
+  while (true) {
+
+    /**
+     * The following logic creates a UDP socket that is used to
+     * interrupt epoll_wait so that it can reset its timeout
+     * value
+     */
+    if ((m_interrupt_sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+      HT_ERRORF("socket() failure: %s", strerror(errno));
+      exit(1);
+    }
+
+    // Set to non-blocking (are we sure we should do this?)
+    FileUtils::set_flags(m_interrupt_sd, O_NONBLOCK);
+
+    // create address structure to bind to - any available port - any address
+    memset(&addr, 0 , sizeof(sockaddr_in));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    // Arbitray ephemeral port that won't conflict with our reserved ports    
+    uint16_t port = (uint16_t)(49152 + (ReactorFactory::rng() % 16383));
+    addr.sin_port = htons(port);
+
+    // bind socket
+    if ((bind(m_interrupt_sd, (sockaddr *)&addr, sizeof(sockaddr_in))) < 0) {
+      if (errno == EADDRINUSE) {
+        ::close(m_interrupt_sd);
+        continue;
+      }
+      HT_FATALF("bind(%s) failure: %s",
+                InetAddr::format(addr).c_str(), strerror(errno));
+    }
+    break;
   }
 
-  // Set to non-blocking (are we sure we should do this?)
-  FileUtils::set_flags(m_interrupt_sd, O_NONBLOCK);
-
-  // create address structure to bind to - any available port - any address
-  memset(&addr, 0 , sizeof(sockaddr_in));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-  addr.sin_port = 0;
-
-  // bind socket
-  if ((bind(m_interrupt_sd, (sockaddr *)&addr, sizeof(sockaddr_in))) < 0) {
-    HT_ERRORF("bind() failure: %s", strerror(errno));
-    exit(1);
-  }
-
-  // get the assigned address
-  socklen_t namelen = sizeof(addr);
-  getsockname(m_interrupt_sd, (sockaddr *)&addr, &namelen);
-
-  // connect to ourself
-  if (connect(m_interrupt_sd, (sockaddr *)&addr, sizeof(addr)) < 0) {
-    HT_ERRORF("connect(interrupt_sd) failed - %s", strerror(errno));
-    exit(1);
-  }
+  // Connect to ourself
+  // NOTE: Here we assume that any error returned by connect implies
+  //       that it will be carried out asynchronously
+  if (connect(m_interrupt_sd, (sockaddr *)&addr, sizeof(addr)) < 0)
+    HT_INFOF("connect(interrupt_sd) to port %d failed - %s",
+             (int)ntohs(addr.sin_port), strerror(errno));
 
   if (ReactorFactory::use_poll) {
-    ScopedLock lock(m_poll_array_mutex);
-    if ((size_t)m_interrupt_sd >= polldata.size()) {
-      size_t i = polldata.size();
-      polldata.resize(m_interrupt_sd+1);
-      for (; i<polldata.size(); i++) {
-	polldata[i].pollfd.fd = -1;
-	polldata[i].pollfd.events = 0;
-	polldata[i].pollfd.revents = 0;
-	polldata[i].handler = 0;
+    ScopedLock lock(m_polldata_mutex);
+    if ((size_t)m_interrupt_sd >= m_polldata.size()) {
+      size_t i = m_polldata.size();
+      m_polldata.resize(m_interrupt_sd+1);
+      for (; i<m_polldata.size(); i++) {
+	m_polldata[i].pollfd.fd = -1;
+	m_polldata[i].pollfd.events = 0;
+	m_polldata[i].pollfd.revents = 0;
+	m_polldata[i].handler = 0;
       }
     }
-    polldata[m_interrupt_sd].pollfd.fd = m_interrupt_sd;
-    polldata[m_interrupt_sd].pollfd.events = POLLIN;
-    poll_loop_interrupt();
+    m_polldata[m_interrupt_sd].pollfd.fd = m_interrupt_sd;
+    m_polldata[m_interrupt_sd].pollfd.events = POLLIN;
+    HT_ASSERT(poll_loop_interrupt() == Error::OK);
   }
   else {
 #if defined(__linux__)
@@ -157,7 +167,7 @@ Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
       event.events = EPOLLIN | EPOLLOUT | POLLRDHUP | EPOLLET;
       if (epoll_ctl(poll_fd, EPOLL_CTL_ADD, m_interrupt_sd, &event) < 0) {
 	HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_ADD, %d, EPOLLIN|EPOLLOUT|POLLRDHUP|"
-		  "EPOLLET) failed - %s", poll_fd, m_interrupt_sd,
+		  "EPOLLET) failed : %s", poll_fd, m_interrupt_sd,
 		  strerror(errno));
 	exit(1);
       }
@@ -166,7 +176,7 @@ Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
       struct epoll_event event;
       memset(&event, 0, sizeof(struct epoll_event));
       if (epoll_ctl(poll_fd, EPOLL_CTL_ADD, m_interrupt_sd, &event) < 0) {
-	HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_ADD, %d, 0) failed - %s",
+	HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_ADD, %d, 0) failed : %s",
 		  poll_fd, m_interrupt_sd, strerror(errno));
 	exit(1);
       }
@@ -181,9 +191,12 @@ Reactor::Reactor() : m_mutex(), m_interrupt_in_progress(false) {
 
 
 void Reactor::handle_timeouts(PollTimeout &next_timeout) {
-  while (true) {
-    vector<ExpireTimer> expired_timers;
-    boost::xtime now;
+  vector<ExpireTimer> expired_timers;
+  EventPtr event_ptr;
+  boost::xtime     now, next_req_timeout;
+  ExpireTimer timer;
+
+  while(true) {
     {
       ScopedLock lock(m_mutex);
       IOHandler       *handler;
@@ -191,7 +204,6 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
 
       boost::xtime_get(&now, boost::TIME_UTC_);
 
-      boost::xtime next_req_timeout;
       while ((dh = m_request_cache.get_next_timeout(now, handler,
                                                     &next_req_timeout)) != 0) {
         Event *event = new Event(Event::ERROR, ((IOHandlerData *)handler)->get_address(), Error::REQUEST_TIMEOUT);
@@ -209,37 +221,45 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
       }
 
       if (!m_timer_heap.empty()) {
+        ExpireTimer timer;
+
         while (!m_timer_heap.empty()) {
-          const ExpireTimer& timer = m_timer_heap.top();
-          if (xtime_cmp(timer.expire_time, now) > 0)
+          timer = m_timer_heap.top();
+          if (xtime_cmp(timer.expire_time, now) > 0) {
+            if (next_req_timeout.sec == 0
+                || xtime_cmp(timer.expire_time, next_req_timeout) < 0) {
+              next_timeout.set(now, timer.expire_time);
+              memcpy(&m_next_wakeup, &timer.expire_time, sizeof(m_next_wakeup));
+            }
             break;
+          }
           expired_timers.push_back(timer);
           m_timer_heap.pop();
         }
-      }
 
+      }
     }
 
     /**
      * Deliver timer events
      */
-    foreach_ht (ExpireTimer& expired_timer, expired_timers) {
-      EventPtr event_ptr = new Event(Event::TIMER, Error::OK);
-      if (expired_timer.handler)
-        expired_timer.handler->handle(event_ptr);
+    for (size_t i=0; i<expired_timers.size(); i++) {
+      event_ptr = new Event(Event::TIMER, Error::OK);
+      if (expired_timers[i].handler)
+        expired_timers[i].handler->handle(event_ptr);
     }
 
     {
       ScopedLock lock(m_mutex);
 
       if (!m_timer_heap.empty()) {
-        const ExpireTimer& timer = m_timer_heap.top();
+        timer = m_timer_heap.top();
 
         if (xtime_cmp(now, timer.expire_time) > 0)
           continue;
 
-        if (m_next_wakeup.sec == 0
-            || xtime_cmp(timer.expire_time, m_next_wakeup) < 0) {
+        if (next_req_timeout.sec == 0
+            || xtime_cmp(timer.expire_time, next_req_timeout) < 0) {
           next_timeout.set(now, timer.expire_time);
           memcpy(&m_next_wakeup, &timer.expire_time, sizeof(m_next_wakeup));
         }
@@ -290,22 +310,21 @@ int Reactor::poll_loop_interrupt() {
 
   if (ReactorFactory::ms_epollet) {
 
-    char buf[8];
+    char buf[4];
     ssize_t n;
 
-    /**
-     * Send and receive 1 byte to ourselves to cause epoll_wait to return
-     */
+    // Send and receive 1 byte to ourself to cause epoll_wait to return
 
-    if ((n = FileUtils::send(m_interrupt_sd, "1", 1)) < 0) {
+    if (FileUtils::send(m_interrupt_sd, "1", 1) < 0) {
       HT_ERRORF("send(interrupt_sd) failed - %s", strerror(errno));
       return Error::COMM_SEND_ERROR;
     }
 
-    if ((n = FileUtils::recv(m_interrupt_sd, buf, 8)) == -1) {
+    if ((n = FileUtils::recv(m_interrupt_sd, buf, 1)) == -1) {
       HT_ERRORF("recv(interrupt_sd) failed - %s", strerror(errno));
       return Error::COMM_RECEIVE_ERROR;
     }
+
   }
   else {
 
@@ -370,6 +389,11 @@ int Reactor::poll_loop_continue() {
 
   if (!ReactorFactory::ms_epollet) {
     struct epoll_event event;
+    char buf[8];
+
+    // Receive message(s) we sent to ourself in poll_loop_interrupt()
+    while (FileUtils::recv(m_interrupt_sd, buf, 8) > 0)
+      ;
 
     memset(&event, 0, sizeof(struct epoll_event));
     event.events = EPOLLERR | EPOLLHUP;
@@ -407,61 +431,77 @@ int Reactor::poll_loop_continue() {
 
 
 int Reactor::add_poll_interest(int sd, short events, IOHandler *handler) {
-  ScopedLock lock(m_poll_array_mutex);
+  ScopedLock lock(m_polldata_mutex);
+  int error;
 
-  if (polldata.size() <= (size_t)sd) {
-    size_t i = polldata.size();
-    polldata.resize(sd+1);
-    for (; i<polldata.size(); i++) {
-      memset(&polldata[i], 0, sizeof(PollDescriptorT));
-      polldata[i].pollfd.fd = -1;
+  if (m_polldata.size() <= (size_t)sd) {
+    size_t i = m_polldata.size();
+    m_polldata.resize(sd+1);
+    for (; i<m_polldata.size(); i++) {
+      memset(&m_polldata[i], 0, sizeof(PollDescriptorT));
+      m_polldata[i].pollfd.fd = -1;
     }
   }
 
-  polldata[sd].pollfd.fd = sd;
-  polldata[sd].pollfd.events = events;
-  polldata[sd].handler = handler;
-  return poll_loop_interrupt();
+  m_polldata[sd].pollfd.fd = sd;
+  m_polldata[sd].pollfd.events = events;
+  m_polldata[sd].handler = handler;
+
+  {
+    ScopedLock lock(m_mutex);
+    error = poll_loop_interrupt();
+  }
+  if (error != Error::OK) {
+    m_polldata[sd].pollfd.fd = -1;
+    m_polldata[sd].pollfd.events = 0;
+    m_polldata[sd].handler = 0;
+  }
+  return error;
 }
 
 int Reactor::remove_poll_interest(int sd) {
-  ScopedLock lock(m_poll_array_mutex);
+  {
+    ScopedLock lock(m_polldata_mutex);
 
-  HT_ASSERT(polldata.size() > (size_t)sd);
-
-  if ((size_t)sd == polldata.size()-1) {
-    int last_entry = sd;
-    do {
-      last_entry--;
-    } while (last_entry > 0 && polldata[last_entry].pollfd.fd == -1);
-    polldata.resize(last_entry+1);
+    HT_ASSERT(m_polldata.size() > (size_t)sd);
+    if ((size_t)sd == m_polldata.size()-1) {
+      int last_entry = sd;
+      do {
+        last_entry--;
+      } while (last_entry > 0 && m_polldata[last_entry].pollfd.fd == -1);
+      m_polldata.resize(last_entry+1);
+    }
+    else {
+      m_polldata[sd].pollfd.fd = -1;
+      m_polldata[sd].handler = 0;
+    }
   }
-  else {
-    polldata[sd].pollfd.fd = -1;
-    polldata[sd].handler = 0;
-  }
+  ScopedLock lock(m_mutex);
   return poll_loop_interrupt();
 }
 
 int Reactor::modify_poll_interest(int sd, short events) {
-  ScopedLock lock(m_poll_array_mutex);
-  HT_ASSERT(polldata.size() > (size_t)sd);
-  polldata[sd].pollfd.events = events;
+  {
+    ScopedLock lock(m_polldata_mutex);
+    HT_ASSERT(m_polldata.size() > (size_t)sd);
+    m_polldata[sd].pollfd.events = events;
+  }
+  ScopedLock lock(m_mutex);
   return poll_loop_interrupt();
 }
 
 
 void Reactor::fetch_poll_array(std::vector<struct pollfd> &fdarray,
 			       std::vector<IOHandler *> &handlers) {
-  ScopedLock lock(m_poll_array_mutex);
+  ScopedLock lock(m_polldata_mutex);
 
   fdarray.clear();
   handlers.clear();
 
-  for (size_t i=0; i<polldata.size(); i++) {
-    if (polldata[i].pollfd.fd != -1 && polldata[i].pollfd.events) {
-      fdarray.push_back(polldata[i].pollfd);
-      handlers.push_back(polldata[i].handler);
+  for (size_t i=0; i<m_polldata.size(); i++) {
+    if (m_polldata[i].pollfd.fd != -1 && m_polldata[i].pollfd.events) {
+      fdarray.push_back(m_polldata[i].pollfd);
+      handlers.push_back(m_polldata[i].handler);
     }
   }
 }

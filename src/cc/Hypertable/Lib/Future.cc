@@ -62,7 +62,7 @@ bool Future::get(ResultPtr &result) {
 
     if (result->is_error())
       break;
-    if (result->is_scan()) {
+    else if (result->is_scan()) {
       TableScannerAsync *scanner = result->get_scanner();
       // ignore result if scanner has been cancelled
       if (!scanner || !scanner->is_cancelled()) // scanner must be alive

@@ -31,9 +31,6 @@
     <ClCompile Include="MetaLogDefinitionMaster.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MetaLogEntityOperation.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Operation.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -58,9 +55,6 @@
     <ClCompile Include="OperationGatherStatistics.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OperationGetSchema.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="OperationInitialize.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -68,9 +62,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OperationProcessor.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OperationRecoverServer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OperationRegisterServer.cc">
@@ -106,18 +97,6 @@
     <ClCompile Include="LoadBalancer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LoadBalancerBasic.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LoadBalancerBasicDistributeLoad.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LoadBalancerBasicDistributeTableRanges.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OperationLoadBalancer.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RangeMetrics.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -127,13 +106,37 @@
     <ClCompile Include="ServerMetrics.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LoadBalancerBasicOffloadServers.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="OperationStop.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ReferenceManager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BalanceAlgorithmEvenRanges.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BalanceAlgorithmLoad.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BalanceAlgorithmOffload.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BalancePlanAuthority.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationRecover.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationRecoverRanges.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationRecoveryBlocker.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationTimedBarrier.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerConnectionManager.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -171,9 +174,6 @@
     <ClInclude Include="MetaLogDefinitionMaster.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="MetaLogEntityOperation.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Operation.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -198,9 +198,6 @@
     <ClInclude Include="OperationGatherStatistics.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="OperationGetSchema.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="OperationInitialize.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -208,9 +205,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="OperationProcessor.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OperationRecoverServer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="OperationRegisterServer.h">
@@ -246,18 +240,6 @@
     <ClInclude Include="LoadBalancer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="LoadBalancerBasic.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LoadBalancerBasicDistributeLoad.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LoadBalancerBasicDistributeTableRanges.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OperationLoadBalancer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="RangeMetrics.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -267,13 +249,52 @@
     <ClInclude Include="ServerMetrics.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="LoadBalancerBasicOffloadServers.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="OperationStop.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ReferenceManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BalanceAlgorithm.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BalanceAlgorithmEvenRanges.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BalanceAlgorithmLoad.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BalanceAlgorithmOffload.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BalancePlanAuthority.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityType.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRecover.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRecoverRanges.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRecoveryBlocker.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationTimedBarrier.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerConnectionManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerHyperspaceCallback.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RecoveryReplayCounter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RecoveryStepFuture.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

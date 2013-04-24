@@ -76,12 +76,12 @@ namespace Hypertable {
      *     wait_for_completion unless explicitly told to do so by caller
      */
     TableMutatorAsync(PropertiesPtr &props, Comm *comm,
-		      ApplicationQueuePtr &app_queue, Table *table,
+		      ApplicationQueueInterfacePtr &app_queue, Table *table,
 		      RangeLocatorPtr &range_locator, uint32_t timeout_ms, ResultCallback *cb,
 		      uint32_t flags = 0, bool explicit_block_only = false);
 
     TableMutatorAsync(Mutex &mutex, boost::condition &cond, PropertiesPtr &props, Comm *comm,
-		      ApplicationQueuePtr &app_queue, Table *table,
+		      ApplicationQueueInterfacePtr &app_queue, Table *table,
 		      RangeLocatorPtr &range_locator, uint32_t timeout_ms, ResultCallback *cb,
 		      uint32_t flags = 0, bool explicit_block_only = false,
               TableMutator *mutator = 0);
@@ -158,7 +158,8 @@ namespace Hypertable {
      * Insert a bunch of cells into the table (atomically if cells are in
      * the same range/row)
      *
-     * @param cells a list of cells
+     * @param start Iterator pointing to start of cells to be inserted
+     * @param end Iterator pointing to end of cells to be inserted
      */
     void set_cells(Cells::const_iterator start, Cells::const_iterator end);
 
@@ -187,10 +188,10 @@ namespace Hypertable {
     }
     bool has_outstanding() {
       ScopedLock lock(m_mutex);
-      return m_outstanding_buffers.size() > 0;
+      return !m_outstanding_buffers.empty();
     }
     bool has_outstanding_unlocked() {
-      return m_outstanding_buffers.size() > 0;
+      return !m_outstanding_buffers.empty();
     }
     bool needs_flush();
 
@@ -262,7 +263,7 @@ namespace Hypertable {
 
     PropertiesPtr        m_props;
     Comm                *m_comm;
-    ApplicationQueuePtr  m_app_queue;
+    ApplicationQueueInterfacePtr  m_app_queue;
     TablePtr             m_table;
     SchemaPtr            m_schema;  // needs mutex
     RangeLocatorPtr      m_range_locator;
@@ -280,7 +281,7 @@ namespace Hypertable {
     const static uint32_t ms_max_sync_retries = 5;
 
     Mutex      m_buffer_mutex;
-    Mutex      &m_mutex;
+    Mutex     &m_mutex;
     Mutex      m_member_mutex;
     boost::condition m_buffer_cond;
     boost::condition &m_cond;

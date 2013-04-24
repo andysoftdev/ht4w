@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/* -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -17,6 +17,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Declarations for RangeServer.
+ * This file contains the type declarations for the RangeServer
  */
 
 #ifndef HYPERTABLE_RANGESERVER_H
@@ -43,22 +48,26 @@
 #include "Hypertable/Lib/Types.h"
 #include "Hypertable/Lib/NameIdMapper.h"
 #include "Hypertable/Lib/StatsRangeServer.h"
+#include "Hypertable/Lib/MetaLogEntityRange.h"
 
 #include "Global.h"
 #include "GroupCommitInterface.h"
 #include "GroupCommitTimerHandler.h"
 #include "MaintenanceScheduler.h"
-#include "MetaLogEntityRange.h"
 #include "QueryCache.h"
 #include "RSStats.h"
 #include "ResponseCallbackCreateScanner.h"
 #include "ResponseCallbackFetchScanblock.h"
 #include "ResponseCallbackGetStatistics.h"
 #include "ResponseCallbackUpdate.h"
+#include "ResponseCallbackPhantomUpdate.h"
+#include "ResponseCallbackAcknowledgeLoad.h"
+
 #include "TableIdCache.h"
 #include "TableInfo.h"
 #include "TableInfoMap.h"
-#include "TimerInterface.h"
+#include "TimerHandler.h"
+#include "PhantomRangeMap.h"
 
 namespace Hypertable {
   using namespace Hyperspace;
@@ -66,6 +75,12 @@ namespace Hypertable {
   class ConnectionHandler;
   class TableUpdate;
   class UpdateThread;
+
+  /** @defgroup RangeServer RangeServer
+   * %Range server.
+   * The @ref RangeServer module contains the definition of the RangeServer
+   * @{
+   */
 
   class RangeServer : public ReferenceCount {
   public:
@@ -83,9 +98,11 @@ namespace Hypertable {
     void fetch_scanblock(ResponseCallbackFetchScanblock *, uint32_t scanner_id);
     void load_range(ResponseCallback *, const TableIdentifier *,
                     const RangeSpec *, const RangeState *,
-		    bool needs_compaction);
+                    bool needs_compaction);
     void acknowledge_load(ResponseCallback *, const TableIdentifier *,
                           const RangeSpec *);
+    void acknowledge_load(ResponseCallbackAcknowledgeLoad *cb,
+                          const vector<QualifiedRangeSpec> &ranges);
     void update_schema(ResponseCallback *, const TableIdentifier *,
                        const char *);
     void update(ResponseCallbackUpdate *, const TableIdentifier *,
@@ -95,13 +112,16 @@ namespace Hypertable {
     void commit_log_sync(ResponseCallback *, const TableIdentifier *);
     void drop_table(ResponseCallback *, const TableIdentifier *);
     void dump(ResponseCallback *, const char *, bool);
+
+    /** @deprecated */
+    void dump_pseudo_table(ResponseCallback *cb, const TableIdentifier *table,
+                           const char *pseudo_table, const char *outfile);
     void get_statistics(ResponseCallbackGetStatistics *);
 
-    void replay_begin(ResponseCallback *, uint16_t group);
     void replay_load_range(ResponseCallback *, MetaLog::EntityRange *,
                            bool write_rsml=true);
     void replay_update(ResponseCallback *, const uint8_t *data, size_t len);
-    void replay_commit(ResponseCallback *);
+    void replay_commit(ResponseCallback *cb);
 
     void drop_range(ResponseCallback *, const TableIdentifier *,
                     const RangeSpec *);
@@ -111,6 +131,29 @@ namespace Hypertable {
     void heapcheck(ResponseCallback *, const char *);
 
     void metadata_sync(ResponseCallback *, const char *, uint32_t flags, std::vector<const char *> columns);
+
+    void replay_fragments(ResponseCallback *, int64_t op_id,
+        const String &location, int plan_generation, int type,
+        const vector<uint32_t> &fragments,
+        RangeRecoveryReceiverPlan &receiver_plan, uint32_t replay_timeout);
+
+    void phantom_load(ResponseCallback *, const String &location,
+                      int plan_generation,
+                      const vector<uint32_t> &fragments, 
+                      const vector<QualifiedRangeSpec> &specs,
+                      const vector<RangeState> &states);
+
+    void phantom_update(ResponseCallbackPhantomUpdate *, const String &location,
+                        int plan_generation, QualifiedRangeSpec &range,
+                        uint32_t fragment, EventPtr &event);
+
+    void phantom_prepare_ranges(ResponseCallback *, int64_t op_id,
+        const String &location, int plan_generation, 
+        const vector<QualifiedRangeSpec> &ranges);
+
+    void phantom_commit_ranges(ResponseCallback *, int64_t op_id,
+        const String &location, int plan_generation, 
+        const vector<QualifiedRangeSpec> &ranges);
 
     /**
      * Blocks while the maintenance queue is non-empty
@@ -137,13 +180,6 @@ namespace Hypertable {
                                   const RangeSpec *range,
                                   boost::xtime expire_time);
     bool replay_finished() { return m_replay_finished; }
-
-
-    void register_timer(TimerInterface *timer) {
-      ScopedLock lock(m_mutex);
-      HT_ASSERT(m_timer_handler == 0);
-      m_timer_handler = timer;
-    }
 
     void shutdown();
 
@@ -177,6 +213,9 @@ namespace Hypertable {
     void transform_key(ByteString &bskey, DynamicBuffer *dest_bufp,
                        int64_t revision, int64_t *revisionp,
                        bool timeorder_desc);
+
+    bool live(const vector<QualifiedRangeSpec> &ranges);
+    bool live(const QualifiedRangeSpec &spec);
 
     class UpdateContext {
     public:
@@ -231,6 +270,10 @@ namespace Hypertable {
     Comm                  *m_comm;
     TableInfoMapPtr        m_live_map;
     TableInfoMapPtr        m_replay_map;
+    typedef map<String, PhantomRangeMapPtr> FailoverPhantomRangeMap;
+    FailoverPhantomRangeMap m_failover_map;
+    Mutex                  m_failover_mutex;
+
     CommitLogPtr           m_replay_log;
     ConnectionManagerPtr   m_conn_manager;
     ApplicationQueuePtr    m_app_queue;
@@ -255,7 +298,7 @@ namespace Hypertable {
     NameIdMapperPtr        m_namemap;
 
     MaintenanceSchedulerPtr m_maintenance_scheduler;
-    TimerInterface        *m_timer_handler;
+    TimerHandlerPtr        m_timer_handler;
     GroupCommitInterfacePtr m_group_commit;
     GroupCommitTimerHandlerPtr m_group_commit_timer_handler;
     uint32_t               m_update_delay;
@@ -271,6 +314,7 @@ namespace Hypertable {
     size_t                 m_metric_samples;
     size_t                 m_cores;
     int32_t                m_maintenance_pause_interval;
+    Mutex                  m_pending_metrics_mutex;
     CellsBuilder          *m_pending_metrics_updates;
     boost::xtime           m_last_control_file_check;
     int32_t                m_control_file_check_interval;
@@ -279,8 +323,9 @@ namespace Hypertable {
     Mutex                  m_profile_mutex;
   };
 
+  /// Smart pointer to RangeServer
   typedef intrusive_ptr<RangeServer> RangeServerPtr;
-
+  /** @}*/
 } // namespace Hypertable
 
 #endif // HYPERTABLE_RANGESERVER_H

@@ -208,7 +208,7 @@ void DefaultPolicy::init_options() {
   file_desc().add_options()
     ("Comm.DispatchDelay", i32()->default_value(0), "[TESTING ONLY] "
         "Delay dispatching of read requests by this number of milliseconds")
-    ("Comm.UsePoll", boo()->default_value(false), "Use poll() interface")
+    ("Comm.UsePoll", boo()->default_value(false), "Use POSIX poll() interface")
     ("Hypertable.Verbose", boo()->default_value(false),
         "Enable verbose output (system wide)")
     ("Hypertable.Silent", boo()->default_value(false),
@@ -313,11 +313,11 @@ void DefaultPolicy::init_options() {
     ("Hyperspace.Replica.Dir", str(), "Root of hyperspace file and directory "
         "heirarchy in local filesystem (if relative path, then is relative to "
         "the Hypertable data directory root)")
-    ("Hyperspace.KeepAlive.Interval", i32()->default_value(30000),
+    ("Hyperspace.KeepAlive.Interval", i32()->default_value(10000),
         "Hyperspace Keepalive interval (see Chubby paper)")
-    ("Hyperspace.Lease.Interval", i32()->default_value(1000000),
+    ("Hyperspace.Lease.Interval", i32()->default_value(60000),
         "Hyperspace Lease interval (see Chubby paper)")
-    ("Hyperspace.GracePeriod", i32()->default_value(200000),
+    ("Hyperspace.GracePeriod", i32()->default_value(60000),
         "Hyperspace Grace period (see Chubby paper)")
     ("Hyperspace.Session.Reconnect", boo()->default_value(false),
         "Reconnect to Hyperspace on session expiry")
@@ -329,13 +329,11 @@ void DefaultPolicy::init_options() {
         "Disables the generation of monitoring statistics")
     ("Hypertable.LoadBalancer.Enable", boo()->default_value(true),
         "Enable automatic load balancing")
-    ("Hypertable.LoadBalancer.Interval", i32()->default_value(86400000),
-        "Time interval between LoadBalancer operations")
-    ("Hypertable.LoadBalancer.WindowStart", str()->default_value("00:00:01"),
-        "Time of day at which LoadBalancer balance window starts")
-    ("Hypertable.LoadBalancer.WindowEnd", str()->default_value("00:03:00"),
-        "Time of day at which the LoadBalancer balance window ends")
-    ("Hypertable.LoadBalancer.ServerWaitInterval", i32()->default_value(300000),
+    ("Hypertable.LoadBalancer.Crontab", str()->default_value("0 0 * * *"),
+        "Crontab entry to control when load balancer is run")
+    ("Hypertable.LoadBalancer.BalanceDelay.Initial", i32()->default_value(86400),
+        "Amount of time to wait after start up before running balancer")
+    ("Hypertable.LoadBalancer.BalanceDelay.NewServer", i32()->default_value(60),
         "Amount of time to wait before running balancer when a new RangeServer is detected")
     ("Hypertable.LoadBalancer.LoadavgThreshold", f64()->default_value(0.25),
         "Servers with loadavg above this much above the mean will be considered by the "
@@ -378,6 +376,15 @@ void DefaultPolicy::init_options() {
         "Enable aggressive splitting of tables with little data to spread out ranges")
     ("Hypertable.Master.DiskThreshold.Percentage", i32()->default_value(90),
         "Stop assigning ranges to RangeServers if disk usage is above this threshold")
+    ("Hypertable.Master.FailedRangeServerLimit.Percentage", i32()->default_value(80),
+        "Fail hard if less than this percentage of the RangeServers are unavailable "
+        "at a given time")
+    ("Hypertable.Failover.GracePeriod", i32()->default_value(30000),
+        "Master wait this long before trying to recover a RangeServer")
+    ("Hypertable.Failover.Timeout", i32()->default_value(180000),
+        "Timeout for failover operations")
+    ("Hypertable.Failover.Quorum.Percentage", i32()->default_value(90),
+        "Percentage of live RangeServers required for failover to proceed")
     ("Hypertable.RangeServer.AccessGroup.GarbageThreshold.Percentage",
      i32()->default_value(20), "Perform major compaction when garbage accounts "
      "for this percentage of the data")
@@ -432,6 +439,9 @@ void DefaultPolicy::init_options() {
         "Maximum (target) size of block cache")
     ("Hypertable.RangeServer.QueryCache.MaxMemory", i64()->default_value(50*M),
         "Maximum size of query cache")
+    ("Hypertable.RangeServer.Range.RowSize.Unlimited", boo()->default_value(false),
+     "Marks range active and unsplittable upon encountering row overflow condition. "
+     "Can cause ranges to grow extremely large.  Use with caution!")
     ("Hypertable.RangeServer.Range.SplitSize", i64()->default_value(256*MiB),
         "Size of range in bytes before splitting")
     ("Hypertable.RangeServer.Range.MaximumSize", i64()->default_value(3*G),
@@ -446,7 +456,7 @@ void DefaultPolicy::init_options() {
         "Host of DFS Broker to use for Commit Log")
     ("Hypertable.RangeServer.CommitLog.DfsBroker.Port", i16(),
         "Port of DFS Broker to use for Commit Log")
-    ("Hypertable.RangeServer.CommitLog.FragmentRemoval.RangeReferenceRequired", boo()->default_value(false),
+    ("Hypertable.RangeServer.CommitLog.FragmentRemoval.RangeReferenceRequired", boo()->default_value(true),
         "Only remove linked log fragments if they're part of a transfer log referenced by a range")
         
 #ifdef _WIN32
@@ -472,6 +482,12 @@ void DefaultPolicy::init_options() {
         "TESTING:  After update, if range needs maintenance, pause for this number of milliseconds")
     ("Hypertable.RangeServer.UpdateCoalesceLimit", i64()->default_value(5*M),
         "Amount of update data to coalesce into single commit log sync")
+    ("Hypertable.RangeServer.Failover.FlushLimit.PerRange",
+     i32()->default_value(10*M), "Amount of updates (bytes) accumulated for a "
+        "single range to trigger a replay buffer flush")
+    ("Hypertable.RangeServer.Failover.FlushLimit.Aggregate",
+     i64()->default_value(100*M), "Amount of updates (bytes) accumulated for "
+        "all range to trigger a replay buffer flush")
     ("Hypertable.Metadata.Replication", i32()->default_value(-1),
         "Replication factor for commit log files")
     ("Hypertable.CommitLog.RollLimit", i64()->default_value(100*M),
@@ -488,6 +504,10 @@ void DefaultPolicy::init_options() {
         "Timer interval in milliseconds (reaping scanners, purging commit logs, etc.)")
     ("Hypertable.RangeServer.Maintenance.Interval", i32()->default_value(30000),
         "Maintenance scheduling interval in milliseconds")
+    ("Hypertable.RangeServer.Maintenance.LowMemoryPrioritization", boo()->default_value(true),
+        "Use low memory prioritization algorithm for freeing memory in low memory mode")
+    ("Hypertable.RangeServer.Maintenance.MaxAppQueuePause", i32()->default_value(30000),
+        "Each time application queue is paused, keep it paused for no more than this many milliseconds")
     ("Hypertable.RangeServer.Maintenance.MergesPerInterval", i32(),
         "Limit on number of merging tasks to create per maintenance interval")
     ("Hypertable.RangeServer.Maintenance.MergingCompaction.Delay", i32()->default_value(900000),
@@ -660,21 +680,21 @@ void DefaultPolicy::init() {
   }
 
   if (loglevel == "info")
-    Logger::set_level(Logger::Priority::INFO);
+    Logger::get()->set_level(Logger::Priority::INFO);
   else if (loglevel == "debug")
-    Logger::set_level(Logger::Priority::DEBUG);
+    Logger::get()->set_level(Logger::Priority::DEBUG);
   else if (loglevel == "notice")
-    Logger::set_level(Logger::Priority::NOTICE);
+    Logger::get()->set_level(Logger::Priority::NOTICE);
   else if (loglevel == "warn")
-    Logger::set_level(Logger::Priority::WARN);
+    Logger::get()->set_level(Logger::Priority::WARN);
   else if (loglevel == "error")
-    Logger::set_level(Logger::Priority::ERROR);
+    Logger::get()->set_level(Logger::Priority::ERROR);
   else if (loglevel == "crit")
-    Logger::set_level(Logger::Priority::CRIT);
+    Logger::get()->set_level(Logger::Priority::CRIT);
   else if (loglevel == "alert")
-    Logger::set_level(Logger::Priority::ALERT);
+    Logger::get()->set_level(Logger::Priority::ALERT);
   else if (loglevel == "fatal")
-    Logger::set_level(Logger::Priority::FATAL);
+    Logger::get()->set_level(Logger::Priority::FATAL);
   else {
     HT_ERROR_OUT << "unknown logging level: "<< loglevel << HT_END;
     _exit(0);

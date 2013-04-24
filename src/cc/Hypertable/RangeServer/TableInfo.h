@@ -22,6 +22,7 @@
 #ifndef HYPERTABLE_TABLEINFO_H
 #define HYPERTABLE_TABLEINFO_H
 
+#include <iterator>
 #include <set>
 #include <string>
 
@@ -51,9 +52,18 @@ namespace Hypertable {
   public:
     RangeDataVector() : std::vector<RangeData>() {}
     ByteArena& arena() { return m_arena; }
+    void rotate(int32_t starting_point) {
+      if (starting_point != 0) {
+        std::vector<RangeData> rotated;
+        rotated.reserve(size());
+        starting_point %= size();
+        std::vector<RangeData>::iterator iter = begin() + starting_point;
+        rotated.insert(rotated.end(), iter, end());
+        rotated.insert(rotated.end(), begin(), iter);
+        swap(rotated);
+      }
+    }
   private:
-    RangeDataVector(const RangeDataVector&);
-    RangeDataVector& operator = (const RangeDataVector&);
     ByteArena m_arena;
   };
 
@@ -103,9 +113,7 @@ namespace Hypertable {
               const TableIdentifier *identifier,
               SchemaPtr &schema);
 
-    virtual ~TableInfo() {
-      HT_INFOF("%p: destructor", (void *)this);
-    }
+    virtual ~TableInfo() { }
 
     virtual bool remove(const String &start_row, const String &end_row);
     virtual bool change_end_row(const String &start_row, const String &old_end_row,
@@ -119,7 +127,7 @@ namespace Hypertable {
      *
      * @return reference to the smart pointer to the schema object
      */
-    SchemaPtr &get_schema() {
+    SchemaPtr get_schema() {
       ScopedLock lock(m_mutex);
       return m_schema;
     }
@@ -183,9 +191,10 @@ namespace Hypertable {
     /**
      * Adds a range
      *
-     * @param range smart pointer to range object
+     * @param range Smart pointer to range object
+     * @param remove_if_exists Remove existing entry if one exists
      */
-    void add_range(RangePtr &range);
+    void add_range(RangePtr &range, bool remove_if_exists = false);
 
     /**
      * Finds the range that the given row belongs to
@@ -202,11 +211,11 @@ namespace Hypertable {
     /**
      * Finds the range that the given row belongs to
      *
-     * @param row row key used to locate range (in)
-     * @param range reference to smart pointer to hold removed range (out)
-     * @param start_row starting row of range (out)
-     * @param end_row ending row of range (out)
-     * @return true if found, false otherwise
+     * @param row Row key used to locate range (in)
+     * @param range Reference to smart pointer to hold removed range (out)
+     * @param start_rowp Starting row of range (out)
+     * @param end_rowp Ending row of range (out)
+     * @return <i>true</i> if found, <i>false</i> otherwise
      */
     bool find_containing_range(const String &row, RangePtr &range,
                                const char **start_rowp, const char **end_rowp) const;

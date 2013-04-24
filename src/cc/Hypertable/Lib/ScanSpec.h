@@ -38,7 +38,7 @@ namespace Hypertable {
 class ColumnPredicate {
 public:
   enum {
-    NO_OPERATION=0,
+    NO_OPERATION = 0,
     EXACT_MATCH,
     PREFIX_MATCH,
     CONTAINS
@@ -244,7 +244,7 @@ public:
    * Parses a column string into column family, qualifier and whether the
    * qualifier is a regexp or not
    *
-   * @param column column specified string
+   * @param column_str column specified string
    * @param family family name
    * @param qualifier column qualifier
    * @param is_regexp true if the qualifier string is a regexp
@@ -343,6 +343,9 @@ public:
   void set_end_time(int64_t end) {
     time_interval.second = end;
   }
+
+  // checks if this ScanSpec is valid; if not it will throw an exception
+  void throw_if_invalid() const;
 
   int32_t row_limit;
   int32_t cell_limit;

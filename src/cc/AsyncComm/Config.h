@@ -1,5 +1,5 @@
-/** -*- C++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- C++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,31 +19,74 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Declarations for configuration properties.
+ * This file contains type declarations for configuration properties.  These
+ * types are used to define AsyncComm specific properties.
+ */
+
 #ifndef HYPERTABLE_COMM_CONFIG_H
 #define HYPERTABLE_COMM_CONFIG_H
 
 #include "Common/Config.h"
 
 namespace Hypertable { namespace Config {
-  // init helpers
+
+  /** @addtogroup AsyncComm
+   *  @{
+   */
+
+  /** Initializes Comm-layer options.
+   * This method adds the following options:
+   *   - workers
+   *   - reactors
+   *   - timeout (aliased to <code>Hypertable.Request.Timeout</code>)
+   */
   void init_comm_options();
+
+  /** This method initializes the Comm-layer.
+   * It determines the reactor count from the <i>reactors</i> property, if
+   * specified, otherwise sets the reactor count to the number of CPU cores
+   * as returned by System::get_processor_count().  It then calls
+   * ReactorFactory::initialize.
+   */
   void init_comm();
+
+  /** Initializes generic server options.
+   * This method adds the following options:
+   *   - port
+   *   - pidfile
+   */
   void init_generic_server_options();
+
+  /** Initializes generic server by writing the pidfile.
+   */
   void init_generic_server();
 
-  // init policies
+  /** Config policy for Comm layer.
+   * Adds default comm layer properties and initializes comm layer
+   */
   struct CommPolicy : Policy {
     static void init_options() { init_comm_options(); }
     static void init() { init_comm(); }
   };
 
+  /** Config policy for generic Comm layer server.
+   * Adds generic server properties and initializes server by
+   * writing the pidfile.
+   */
   struct GenericServerPolicy : Policy {
     static void init_options() { init_generic_server_options(); }
     static void init() { init_generic_server(); }
   };
 
+  /// Default comm layer config policy
   typedef Cons<DefaultPolicy, CommPolicy> DefaultCommPolicy;
+
+  /// Default comm layer server policy
   typedef Cons<GenericServerPolicy, DefaultCommPolicy> DefaultServerPolicy;
+
+  /** @}*/
 
 }} // namespace Hypertable::Config
 

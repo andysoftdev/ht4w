@@ -21,15 +21,11 @@
 
 #include "Common/Compat.h"
 #include "Common/HashMap.h"
+#include "Common/Logger.h"
 
 #include "Error.h"
 
 #include <iomanip>
-
-namespace Hypertable { namespace Logger {
-    extern bool show_line_numbers;
-  }
-}
 
 using namespace Hypertable;
 
@@ -106,6 +102,8 @@ namespace {
     { Error::CLOSED,                        "HYPERTABLE closed" },
     { Error::RANGESERVER_NOT_FOUND,         "HYPERTABLE RangeServer not found" },
     { Error::CONNECTION_NOT_INITIALIZED,    "HYPERTABLE connection not initialized" },
+    { Error::DUPLICATE_RANGE,               "HYPERTABLE duplicate range" },
+    { Error::INVALID_PSEUDO_TABLE_NAME,     "HYPERTABLE invalid pseudo-table name" },
     { Error::CONFIG_BAD_ARGUMENT,         "CONFIG bad argument(s)"},
     { Error::CONFIG_BAD_CFG_FILE,         "CONFIG bad cfg file"},
     { Error::CONFIG_GET_ERROR,            "CONFIG failed to get config value"},
@@ -214,6 +212,8 @@ namespace {
       "MASTER location already assigned" },
     { Error::MASTER_LOCATION_INVALID, "MASTER location invalid" },
     { Error::MASTER_OPERATION_IN_PROGRESS, "MASTER operation in progress" },
+    { Error::MASTER_RANGESERVER_IN_RECOVERY, "MASTER RangeServer in recovery" },
+    { Error::MASTER_BALANCE_PREVENTED, "MASTER balance operation prevented" },
 
     { Error::RANGESERVER_GENERATION_MISMATCH,
         "RANGE SERVER generation mismatch" },
@@ -258,6 +258,16 @@ namespace {
     { Error::RANGESERVER_BAD_CELL_INTERVAL, "RANGE SERVER bad cell interval" },
     { Error::RANGESERVER_SHORT_CELLSTORE_READ, "RANGE SERVER short cellstore read" },
     { Error::RANGESERVER_RANGE_NOT_ACTIVE, "RANGE SERVER range no longer active" },
+    { Error::RANGESERVER_FRAGMENT_ALREADY_PROCESSED,
+        "RANGE SERVER fragment already processed"},
+    { Error::RANGESERVER_RECOVERY_PLAN_GENERATION_MISMATCH,
+        "RANGE SERVER recovery plan generation mismatch"},
+    { Error::RANGESERVER_PHANTOM_RANGE_MAP_NOT_FOUND,
+      "RANGE SERVER phantom range map not found"},
+    { Error::RANGESERVER_RANGES_ALREADY_LIVE,
+      "RANGE SERVER ranges already live"},
+    { Error::RANGESERVER_RANGE_NOT_YET_ACKNOWLEDGED,
+      "RANGE SERVER range not yet acknowledged"},
     { Error::HQL_BAD_LOAD_FILE_FORMAT,         "HQL bad load file format" },
     { Error::METALOG_VERSION_MISMATCH, "METALOG version mismatch" },
     { Error::METALOG_BAD_RS_HEADER, "METALOG bad range server metalog header" },
@@ -331,7 +341,7 @@ std::ostream &operator<<(std::ostream &out, const Exception &e) {
 
   if (e.line()) {
     out <<"\n\tat "<< e.func() <<" (";
-    if (Logger::show_line_numbers)
+    if (Logger::get()->show_line_numbers())
       out << e.file() <<':'<< e.line();
     else
       out << relative_fname(e);
@@ -342,7 +352,7 @@ std::ostream &operator<<(std::ostream &out, const Exception &e) {
 
   for (Exception *prev = e.prev; prev; prev = prev->prev) {
     out <<"\n\tat "<< (prev->func() ? prev->func() : "-") <<" (";
-    if (Logger::show_line_numbers)
+    if (Logger::get()->show_line_numbers())
       out << (prev->file() ? prev->file() : "-") <<':'<< prev->line();
     else
       out << relative_fname(*prev);

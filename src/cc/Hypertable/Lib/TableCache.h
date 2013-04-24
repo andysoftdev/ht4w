@@ -25,7 +25,7 @@
 #include "Common/Mutex.h"
 #include "Common/ReferenceCount.h"
 #include "Common/String.h"
-#include "AsyncComm/ApplicationQueue.h"
+#include "AsyncComm/ApplicationQueueInterface.h"
 #include "Schema.h"
 #include "RangeLocator.h"
 #include "Types.h"
@@ -37,13 +37,15 @@ namespace Hypertable {
   public:
 
     TableCache(PropertiesPtr &, RangeLocatorPtr &, ConnectionManagerPtr &,
-               Hyperspace::SessionPtr &, ApplicationQueuePtr &, 
+               Hyperspace::SessionPtr &, ApplicationQueueInterfacePtr &, 
                NameIdMapperPtr &namemap, uint32_t default_timeout_ms);
 
     /**
      *
      */
     TablePtr get(const String &table_name, int32_t flags);
+
+    TablePtr get_unlocked(const String &table_name, int32_t flags);
 
     /**
      * @param table_name Name of table
@@ -67,18 +69,21 @@ namespace Hypertable {
      */
     bool remove(const String &table_name);
 
+    void lock() { m_mutex.lock(); }
+    void unlock() { m_mutex.unlock(); }
+
   private:
     typedef hash_map<String, TablePtr> TableMap;
 
+    Mutex                   m_mutex;
     PropertiesPtr           m_props;
     RangeLocatorPtr         m_range_locator;
     Comm                   *m_comm;
     ConnectionManagerPtr    m_conn_manager;
     Hyperspace::SessionPtr  m_hyperspace;
-    ApplicationQueuePtr     m_app_queue;
+    ApplicationQueueInterfacePtr     m_app_queue;
     NameIdMapperPtr         m_namemap;
     uint32_t                m_timeout_ms;
-    Mutex                   m_mutex;
     TableMap                m_table_map;
   };
 

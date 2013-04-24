@@ -512,6 +512,8 @@ control=(REV|TS|SHARED) row='http://www.wastement.com/' family=1 qualifier='cube
 control=(REV|TS|SHARED) row='http://www.whack.com/' family=1 qualifier='gypsography' ts=111 rev=111 INSERT
 control=(REV|TS|SHARED) row='http://www.yonside.com/' family=1 qualifier='testamentarily' ts=2 rev=2 INSERT
 control=(REV|TS|SHARED) row='http://www.younglet.com/' family=1 qualifier='laeotropism' ts=162 rev=162 INSERT
+[issue976]
+may_contain(ROW="http://www.Texas.com/", COL="tag:^s") == true
 [first-block-row-scan-1]
 control=(REV|TS|SHARED) row='http://www.Balak.com/' family=1 qualifier='micasize' ts=47 rev=47 INSERT
 control=(REV|TS|SHARED) row='http://www.Billjim.com/' family=1 qualifier='thinglike' ts=82 rev=82 INSERT
@@ -2269,3 +2271,6 @@ control=(AUTO) row='row000275' family=1 qualifier='' ts=-9223372036854775806 rev
 trailer.expiration_time = 18000000000497
 trailer.expirable_data = 14030
 trailer.delete_count= 0
+[issue1017]
+may_contain(ROW="the only row") == true
+may_contain(ROW="absent row") == false

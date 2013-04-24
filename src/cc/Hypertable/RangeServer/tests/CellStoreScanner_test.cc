@@ -40,7 +40,7 @@
 #include "Hypertable/Lib/SerializedKey.h"
 
 #include "../CellStoreFactory.h"
-#include "../CellStoreV5.h"
+#include "../CellStoreV6.h"
 #include "../Global.h"
 
 #include <cstdlib>
@@ -622,6 +622,7 @@ int main(int argc, char **argv) {
 
     String csname = testdir + "/cs0";
     PropertiesPtr cs_props = new Properties();
+    Schema::parse_bloom_filter("rows+cols", cs_props);
 
     SchemaPtr schema = Schema::new_instance(schema_str, strlen(schema_str));
 
@@ -630,7 +631,7 @@ int main(int argc, char **argv) {
       exit(1);
     }
 
-    cs = new CellStoreV5(Global::dfs.get(), schema.get());
+    cs = new CellStoreV6(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 0, cs_props, &table_id));
     cs->set_replaced_files(replaced_files_write);
 
@@ -762,6 +763,19 @@ int main(int argc, char **argv) {
         HT_ASSERT(count == 1);
       }
     }
+
+    /**
+     * issue 976
+     */
+    out << "[issue976]\n";
+    ssbuilder.clear();
+    ssbuilder.add_row_interval("http://www.Texas.com/", true,
+                               "http://www.Texas.com/", true);
+    ssbuilder.add_column("tag:^s");
+    scan_ctx = new ScanContext(TIMESTAMP_MAX, &(ssbuilder.get()), &range,
+                                   schema);
+    out << "may_contain(ROW=\"http://www.Texas.com/\", COL=\"tag:^s\") == ";
+    out << ((cs->may_contain(scan_ctx)) ? "true" : "false") << "\n";
 
     /**
      * Row operations
@@ -1420,9 +1434,10 @@ int main(int argc, char **argv) {
     display_scan(scanner, out);
 
     csname = testdir + "/cs1";
+    cs_props = new Properties();
     cs_props->set("blocksize", (uint32_t)10000);
     cs_props->set("compressor", String("none"));
-    cs = new CellStoreV5(Global::dfs.get(), schema.get());
+    cs = new CellStoreV6(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 0, cs_props, &table_id));
     // should not coalesce and be in a separate block from trailer
     replaced_files_write.push_back("1/hypertable/tables/0/1/default/qyoNKN5rd__dbHKv/cs0");
@@ -1535,7 +1550,7 @@ int main(int argc, char **argv) {
       exit(1);
     }
 
-    cs = new CellStoreV5(Global::dfs.get(), schema.get());
+    cs = new CellStoreV6(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 0, cs_props, &table_id));
     // should coalesce and be in 2 blocks, with the 2nd block also containing the trailer
     replaced_files_write.push_back("7/hypertable/tables/0/1/default/qyoNKN5rd__dbHKv/cs0");
@@ -1568,8 +1583,8 @@ int main(int argc, char **argv) {
     }
 
     cs->finalize(&table_id);
-    out << "[replaced-files-2]\n";
     cs = CellStoreFactory::open(csname, "", "row000200/");
+    out << "[replaced-files-2]\n";
     check_replaced_files(cs, replaced_files_write, out);
 
     int64_t expiration_time = boost::any_cast<int64_t>(cs->get_trailer()->get("expiration_time"));
@@ -1578,6 +1593,51 @@ int main(int argc, char **argv) {
     out << "trailer.expiration_time = " << expiration_time << "\n";
     out << "trailer.expirable_data = " << expirable_data << "\n";
     out << "trailer.delete_count= " << delete_count << "\n";
+
+    // close scanner
+    scanner = 0;
+
+    // issue 1017
+    out << "[issue1017]\n";
+    csname = testdir + "/cs3";
+    cs_props = new Properties();
+    Schema::parse_bloom_filter("rows", cs_props);
+    schema = Schema::new_instance(schema_str, strlen(schema_str));
+    if (!schema->is_valid()) {
+      HT_ERRORF("Schema Parse Error: %s", schema->get_error_string());
+      exit(1);
+    }
+    cs = new CellStoreV6(Global::dfs.get(), schema.get());
+    HT_TRY("creating cellstore", cs->create(csname.c_str(), 735, cs_props, &table_id));
+    strcpy((char *)rowbuf, "the only row");
+    value = "Dummy value";
+    uptr = valuebuf;
+    Serialization::encode_vi32(&uptr, strlen(value));
+    strcpy((char *)uptr, value);
+    bsvalue.ptr = valuebuf;
+
+    for (size_t i=0; i<1000; i++) {
+      dbuf.clear();
+      serkey.ptr = dbuf.ptr;
+      create_key_and_append(dbuf, FLAG_INSERT, rowbuf, 1, "");
+      key.load(serkey);
+      cs->add(key, bsvalue);
+    }
+    cs->finalize(&table_id);
+
+    ssbuilder.clear();
+    ssbuilder.add_row_interval("the only row", true, "the only row", true);
+    scan_ctx = new ScanContext(TIMESTAMP_MAX, &(ssbuilder.get()),&range,schema);
+    out << "may_contain(ROW=\"the only row\") == ";
+    out << ((cs->may_contain(scan_ctx)) ? "true" : "false") << "\n";
+
+    ssbuilder.clear();
+    ssbuilder.add_row_interval("absent row", true, "absent row", true);
+    scan_ctx = new ScanContext(TIMESTAMP_MAX, &(ssbuilder.get()),&range,schema);
+    out << "may_contain(ROW=\"absent row\") == ";
+    out << ((cs->may_contain(scan_ctx)) ? "true" : "false") << "\n";
+
+    cs = 0;
 
     out << flush;
 
@@ -1591,10 +1651,6 @@ int main(int argc, char **argv) {
 #endif
     if (system(cmd_str.c_str()) != 0)
       return 1;
-
-    // close cell store
-    scanner = 0;
-    cs = 0;
 
     client->rmdir(testdir);
   }
