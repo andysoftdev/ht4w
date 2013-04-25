@@ -47,12 +47,23 @@ namespace Hypertable { namespace Logger {
     };
   } // namespace Priority
 
+  class LogSink {
+    public:
+      virtual void log(int priority, const String &message, const std::string &entry) const = 0;
+  };
+
+  typedef std::set<const LogSink*> LogSinks;
+
   class LogWriter {
     public:
       LogWriter(const String &name)
         : m_show_line_numbers(true), m_test_mode(false), m_name(name),
           m_priority(Priority::INFO), m_file(stdout) {
       }
+
+      void set_file(FILE *file);
+      void add_sink(const LogSink *ls);
+      void remove_sink(const LogSink *ls);
 
       void set_level(int level) {
         m_priority = level;
@@ -92,11 +103,13 @@ namespace Hypertable { namespace Logger {
 
       void log_varargs(int priority, const char *format, va_list ap);
 
+  private:
       bool m_show_line_numbers;
       bool m_test_mode;
       String m_name;
       int m_priority;
       FILE *m_file;
+      LogSinks logSinks;
   };
 
   // public initialization function

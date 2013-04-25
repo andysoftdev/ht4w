@@ -45,6 +45,23 @@ LogWriter *get() {
   return logger_obj;
 }
 
+void LogWriter::set_file(FILE *file) {
+  ScopedLock lock(mutex);
+  m_file = file;
+}
+
+void LogWriter::add_sink(const LogSink* ls) {
+  ScopedLock lock(mutex);
+  if (ls)
+    logSinks.insert(ls);
+}
+
+void LogWriter::remove_sink(const LogSink* ls) {
+  ScopedLock lock(mutex);
+  if (ls)
+    logSinks.erase(ls);
+}
+
 void LogWriter::set_test_mode(int fd) {
   if (fd != -1) {
 
@@ -115,10 +132,11 @@ LogWriter::log_string(int priority, const char *message) {
     char dateTime[64];
     strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", &lt);
 
-    fprintf(m_file, "%s %6s %s\n",
-            dateTime,
-            priority_name[priority],
-            message);
+    String entry = format("%s %6s %s", 
+                          dateTime,
+                          priority_name[priority],
+                          message);
+    fprintf(m_file, "%ss\n", entry.c_str());
 
 #else
 
@@ -126,6 +144,9 @@ LogWriter::log_string(int priority, const char *message) {
             m_name.c_str(), message);
 
 #endif
+
+    for each( const LogSink* ls in logSinks )
+      ls->log( priority, message, entry );
 
   }
 
