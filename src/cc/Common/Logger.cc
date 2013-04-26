@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -17,6 +17,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Logging routines and macros.
+ * The LogWriter provides facilities to write debug, log, error- and other
+ * messages to stdout. The Logging namespaces provides std::ostream-
+ * and printf-like macros and convenience functions.
  */
 
 #include "Common/Compat.h"
@@ -103,15 +110,14 @@ void LogWriter::close() {
   }
 }
 
-void
-LogWriter::log_string(int priority, const char *message) {
+void LogWriter::log_string(int priority, const char *message) {
   static const char *priority_name[] = {
     "FATAL",
     "ALERT",
     "CRIT",
     "ERROR",
     "WARN",
-    "NOTICE",
+    "", // NOTICE
     "INFO",
     "DEBUG",
     "NOTSET"
@@ -136,7 +142,7 @@ LogWriter::log_string(int priority, const char *message) {
                           dateTime,
                           priority_name[priority],
                           message);
-    fprintf(m_file, "%ss\n", entry.c_str());
+    fprintf(m_file, "%s\n", entry.c_str());
 
 #else
 
@@ -161,23 +167,20 @@ LogWriter::log_string(int priority, const char *message) {
 #endif
 }
 
-void
-LogWriter::log_varargs(int priority, const char *format, va_list ap) {
+void LogWriter::log_varargs(int priority, const char *format, va_list ap) {
   char buffer[1024 * 16];
   vsnprintf(buffer, sizeof(buffer), format, ap);
   log_string(priority, buffer);
 }
 
-void
-LogWriter::debug(const char *format, ...) {
+void LogWriter::debug(const char *format, ...) {
   va_list ap;
   va_start(ap, format);
   log_varargs(Priority::DEBUG, format, ap);
   va_end(ap);
 }
 
-void
-LogWriter::log(int priority, const char *format, ...) {
+void LogWriter::log(int priority, const char *format, ...) {
   va_list ap;
   va_start(ap, format);
   log_varargs(priority, format, ap);

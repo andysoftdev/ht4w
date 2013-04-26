@@ -133,9 +133,20 @@ bool IOHandlerAccept::handle_event(IOOP *ioop, time_t) {
   DispatchHandlerPtr dhp;
   m_handler_factory->get_instance(dhp);
   IOHandlerData *data_handler = new IOHandlerData(ioop->sd, *sa_remote, dhp, true);
-  IOHandlerPtr handler(data_handler);
   m_handler_map->insert_handler(data_handler);
+  IOHandlerPtr handler(data_handler);
   data_handler->start_polling();
+
+  if (ReactorFactory::proxy_master) {
+    int32_t error;
+    if ((error = m_handler_map->propagate_proxy_map(data_handler))
+        != Error::OK) {
+      HT_ERRORF("Problem sending proxy map to %s - %s",
+                m_addr.format().c_str(), Error::get_text(error));
+      return true;
+    }
+  }
+
   data_handler->async_recv_header();
   deliver_event(new Event(Event::CONNECTION_ESTABLISHED, *sa_remote, Error::OK));
 
@@ -227,14 +238,9 @@ bool IOHandlerAccept::handle_incoming_connection() {
 
     handler = new IOHandlerData(sd, addr, dhp, true);
 
-    int32_t error = m_handler_map->insert_handler(handler);
-    if (error != Error::OK) {
-      HT_ERRORF("Problem registering accepted connection in handler map - %s",
-                Error::get_text(error));
-      delete handler;
-      ReactorRunner::handler_map->decomission_handler(this);
-      return true;
-    }
+    m_handler_map->insert_handler(handler);
+
+    int32_t error;
     if ((error = handler->start_polling(Reactor::READ_READY |
                                         Reactor::WRITE_READY)) != Error::OK) {
       HT_ERRORF("Problem starting polling on incoming connection - %s",
@@ -242,6 +248,15 @@ bool IOHandlerAccept::handle_incoming_connection() {
       delete handler;
       ReactorRunner::handler_map->decomission_handler(this);
       return true;
+    }
+
+    if (ReactorFactory::proxy_master) {
+      if ((error = ReactorRunner::handler_map->propagate_proxy_map(handler))
+          != Error::OK) {
+        HT_ERRORF("Problem sending proxy map to %s - %s",
+                  m_addr.format().c_str(), Error::get_text(error));
+        return true;
+      }
     }
 
     deliver_event(new Event(Event::CONNECTION_ESTABLISHED, addr, Error::OK));

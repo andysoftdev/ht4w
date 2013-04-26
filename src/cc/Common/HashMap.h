@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -15,6 +15,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
+ */
+
+/** @file
+ * HashMap and HashSet classes.
+ * Implemented as thin wrappers around boost::hash_map and boost::hash_set,
+ * using murmurhash as the hash algorithm.
  */
 
 #ifndef HYPERTABLE_HASHMAP_H
@@ -36,7 +42,7 @@ namespace Hypertable {
 #include BOOST_HASH_MAP_HEADER
 #include BOOST_HASH_SET_HEADER
 
-#include "MurmurHash.h"
+#include "Common/MurmurHash.h"
 
 namespace BOOST_STD_EXTENSION_NAMESPACE {
   template<> struct hash<std::string>  {
@@ -60,9 +66,17 @@ namespace BOOST_STD_EXTENSION_NAMESPACE {
 }
 
 namespace Hypertable {
+
+  /** @addtogroup Common
+   *  @{
+   */
+
   // import hash_map/set into our namespace
   using BOOST_STD_EXTENSION_NAMESPACE::hash_map;
   using BOOST_STD_EXTENSION_NAMESPACE::hash_set;
+
+  /** @} */
+
 } // namespace Hypertable
 
 #endif

@@ -21,11 +21,9 @@ set(SRC_DIR "${HYPERTABLE_SOURCE_DIR}/src/cc/Common")
 set(DST_DIR "${HYPERTABLE_BINARY_DIR}/src/cc/Common")
 
 set(Common_SRCS
-Abi.cc
 Checksum.cc
 Config.cc
 Crontab.cc
-Debug.cc
 DiscreteRandomGenerator.cc
 DiscreteRandomGeneratorFactory.cc
 DiscreteRandomGeneratorZipf.cc
@@ -37,19 +35,14 @@ Filesystem.cc
 InetAddr.cc
 InteractiveCommand.cc
 Logger.cc
-Lookup3.cc
-Math.cc
 MurmurHash.cc
 Properties.cc
 Random.cc
 String.cc
-SuperFastHash.cc
 System.cc
 SystemInfo.cc
 StatsSerializable.cc
 StatsSystem.cc
-StringCompressorPrefix.cc
-StringDecompressorPrefix.cc
 Time.cc
 Usage.cc
 Version.cc
@@ -62,9 +55,9 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
 endif (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
 
 add_library(HyperCommon ${Common_SRCS})
-target_link_libraries(HyperCommon ${BOOST_LIBS} ${Log4cpp_LIBRARIES}
-    ${READLINE_LIBRARIES} ${ZLIB_LIBRARIES} ${SNAPPY_LIBRARIES} 
-    ${SIGAR_LIBRARIES} ${NCURSES_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} 
+target_link_libraries(HyperCommon ${SIGAR_LIBRARIES} ${BOOST_LIBS}
+  ${READLINE_LIBRARIES} ${ZLIB_LIBRARIES} ${SNAPPY_LIBRARIES}
+  ${NCURSES_LIBRARY} ${CMAKE_THREAD_LIBS_INIT}
     ${RE2_LIBRARIES} ${MALLOC_LIBRARY})
 
 add_executable(system_info system_info.cc)

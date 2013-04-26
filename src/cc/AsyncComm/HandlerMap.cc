@@ -33,37 +33,25 @@
 
 using namespace Hypertable;
 
-int32_t HandlerMap::insert_handler(IOHandlerAccept *handler) {
+void HandlerMap::insert_handler(IOHandlerAccept *handler) {
   ScopedRecLock lock(m_mutex);
   HT_ASSERT(m_accept_handler_map.find(handler->get_address()) 
             == m_accept_handler_map.end());
   m_accept_handler_map[handler->get_local_address()] = handler;
-  return Error::OK;
 }
 
-int32_t HandlerMap::insert_handler(IOHandlerData *handler) {
+void HandlerMap::insert_handler(IOHandlerData *handler) {
   ScopedRecLock lock(m_mutex);
-  int error = Error::OK;
   HT_ASSERT(m_data_handler_map.find(handler->get_address())
             == m_data_handler_map.end());
   m_data_handler_map[handler->get_address()] = handler;
-  if (ReactorFactory::proxy_master) {
-    CommBufPtr comm_buf = m_proxy_map.create_update_message();
-    comm_buf->write_header_and_reset();
-    if ((error = handler->send_message(comm_buf)) != Error::OK) {
-      remove_handler_unlocked(handler);
-      error = Error::COMM_BROKEN_CONNECTION;
-    }
-  }
-  return error;
 }
 
-int32_t HandlerMap::insert_handler(IOHandlerDatagram *handler) {
+void HandlerMap::insert_handler(IOHandlerDatagram *handler) {
   ScopedRecLock lock(m_mutex);
   HT_ASSERT(m_datagram_handler_map.find(handler->get_local_address())
             == m_datagram_handler_map.end());
   m_datagram_handler_map[handler->get_local_address()] = handler;
-  return Error::OK;
 }
 
 
@@ -312,8 +300,16 @@ int HandlerMap::add_proxy(const String &proxy, const String &hostname, const Ine
 int HandlerMap::remove_proxy(const String &proxy) {
  ScopedRecLock lock(m_mutex);
  ProxyMapT remove_map;
- if (m_proxy_map.remove_mapping(proxy, remove_map))
+ m_proxy_map.remove_mapping(proxy, remove_map);
+ if (!remove_map.empty()) {
+   IOHandler *handler;
+   foreach_ht(const ProxyMapT::value_type &v, remove_map) {
+     handler = lookup_data_handler(v.second.addr);
+     if (handler)
+       decomission_handler_unlocked(handler);
+   }
    return propagate_proxy_map(remove_map);
+ }
  return Error::OK;
 }
 
@@ -334,8 +330,12 @@ void HandlerMap::update_proxy_map(const char *message, size_t message_len) {
 
   foreach_ht(const ProxyMapT::value_type &v, invalidated_map) {
     IOHandler *handler = lookup_data_handler(v.second.addr);
-    if (handler)
-      handler->set_proxy("");
+    if (handler) {
+      if (v.second.hostname == "--DELETED--")
+        decomission_handler_unlocked(handler);
+      else
+        handler->set_proxy("");
+    }
   }
 
   foreach_ht(const ProxyMapT::value_type &v, new_map) {
@@ -347,6 +347,15 @@ void HandlerMap::update_proxy_map(const char *message, size_t message_len) {
   m_proxies_loaded = true;
   m_cond_proxy.notify_all();
 }
+
+int32_t HandlerMap::propagate_proxy_map(IOHandlerData *handler) {
+  ScopedRecLock lock(m_mutex);
+  HT_ASSERT(ReactorFactory::proxy_master);
+  CommBufPtr comm_buf = m_proxy_map.create_update_message();
+  comm_buf->write_header_and_reset();
+  return handler->send_message(comm_buf);
+}
+
 
 bool HandlerMap::wait_for_proxy_map(Timer &timer) {
   ScopedRecLock lock(m_mutex);

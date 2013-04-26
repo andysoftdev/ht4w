@@ -22,8 +22,6 @@
 #ifndef HYPERTABLE_REQUESTHANDLERDOMAINTENANCE_H
 #define HYPERTABLE_REQUESTHANDLERDOMAINTENANCE_H
 
-#include "Common/Runnable.h"
-
 #include "AsyncComm/ApplicationHandler.h"
 #include "AsyncComm/Comm.h"
 #include "AsyncComm/Event.h"
@@ -35,13 +33,12 @@ namespace Hypertable {
 
   class RequestHandlerDoMaintenance : public ApplicationHandler {
   public:
-    RequestHandlerDoMaintenance(Comm *comm, RangeServer *rs)
-      : ApplicationHandler(true), m_comm(comm), m_range_server(rs) { }
+    RequestHandlerDoMaintenance(RangeServer *rs)
+      : ApplicationHandler(true), m_range_server(rs) { }
 
     virtual void run();
 
   private:
-    Comm        *m_comm;
     RangeServer *m_range_server;
   };
 

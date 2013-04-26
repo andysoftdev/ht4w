@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -17,6 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Configuration settings.
+ * This file contains the global configuration settings (read from file or
+ * from a command line parameter).
  */
 
 #include "Common/Compat.h"
@@ -77,21 +83,21 @@ String expand_environment_strings(const String& str) {
 // singletons
 RecMutex rec_mutex;
 PropertiesPtr properties;
-String filename;
-bool file_loaded = false;
-bool allow_unregistered = false;
+static String filename;
+static bool file_loaded = false;
+static bool allow_unregistered = false;
 
-Desc *cmdline_descp = NULL;
-Desc *cmdline_hidden_descp = NULL;
-PositionalDesc *cmdline_positional_descp = NULL;
-Desc *file_descp = NULL;
+static Desc *cmdline_descp = NULL;
+static Desc *cmdline_hidden_descp = NULL;
+static PositionalDesc *cmdline_positional_descp = NULL;
+static Desc *file_descp = NULL;
 
-int line_length() {
+static int terminal_line_length() {
   int n = System::term_info().num_cols;
   return n > 0 ? n : 80;
 }
 
-String usage_str(const char *usage) {
+static String usage_str(const char *usage) {
   if (!usage)
     usage = "Usage: %s [options]\n\nOptions";
 
@@ -105,7 +111,7 @@ Desc &cmdline_desc(const char *usage) {
   ScopedRecLock lock(rec_mutex);
 
   if (!cmdline_descp)
-    cmdline_descp = new Desc(usage_str(usage), line_length());
+    cmdline_descp = new Desc(usage_str(usage), terminal_line_length());
 
   return *cmdline_descp;
 }
@@ -141,7 +147,8 @@ Desc &file_desc(const char *usage) {
   ScopedRecLock lock(rec_mutex);
 
   if (!file_descp)
-    file_descp = new Desc(usage ? usage : "Config Properties", line_length());
+    file_descp = new Desc(usage ? usage : "Config Properties",
+            terminal_line_length());
 
   return *file_descp;
 }
@@ -381,7 +388,7 @@ void DefaultPolicy::init_options() {
         "at a given time")
     ("Hypertable.Failover.GracePeriod", i32()->default_value(30000),
         "Master wait this long before trying to recover a RangeServer")
-    ("Hypertable.Failover.Timeout", i32()->default_value(180000),
+    ("Hypertable.Failover.Timeout", i32()->default_value(300000),
         "Timeout for failover operations")
     ("Hypertable.Failover.Quorum.Percentage", i32()->default_value(90),
         "Percentage of live RangeServers required for failover to proceed")
@@ -506,7 +513,7 @@ void DefaultPolicy::init_options() {
         "Maintenance scheduling interval in milliseconds")
     ("Hypertable.RangeServer.Maintenance.LowMemoryPrioritization", boo()->default_value(true),
         "Use low memory prioritization algorithm for freeing memory in low memory mode")
-    ("Hypertable.RangeServer.Maintenance.MaxAppQueuePause", i32()->default_value(30000),
+    ("Hypertable.RangeServer.Maintenance.MaxAppQueuePause", i32()->default_value(120000),
         "Each time application queue is paused, keep it paused for no more than this many milliseconds")
     ("Hypertable.RangeServer.Maintenance.MergesPerInterval", i32(),
         "Limit on number of merging tasks to create per maintenance interval")
@@ -700,8 +707,8 @@ void DefaultPolicy::init() {
     _exit(0);
   }
   if (verbose) {
-    HT_NOTICE_OUT <<"Initializing "<< System::exe_name <<" (Hypertable "<< version_string()
-                  <<")..." << HT_END;
+    HT_NOTICE_OUT << "Initializing " << System::exe_name << " (Hypertable "
+        << version_string() << ")..." << HT_END;
   }
 }
 

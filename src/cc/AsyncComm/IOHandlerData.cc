@@ -819,8 +819,17 @@ bool IOHandlerData::handle_write_readiness() {
     break;
   }
 
-  if (deliver_conn_estab_event)
+  if (deliver_conn_estab_event) {
     deliver_event(new Event(Event::CONNECTION_ESTABLISHED, m_addr, m_proxy, Error::OK));
+    if (ReactorFactory::proxy_master) {
+      if ((error = ReactorRunner::handler_map->propagate_proxy_map(this))
+          != Error::OK) {
+        HT_ERRORF("Problem sending proxy map to %s - %s",
+                  m_addr.format().c_str(), Error::get_text(error));
+        return true;
+      }
+    }
+  }
 
   return rval;
 }
@@ -861,11 +870,13 @@ int IOHandlerData::send_message(CommBufPtr &cbp, uint32_t timeout_ms,
 
   if (initially_empty && !m_send_queue.empty()) {
     error = add_poll_interest(Reactor::WRITE_READY);
-    //HT_INFO("Adding Write interest");
+    if (error)
+      HT_ERRORF("Adding Write interest failed; error=%u", (unsigned)error);
   }
   else if (!initially_empty && m_send_queue.empty()) {
     error = remove_poll_interest(Reactor::WRITE_READY);
-    //HT_INFO("Removing Write interest");
+    if (error)
+      HT_INFOF("Removing Write interest failed; error=%u", (unsigned)error);
   }
   
 #endif

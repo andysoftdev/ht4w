@@ -64,7 +64,6 @@ namespace Hypertable {
     bool m_cont;
     char *m_line_read;
     bool m_notify;
-    bool m_stdin;
     bool m_has_cmd_file;
     bool m_has_cmd_exec;
     String m_input_str;

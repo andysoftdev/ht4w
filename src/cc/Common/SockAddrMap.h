@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,6 +19,10 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * A HashMap for %InetAddr objects.
+ */
+
 #ifndef SOCKADDRMAP_H
 #define SOCKADDRMAP_H
 
@@ -27,8 +31,13 @@
 
 namespace Hypertable {
 
+/** @addtogroup Common
+ *  @{
+ */
+ 
 #ifndef _WIN32
 
+/** A "Hasher" for the boost::hash_map */
 class SockAddrHash {
  public:
   size_t operator () (const InetAddr &addr) const {
@@ -36,6 +45,7 @@ class SockAddrHash {
   }
 };
 
+/** An "Equal" predicate for the boost::hash_map */
 struct SockAddrEqual {
   bool operator()(const InetAddr &addr1, const InetAddr &addr2) const {
     return (addr1.sin_addr.s_addr == addr2.sin_addr.s_addr)
@@ -43,7 +53,8 @@ struct SockAddrEqual {
   }
 };
 
-template<typename TypeT, typename addr=InetAddr>
+/** A hash map for %InetAddr object. Based on boost::hash_map. */
+template<typename TypeT, typename addr = InetAddr>
 class SockAddrMap : public hash_map<addr, TypeT, SockAddrHash, SockAddrEqual> {
 };
 
@@ -69,6 +80,7 @@ class SockAddrMap : public hash_map<addr, TypeT, SockAddrHashCompare> {
 
 #endif
 
+/** @} */
 
 } // namespace Hypertable
 

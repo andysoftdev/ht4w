@@ -220,6 +220,7 @@ ConnectionManager::send_connect_request(ConnectionState *conn_state) {
 
   if (error == Error::COMM_ALREADY_CONNECTED) {
     conn_state->connected = true;
+    conn_state->remove_on_invalid_proxy = true;
     conn_state->cond.notify_all();
   }
   else if (error == Error::COMM_INVALID_PROXY &&
@@ -228,18 +229,17 @@ ConnectionManager::send_connect_request(ConnectionState *conn_state) {
     conn_state->cond.notify_all();
   }
   else if (error != Error::OK && error != Error::COMM_BROKEN_CONNECTION) {
-    if (conn_state->service_name != "") {
-      HT_INFOF("Connection attempt to %s at %s failed - %s.  Will retry "
-               "again in %d milliseconds...", conn_state->service_name.c_str(),
-               conn_state->addr.to_str().c_str(), Error::get_text(error),
-               (int)conn_state->timeout_ms);
+    if (!m_impl->quiet_mode) {
+      if (conn_state->service_name != "")
+        HT_INFOF("Connection attempt to %s at %s failed - %s.  Will retry "
+                 "again in %d milliseconds...", conn_state->service_name.c_str(),
+                 conn_state->addr.to_str().c_str(), Error::get_text(error),
+                 (int)conn_state->timeout_ms);
+      else
+        HT_INFOF("Connection attempt to service at %s failed - %s.  Will retry "
+                 "again in %d milliseconds...", conn_state->addr.to_str().c_str(),
+                 Error::get_text(error), (int)conn_state->timeout_ms);
     }
-    else {
-      HT_INFOF("Connection attempt to service at %s failed - %s.  Will retry "
-               "again in %d milliseconds...", conn_state->addr.to_str().c_str(),
-               Error::get_text(error), (int)conn_state->timeout_ms);
-    }
-
     // reschedule (throw in a little randomness)
     boost::xtime_get(&conn_state->next_retry, boost::TIME_UTC_);
     xtime_add_millis(conn_state->next_retry, conn_state->timeout_ms);
@@ -367,6 +367,7 @@ ConnectionManager::handle(EventPtr &event) {
   }
 
   if (conn_state) {
+    bool dont_forward = false;
     ScopedLock conn_lock(conn_state->mutex);
 
     if (event->type == Event::CONNECTION_ESTABLISHED) {
@@ -375,20 +376,26 @@ ConnectionManager::handle(EventPtr &event) {
         int error = m_impl->comm->send_request(event->addr, 60000, cbuf, this);
         if (error == Error::COMM_BROKEN_CONNECTION ||
             error == Error::COMM_NOT_CONNECTED ||
-            error == Error::COMM_INVALID_PROXY)
+            error == Error::COMM_INVALID_PROXY) {
+          if (!m_impl->quiet_mode)
+            HT_INFOF("Received error %d", error);
           set_retry_state(conn_state, event);
+          dont_forward = true;
+        }
         else if (error != Error::OK)
           HT_FATALF("Problem initializing connection to %s - %s", 
                     conn_state->service_name.c_str(), Error::get_text(error));
       }
       else {
         conn_state->connected = true;
+        conn_state->remove_on_invalid_proxy = true;
         conn_state->cond.notify_all();
       }
     }
     else if (event->type == Event::ERROR ||
              event->type == Event::DISCONNECT) {
-      HT_INFOF("Received event %s", event->to_str().c_str());
+      if (!m_impl->quiet_mode)
+        HT_INFOF("Received event %s", event->to_str().c_str());
       set_retry_state(conn_state, event);
     }
     else if (event->type == Event::MESSAGE) {
@@ -408,13 +415,14 @@ ConnectionManager::handle(EventPtr &event) {
                     conn_state->service_name.c_str());
         conn_state->initialized = true;
         conn_state->connected = true;
+        conn_state->remove_on_invalid_proxy = true;
         conn_state->cond.notify_all();
         return;
       }
     }
 
     // Chain event to application supplied handler
-    if (conn_state->handler)
+    if (dont_forward == false && conn_state->handler)
       conn_state->handler->handle(event);
   }
   else {

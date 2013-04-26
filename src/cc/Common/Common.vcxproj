@@ -173,11 +173,9 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Common/Compat.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Common/Compat.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="Abi.cc" />
     <ClCompile Include="Checksum.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="Crontab.cc" />
-    <ClCompile Include="Debug.cc" />
     <ClCompile Include="DiscreteRandomGenerator.cc" />
     <ClCompile Include="DiscreteRandomGeneratorFactory.cc" />
     <ClCompile Include="DiscreteRandomGeneratorZipf.cc" />
@@ -189,8 +187,6 @@
     <ClCompile Include="InetAddr.cc" />
     <ClCompile Include="InteractiveCommand.cc" />
     <ClCompile Include="Logger.cc" />
-    <ClCompile Include="Lookup3.cc" />
-    <ClCompile Include="Math.cc" />
     <ClCompile Include="md5.cc" />
     <ClCompile Include="MurmurHash.cc" />
     <ClCompile Include="ProcessUtils.cc" />
@@ -201,15 +197,12 @@
     <ClCompile Include="StatsSerializable.cc" />
     <ClCompile Include="StatsSystem.cc" />
     <ClCompile Include="String.cc" />
-    <ClCompile Include="StringCompressorPrefix.cc" />
-    <ClCompile Include="StringDecompressorPrefix.cc" />
     <ClCompile Include="strptime.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="SuperFastHash.cc" />
     <ClCompile Include="System.cc" />
     <ClCompile Include="Time.cc" />
     <ClCompile Include="Usage.cc" />
@@ -218,7 +211,6 @@
     <ClCompile Include="WordStream.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Abi.h" />
     <ClInclude Include="Allocator.h" />
     <ClInclude Include="atomic.h" />
     <ClInclude Include="Barrier.h" />
@@ -234,7 +226,6 @@
     <ClInclude Include="Crontab.h" />
     <ClInclude Include="CstrHashMap.h" />
     <ClInclude Include="CstrHashTraits.h" />
-    <ClInclude Include="Debug.h" />
     <ClInclude Include="DiscreteRandomGenerator.h" />
     <ClInclude Include="DiscreteRandomGeneratorFactory.h" />
     <ClInclude Include="DiscreteRandomGeneratorUniform.h" />
@@ -254,13 +245,10 @@
     <ClInclude Include="Init.h" />
     <ClInclude Include="InteractiveCommand.h" />
     <ClInclude Include="Logger.h" />
-    <ClInclude Include="Lookup3.h" />
-    <ClInclude Include="Math.h" />
     <ClInclude Include="md5.h" />
     <ClInclude Include="Meta.h" />
     <ClInclude Include="MurmurHash.h" />
     <ClInclude Include="Mutex.h" />
-    <ClInclude Include="NumberStream.h" />
     <ClInclude Include="PageArena.h" />
     <ClInclude Include="PageArenaAllocator.h" />
     <ClInclude Include="Path.h" />
@@ -268,7 +256,6 @@
     <ClInclude Include="Properties.h" />
     <ClInclude Include="Random.h" />
     <ClInclude Include="ReferenceCount.h" />
-    <ClInclude Include="Runnable.h" />
     <ClInclude Include="ScopeGuard.h" />
     <ClInclude Include="SecurityUtils.h" />
     <ClInclude Include="serialization-c.h" />
@@ -288,7 +275,6 @@
     <ClInclude Include="StringDecompressorPrefix.h" />
     <ClInclude Include="StringExt.h" />
     <ClInclude Include="strptime.h" />
-    <ClInclude Include="SuperFastHash.h" />
     <ClInclude Include="Sweetener.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="TclHash.h" />

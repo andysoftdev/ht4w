@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -17,6 +17,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * High resolution time handling based on boost::xtime.
  */
 
 #include "Common/Compat.h"
@@ -145,7 +149,7 @@ int64_t xtime_diff_millis(boost::xtime &early_xt, boost::xtime &late_xt) {
 
 std::ostream &hires_ts(std::ostream &out) {
   HiResTime now;
-  return out << now.sec <<'.'<< setw(9) << setfill('0') << now.nsec;
+  return out << now.sec << '.' << setw(9) << setfill('0') << now.nsec;
 }
 
 std::ostream &hires_ts_date(std::ostream &out) {

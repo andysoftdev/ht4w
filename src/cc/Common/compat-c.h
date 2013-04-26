@@ -36,7 +36,7 @@
  * @}
  */
 
-/* Name mangling */
+/** Portability macros for C code. */
 #ifdef __cplusplus
 #  define HT_EXTERN_C  extern "C"
 #else
@@ -237,5 +237,7 @@ typedef int socket_t;
 #define off_t size_t
 
 #endif 
+
+/** @}*/
 
 #endif /* HYPERTABLE_COMPAT_C_H */

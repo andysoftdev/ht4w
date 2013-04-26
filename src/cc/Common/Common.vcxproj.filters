@@ -7,9 +7,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Abi.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Checksum.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -46,12 +43,6 @@
     <ClCompile Include="Logger.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Lookup3.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Math.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="md5.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -65,9 +56,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="String.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SuperFastHash.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="System.cc">
@@ -106,19 +94,10 @@
     <ClCompile Include="SecurityUtils.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="StringCompressorPrefix.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StringDecompressorPrefix.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Escaper.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="WordStream.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Debug.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Crontab.cc">
@@ -126,9 +105,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Abi.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Allocator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -222,12 +198,6 @@
     <ClInclude Include="Logger.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Lookup3.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Math.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="md5.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -238,9 +208,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Mutex.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NumberStream.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="PageArena.h">
@@ -259,9 +226,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ReferenceCount.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Runnable.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ScopeGuard.h">
@@ -292,9 +256,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="StringExt.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SuperFastHash.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Sweetener.h">
@@ -364,9 +325,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="WordStream.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Debug.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Crontab.h">

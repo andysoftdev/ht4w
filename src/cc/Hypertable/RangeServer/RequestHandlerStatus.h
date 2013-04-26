@@ -22,8 +22,6 @@
 #ifndef HYPERTABLE_REQUESTHANDLERSTATUS_H
 #define HYPERTABLE_REQUESTHANDLERSTATUS_H
 
-#include "Common/Runnable.h"
-
 #include "AsyncComm/ApplicationHandler.h"
 #include "AsyncComm/Comm.h"
 #include "AsyncComm/Event.h"
@@ -35,14 +33,13 @@ namespace Hypertable {
 
   class RequestHandlerStatus : public ApplicationHandler {
   public:
-    RequestHandlerStatus(Comm *comm, RangeServer *rs, EventPtr &event_ptr)
-      : ApplicationHandler(event_ptr), m_comm(comm), m_range_server(rs) { }
+    RequestHandlerStatus(Comm *comm, EventPtr &event)
+      : ApplicationHandler(event), m_comm(comm) { }
 
     virtual void run();
 
   private:
-    Comm        *m_comm;
-    RangeServer *m_range_server;
+    Comm *m_comm;
   };
 
 }

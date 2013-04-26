@@ -356,12 +356,9 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
 #endif
 
   handler = new IOHandlerAccept(sd, default_handler, m_handler_map, chf);
-  int32_t error = m_handler_map->insert_handler(handler);
-  if (error != Error::OK) {
-    delete handler;
-    HT_THROWF(error, "Error inserting accept handler for %s into handler map",
-              addr.to_str().c_str());
-  }
+  m_handler_map->insert_handler(handler);
+
+  int32_t error;
   if ((error = handler->start_polling()) != Error::OK) {
     delete handler;
     HT_THROWF(error, "Problem polling on listen socket bound to %s",
@@ -540,12 +537,9 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
 
   addr.set_inet( handler->get_address() );
 
-  int32_t error = m_handler_map->insert_handler(handler);
-  if (error != Error::OK) {
-    delete handler;
-    HT_THROWF(error, "Error inserting datagram handler for %s into handler map",
-    addr.to_str().c_str());
-  }
+  m_handler_map->insert_handler(handler);
+
+  int32_t error;
   if ((error = handler->start_polling()) != Error::OK) {
     delete handler;
     HT_THROWF(error, "Problem polling on datagram socket bound to %s",
@@ -804,10 +798,7 @@ int Comm::connect_socket(socket_t sd, const CommAddress &addr,
   handler = new IOHandlerData(sd, connectable_addr.inet, default_handler);
   if (addr.is_proxy())
     handler->set_proxy(addr.proxy);
-  if ((error = m_handler_map->insert_handler(handler)) != Error::OK) {
-    delete handler;
-    return error;
-  }
+  m_handler_map->insert_handler(handler);
 
 #ifdef _WIN32
 

@@ -182,6 +182,18 @@ namespace Hypertable {
     return cbuf;
   }
 
+  CommBuf *MasterProtocol::create_replay_status_request(int64_t op_id,
+          const String &location, int plan_generation) {
+    CommHeader header(COMMAND_REPLAY_STATUS);
+    size_t len = 8 + encoded_length_vstr(location) + 4;
+    CommBuf *cbuf = new CommBuf(header, len);
+    cbuf->append_i64(op_id);
+    cbuf->append_vstr(location);
+    cbuf->append_i32(plan_generation);
+    return cbuf;
+  }
+
+
   CommBuf *MasterProtocol::create_replay_complete_request(int64_t op_id,
           const String &location, int plan_generation,
           int32_t error, const String &message) {
@@ -247,7 +259,7 @@ namespace Hypertable {
   };
 
   const char *MasterProtocol::command_text(uint64_t command) {
-    if (command < 0 || command >= COMMAND_MAX)
+    if (command >= COMMAND_MAX)
       return "UNKNOWN";
     return m_command_strings[command];
   }

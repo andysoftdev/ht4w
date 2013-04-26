@@ -22,8 +22,6 @@
 #ifndef HYPERSPACE_REQUESTHANDLERSTATUS_H
 #define HYPERSPACE_REQUESTHANDLERSTATUS_H
 
-#include "Common/Runnable.h"
-
 #include "AsyncComm/ApplicationHandler.h"
 #include "AsyncComm/Comm.h"
 #include "AsyncComm/Event.h"
@@ -36,17 +34,14 @@ namespace Hyperspace {
 
   class RequestHandlerStatus : public ApplicationHandler {
   public:
-    RequestHandlerStatus(Comm *comm, Master *master, uint64_t session_id,
-                         EventPtr &event_ptr)
-      : ApplicationHandler(event_ptr), m_comm(comm), m_master(master),
-        m_session_id(session_id) { }
+  RequestHandlerStatus(Comm *comm, EventPtr &event)
+    : ApplicationHandler(event), m_comm(comm)
+    { }
 
     virtual void run();
 
   private:
-    Comm        *m_comm;
-    Master      *m_master;
-    uint64_t     m_session_id;
+    Comm *m_comm;
   };
 
 }

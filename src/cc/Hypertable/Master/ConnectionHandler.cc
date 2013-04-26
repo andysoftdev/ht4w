@@ -92,8 +92,7 @@ void ConnectionHandler::handle(EventPtr &event) {
 
     try {
       // sanity check command code
-      if (event->header.command < 0
-          || event->header.command >= MasterProtocol::COMMAND_MAX)
+      if (event->header.command >= MasterProtocol::COMMAND_MAX)
         HT_THROWF(PROTOCOL_ERROR, "Invalid command (%llu)",
                   (Llu)event->header.command);
 
@@ -155,6 +154,10 @@ void ConnectionHandler::handle(EventPtr &event) {
 
       case MasterProtocol::COMMAND_FETCH_RESULT:
         m_context->response_manager->add_delivery_info(event);
+        return;
+      case MasterProtocol::COMMAND_REPLAY_STATUS:
+        m_context->replay_status(event);
+        send_ok_response(event);
         return;
       case MasterProtocol::COMMAND_REPLAY_COMPLETE:
         m_context->replay_complete(event);
