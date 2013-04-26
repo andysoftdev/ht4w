@@ -80,8 +80,8 @@ namespace Hypertable { namespace Logger {
       LogWriter(const String &name)
         : m_show_line_numbers(true), m_test_mode(false), m_name(name),
           m_priority(Priority::INFO), m_file(stdout) {
-      }    
-      
+      }
+
       void set_file(FILE *file);
       void add_sink(const LogSink *ls);
       void remove_sink(const LogSink *ls);
@@ -135,6 +135,7 @@ namespace Hypertable { namespace Logger {
       }
 
     private:
+
       /** Appends a string message to the log */
       void log_string(int priority, const char *message);
 
@@ -155,6 +156,8 @@ namespace Hypertable { namespace Logger {
 
       /** The output file handle */
       FILE *m_file;
+
+      /** The logging sinks */
       LogSinks logSinks;
   };
 
@@ -279,7 +282,7 @@ namespace Hypertable { namespace Logger {
 #ifndef HT_DISABLE_LOG_INFO
 #define HT_INFO(msg) HT_LOG(Logger::Priority::INFO, msg)
 #define HT_INFOF(msg, ...) HT_LOGF(Logger::Priority::INFO, msg, __VA_ARGS__)
-#define HT_INFO_OUT HT_OUT2(Logger::Priority::ERROR)
+#define HT_INFO_OUT HT_OUT2(Logger::Priority::INFO)
 #else
 #define HT_INFO(msg)
 #define HT_INFOF(msg, ...)
