@@ -186,18 +186,18 @@ typedef std::vector<ThriftGen::Cell> ThriftCells;
 typedef std::vector<CellAsArray> ThriftCellsAsArrays;
 
 template<typename T>
-bool remove_from_map(Mutex& mutex, hash_map<::int64_t, T> map, ::int64_t id) {
+bool remove_from_map(Mutex& mutex, hash_map<::int64_t, T>& map, ::int64_t id) {
   T value;
   bool removed = false;
   {
     ScopedLock lock(mutex);
-    removed = remove_from_map(map, id, value);
+    removed = remove_from_map_unlocked(map, id, value);
   }
   return removed;
 }
 
 template<typename T>
-bool remove_from_map(hash_map<::int64_t, T> map, ::int64_t id, T& value) {
+bool remove_from_map_unlocked(hash_map<::int64_t, T>& map, ::int64_t id, T& value) {
   hash_map<::int64_t, T>::iterator it = map.find(id);
   if (it != map.end()) {
     value = it->second;
@@ -2269,7 +2269,7 @@ public:
   void remove_scanner_async(int64_t id) {
     TableScannerAsyncPtr scanner_async;
     ScopedLock lock(m_scanner_async_mutex);
-    if (remove_from_map(m_scanner_async_map, id, scanner_async)) {
+    if (remove_from_map_unlocked(m_scanner_async_map, id, scanner_async)) {
       m_reverse_scanner_async_map.erase((int64_t)scanner_async.get());
       return;
     }
