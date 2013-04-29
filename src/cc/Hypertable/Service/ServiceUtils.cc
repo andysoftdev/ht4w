@@ -287,7 +287,7 @@ void ServiceUtils::init_service() {
     String logfile = Config::logging_directory();
     if (!logfile.empty()) {
       logfile += "\\Hypertable.Service.log";
-      lf = freopen(logfile.c_str(), "w", stdout);
+      lf = freopen(logfile.c_str(), "a", stdout);
       HT_INFOF("Redirect to %s", logfile.c_str());
     }
     if (!StartServiceCtrlDispatcher(st))
