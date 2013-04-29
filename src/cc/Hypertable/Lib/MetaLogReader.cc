@@ -88,7 +88,7 @@ void Reader::reload() {
 
     if (!load_file(fname)) {
       String badname = m_path + "/" + m_file_nums.back() + ".bad";
-      HT_INFOF("Moving problematic %s log file %s to %s",
+      HT_ERRORF("Moving problematic %s log file %s to %s",
                m_definition->name(), fname.c_str(), badname.c_str());
       try {
         m_fs->rename(fname, badname);
