@@ -232,8 +232,13 @@ void TimerHandler::restart_app_queue() {
   HT_ASSERT(m_app_queue_paused);
   boost::xtime_get(&now, TIME_UTC_);
   int64_t pause_millis = xtime_diff_millis(m_pause_time, now);
-  HT_INFOF("Restarting application queue (pause time = %lld millis)",
-           (Lld)pause_millis);
+  if (pause_millis > 1000)
+    HT_NOTICEF("Restarting application queue (pause time = %lld millis)",
+             (Lld)pause_millis);
+  else
+    HT_INFOF("Restarting application queue (pause time = %lld millis)",
+             (Lld)pause_millis);
+
   m_app_queue->start();
   m_app_queue_paused = false;
   m_current_interval = m_timer_interval;
