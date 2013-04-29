@@ -45,9 +45,31 @@ Context::~Context() {
 
 void Context::notification_hook(const String &subject, const String &message) {
 
+#ifndef _WIN32
+
   String cmd = format("%s/conf/notification-hook.sh '%s' '%s'", 
                       System::install_dir.c_str(), subject.c_str(),
                       message.c_str());
+
+#else
+
+  String prg = format("%s/conf/notification-hook", 
+                      System::install_dir.c_str());
+
+  if (FileUtils::exists(prg + ".exe"))
+    prg += ".exe";
+  else if (FileUtils::exists(prg + ".cmd"))
+    prg += ".cmd";
+  else if (FileUtils::exists(prg + ".bat"))
+    prg += ".bat";
+  else
+    return;
+
+  String cmd = format("%s '%s' '%s'", 
+                      prg.c_str(), subject.c_str(),
+                      message.c_str());
+
+#endif
 
   int ret = ::system(cmd.c_str());
   HT_INFOF("notification-hook returned: %d", ret);
