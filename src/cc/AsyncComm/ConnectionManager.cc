@@ -425,10 +425,9 @@ ConnectionManager::handle(EventPtr &event) {
     if (dont_forward == false && conn_state->handler)
       conn_state->handler->handle(event);
   }
-  else {
+  else if (event->type != Event::DISCONNECT)
     HT_WARNF("Unable to find connection for %s in map.",
              InetAddr::format(event->addr).c_str());
-  }
 }
 
 void ConnectionManager::set_retry_state(ConnectionState *conn_state, EventPtr &event) {
