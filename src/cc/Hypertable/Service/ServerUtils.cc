@@ -483,7 +483,8 @@ bool ServerUtils::shutdown_master(DWORD pid) {
         HT_THROW(Error::REQUEST_TIMEOUT, "Unable to connect to hypertable master");
       }
       HT_NOTICEF("Shutdown hypertable master (%s)", hyperspace->get_master_addr().format().c_str());
-      Timer timer(Config::connection_timeout(), true);
+      static const int32_t master_wait_for_idle_timeout = 20000;
+      Timer timer(std::max(master_wait_for_idle_timeout, Config::connection_timeout()), true);
       master->shutdown(&timer);
       app_queue = 0;
       master = 0;
