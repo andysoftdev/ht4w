@@ -51,7 +51,6 @@ extern "C" {
 
 #include "Common/Logger.h"
 #include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
 #include "Common/Time.h"
 
 #include "DispatchHandler.h"

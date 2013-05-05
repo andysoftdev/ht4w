@@ -78,6 +78,7 @@ void PhantomRange::create_range(MasterClientPtr &master_client,
 
   m_range = new Range(master_client, &m_range_spec.table, m_schema,
                       &m_range_spec.range, table_info.get(), &m_range_state, true);
+  m_range->deferred_initialization();
   m_range->metalog_entity()->state.state |= RangeState::PHANTOM;
   m_range_state.state |= RangeState::PHANTOM;
 }
@@ -217,7 +218,7 @@ String PhantomRange::create_log(FilesystemPtr &log_dfs, const String &log_dir,
     if (now != 0)
       poll(0, 0, 1200);
     now = time(0);
-    logname = format("%s/%s/%s-%d", log_dir.c_str(),
+    logname = format("%s/%s/phantom-%s-%d", log_dir.c_str(),
                      range_entity->table.id, md5DigestStr, (int)now);
   } while (log_dfs->exists(logname));
 

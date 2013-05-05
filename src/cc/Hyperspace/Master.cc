@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -132,7 +132,7 @@ using namespace std;
     break; \
   } while (true)
 
-/**
+/*
  * Sets up the m_base_dir variable to be the absolute path of the root of the
  * Hyperspace directory (with no trailing slash); Locks this root directory to
  * prevent concurrent masters and then reads/increments/writes the 32-bit
@@ -210,7 +210,7 @@ Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
     }
   }
 
-  /**
+  /*
    * Lock the base directory to prevent concurrent masters
    */
 #if defined(__sun__)
@@ -260,7 +260,7 @@ Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
   m_bdb_fs = new BerkeleyDbFilesystem(props, m_base_dir, thread_ids);
   Event::set_bdb_fs(m_bdb_fs);
 
-  /**
+  /*
    * Load and increment generation number
    */
   if (is_master())
@@ -287,7 +287,7 @@ Master::~Master() {
 #endif
 }
 
-/**
+/*
  * create_session does the following:
  * > Lock the session expiry map
  * > get and incr next session id from BDB
@@ -319,7 +319,7 @@ uint64_t Master::create_session(struct sockaddr_in &addr) {
   return session_id;
 }
 
-/**
+/*
  *
  */
 bool Master::get_session(uint64_t session_id, SessionDataPtr &session_data) {
@@ -331,7 +331,7 @@ bool Master::get_session(uint64_t session_id, SessionDataPtr &session_data) {
   return true;
 }
 
-/**
+/*
  * destroy_session does the following:
  * > Lock the session expiry map and erase the session data object from it
  * > Set the expiry time to now
@@ -351,7 +351,7 @@ void Master::destroy_session(uint64_t session_id) {
           (Llu)session_id, session_data->get_name());
 }
 
-/**
+/*
  *
  */
 void Master::initialize_session(uint64_t session_id, const String &name) {
@@ -377,7 +377,7 @@ void Master::initialize_session(uint64_t session_id, const String &name) {
   HT_INFOF("Initialized session %llu (%s)", (Llu)session_id, name.c_str());
 }
 
-/**
+/*
  * renew_session_lease does the following:
  * > Lock the session expiry map
  * > If session lease can't be renewed
@@ -418,7 +418,7 @@ int Master::renew_session_lease(uint64_t session_id) {
   return Error::OK;
 }
 
-/**
+/*
  * next_expired_session does the following:
  * > Lock the session map mutex
  * > Remake the session heap with the session with earliest expiry time on top
@@ -446,7 +446,7 @@ Master::next_expired_session(SessionDataPtr &session_data, boost::xtime &now) {
 }
 
 
-/**
+/*
  * remove_expired_sessions does the following:
  * > extend session expiry in case of suspension
  * > mark all expired sessions & get their open handles
@@ -536,7 +536,7 @@ void Master::remove_expired_sessions() {
   }
 }
 
-/**
+/*
  * Creates a directory with absolute path 'name'.
  *
  * Does the following:
@@ -646,7 +646,7 @@ Master::mkdirs(ResponseCallback *cb, uint64_t session_id, const char *name, cons
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * Unlink
  *
  * Does the following:
@@ -692,7 +692,7 @@ Master::unlink(ResponseCallback *cb, uint64_t session_id, const char *name) {
 }
 
 
-/**
+/*
  * Open
  *
  */
@@ -741,7 +741,7 @@ Master::open(ResponseCallbackOpen *cb, uint64_t session_id, const char *name,
 }
 
 
-/**
+/*
  * Close
  */
 void Master::close(ResponseCallback *cb, uint64_t session_id, uint64_t handle) {
@@ -801,7 +801,7 @@ void Master::close(CommandContext &ctx, uint64_t handle)
   m_bdb_fs->delete_session_handle(txn, ctx.session_id, handle);
 }
 
-/**
+/*
  * attr_set does the following:
  *
  * > Make sure session is valid
@@ -870,7 +870,7 @@ Master::attr_set(ResponseCallback *cb, uint64_t session_id, uint64_t handle,
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * attr_get does the following:
  *
  * > Make sure session is valid
@@ -921,7 +921,7 @@ Master::attr_get(ResponseCallbackAttrGet *cb, uint64_t session_id,
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * attr_incr does the following:
  *
  * > Make sure session is valid
@@ -959,7 +959,7 @@ Master::attr_incr(ResponseCallbackAttrIncr *cb, uint64_t session_id,
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * attr_del does the following:
  *
  * > Make sure session is valid
@@ -1055,7 +1055,7 @@ Master::attr_list(ResponseCallbackAttrList *cb, uint64_t session_id, uint64_t ha
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * exists does the following:
  *
  * > Start BDB txn
@@ -1089,7 +1089,7 @@ Master::exists(ResponseCallbackExists *cb, uint64_t session_id,
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * read_dir does the following:
  *
  * > Make sure session is valid
@@ -1124,7 +1124,7 @@ Master::readdir(ResponseCallbackReaddir *cb, uint64_t session_id,
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * readdir_attr does the following:
  *
  * > Make sure session is valid
@@ -1162,7 +1162,7 @@ Master::readdir_attr(ResponseCallbackReaddirAttr *cb, uint64_t session_id,
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * readpath_attr does the following:
  *
  * > Make sure session is valid
@@ -1200,7 +1200,7 @@ Master::readpath_attr(ResponseCallbackReadpathAttr *cb, uint64_t session_id,
     HT_ERRORF("Problem sending back response - %s", Error::get_text(ctx.error));
 }
 
-/**
+/*
  * shutdown
  */
 void Master::shutdown(ResponseCallback *cb, uint64_t session_id) {
@@ -1237,7 +1237,7 @@ void Master::shutdown(ResponseCallback *cb, uint64_t session_id) {
   m_keepalive_handler_ptr->shutdown();
 }
 
-/**
+/*
  * lock
  */
 void
@@ -1406,7 +1406,7 @@ Master::lock(ResponseCallbackLock *cb, uint64_t session_id, uint64_t handle,
 
 }
 
-/**
+/*
  * Assumes node is locked and BDB txn has started.
  * lock_handle does the following:
  * > If node name string is null then fill in the node name
@@ -1427,7 +1427,7 @@ void Master::lock_handle(BDbTxn &txn, uint64_t handle, uint32_t mode, String& no
   m_bdb_fs->set_handle_locked(txn, handle, true);
 }
 
-/**
+/*
  * Assumes node is locked.
  * lock_handle does the following:
  * > Set exclusive handle to acquiring handle or add acquiring handle to set of shared handles
@@ -1446,7 +1446,7 @@ void Master::lock_handle(BDbTxn &txn, uint64_t handle, uint32_t mode, const Stri
 }
 
 
-/**
+/*
  * release
  */
 void
@@ -1528,7 +1528,7 @@ Master::release(ResponseCallback *cb, uint64_t session_id, uint64_t handle) {
   cb->response_ok();
 }
 
-/**
+/*
  * release_lock: does the following
  * > if handle is not locked return
  * > if lock is exclusive
@@ -1579,7 +1579,7 @@ void Master::release_lock(BDbTxn &txn, uint64_t handle, const String &node,
   }
 }
 
-/**
+/*
  * grant_pending_lock_reqs does the following
  *
  * > Check if the node has pending locks
@@ -1649,7 +1649,7 @@ void Master::grant_pending_lock_reqs(BDbTxn &txn, const String &node,
   }
 }
 
-/**
+/*
  * Assumes it is in the middle of a BDB txn
  *
  * > Store the handles affected by an event in BerkeleyDB
@@ -1668,7 +1668,7 @@ Master::persist_event_notifications(BDbTxn &txn, uint64_t event_id,
   }
 }
 
-/**
+/*
  * Assumes it is in the middle of a BDB txn
  *
  * > Store the handle addected by an event in BerkeleyDB
@@ -1681,7 +1681,7 @@ Master::persist_event_notifications(BDbTxn &txn, uint64_t event_id, uint64_t han
   m_bdb_fs->set_event_notification_handles(txn, event_id, handles);
 }
 
-/**
+/*
  *
  */
 void
@@ -1722,7 +1722,7 @@ Master::deliver_event_notifications(HyperspaceEventPtr &event_ptr,
   }
 }
 
-/**
+/*
  *
  */
 bool
@@ -1745,7 +1745,7 @@ Master::find_parent_node(const String &normal_name,String &parent_name, String &
   return false;
 }
 
-/**
+/*
  * destroy_handle does the following:
  * > Start BDB txn
  * > Read in Node data
@@ -1860,7 +1860,7 @@ Master::destroy_handle(uint64_t handle, int &error, String &errmsg,
   return true;
 }
 
-/**
+/*
  *
  */
 void Master::do_maintenance() {
@@ -2049,7 +2049,7 @@ void Master::open(CommandContext &ctx, const char *name,
   // create node added event and persist notifications
   create_event(ctx, parent_node, EVENT_MASK_CHILD_NODE_ADDED, child_name);
 
-  /**
+  /*
     * If open flags LOCK_SHARED or LOCK_EXCLUSIVE, then obtain lock
     */
   if (lock_mode != 0) {
@@ -2395,7 +2395,7 @@ void Master::readpath_attr(CommandContext& ctx, uint64_t handle, const char *nam
   }
 }
 
-/**
+/*
  * Validates the session and returns the node for the handle specified
  */
 bool Master::get_handle_node(CommandContext &ctx, uint64_t handle, const char* attr, String &node) {
@@ -2434,7 +2434,7 @@ bool Master::get_handle_node(CommandContext &ctx, uint64_t handle, const char* a
   return true;
 }
 
-/**
+/*
  * Validates the session and returns the node for the name specified
  */
 bool Master::get_named_node(CommandContext &ctx, const char *name, const char* attr, String &node, bool *is_dir) {
@@ -2479,7 +2479,7 @@ bool Master::get_named_node(CommandContext &ctx, const char *name, const char* a
   return true;
 }
 
-/**
+/*
  */
 void Master::create_event(CommandContext &ctx, const String &node, uint32_t event_mask, const String &name) {
   HT_ASSERT(ctx.txn);
@@ -2500,7 +2500,7 @@ void Master::create_event(CommandContext &ctx, const String &node, uint32_t even
     it->persisted_notifications = false;
 }
 
-/**
+/*
  */
 void Master::deliver_event_notifications(CommandContext &ctx, bool wait_for_notify) {
   foreach_ht(EventContext& evt, ctx.evts)
@@ -2512,7 +2512,7 @@ void Master::deliver_event_notifications(EventContext &evt, bool wait_for_notify
   deliver_event_notifications(evt.event, evt.notifications, wait_for_notify);
 }
 
-/**
+/*
  */
 void Master::get_generation_number() {
 
@@ -2528,7 +2528,7 @@ void Master::get_generation_number() {
   HT_BDBTXN_END(BOOST_PP_EMPTY());
 }
 
-/**
+/*
  * If node exists but corresponding node data doesn't then
  * create the node data
  */

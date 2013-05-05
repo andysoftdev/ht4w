@@ -43,6 +43,7 @@ const char *Dependency::SERVERS = "SERVERS";
 const char *Dependency::ROOT = "ROOT";
 const char *Dependency::METADATA = "METADATA";
 const char *Dependency::SYSTEM = "SYSTEM";
+const char *Dependency::USER = "USER";
 const char *Dependency::RECOVER_SERVER = "RECOVER_SERVER";
 const char *Dependency::RECOVERY_BLOCKER= "RECOVERY_BLOCKER";
 const char *Dependency::RECOVERY = "RECOVERY";
@@ -227,6 +228,12 @@ void Operation::decode_result(const uint8_t **bufp, size_t *remainp) {
   m_error = Serialization::decode_i32(bufp, remainp);
   if (m_error != Error::OK)
     m_error_msg = Serialization::decode_vstr(bufp, remainp);
+}
+
+bool Operation::remove_ok() {
+  ScopedLock lock(m_mutex);
+  HT_ASSERT(remove_explicitly());
+  return m_remove_approvals == remove_approval_mask();
 }
 
 

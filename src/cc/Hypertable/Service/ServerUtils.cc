@@ -477,7 +477,6 @@ bool ServerUtils::shutdown_master(DWORD pid) {
 
       MasterClientPtr master = new MasterClient(conn_mgr, hyperspace, toplevel_dir, Config::connection_timeout(), app_queue);
       master->set_verbose_flag(Config::properties->get_bool("verbose"));
-      master->initiate_connection(0);
       if (!master->wait_for_connection(Config::connection_timeout())) {
         conn_mgr->remove_all();
         HT_THROW(Error::REQUEST_TIMEOUT, "Unable to connect to hypertable master");

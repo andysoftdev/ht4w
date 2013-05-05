@@ -282,6 +282,7 @@ namespace Hypertable {
     RE2 *value_regexp;
     typedef std::set<const char *, LtCstr, CstrAlloc> CstrRowSet;
     CstrRowSet rowset;
+    uint32_t timeout_ms;
 
     /**
      * Constructor.
@@ -292,7 +293,8 @@ namespace Hypertable {
      * @param schema smart pointer to schema object
      */
     ScanContext(int64_t rev, const ScanSpec *ss, const RangeSpec *range,
-                SchemaPtr &schema) : family_info(256), row_regexp(0), value_regexp(0) {
+                SchemaPtr &schema) : family_info(256), row_regexp(0),
+                                     value_regexp(0), timeout_ms(0) {
       initialize(rev, ss, range, schema);
     }
 
@@ -302,8 +304,8 @@ namespace Hypertable {
      * @param rev scan revision
      * @param schema smart pointer to schema object
      */
-    ScanContext(int64_t rev, SchemaPtr &schema) : family_info(256), row_regexp(0),
-        value_regexp(0) {
+    ScanContext(int64_t rev, SchemaPtr &schema)
+      : family_info(256), row_regexp(0), value_regexp(0), timeout_ms(0) {
       initialize(rev, 0, 0, schema);
     }
 
@@ -312,7 +314,8 @@ namespace Hypertable {
      *
      * @param rev scan revision
      */
-    ScanContext(int64_t rev=TIMESTAMP_MAX) : family_info(256), row_regexp(0), value_regexp(0) {
+    ScanContext(int64_t rev=TIMESTAMP_MAX) 
+      : family_info(256), row_regexp(0), value_regexp(0), timeout_ms(0) {
       SchemaPtr schema;
       initialize(rev, 0, 0, schema);
     }
@@ -322,7 +325,8 @@ namespace Hypertable {
      *
      * @param schema smart pointer to schema object
      */
-    ScanContext(SchemaPtr &schema) : family_info(256), row_regexp(0), value_regexp(0) {
+    ScanContext(SchemaPtr &schema) 
+      : family_info(256), row_regexp(0), value_regexp(0), timeout_ms(0) {
       initialize(TIMESTAMP_MAX, 0, 0, schema);
     }
 

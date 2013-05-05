@@ -1,12 +1,12 @@
-/*
+/** -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
  * Hypertable is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or any later version.
+ * as published by the Free Software Foundation; version 3 of the
+ * License, or any later version.
  *
  * Hypertable is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -19,21 +19,19 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include "Common/Error.h"
+#ifndef HYPERTABLE_MAINTENANCETASKDEFERREDINITIALIZATION_H
+#define HYPERTABLE_MAINTENANCETASKDEFERREDINITIALIZATION_H
 
-#include "AsyncComm/CommBuf.h"
+#include "MaintenanceTask.h"
 
-#include "ResponseCallbackExists.h"
+namespace Hypertable {
 
-using namespace Hyperspace;
-using namespace Hypertable;
+  class MaintenanceTaskDeferredInitialization : public MaintenanceTask {
+  public:
+    MaintenanceTaskDeferredInitialization(int level, int priority, boost::xtime &stime, RangePtr &range);
+    virtual void execute();
+  };
 
-int ResponseCallbackExists::response(bool exists) {
-  CommHeader header;
-  header.initialize_from_request_header(m_event->header);
-  CommBufPtr cbp(new CommBuf(header, 5));
-  cbp->append_i32(Error::OK);
-  cbp->append_byte((uint8_t)exists);
-  return m_comm->send_response(m_event->addr, cbp);
 }
+
+#endif // HYPERTABLE_MAINTENANCETASKDEFERREDINITIALIZATION_H

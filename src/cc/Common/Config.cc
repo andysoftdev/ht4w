@@ -392,13 +392,15 @@ void DefaultPolicy::init_options() {
         "Timeout for failover operations")
     ("Hypertable.Failover.Quorum.Percentage", i32()->default_value(90),
         "Percentage of live RangeServers required for failover to proceed")
+    ("Hypertable.Failover.RecoverInSeries", boo()->default_value(false),
+        "Carry out USER log recovery for failed servers in series")
     ("Hypertable.RangeServer.AccessGroup.GarbageThreshold.Percentage",
      i32()->default_value(20), "Perform major compaction when garbage accounts "
      "for this percentage of the data")
     ("Hypertable.RangeServer.ControlFile.CheckInterval", i32()->default_value(30000),
      "Minimum time interval (milliseconds) to check for control files in run/ directory")
-    ("Hypertable.RangeServer.LoadMetadataOnly", boo()->default_value(false),
-        "Instructs the RangeServer to only load ROOT and METADATA ranges (for debugging)")
+    ("Hypertable.RangeServer.LoadSystemTablesOnly", boo()->default_value(false),
+        "Instructs the RangeServer to only load system tables (for debugging)")
     ("Hypertable.RangeServer.MemoryLimit", i64(), "RangeServer memory limit")
     ("Hypertable.RangeServer.MemoryLimit.Percentage", i32()->default_value(60),
      "RangeServer memory limit specified as percentage of physical RAM")

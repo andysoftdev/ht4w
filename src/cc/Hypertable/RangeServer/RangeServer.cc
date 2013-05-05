@@ -192,11 +192,6 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
         + (Random::number32() % 300);
   }
 
-  // If METADATA-only load, then prevent metrics update by pushing
-  // the update time out by a couple of weeks.
-  if (props->get_bool("Hypertable.RangeServer.LoadMetadataOnly"))
-    m_next_metrics_update += 1000000;
-
   Global::cell_cache_scanner_cache_size =
     cfg.get_i32("AccessGroup.CellCache.ScannerCacheSize");
 
@@ -368,24 +363,22 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     _exit(0);
   }
 
-  /**
-   * Create Master client
-   */
-  int timeout = props->get_i32("Hypertable.Request.Timeout");
-  ApplicationQueueInterfacePtr aq = m_app_queue;
-  m_master_client = new MasterClient(m_conn_manager, m_hyperspace,
-                                     Global::toplevel_dir, timeout, aq);
-  m_master_connection_handler = new ConnectionHandler(m_comm, m_app_queue, this);
   Global::location_initializer = new LocationInitializer(m_props);
 
-  // make sure this location has not been removed
   if(Global::location_initializer->is_removed(Global::toplevel_dir+"/servers", m_hyperspace)) {
     HT_ERROR_OUT << "location " << Global::location_initializer->get()
         << " has been marked removed in hyperspace" << HT_END;
     _exit(1);
   }
 
-  m_master_client->initiate_connection(m_master_connection_handler, Global::location_initializer);
+  // Create Master client
+  int timeout = props->get_i32("Hypertable.Request.Timeout");
+  ApplicationQueueInterfacePtr aq = m_app_queue;
+  m_master_connection_handler = new ConnectionHandler(m_comm, m_app_queue, this);
+  m_master_client = new MasterClient(m_conn_manager, m_hyperspace,
+                                     Global::toplevel_dir, timeout, aq,
+                                     m_master_connection_handler,
+                                     Global::location_initializer);
   Global::master_client = m_master_client;
 
   Global::location_initializer->wait_for_handshake();
@@ -699,7 +692,9 @@ void RangeServer::local_recover() {
             Global::add_to_work_queue(task_entity);
           else if ((range_entity = dynamic_cast<MetaLog::EntityRange *>(entity.get())) != 0 &&
                    (range_entity->state.state & RangeState::PHANTOM) != 0) {
-            Global::log_dfs->rmdir(range_entity->state.transfer_log);
+            // If log was created originally for the phantom range, remove it
+            if (strstr(range_entity->state.transfer_log, "/phantom-") != 0)
+              Global::log_dfs->rmdir(range_entity->state.transfer_log);
             continue;
           }
           stripped_entities.push_back(entity);
@@ -768,7 +763,6 @@ void RangeServer::local_recover() {
       if (!maintenance_tasks.empty()) {
         for (size_t i=0; i<maintenance_tasks.size(); i++)
           Global::maintenance_queue->add(maintenance_tasks[i]);
-        Global::maintenance_queue->wait_for_empty();
         maintenance_tasks.clear();
       }
 
@@ -827,12 +821,8 @@ void RangeServer::local_recover() {
       if (!maintenance_tasks.empty()) {
         for (size_t i=0; i<maintenance_tasks.size(); i++)
           Global::maintenance_queue->add(maintenance_tasks[i]);
-        Global::maintenance_queue->wait_for_empty();
         maintenance_tasks.clear();
       }
-
-      if (m_props->get_bool("Hypertable.RangeServer.LoadMetadataOnly"))
-        return;
 
       // Then recover SYSTEM ranges
       m_replay_group = RangeServerProtocol::GROUP_SYSTEM;
@@ -886,9 +876,11 @@ void RangeServer::local_recover() {
       if (!maintenance_tasks.empty()) {
         for (size_t i=0; i<maintenance_tasks.size(); i++)
           Global::maintenance_queue->add(maintenance_tasks[i]);
-        Global::maintenance_queue->wait_for_empty();
         maintenance_tasks.clear();
       }
+
+      if (m_props->get_bool("Hypertable.RangeServer.LoadSystemTablesOnly"))
+        return;
 
       // Then recover the USER ranges
       m_replay_group = RangeServerProtocol::GROUP_USER;
@@ -944,7 +936,6 @@ void RangeServer::local_recover() {
       if (!maintenance_tasks.empty()) {
         for (size_t i=0; i<maintenance_tasks.size(); i++)
           Global::maintenance_queue->add(maintenance_tasks[i]);
-        Global::maintenance_queue->wait_for_empty();
         maintenance_tasks.clear();
       }
     }
@@ -1441,8 +1432,9 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
       }
     }
 
-    scan_ctx = new ScanContext(range->get_scan_revision(),
+    scan_ctx = new ScanContext(range->get_scan_revision(cb->get_event()->header.timeout_ms),
                                scan_spec, range_spec, schema);
+    scan_ctx->timeout_ms = cb->get_event()->header.timeout_ms;
 
     scanner = range->create_scanner(scan_ctx);
 
@@ -1826,6 +1818,17 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
 
     HT_MAYBE_FAIL_X("metadata-load-range-3", table->is_metadata());
 
+    // make sure that we don't have a clock skew
+    // poll() timeout is in milliseconds, revision and now is in nanoseconds
+    int64_t now = Hypertable::get_ts64();
+    int64_t revision = range->get_scan_revision(cb->get_event()->header.timeout_ms);
+    if (revision > now) {
+      int64_t diff = (revision - now) / 1000000;
+      HT_WARNF("Clock skew detected when loading range; waiting for %lld "
+               "millisec", (long long int)diff);
+      poll(0, 0, diff);
+    }
+
     {
       ScopedLock lock(m_drop_table_mutex);
 
@@ -1836,17 +1839,6 @@ RangeServer::load_range(ResponseCallback *cb, const TableIdentifier *table,
         return;
       }
       
-      // make sure that we don't have a clock skew
-      // poll() timeout is in milliseconds, revision and now is in nanoseconds
-      int64_t now = Hypertable::get_ts64();
-      int64_t revision = range->get_scan_revision();
-      if (revision > now) {
-        int64_t diff = (revision - now) / 1000000;
-        HT_WARNF("Clock skew detected when loading range; waiting for %lld "
-                 "millisec", (long long int)diff);
-        poll(0, 0, diff);
-      }
-
       m_live_map->add_staged_range(table, range, range_state->transfer_log);
     }
 
@@ -1915,7 +1907,7 @@ RangeServer::acknowledge_load(ResponseCallbackAcknowledgeLoad *cb,
       }
 
       try {
-        range->acknowledge_load();
+        range->acknowledge_load(cb->get_event()->header.timeout_ms);
       }
       catch(Exception &e) {
         error_map[rr] = e.code();
@@ -3116,6 +3108,8 @@ RangeServer::dump_pseudo_table(ResponseCallback *cb, const TableIdentifier *tabl
       cb->error(Error::TABLE_NOT_FOUND, table->id);
       return;
     }
+
+    scan_ctx->timeout_ms = cb->get_event()->header.timeout_ms;
 
     table_info->get_range_data(range_data);
     foreach_ht(RangeData &rd, range_data) {

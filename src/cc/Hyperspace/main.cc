@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -55,7 +55,7 @@ using namespace Config;
 using namespace std;
 
 
-/**
+/*
  * Handler factory for Hyperspace master
  */
 class HandlerFactory : public ConnectionHandlerFactory {

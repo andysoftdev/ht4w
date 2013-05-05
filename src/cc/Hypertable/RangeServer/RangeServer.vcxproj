@@ -79,6 +79,7 @@
     <ClCompile Include="MaintenanceQueue.cc" />
     <ClCompile Include="MaintenanceScheduler.cc" />
     <ClCompile Include="MaintenanceTaskCompaction.cc" />
+    <ClCompile Include="MaintenanceTaskDeferredInitialization.cc" />
     <ClCompile Include="MaintenanceTaskMemoryPurge.cc" />
     <ClCompile Include="MaintenanceTaskRelinquish.cc" />
     <ClCompile Include="MaintenanceTaskSplit.cc" />
@@ -210,6 +211,7 @@
     <ClInclude Include="MaintenanceScheduler.h" />
     <ClInclude Include="MaintenanceTask.h" />
     <ClInclude Include="MaintenanceTaskCompaction.h" />
+    <ClInclude Include="MaintenanceTaskDeferredInitialization.h" />
     <ClInclude Include="MaintenanceTaskMemoryPurge.h" />
     <ClInclude Include="MaintenanceTaskRelinquish.h" />
     <ClInclude Include="MaintenanceTaskSplit.h" />
