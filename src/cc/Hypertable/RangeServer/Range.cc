@@ -405,10 +405,14 @@ void Range::update_schema(SchemaPtr &schema) {
  * This method must not fail.  The caller assumes that it will succeed.
  */
 void Range::add(const Key &key, const ByteString value) {
-  HT_DEBUG_OUT <<"key="<< key <<" value='";
+#ifdef _DEBUG
+  HT_DEBUG_OUT << "key="<< key <<" value='";
+#endif
   const uint8_t *p;
   size_t len = value.decode_length(&p);
+#ifdef _DEBUG
   _out_ << format_bytes(20, p, len) << HT_END;
+#endif
 
   if (key.flag != FLAG_INSERT && key.flag >= KEYSPEC_DELETE_MAX) {
     HT_ERRORF("Unknown key flag encountered (%d), skipping..", (int)key.flag);
