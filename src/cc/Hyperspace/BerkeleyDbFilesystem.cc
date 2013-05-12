@@ -507,6 +507,7 @@ void BerkeleyDbFilesystem::init_db_handles(const vector<Thread::id> &thread_ids)
     db_handles = new BDbHandles();
     m_thread_handle_map[thread_id] = db_handles;
     HT_INFOF("Created DB handles for thread: %6d", thread_id);
+
   }
 
 }

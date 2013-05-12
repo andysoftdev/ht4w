@@ -40,11 +40,17 @@ void HandlerMap::insert_handler(IOHandlerAccept *handler) {
   m_accept_handler_map[handler->get_local_address()] = handler;
 }
 
-void HandlerMap::insert_handler(IOHandlerData *handler) {
+void HandlerMap::insert_handler(IOHandlerData *handler, bool checkout) {
   ScopedRecLock lock(m_mutex);
   HT_ASSERT(m_data_handler_map.find(handler->get_address())
             == m_data_handler_map.end());
   m_data_handler_map[handler->get_address()] = handler;
+  if (checkout)
+#ifndef _WIN32
+    handler->increment_reference_count();
+#else
+    handler->increment_reference_count(this);
+#endif
 }
 
 void HandlerMap::insert_handler(IOHandlerDatagram *handler) {

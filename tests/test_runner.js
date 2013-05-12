@@ -277,6 +277,12 @@ function get_test_filter(args) {
 
 
 // tests
+function access_group_hints_file_test(logfile, testName) {
+    system_nowait("..\\Hypertable.LocalBroker.exe --debug --DfsBroker.Local.Root=" + targetDir, "localbroker.stdout", "localbroker.stderr");
+    sleep(500);
+    return run_target(logfile, testName);
+}
+
 function async_api_test(logfile, testName) {
     prepare_target(testName, ["asyncApiTest.golden"]);
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
@@ -663,6 +669,7 @@ function unique_test(logfile, testName) {
 
 // all tests
 var all_tests = new ActiveXObject("Scripting.Dictionary");
+all_tests.add("access_group_hints_file_test", access_group_hints_file_test);
 all_tests.add("accessgroup_garbage_tracker_test", run_target);
 all_tests.add("async_api_test", async_api_test);
 all_tests.add("bdb_fs_test", bdb_fs_test);

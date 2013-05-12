@@ -1304,6 +1304,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "csvalidate", "src\cc\Hypert
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommitLog", "src\cc\Hypertable\Lib\CommitLog.vcxproj", "{1D2663B1-C901-49E7-835E-DBBE6182FA39}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "access_group_hints_file_test", "src\cc\Hypertable\RangeServer\tests\access_group_hints_file_test.vcxproj", "{4A7A405E-95F9-432F-BFB0-2101640B8D3C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{59287C1F-74B5-436A-A317-3B5EE7A08DD7} = {59287C1F-74B5-436A-A317-3B5EE7A08DD7}
+		{ED58FF8F-9E65-4ED0-ABF4-364756159EA8} = {ED58FF8F-9E65-4ED0-ABF4-364756159EA8}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -2216,6 +2222,14 @@ Global
 		{1D2663B1-C901-49E7-835E-DBBE6182FA39}.Release|Win32.Build.0 = Release|Win32
 		{1D2663B1-C901-49E7-835E-DBBE6182FA39}.Release|x64.ActiveCfg = Release|x64
 		{1D2663B1-C901-49E7-835E-DBBE6182FA39}.Release|x64.Build.0 = Release|x64
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C}.Debug|Win32.Build.0 = Debug|Win32
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C}.Debug|x64.ActiveCfg = Debug|x64
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C}.Debug|x64.Build.0 = Debug|x64
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C}.Release|Win32.ActiveCfg = Release|Win32
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C}.Release|Win32.Build.0 = Release|Win32
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C}.Release|x64.ActiveCfg = Release|x64
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -2334,5 +2348,6 @@ Global
 		{094DAA0C-BEE6-4AE0-B112-44D4BD26FCE6} = {1C416F01-02F1-4CD2-A934-25B1D24FC00C}
 		{906C4277-E176-46C7-A0B1-F8016EF36B2A} = {1C416F01-02F1-4CD2-A934-25B1D24FC00C}
 		{C9B50BE3-BC61-4991-AA5D-5EEFF0D913B2} = {1C416F01-02F1-4CD2-A934-25B1D24FC00C}
+		{4A7A405E-95F9-432F-BFB0-2101640B8D3C} = {1C416F01-02F1-4CD2-A934-25B1D24FC00C}
 	EndGlobalSection
 EndGlobal

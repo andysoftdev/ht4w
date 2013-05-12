@@ -31,6 +31,7 @@
     <ClCompile Include="..\Lib\CommitLogReader.cc" />
     <ClCompile Include="AccessGroup.cc" />
     <ClCompile Include="AccessGroupGarbageTracker.cc" />
+    <ClCompile Include="AccessGroupHintsFile.cc" />
     <ClCompile Include="CellCache.cc" />
     <ClCompile Include="CellCacheAllocator.cc" />
     <ClCompile Include="CellCacheManager.cc" />
@@ -150,6 +151,7 @@
     <ClInclude Include="..\Lib\CommitLogReader.h" />
     <ClInclude Include="AccessGroup.h" />
     <ClInclude Include="AccessGroupGarbageTracker.h" />
+    <ClInclude Include="AccessGroupHintsFile.h" />
     <ClInclude Include="CellCache.h" />
     <ClInclude Include="CellCacheAllocator.h" />
     <ClInclude Include="CellCacheManager.h" />

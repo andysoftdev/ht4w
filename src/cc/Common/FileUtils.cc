@@ -292,8 +292,10 @@ int64_t FileUtils::length(const String &fname) {
   HANDLE fh = ::FindFirstFile(fname.c_str(), &wfd);
   if (fh == INVALID_HANDLE_VALUE) {
     DWORD err = ::GetLastError();
-    HT_ERRORF("FindFirstFile %s failed - %s", fname.c_str(), winapi_strerror(err));
-    ::SetLastError(err);
+    if (err != ERROR_FILE_NOT_FOUND && err != ERROR_PATH_NOT_FOUND) {
+      HT_ERRORF("FindFirstFile %s failed - %s", fname.c_str(), winapi_strerror(err));
+      ::SetLastError(err);
+    }
     return (int64_t)-1;
   }
   ::FindClose(fh);

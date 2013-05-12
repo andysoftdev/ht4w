@@ -361,6 +361,9 @@
     <ClCompile Include="MaintenanceTaskDeferredInitialization.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AccessGroupHintsFile.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -772,6 +775,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MaintenanceTaskDeferredInitialization.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AccessGroupHintsFile.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
