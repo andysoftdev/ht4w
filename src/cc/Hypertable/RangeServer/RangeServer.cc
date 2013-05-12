@@ -686,6 +686,7 @@ void RangeServer::local_recover() {
 
       // Populated Global::work_queue and strip out PHANTOM ranges
       {
+        stripped_entities.reserve(entities.size());
         MetaLog::EntityTask *task_entity;
         foreach_ht(MetaLog::EntityPtr &entity, entities) {
           if ((task_entity = dynamic_cast<MetaLog::EntityTask *>(entity.get())) != 0)
