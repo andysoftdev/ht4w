@@ -94,8 +94,7 @@ Writer::Writer(FilesystemPtr &fs, DefinitionPtr &definition, const String &path,
   write_header();
 
   // Write existing entries
-  foreach_ht (EntityPtr &entity, initial_entities)
-    record_state(entity.get());
+  record_state(initial_entities);
 
   // Write "Recover" entity
   if (!skip_recover_entry) {
@@ -227,7 +226,7 @@ void Writer::record_state(std::vector<Entity *> &entities) {
   if (m_fd == -1)
     HT_THROWF(Error::CLOSED, "MetaLog '%s' has been closed", m_path.c_str());
 
-  size_t i=0;
+  size_t i=0, j=0;
   foreach_ht (Entity *entity, entities) {
     Locker<Entity> lock(*entity);
     length = EntityHeader::LENGTH + (entity->marked_for_removal() ? 0 : entity->encoded_length());
@@ -240,24 +239,54 @@ void Writer::record_state(std::vector<Entity *> &entities) {
     HT_ASSERT((ptr-buffers[i].base) == (ptrdiff_t)buffers[i].size);
     total_length += length;
     i++;
+
+    if (total_length > 10*Property::MiB) {
+      boost::shared_array<uint8_t> backup_buf( new uint8_t [total_length] );
+      StaticBuffer buf(new uint8_t [total_length], total_length);
+      ptr = buf.base;
+      for (j=0; j<i; j++) {
+        memcpy(ptr, buffers[j].base, buffers[j].size);
+        ptr += buffers[j].size;
+        buffers[j].free();
+      }
+      HT_ASSERT((ptr-buf.base) == (ptrdiff_t)buf.size);
+
+      memcpy(backup_buf.get(), buf.base, buf.size);
+
+      m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
+      FileUtils::write(m_backup_fd, backup_buf.get(), buf.size);
+      m_offset += buf.size;
+
+      total_length = 0;
+      i = 0;
+    }
   }
 
-  boost::shared_array<uint8_t> backup_buf( new uint8_t [total_length] );
-  StaticBuffer buf(new uint8_t [total_length], total_length);
-  ptr = buf.base;
-  for (i=0; i<entities.size(); i++) {
-    memcpy(ptr, buffers[i].base, buffers[i].size);
-    ptr += buffers[i].size;
+  if (total_length > 0) {
+    boost::shared_array<uint8_t> backup_buf( new uint8_t [total_length] );
+    StaticBuffer buf(new uint8_t [total_length], total_length);
+    ptr = buf.base;
+    for (j=0; j<i; j++) {
+      memcpy(ptr, buffers[j].base, buffers[j].size);
+      ptr += buffers[j].size;
+    }
+    HT_ASSERT((ptr-buf.base) == (ptrdiff_t)buf.size);
+
+    memcpy(backup_buf.get(), buf.base, buf.size);
+
+    m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
+    FileUtils::write(m_backup_fd, backup_buf.get(), buf.size);
+    m_offset += buf.size;
   }
-  HT_ASSERT((ptr-buf.base) == (ptrdiff_t)buf.size);
-
-  memcpy(backup_buf.get(), buf.base, buf.size);
-
-  m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
-  FileUtils::write(m_backup_fd, backup_buf.get(), buf.size);
-  m_offset += buf.size;
 }
 
+void Writer::record_state(std::vector<EntityPtr> &entities) {
+  std::vector<Entity *> entities_copied;
+  entities_copied.reserve(entities.size());
+  foreach_ht (EntityPtr &entity, entities)
+    entities_copied.push_back(entity.get());
+  record_state(entities_copied);
+}
 
 void Writer::record_removal(Entity *entity) {
   ScopedLock lock(m_mutex);
