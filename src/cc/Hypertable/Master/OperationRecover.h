@@ -26,8 +26,8 @@
 
 #include "Common/PageArenaAllocator.h"
 
-#include "Hypertable/Lib/MetaLogEntityRange.h"
 #include "Hypertable/Lib/Types.h"
+#include "Hypertable/RangeServer/MetaLogEntityRange.h"
 
 #include "Operation.h"
 #include "RangeServerConnection.h"
@@ -89,7 +89,7 @@ namespace Hypertable {
     void read_rsml();
 
     // check to see if master was notified of newly split-off range
-    void handle_split_shrunk(MetaLog::EntityRange *range_entity);
+    void handle_split_shrunk(MetaLogEntityRange *range_entity);
 
     // cleans up after this operation is complete
     void clear_server_state();

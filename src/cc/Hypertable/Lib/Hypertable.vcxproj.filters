@@ -208,9 +208,6 @@
     <ClCompile Include="TableCallback.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MetaLogEntityRange.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PseudoTables.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -478,9 +475,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="IndexScannerCallback.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MetaLogEntityRange.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="PseudoTables.h">

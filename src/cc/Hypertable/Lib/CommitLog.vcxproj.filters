@@ -10,9 +10,6 @@
     <ClCompile Include="..\..\stdafx.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CommitLogBase.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CommitLogBlockStream.cc">
       <Filter>Source Files</Filter>
     </ClCompile>

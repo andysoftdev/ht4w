@@ -32,7 +32,6 @@ BlockCompressionHeaderCommitLog.cc
 Cell.cc
 Client.cc
 CommitLog.cc
-CommitLogBase.cc
 CommitLogBlockStream.cc
 CommitLogReader.cc
 CompressorFactory.cc
@@ -60,7 +59,6 @@ MasterProtocol.cc
 MetaLog.cc
 MetaLogEntity.cc
 MetaLogEntityHeader.cc
-MetaLogEntityRange.cc
 MetaLogReader.cc
 MetaLogWriter.cc
 NameIdMapper.cc

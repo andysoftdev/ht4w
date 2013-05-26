@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
       hints.push_back(h1);
 
       h2.ag_name = "bar";
-      h2.latest_stored_revision = 1368097650123456789;
+      h2.latest_stored_revision = 1368097650123456789LL;
       h2.disk_usage = 2000;
       h2.files = "2/3/default/A27B13F/cs0;";
       hints.push_back(h2);

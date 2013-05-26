@@ -28,11 +28,11 @@
 using namespace Hypertable;
 
 
-void RangeStatsGatherer::fetch(RangeDataVector &range_data, TableMutator *mutator, int *log_generation) {
+void RangeStatsGatherer::fetch(RangeDataVector &range_data, TableMutator *mutator, StringSet *remove_ok_logs) {
   time_t now = time(0);
 
   range_data.clear();
-  m_table_info_map->get_range_data(range_data, log_generation);
+  m_table_info_map->get_range_data(range_data, remove_ok_logs);
   foreach_ht (RangeData &rd, range_data)
     rd.data = rd.range->get_maintenance_data(range_data.arena(), now, mutator);
 }

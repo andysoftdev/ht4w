@@ -640,19 +640,21 @@ namespace Hypertable {
         while(*unit_ptr == ' ' &&  unit_ptr < end )
           ++unit_ptr;
 
-        String unit_str = String(unit_ptr, end-unit_ptr);
-        to_lower(unit_str);
+        if (unit_ptr < end) {
+          String unit_str = String(unit_ptr, end-unit_ptr);
+          to_lower(unit_str);
 
-        if (unit_str.find("month") == 0)
-          ttl *= 2592000.0;
-        else if (unit_str.find("week") == 0)
-          ttl *= 604800.0;
-        else if (unit_str.find("day") == 0)
-          ttl *= 86400.0;
-        else if (unit_str.find("hour") == 0)
-          ttl *= 3600.0;
-        else if (unit_str.find("minute") == 0)
-          ttl *= 60.0;
+          if (unit_str.find("month") == 0)
+            ttl *= 2592000.0;
+          else if (unit_str.find("week") == 0)
+            ttl *= 604800.0;
+          else if (unit_str.find("day") == 0)
+            ttl *= 86400.0;
+          else if (unit_str.find("hour") == 0)
+            ttl *= 3600.0;
+          else if (unit_str.find("minute") == 0)
+            ttl *= 60.0;
+        }
 
         if (state.cf == 0)
           state.ttl = (time_t)ttl;
@@ -1093,6 +1095,14 @@ namespace Hypertable {
       scan_set_display_timestamps(ParserState &state) : state(state) { }
       void operator()(char const *str, char const *end) const {
         state.scan.display_timestamps=true;
+      }
+      ParserState &state;
+    };
+
+    struct scan_clear_display_timestamps {
+      scan_clear_display_timestamps(ParserState &state) : state(state) { }
+      void operator()(char const *str, char const *end) const {
+        state.scan.display_timestamps=false;
       }
       ParserState &state;
     };
@@ -1916,6 +1926,7 @@ namespace Hypertable {
           Token IGNORE_UNKNOWN_COLUMNS  = as_lower_d["ignore_unknown_columns"];
           Token DUP_KEY_COLS            = as_lower_d["dup_key_cols"];
           Token DUPLICATE_KEY_COLUMNS   = as_lower_d["duplicate_key_columns"];
+          Token NO_TIMESTAMPS = as_lower_d["no_timestamps"];
           Token START_ROW    = as_lower_d["start_row"];
           Token END_ROW      = as_lower_d["end_row"];
           Token INCLUSIVE    = as_lower_d["inclusive"];
@@ -2108,6 +2119,7 @@ namespace Hypertable {
 
           compact_statement
             = COMPACT >> TABLE >> user_identifier[set_table_name(self.state)]
+                      >> *(string_literal[set_str(self.state)])
             | COMPACT >> RANGES
                       >> (range_type[set_flags_range_type(self.state)]
                           >> *(PIPE >> range_type[set_flags_range_type(self.state)]))
@@ -2215,10 +2227,12 @@ namespace Hypertable {
             | BUCKETS >> uint_p[scan_set_buckets(self.state)]
             | REVS >> !EQUAL >> uint_p[scan_set_max_versions(self.state)]
             | INTO >> FILE >> string_literal[scan_set_outfile(self.state)]
+            | NO_TIMESTAMPS[scan_clear_display_timestamps(self.state)]
             ;
 
           dump_table_statement
-	          = DUMP >> TABLE >> table_identifier[set_table_name(self.state)]
+	          = DUMP >> TABLE[scan_set_display_timestamps(self.state)]
+                         >> table_identifier[set_table_name(self.state)]
             >> !(COLUMNS >> ('*' | (column_selection >> *(COMMA >> column_selection))))
 		        >> !(dump_where_clause)
 		        >> *(dump_table_option_spec)

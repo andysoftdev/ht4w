@@ -139,6 +139,9 @@
     <ClCompile Include="RangeServerConnectionManager.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OperationCompact.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -295,6 +298,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RecoveryStepFuture.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DispatchHandlerOperationCompact.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationCompact.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

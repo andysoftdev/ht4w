@@ -62,7 +62,7 @@ namespace {
     "  Files: %s\n}\n";
 }
 
-void AccessGroupHintsFile::write(std::vector<AccessGroup::Hints> &hints) {
+void AccessGroupHintsFile::write(const std::vector<AccessGroup::Hints> &hints) {
   String contents;
   int32_t fd = -1;
   bool first_try = true;
@@ -71,7 +71,7 @@ void AccessGroupHintsFile::write(std::vector<AccessGroup::Hints> &hints) {
                              Global::toplevel_dir.c_str(),
                              m_table_id.c_str(), m_range_dir.c_str());
 
-  foreach_ht (AccessGroup::Hints &h, hints)
+  foreach_ht (const AccessGroup::Hints &h, hints)
     contents += format(ag_hint_format, h.ag_name.c_str(),
                        (Llu)h.latest_stored_revision,
                        (Lld)h.disk_usage, h.files.c_str());
@@ -109,6 +109,8 @@ void AccessGroupHintsFile::read(std::vector<AccessGroup::Hints> &hints) {
   int32_t fd = -1;
   AccessGroup::Hints h;
   DynamicBuffer dbuf;
+
+  hints.clear();
 
   String filename = format("%s/tables/%s/default/%s/hints",
                            Global::toplevel_dir.c_str(),

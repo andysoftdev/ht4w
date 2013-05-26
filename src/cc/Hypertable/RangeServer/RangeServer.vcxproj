@@ -25,10 +25,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\Lib\CommitLog.cc" />
-    <ClCompile Include="..\Lib\CommitLogBase.cc" />
-    <ClCompile Include="..\Lib\CommitLogBlockStream.cc" />
-    <ClCompile Include="..\Lib\CommitLogReader.cc" />
     <ClCompile Include="AccessGroup.cc" />
     <ClCompile Include="AccessGroupGarbageTracker.cc" />
     <ClCompile Include="AccessGroupHintsFile.cc" />
@@ -92,8 +88,8 @@
     <ClCompile Include="MetadataRoot.cc" />
     <ClCompile Include="MetaLogDefinitionRangeServer.cc" />
     <ClCompile Include="MetaLogEntityRange.cc" />
+    <ClCompile Include="MetaLogEntityRemoveOkLogs.cc" />
     <ClCompile Include="MetaLogEntityTaskAcknowledgeRelinquish.cc" />
-    <ClCompile Include="MetaLogEntityTaskRemoveTransferLog.cc" />
     <ClCompile Include="PhantomRange.cc" />
     <ClCompile Include="PhantomRangeMap.cc" />
     <ClCompile Include="QueryCache.cc" />
@@ -141,14 +137,11 @@
     <ClCompile Include="TableIdCache.cc" />
     <ClCompile Include="TableInfo.cc" />
     <ClCompile Include="TableInfoMap.cc" />
+    <ClCompile Include="TableSchemaCache.cc" />
     <ClCompile Include="TimerHandler.cc" />
     <ClCompile Include="UpdateThread.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Lib\CommitLog.h" />
-    <ClInclude Include="..\Lib\CommitLogBase.h" />
-    <ClInclude Include="..\Lib\CommitLogBlockStream.h" />
-    <ClInclude Include="..\Lib\CommitLogReader.h" />
     <ClInclude Include="AccessGroup.h" />
     <ClInclude Include="AccessGroupGarbageTracker.h" />
     <ClInclude Include="AccessGroupHintsFile.h" />
@@ -227,9 +220,9 @@
     <ClInclude Include="MetadataRoot.h" />
     <ClInclude Include="MetaLogDefinitionRangeServer.h" />
     <ClInclude Include="MetaLogEntityRange.h" />
+    <ClInclude Include="MetaLogEntityRemoveOkLogs.h" />
     <ClInclude Include="MetaLogEntityTask.h" />
     <ClInclude Include="MetaLogEntityTaskAcknowledgeRelinquish.h" />
-    <ClInclude Include="MetaLogEntityTaskRemoveTransferLog.h" />
     <ClInclude Include="PhantomRange.h" />
     <ClInclude Include="PhantomRangeMap.h" />
     <ClInclude Include="QueryCache.h" />
@@ -281,6 +274,7 @@
     <ClInclude Include="TableIdCache.h" />
     <ClInclude Include="TableInfo.h" />
     <ClInclude Include="TableInfoMap.h" />
+    <ClInclude Include="TableSchemaCache.h" />
     <ClInclude Include="TimerHandler.h" />
     <ClInclude Include="UpdateThread.h" />
   </ItemGroup>

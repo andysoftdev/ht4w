@@ -54,7 +54,6 @@
     <ClCompile Include="MetaLog.cc" />
     <ClCompile Include="MetaLogEntity.cc" />
     <ClCompile Include="MetaLogEntityHeader.cc" />
-    <ClCompile Include="MetaLogEntityRange.cc" />
     <ClCompile Include="MetaLogReader.cc" />
     <ClCompile Include="MetaLogWriter.cc" />
     <ClCompile Include="NameIdMapper.cc" />
@@ -136,7 +135,6 @@
     <ClInclude Include="MetaLogDefinition.h" />
     <ClInclude Include="MetaLogEntity.h" />
     <ClInclude Include="MetaLogEntityHeader.h" />
-    <ClInclude Include="MetaLogEntityRange.h" />
     <ClInclude Include="MetaLogReader.h" />
     <ClInclude Include="MetaLogWriter.h" />
     <ClInclude Include="NameIdMapper.h" />

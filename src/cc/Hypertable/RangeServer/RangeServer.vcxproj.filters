@@ -250,15 +250,6 @@
     <ClCompile Include="RequestHandlerWaitForMaintenance.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Lib\CommitLog.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Lib\CommitLogBlockStream.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Lib\CommitLogReader.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CellStoreTrailerV5.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -304,13 +295,7 @@
     <ClCompile Include="MetaLogEntityTaskAcknowledgeRelinquish.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MetaLogEntityTaskRemoveTransferLog.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MaintenanceTaskWorkQueue.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Lib\CommitLogBase.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CellListScannerBuffer.cc">
@@ -362,6 +347,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AccessGroupHintsFile.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaLogEntityRemoveOkLogs.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableSchemaCache.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -654,18 +645,6 @@
     <ClInclude Include="RequestHandlerWaitForMaintenance.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Lib\CommitLog.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Lib\CommitLogBase.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Lib\CommitLogBlockStream.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Lib\CommitLogReader.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="CellStoreTrailerV5.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -718,9 +697,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MetaLogEntityTaskAcknowledgeRelinquish.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MetaLogEntityTaskRemoveTransferLog.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MaintenanceTaskWorkQueue.h">
@@ -778,6 +754,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="AccessGroupHintsFile.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaLogEntityRemoveOkLogs.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableSchemaCache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

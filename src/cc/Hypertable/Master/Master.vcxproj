@@ -41,6 +41,7 @@
     <ClCompile Include="OperationAlterTable.cc" />
     <ClCompile Include="OperationBalance.cc" />
     <ClCompile Include="OperationCollectGarbage.cc" />
+    <ClCompile Include="OperationCompact.cc" />
     <ClCompile Include="OperationCreateNamespace.cc" />
     <ClCompile Include="OperationCreateTable.cc" />
     <ClCompile Include="OperationDropNamespace.cc" />
@@ -79,6 +80,7 @@
     <ClInclude Include="Context.h" />
     <ClInclude Include="DispatchHandlerOperation.h" />
     <ClInclude Include="DispatchHandlerOperationAlterTable.h" />
+    <ClInclude Include="DispatchHandlerOperationCompact.h" />
     <ClInclude Include="DispatchHandlerOperationDropTable.h" />
     <ClInclude Include="DispatchHandlerOperationGetStatistics.h" />
     <ClInclude Include="EntityType.h" />
@@ -90,6 +92,7 @@
     <ClInclude Include="OperationAlterTable.h" />
     <ClInclude Include="OperationBalance.h" />
     <ClInclude Include="OperationCollectGarbage.h" />
+    <ClInclude Include="OperationCompact.h" />
     <ClInclude Include="OperationCreateNamespace.h" />
     <ClInclude Include="OperationCreateTable.h" />
     <ClInclude Include="OperationDropNamespace.h" />

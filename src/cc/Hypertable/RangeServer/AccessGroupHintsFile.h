@@ -58,8 +58,8 @@ namespace Hypertable {
    * <pre>
    * ag_name: {
    *   LatestStoredRevision: <revision>,
-   *   DiskUsage: <bytes>,
-   *   Files: <file-list>
+   *   DiskUsage: $bytes,
+   *   Files: $file_list
    * }
    * </pre>
    * The fields in the mapping for each access group are described below.
@@ -102,7 +102,7 @@ namespace Hypertable {
     /** Write hints file.
      * @param hints Vector of hints to be written, one for each access group
      */
-    void write(std::vector<AccessGroup::Hints> &hints);
+    void write(const std::vector<AccessGroup::Hints> &hints);
 
     /** Reads hints file.
      * @param hints Vector of hints records to be populated, one for each access

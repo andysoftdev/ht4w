@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -111,6 +111,7 @@ namespace {
 } // local namespace
 
 /** @defgroup Master Master
+ * @ingroup Hypertable
  * %Master server.
  * The Master module contains all of the definitions that make up the Master
  * server process which is responsible for handling meta operations such
@@ -250,12 +251,13 @@ int main(int argc, char **argv) {
     String log_dir = context->toplevel_dir + "/servers/master/log/"
         + context->mml_definition->name();
     size_t added_servers = 0;
+    MetaLog::EntityPtr bpa_entity;
 
     mml_reader = new MetaLog::Reader(context->dfs, context->mml_definition,
             log_dir);
     mml_reader->get_entities(entities);
 
-    // Uniq-ify the RangeServerConnection objects
+    // Uniq-ify the RangeServerConnection and BalancePlanAuthority objects
     {
       std::vector<MetaLog::EntityPtr> entities2;
       std::set<RangeServerConnectionPtr, ltrsc> rsc_set;
@@ -268,6 +270,8 @@ int main(int argc, char **argv) {
             rsc_set.erase(rsc.get());
           rsc_set.insert(rsc.get());
         }
+        else if (dynamic_cast<BalancePlanAuthority *>(entity.get()))
+          bpa_entity = entity;
         else
           entities2.push_back(entity);
       }
@@ -278,6 +282,16 @@ int main(int argc, char **argv) {
 
     context->mml_writer = new MetaLog::Writer(context->dfs, context->mml_definition,
                                               log_dir, entities);
+
+    if (bpa_entity) {
+      BalancePlanAuthority *bpa = dynamic_cast<BalancePlanAuthority *>(bpa_entity.get());
+      bpa->set_mml_writer(context->mml_writer);
+      entities.push_back(bpa_entity);
+      context->set_balance_plan_authority(bpa);
+      std::stringstream sout;
+      sout << "Loading BalancePlanAuthority: " << *bpa;
+      HT_INFOF("%s", sout.str().c_str());
+    }
 
     context->reference_manager = new ReferenceManager();
 
@@ -321,18 +335,6 @@ int main(int argc, char **argv) {
           recovery_operations[rsc->location()] =
             new OperationRecover(context, rsc, OperationRecover::RESTART);
         added_servers++;
-      }
-      else {
-        BalancePlanAuthority *bpa
-            = dynamic_cast<BalancePlanAuthority *>(entities[i].get());
-        HT_ASSERT(bpa);
-        if (!bpa->is_empty()) {
-          std::stringstream sout;
-          sout << "Loading BalancePlanAuthority: " << *bpa;
-          HT_INFOF("%s", sout.str().c_str());
-          bpa->set_mml_writer(context->mml_writer);
-          context->set_balance_plan_authority(bpa);
-        }
       }
     }
     context->balancer = new LoadBalancer(context);

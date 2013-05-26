@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,6 +19,12 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Definitions for BalancePlanAuthority.
+ * This file contains declarations for BalancePlanAuthority, a class that acts
+ * as the central authority for all active balance plans.
+ */
+
 #include "Common/Compat.h"
 #include "Common/Serialization.h"
 #include "Common/Mutex.h"
@@ -27,12 +33,12 @@
 
 #include "BalancePlanAuthority.h"
 #include "Context.h"
-#include "EntityType.h"
+#include "MetaLogEntityTypes.h"
 #include "Utility.h"
 
 #include <sstream>
 
-#define BPA_VERSION 1
+#define BPA_VERSION 2
 
 using namespace Hypertable;
 
@@ -81,6 +87,11 @@ BalancePlanAuthority::encoded_length() const
     }
     it++;
   }
+  if (BPA_VERSION >= 2) {
+    len += 4;
+    foreach_ht (const RangeMoveSpecPtr &move_spec, m_current_set)
+      len += move_spec->encoded_length();
+  }
   return len;
 }
 
@@ -103,6 +114,11 @@ BalancePlanAuthority::encode(uint8_t **bufp) const
     }
     it++;
   }
+  if (BPA_VERSION >= 2) {
+    Serialization::encode_i32(bufp, m_current_set.size());
+    foreach_ht (const RangeMoveSpecPtr &move_spec, m_current_set)
+      move_spec->encode(bufp);
+  }
 }
 
 void 
@@ -110,8 +126,7 @@ BalancePlanAuthority::decode(const uint8_t **bufp, size_t *remainp)
 {
   ScopedLock lock(m_mutex);
 
-  // skip version for now
-  Serialization::decode_i16(bufp, remainp);
+  uint16_t version = Serialization::decode_i16(bufp, remainp);
   m_generation = Serialization::decode_i32(bufp, remainp);
   int num_servers = Serialization::decode_i32(bufp, remainp);
   for (int i = 0; i < num_servers; i++) {
@@ -127,6 +142,15 @@ BalancePlanAuthority::decode(const uint8_t **bufp, size_t *remainp)
       plans.plans[j]->decode(bufp, remainp);
     }
     m_map[rs] = plans;
+  }
+  if (version >= 2) {
+    size_t count = Serialization::decode_i32(bufp, remainp);
+    RangeMoveSpecPtr move_spec;
+    for (size_t i=0; i<count; i++) {
+      move_spec = new RangeMoveSpec();
+      move_spec->decode(bufp, remainp);
+      m_current_set.insert(move_spec);
+    }
   }
 }
 
@@ -159,49 +183,96 @@ BalancePlanAuthority::copy_recovery_plan(const String &location, int type,
 void
 BalancePlanAuthority::remove_recovery_plan(const String &location)
 {
-  ScopedLock lock(m_mutex);
-  RecoveryPlanMap::iterator it = m_map.find(location);
-  if (it == m_map.end())
-     return;
-  m_map.erase(it);
+  {
+    ScopedLock lock(m_mutex);
+    RecoveryPlanMap::iterator it = m_map.find(location);
+    if (it == m_map.end())
+      return;
+    m_map.erase(it);
+  }
   m_mml_writer->record_state(this);
-}
-
-void BalancePlanAuthority::remove_from_receiver_plan(const String &location, int type,
-                                                     const vector<QualifiedRangeSpec> &specs,
-                                                     std::vector<Entity *> &entities) {
-  ScopedLock lock(m_mutex);
-  HT_ASSERT(m_map.find(location) != m_map.end());
-  RangeRecoveryPlanPtr plan = m_map[location].plans[type];
-  HT_ASSERT(plan && plan->type == type);
-
-  foreach_ht (const QualifiedRangeSpec &spec, specs)
-    plan->receiver_plan.remove(spec);
-
-  entities.push_back(this);
-
-  m_mml_writer->record_state(entities);
 }
 
 
 void BalancePlanAuthority::remove_from_receiver_plan(const String &location, int type,
                                                      const vector<QualifiedRangeSpec> &specs) {
-  std::vector<Entity *> entities;
-  remove_from_receiver_plan(location, type, specs, entities);
+  {
+    ScopedLock lock(m_mutex);
+
+    HT_ASSERT(m_map.find(location) != m_map.end());
+
+    RangeRecoveryPlanPtr plan = m_map[location].plans[type];
+
+    HT_ASSERT(plan && plan->type == type);
+
+    foreach_ht (const QualifiedRangeSpec &spec, specs)
+      plan->receiver_plan.remove(spec);
+  }
+  m_mml_writer->record_state(this);
 }
 
-
-void BalancePlanAuthority::remove_from_replay_plan(const String &recovery_location, int type,
-                                                   const String &replay_location) {
-
+void BalancePlanAuthority::remove_table_from_receiver_plan(const String &table_id) {
   ScopedLock lock(m_mutex);
-  HT_ASSERT(m_map.find(recovery_location) != m_map.end());
-  RangeRecoveryPlanPtr plan = m_map[recovery_location].plans[type];
-  HT_ASSERT(plan && plan->type == type);
+  vector<QualifiedRangeSpec> specs;
+  bool changed = false;
 
-  plan->replay_plan.remove_location(replay_location);
+  for (std::map<String, RecoveryPlans>::iterator iter = m_map.begin();
+         iter != m_map.end(); ++iter) {
+    for (size_t i=0; i<4; i++) {
+      if (iter->second.plans[i]) {
+        specs.clear();
+        RangeRecoveryReceiverPlan *receiver_plan = &iter->second.plans[i]->receiver_plan;
+        receiver_plan->get_range_specs(specs);
+        foreach_ht (QualifiedRangeSpec &spec, specs) {
+          if (!strcmp(table_id.c_str(), spec.table.id)) {
+            receiver_plan->remove(spec);
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+  if (changed)
+    m_generation++;
+}
 
-  m_mml_writer->record_state(this);  
+void BalancePlanAuthority::change_receiver_plan_location(const String &location, int type,
+                                                         const String &old_destination,
+                                                         const String &new_destination) {
+  ScopedLock lock(m_mutex);
+  vector<QualifiedRangeSpec> specs;
+  vector<RangeState> states;
+  size_t start = 0;
+  size_t end = 4;
+  bool changed = false;
+
+  if (type >= 0 && type < RangeSpec::UNKNOWN) {
+    start = type;
+    end = type+1;
+  }
+
+  for (std::map<String, RecoveryPlans>::iterator iter = m_map.begin();
+         iter != m_map.end(); ++iter) {
+    if (location != "*" && iter->first != location)
+      continue;
+    for (size_t i=start; i<end; i++) {
+      if (iter->second.plans[i]) {
+        specs.clear();
+        states.clear();
+        RangeRecoveryReceiverPlan *receiver_plan = &iter->second.plans[i]->receiver_plan;
+        receiver_plan->get_range_specs_and_states(old_destination, specs, states);
+        if (!specs.empty()) {
+          HT_ASSERT(specs.size() == states.size());
+          for (size_t j=0; j<specs.size(); j++) {
+            receiver_plan->remove(specs[j]);
+            receiver_plan->insert(new_destination, specs[j], states[j]);
+          }
+        }
+      }
+    }
+  }
+  if (changed)
+    m_generation++;
 }
 
 
@@ -320,6 +391,8 @@ BalancePlanAuthority::create_recovery_plan(const String &location,
   m_generation++;
   m_map[location] = plans;
 
+  lock.unlock(); // otherwise operator<< will deadlock
+
   /**
    * Put the RangeServerConnection object into the 'removed' state and then
    * atomically persist both the RangeServerConnection object and the plan to
@@ -336,7 +409,6 @@ BalancePlanAuthority::create_recovery_plan(const String &location,
     m_mml_writer->record_state(entities);
   }
 
-  lock.unlock(); // otherwise operator<< will deadlock
   std::stringstream sout;
   sout << "Global recovery plan was modified: " << *this;
   HT_INFOF("%s", sout.str().c_str());
@@ -433,14 +505,16 @@ BalancePlanAuthority::update_range_plan(RangeRecoveryPlanPtr &plan,
 bool
 BalancePlanAuthority::register_balance_plan(BalancePlanPtr &plan, int generation,
                                             std::vector<Entity *> &entities) {
-  ScopedLock lock(m_mutex);
+  {
+    ScopedLock lock(m_mutex);
 
-  if (generation != m_generation)
-    return false;
+    if (generation != m_generation)
+      return false;
 
-  // Insert moves into current set
-  foreach_ht (RangeMoveSpecPtr &move, plan->moves)
-    m_current_set.insert(move);
+    // Insert moves into current set
+    foreach_ht (RangeMoveSpecPtr &move, plan->moves)
+      m_current_set.insert(move);
+  }
 
   entities.push_back(this);
   m_mml_writer->record_state(entities);
@@ -456,31 +530,37 @@ BalancePlanAuthority::register_balance_plan(BalancePlanPtr &plan, int generation
 bool
 BalancePlanAuthority::get_balance_destination(const TableIdentifier &table,
                   const RangeSpec &range, String &location) {
-  ScopedLock lock(m_mutex);
+  bool modified = false;
+  {
+    ScopedLock lock(m_mutex);
 
-  RangeMoveSpecPtr move_spec = new RangeMoveSpec();
+    RangeMoveSpecPtr move_spec = new RangeMoveSpec();
 
-  move_spec->table = table;
-  move_spec->range = range;
+    move_spec->table = table;
+    move_spec->range = range;
 
-  MoveSetT::iterator iter;
+    MoveSetT::iterator iter;
 
-  if ((iter = m_current_set.find(move_spec)) != m_current_set.end())
-    location = (*iter)->dest_location;
-  else {
-    if (!Utility::next_available_server(m_context, location))
-      return false;
-    move_spec->dest_location = location;
-    m_current_set.insert(move_spec);
-    m_mml_writer->record_state(this);
+    if ((iter = m_current_set.find(move_spec)) != m_current_set.end())
+      location = (*iter)->dest_location;
+    else {
+      if (!Utility::next_available_server(m_context, location))
+        return false;
+      move_spec->dest_location = location;
+      m_current_set.insert(move_spec);
+      modified = true;
+    }
   }
+
+  if (modified)
+    m_mml_writer->record_state(this);
 
   return true;
 }
 
-bool
+void
 BalancePlanAuthority::balance_move_complete(const TableIdentifier &table,
-                const RangeSpec &range, int32_t error) {
+                                            const RangeSpec &range) {
   ScopedLock lock(m_mutex);
   RangeMoveSpecPtr move_spec = new RangeMoveSpec();
   std::stringstream sout;
@@ -496,9 +576,8 @@ BalancePlanAuthority::balance_move_complete(const TableIdentifier &table,
   if ((iter = m_current_set.find(move_spec)) != m_current_set.end()) {
     // the 'complete' and 'error' fields currently are not in use
     (*iter)->complete = true;
-    (*iter)->error = error;
+    (*iter)->error = 0;
     m_current_set.erase(iter);
   }
 
-  return true;
 }

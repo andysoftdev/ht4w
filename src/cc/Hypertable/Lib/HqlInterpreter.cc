@@ -290,6 +290,16 @@ cmd_alter_table(NamespacePtr &ns, ParserState &state,
 }
 
 void
+cmd_compact(NamespacePtr &ns, ParserState &state,
+                 HqlInterpreter::Callback &cb) {
+  if (!ns)
+    HT_THROW(Error::BAD_NAMESPACE, "Null namespace");
+  ns->compact(state.table_name, state.str, state.flags);
+  cb.on_finish();
+}
+
+
+void
 cmd_describe_table(NamespacePtr &ns, ParserState &state,
                    HqlInterpreter::Callback &cb) {
   if (!ns)
@@ -487,7 +497,10 @@ cmd_dump_table(NamespacePtr &ns,
     else
       fout.push(boost::iostreams::file_descriptor_sink(state.scan.outfile));
 
-    fout << "#timestamp\trow\tcolumn\tvalue\n";
+    if (state.scan.display_timestamps)
+      fout << "#timestamp\trow\tcolumn\tvalue\n";
+    else
+      fout << "#row\tcolumn\tvalue\n";
   }
   else if (!outf) {
     cb.on_dump(*dumper.get());
@@ -517,7 +530,8 @@ cmd_dump_table(NamespacePtr &ns,
       cb.total_values_size += cell.value_len;
     }
 
-    fout << cell.timestamp << "\t";
+    if (state.scan.display_timestamps)
+      fout << cell.timestamp << "\t";
 
     if (state.escape)
       row_escaper.escape(cell.row_key, strlen(cell.row_key),
@@ -942,6 +956,8 @@ void HqlInterpreter::execute(const String &line, Callback &cb) {
       cmd_get_listing(m_namespace, state, cb);                     break;
     case COMMAND_ALTER_TABLE:
       cmd_alter_table(m_namespace, state, cb);                     break;
+    case COMMAND_COMPACT:
+      cmd_compact(m_namespace, state, cb);                         break;
     case COMMAND_DROP_TABLE:
       cmd_drop_table(m_namespace, state, cb);                      break;
     case COMMAND_RENAME_TABLE:

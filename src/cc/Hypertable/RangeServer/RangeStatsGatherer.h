@@ -39,7 +39,7 @@ namespace Hypertable {
 
     virtual ~RangeStatsGatherer() { }
 
-    void fetch(RangeDataVector &range_data, TableMutator *mutator=0, int *log_generation=0);
+    void fetch(RangeDataVector &range_data, TableMutator *mutator=0, StringSet *remove_ok_logs=0);
 
   private:
     TableInfoMapPtr m_table_info_map;

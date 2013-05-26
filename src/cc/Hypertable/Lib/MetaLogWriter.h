@@ -42,10 +42,9 @@ namespace Hypertable {
       ~Writer();
       void close();
       void record_state(Entity *entity);
-      void record_state(const std::vector<Entity *> &entities);
-      void record_state(const std::vector<EntityPtr> &entities);
+      void record_state(std::vector<Entity *> &entities);
       void record_removal(Entity *entity);
-      void record_removal(const std::vector<Entity *> &entities);
+      void record_removal(std::vector<Entity *> &entities);
 
       static bool skip_recover_entry;
 

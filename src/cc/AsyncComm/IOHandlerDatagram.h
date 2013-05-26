@@ -97,7 +97,7 @@ namespace Hypertable {
      * This method is called by its reactor thread to handle I/O events.
      * It handles <code>POLLOUT</code> events with a call to
      * #handle_write_readiness.  If #handle_write_readiness returns <i>true</i>
-     * the handler is disconnected with a call to #handle_disconnect and
+     * the handler is disconnected with a call to handle_disconnect() and
      * <i>true</i> is returned.  <code>POLLIN</code> events are handled in
      * a loop by reading messages off the socket in their entirety with a call
      * to <code>recvfrom</code>.  The message buffer is 65536 bytes in size
@@ -113,7 +113,7 @@ namespace Hypertable {
      * @return <i>false</i> on success, <i>true</i> if error encountered and
      * handler was decomissioned
      */
-    virtual bool handle_event(struct pollfd *event, time_t arival_time=0);
+    virtual bool handle_event(struct pollfd *event, time_t arrival_time=0);
 
 #else
 
@@ -126,7 +126,7 @@ namespace Hypertable {
      * This method is called by its reactor thread to handle I/O events.
      * It handles <code>EVFILT_WRITE</code> events with a call to
      * #handle_write_readiness.  If #handle_write_readiness returns <i>true</i>
-     * the handler is disconnected with a call to #handle_disconnect and
+     * the handler is disconnected with a call to handle_disconnect() and
      * <i>true</i> is returned.  <code>EVFILT_READ</code> events are handled in
      * a loop by reading messages off the socket in their entirety with a call
      * to <code>recvfrom</code>.  The message buffer is 65536 bytes in size
@@ -142,13 +142,13 @@ namespace Hypertable {
      * @return <i>false</i> on success, <i>true</i> if error encountered and
      * handler was decomissioned
      */
-    virtual bool handle_event(struct kevent *event, time_t arival_time=0);
+    virtual bool handle_event(struct kevent *event, time_t arrival_time=0);
 #elif defined(__linux__)
     /** Handle <code>epoll()</code> interface events.
      * This method is called by its reactor thread to handle I/O events.
      * It handles <code>EPOLLOUT</code> events with a call to
      * #handle_write_readiness.  If #handle_write_readiness returns <i>true</i>
-     * the handler is disconnected with a call to #handle_disconnect and
+     * the handler is disconnected with a call to handle_disconnect() and
      * <i>true</i> is returned.  <code>EPOLLIN</code> events are handled in
      * a loop by reading messages off the socket in their entirety with a call
      * to <code>recvfrom</code>.  The message buffer is 65536 bytes in size
@@ -164,13 +164,13 @@ namespace Hypertable {
      * @return <i>false</i> on success, <i>true</i> if error encountered and
      * handler was decomissioned
      */
-    virtual bool handle_event(struct epoll_event *event, time_t arival_time=0);
+    virtual bool handle_event(struct epoll_event *event, time_t arrival_time=0);
 #elif defined(__sun__)
     /** Handle <code>port_associate()</code> interface events.
      * This method is called by its reactor thread to handle I/O events.
      * It handles <code>POLLOUT</code> events with a call to
      * #handle_write_readiness.  If #handle_write_readiness returns <i>true</i>
-     * the handler is disconnected with a call to #handle_disconnect and
+     * the handler is disconnected with a call to handle_disconnect() and
      * <i>true</i> is returned.  <code>POLLIN</code> events are handled in
      * a loop by reading messages off the socket in their entirety with a call
      * to <code>recvfrom</code>.  The message buffer is 65536 bytes in size
@@ -188,7 +188,7 @@ namespace Hypertable {
      * @return <i>false</i> on success, <i>true</i> if error encountered and
      * handler was decomissioned
      */
-    virtual bool handle_event(port_event_t *event, time_t arival_time=0);
+    virtual bool handle_event(port_event_t *event, time_t arrival_time=0);
 #elif defined(_WIN32)
     virtual bool handle_event(IOOP *event, time_t arival_time=0);
 #else

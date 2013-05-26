@@ -96,9 +96,6 @@ void OperationMoveRange::execute() {
           (Lld)header.id, m_range_name.c_str(),
           OperationState::get_text(state));
 
-  HT_MAYBE_FAIL_X("move-range-BALANCE-a",
-          m_context->get_balance_plan_authority()->has_plan_moves());
-
   switch (state) {
 
   case OperationState::INITIAL:
@@ -156,9 +153,9 @@ void OperationMoveRange::execute() {
           if (!Utility::table_exists(m_context, m_table.id)) {
             HT_WARNF("Aborting MoveRange %s because table no longer exists",
                     m_range_name.c_str());
-            bpa->balance_move_complete(m_table, m_range, Error::TABLE_NOT_FOUND);
+            bpa->balance_move_complete(m_table, m_range);
             remove_approval_add(0x03);
-            complete_ok();
+            complete_ok(bpa);
             return;
           }
           // server might be down - go back to the initial state and pick a
@@ -170,9 +167,9 @@ void OperationMoveRange::execute() {
           set_state(OperationState::INITIAL);
           return;
         }
-        bpa->balance_move_complete(m_table, m_range, e.code());
+        bpa->balance_move_complete(m_table, m_range);
         remove_approval_add(0x03);
-        complete_ok();
+        complete_ok(bpa);
         return;
       }
     }
@@ -222,7 +219,7 @@ void OperationMoveRange::execute() {
     }
     bpa->balance_move_complete(m_table, m_range);
     remove_approval_add(0x02);
-    complete_ok();
+    complete_ok(bpa);
     break;
 
   case OperationState::COMPLETE:
