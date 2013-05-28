@@ -51,7 +51,6 @@ namespace Hypertable {
     private:
       void write_header();
       void purge_old_log_files(std::vector<int32_t> &file_ids, size_t keep_count);
-      void record_state(std::vector<EntityPtr> &entities);
 
       Mutex m_mutex;
       FilesystemPtr m_fs;
