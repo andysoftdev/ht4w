@@ -388,6 +388,13 @@ function container_test(logfile, testName) {
     return run_target(logfile, testName, "--components smalldeque smallvector bigdeque bigvector");
 }
 
+function crontab_test(logfile, testName) {
+    prepare_target(testName, ["crontab_test.golden"]);
+    var status = run_target(logfile, testName);
+    files_delete(["crontab_test*"]);
+    return status;
+}
+
 function failure_inducer_test(logfile, testName) {
     prepare_target(testName, ["failure_inducer_test.golden"]);
     var status = run_target(logfile, testName);
@@ -507,6 +514,11 @@ function init_test(logfile, testName) {
     }
     clean_target();
     return status;
+}
+
+function key_spec_test(logfile, testName) {
+    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
+    return run_target(logfile, testName, "34587");
 }
 
 function large_insert_test(logfile, testName) {
@@ -687,6 +699,7 @@ all_tests.add("comm_timer_test", comm_timer_test);
 all_tests.add("commit_log_test", commit_log_test);
 all_tests.add("compressor_test", compressor_test);
 all_tests.add("container_test", container_test);
+all_tests.add("crontab_test", crontab_test);
 all_tests.add("escape_test", run_target);
 all_tests.add("escaper_test", run_target);
 all_tests.add("exception_test", run_target);
@@ -703,6 +716,7 @@ all_tests.add("hypertable_test", hypertable_test);
 all_tests.add("indices_test", indices_test);
 all_tests.add("inetaddr_test", run_target);
 all_tests.add("init_test", init_test);
+all_tests.add("key_spec_test", key_spec_test);
 all_tests.add("large_insert_test", large_insert_test);
 all_tests.add("load_datasource_test", load_datasource_test);
 all_tests.add("location_cache_test", location_cache_test);

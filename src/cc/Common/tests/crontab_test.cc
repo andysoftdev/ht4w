@@ -82,6 +82,12 @@ namespace {
 }
 
 int main(int argc, char *argv[]) {
+#ifdef _WIN32
+  ofstream file;
+  file.open("crontab_test");
+  streambuf* sbuf = cout.rdbuf();
+  cout.rdbuf(file.rdbuf());
+#endif
   CrontabPtr crontab;
 
   for (size_t i=0; specs[i]; i++) {
@@ -181,6 +187,13 @@ int main(int argc, char *argv[]) {
   tmval.tm_hour = 12;
   tmval.tm_mday = 3;
   display_next_event(crontab, &tmval);
+
+#ifdef _WIN32
+  file.close();
+  String command = (String)"fc crontab_test crontab_test.golden";
+  if (system(command.c_str()))
+    return 1;
+#endif
 
   return 0;
 }

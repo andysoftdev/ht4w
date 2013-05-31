@@ -59,9 +59,11 @@ namespace {
 
 
 int main(int argc, char **argv) {
+#ifndef _WIN32
   char *install_dir = getenv("INSTALL_DIR");
 
   HT_ASSERT(install_dir);
+#endif
 
   if (argc > 2 ||
       (argc == 2 && (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-?"))))
@@ -69,7 +71,11 @@ int main(int argc, char **argv) {
 
 
   try {
+#ifndef _WIN32
     Client *hypertable = new Client(install_dir);
+#else
+    Client *hypertable = new Client(argv[0], "./hypertable.cfg");
+#endif
     NamespacePtr ns = hypertable->open_namespace("/");
 
     TablePtr table;
