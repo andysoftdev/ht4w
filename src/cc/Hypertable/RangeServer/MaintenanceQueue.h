@@ -41,6 +41,8 @@
 
 #include "MaintenanceTask.h"
 #include "MaintenanceTaskMemoryPurge.h"
+#include "MaintenanceTaskCompaction.h"
+#include "MaintenanceTaskDeferredInitialization.h"
 
 namespace Hypertable {
 
@@ -165,8 +167,13 @@ namespace Hypertable {
 		m_state.inflight--;
                 continue;
               }
-              HT_WARNF("Maintenance Task '%s' failed, dropping task ...",
-                       task->description().c_str());
+              if (dynamic_cast<MaintenanceTaskCompaction *>(task) ||
+                  dynamic_cast<MaintenanceTaskDeferredInitialization *>(task))
+                HT_INFOF("Maintenance Task '%s' failed, dropping task ...",
+                         task->description().c_str());
+              else
+                HT_WARNF("Maintenance Task '%s' failed, dropping task ...",
+                         task->description().c_str());
             }
           }
 
