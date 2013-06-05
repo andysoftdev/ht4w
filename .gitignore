@@ -148,7 +148,7 @@ run/monitoring/*stats.txt
 /deps/boost/bjam.exe
 /deps/boost/bjam.log
 /deps/boost/boost/*
-/deps/boost/boost-build.jam
+/deps/boost/*.jam
 /deps/boost/boost.css
 /deps/boost/boost.png
 /deps/boost/bootstrap.bat
