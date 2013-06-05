@@ -34,8 +34,8 @@
 
 #include "CellCacheAllocator.h"
 
-#define HT_CELLCACHE_ARENA_USED
-#define HT_CELLCACHE_ARENA_TOTAL
+//#define HT_CELLCACHE_ARENA_USED
+//#define HT_CELLCACHE_ARENA_TOTAL
 
 namespace Hypertable {
 
