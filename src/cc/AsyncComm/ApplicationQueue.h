@@ -373,6 +373,7 @@ namespace Hypertable {
      * completion of the shutdown.
      */
     void shutdown() {
+      ScopedLock lock(m_state.mutex);
       m_state.shutdown = true;
       m_state.cond.notify_all();
     }
@@ -436,8 +437,9 @@ namespace Hypertable {
 
       HT_ASSERT(app_handler);
 
+      ScopedLock lock(m_state.mutex);
+
       if (group_id != 0) {
-        ScopedLock ulock(m_state.mutex);
         if ((uiter = m_state.group_state_map.find(group_id))
             != m_state.group_state_map.end()) {
           rec->group_state = (*uiter).second;
@@ -450,19 +452,17 @@ namespace Hypertable {
         }
       }
 
-      {
-        ScopedLock lock(m_state.mutex);
-        if (app_handler->is_urgent()) {
-          m_state.urgent_queue.push_back(rec);
-          if (m_dynamic_threads && m_state.threads_available == 0) {
-            Worker worker(m_state, true);
-            Thread t(worker);
-          }
+      if (app_handler->is_urgent()) {
+        m_state.urgent_queue.push_back(rec);
+        if (m_dynamic_threads && m_state.threads_available == 0) {
+          Worker worker(m_state, true);
+          Thread t(worker);
+          return;
         }
-        else
-          m_state.queue.push_back(rec);
-        m_state.cond.notify_one();
       }
+      else
+        m_state.queue.push_back(rec);
+      m_state.cond.notify_one();
     }
 
     /** Adds a request (application request handler) to the application queue.
