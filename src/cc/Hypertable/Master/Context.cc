@@ -99,6 +99,8 @@ void Context::replay_status(EventPtr &event) {
   String location  = Serialization::decode_vstr(&decode_ptr, &decode_remain);
   int plan_generation = Serialization::decode_i32(&decode_ptr, &decode_remain);
 
+  HT_ASSERT(event->proxy);
+
   HT_INFOF("replay_status(id=%lld, %s, plan_generation=%d) from %s",
            (Lld)id, location.c_str(), plan_generation, event->proxy);
 
@@ -121,12 +123,16 @@ void Context::replay_complete(EventPtr &event) {
   int32_t error    = Serialization::decode_i32(&decode_ptr, &decode_remain);
   String error_msg = Serialization::decode_vstr(&decode_ptr, &decode_remain);
 
-  HT_INFOF("replay_complete(id=%lld, %s, plan_generation=%d) = %s",
-           (Lld)id, location.c_str(), plan_generation, Error::get_text(error));
+  String proxy = event->proxy ? event->proxy : "?";
+
+  HT_INFOF("from %s replay_complete(id=%lld, %s, plan_generation=%d) = %s",
+           proxy.c_str(), (Lld)id, location.c_str(), plan_generation,
+           Error::get_text(error));
 
   RecoveryStepFuturePtr future = m_recovery_state.get_replay_future(id);
 
   if (future) {
+    HT_ASSERT(event->proxy);
     if (error == Error::OK)
       future->success(event->proxy, plan_generation);
     else
@@ -153,6 +159,7 @@ void Context::prepare_complete(EventPtr &event) {
   RecoveryStepFuturePtr future = m_recovery_state.get_prepare_future(id);
 
   if (future) {
+    HT_ASSERT(event->proxy);
     if (error == Error::OK)
       future->success(event->proxy, plan_generation);
     else
@@ -178,6 +185,7 @@ void Context::commit_complete(EventPtr &event) {
   RecoveryStepFuturePtr future = m_recovery_state.get_commit_future(id);
 
   if (future) {
+    HT_ASSERT(event->proxy);
     if (error == Error::OK)
       future->success(event->proxy, plan_generation);
     else

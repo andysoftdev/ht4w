@@ -701,12 +701,21 @@ void RangeServer::local_recover() {
                    (range_entity->get_state() & RangeState::PHANTOM) != 0) {
             // If log was created originally for the phantom range, remove it
             String transfer_log = range_entity->get_transfer_log();
-            if (strstr(transfer_log.c_str(), "/phantom-") != 0)
-              Global::log_dfs->rmdir(transfer_log);
+            if (strstr(transfer_log.c_str(), "/phantom-") != 0) {
+	      try {
+		Global::log_dfs->rmdir(transfer_log);
+	      }
+	      catch (Exception &e) {
+		HT_WARNF("Problem removing phantom log %s - %s", transfer_log.c_str(),
+			 Error::get_text(e.code()));
+	      }
+	    }
             continue;
           }
-          else if (dynamic_cast<MetaLogEntityRemoveOkLogs *>(entity.get()))
+          else if (dynamic_cast<MetaLogEntityRemoveOkLogs *>(entity.get())) {
+            ScopedLock glock(Global::mutex);
             Global::remove_ok_logs = (MetaLogEntityRemoveOkLogs *)entity.get();
+          }
           stripped_entities.push_back(entity);
         }
       }
@@ -974,7 +983,10 @@ void RangeServer::local_recover() {
     }
 
     if (!Global::remove_ok_logs) {
-      Global::remove_ok_logs = new MetaLogEntityRemoveOkLogs(transfer_logs);
+      {
+        ScopedLock glock(Global::mutex);
+        Global::remove_ok_logs = new MetaLogEntityRemoveOkLogs(transfer_logs);
+      }
       Global::rsml_writer->record_state(Global::remove_ok_logs.get());
     }
 
@@ -1048,6 +1060,12 @@ RangeServer::replay_load_range(TableInfoMap &replay_map,
 
   }
   catch (Hypertable::Exception &e) {
+    if (e.code() == Error::RANGESERVER_TABLE_NOT_FOUND && !table.is_system()) {
+      HT_WARNF("Skipping recovery of %s[%s..%s] - %s",
+               table.id, range_spec.start_row, range_spec.end_row,
+               e.what());
+      return;
+    }
     HT_FATAL_OUT << "Problem loading range during replay - " << e << HT_END;
   }
 }
@@ -3957,8 +3975,8 @@ void RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_id,
            " num_ranges=%d", (Lld)op_id, location.c_str(), plan_generation,
            (int)specs.size());
 
-  if (!m_system_replay_finished) {
-    if (!wait_for_system_recovery_finish(cb->get_event()->expiration_time()))
+  if (!m_replay_finished) {
+    if (!wait_for_recovery_finish(cb->get_event()->expiration_time()))
       return;
   }
 

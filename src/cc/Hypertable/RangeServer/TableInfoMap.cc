@@ -63,8 +63,11 @@ void TableInfoMap::get(const String &table_id, TableInfoPtr &info) {
 
   SchemaPtr schema;
 
-  if (m_schema_cache)
-    m_schema_cache->get(table_id, schema);
+  if (m_schema_cache) {
+    if (!m_schema_cache->get(table_id, schema))
+      HT_THROWF(Error::RANGESERVER_TABLE_NOT_FOUND,
+                "Unable to locate schema for table %s", table_id.c_str());
+  }
   else {
     DynamicBuffer valbuf;
     String tablefile = Global::toplevel_dir + "/tables/" + table_id;
@@ -189,8 +192,11 @@ void TableInfoMap::get_range_data(RangeDataVector &range_data, StringSet *remove
   for (InfoMap::iterator iter = m_map.begin(); iter != m_map.end(); iter++)
     (*iter).second->get_range_data(range_data);
 
-  if (remove_ok_logs)
-    Global::remove_ok_logs->get(*remove_ok_logs);
+  {
+    ScopedLock lock2(Global::mutex);
+    if (Global::remove_ok_logs && remove_ok_logs)
+      Global::remove_ok_logs->get(*remove_ok_logs);
+  }
     
 }
 

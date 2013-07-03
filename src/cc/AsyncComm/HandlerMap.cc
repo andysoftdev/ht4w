@@ -253,13 +253,14 @@ bool HandlerMap::destroy_ok(IOHandler *handler) {
   return is_decomissioned && handler->reference_count() == 0;
 }
 
-bool HandlerMap::translate_proxy_address(const CommAddress &proxy_addr, CommAddress &addr) {
+bool HandlerMap::translate_proxy_address(const CommAddress &proxy_addr, InetAddr *addr) {
   InetAddr inet_addr;
   String hostname;
   HT_ASSERT(proxy_addr.is_proxy());
   if (!m_proxy_map.get_mapping(proxy_addr.proxy, hostname, inet_addr))
     return false;
-  addr.set_inet(inet_addr);
+  if (addr)
+    *addr = inet_addr;
   return true;
 }
 
@@ -287,12 +288,6 @@ int HandlerMap::add_proxy(const String &proxy, const String &hostname, const Ine
   ProxyMapT new_map, invalidated_map;
 
   m_proxy_map.update_mapping(proxy, hostname, addr, invalidated_map, new_map);
-
-  foreach_ht(const ProxyMapT::value_type &v, invalidated_map) {
-    IOHandler *handler = lookup_data_handler(v.second.addr);
-    if (handler)
-      handler->set_proxy("");
-  }
 
   foreach_ht(const ProxyMapT::value_type &v, new_map) {
     IOHandler *handler = lookup_data_handler(v.second.addr);
@@ -339,8 +334,6 @@ void HandlerMap::update_proxy_map(const char *message, size_t message_len) {
     if (handler) {
       if (v.second.hostname == "--DELETED--")
         decomission_handler_unlocked(handler);
-      else
-        handler->set_proxy("");
     }
   }
 
@@ -350,6 +343,8 @@ void HandlerMap::update_proxy_map(const char *message, size_t message_len) {
       handler->set_proxy(v.first);
   }
 
+  //HT_INFOF("Updated proxy map = %s", m_proxy_map.to_str().c_str());
+  
   m_proxies_loaded = true;
   m_cond_proxy.notify_all();
 }

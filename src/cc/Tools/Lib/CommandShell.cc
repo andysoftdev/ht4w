@@ -207,7 +207,7 @@ void CommandShell::add_options(PropertiesDesc &desc) {
     ("test-mode", "Don't display anything that might change from run to run "
         "(e.g. timing statistics)")
     ("timestamp-format", Property::str(), "Output format for timestamp. "
-        "Currently the only formats are 'default' and 'usecs'")
+        "Currently the only formats are 'default' and 'nanoseconds'")
     ("notification-address", Property::str(), "[<host>:]<port> "
         "Send notification datagram to this address after each command.")
     ("execute,e", Property::str(), "Execute specified commands.")
@@ -268,8 +268,10 @@ int CommandShell::run() {
     using_history();
 #endif
 
-  trim_if(m_namespace, boost::is_any_of(" \t\n\r;"));
-  if (m_namespace.size()) {
+  if (!m_program_name.compare("hypertable")) {
+    trim_if(m_namespace, boost::is_any_of(" \t\n\r;"));
+    if (m_namespace.empty())
+      m_namespace = "/";
     use_ns="USE \""+m_namespace+"\";";
     line=use_ns.c_str();
     goto process_line;
