@@ -2,9 +2,9 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <!-- MsiProductVersion and MsiProductCode passed by ht4w.buildproj -->
-    <MsiProductVersion>0.9.7.7</MsiProductVersion>
-    <MsiProductCode Condition="'$(Platform)' == 'x86'">68BEAC5E-5CD4-49B5-949F-27D5613109FA</MsiProductCode>
-    <MsiProductCode Condition="'$(Platform)' == 'x64'">E25FA68B-B28D-4CB4-A0BB-8B29E2235094</MsiProductCode>
+    <MsiProductVersion>0.9.7.8</MsiProductVersion>
+    <MsiProductCode Condition="'$(Platform)' == 'x86'">28FB5C94-6F88-4C05-9467-1EE4678CC898</MsiProductCode>
+    <MsiProductCode Condition="'$(Platform)' == 'x64'">E0C5CCA9-253F-42FB-A0C6-A93C2F234A62</MsiProductCode>
 
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x86'">ProgramFilesFolder</MsiProgramFilesFolder>
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x64'">ProgramFiles64Folder</MsiProgramFilesFolder>
