@@ -14,6 +14,7 @@
 		<MasterServers_x64>dist\ht4w-$(Version)-win-x64.zip</MasterServers_x64>
 		<MasterTools_x64>dist\ht4w-tools-$(Version)-win-x64.zip</MasterTools_x64>
 		<MasterMsi_x64>dist\ht4w-$(Version)-win-x64.msi</MasterMsi_x64>
+		<MasterLibs>dist\ht4w-libs-$(Version)-win.zip</MasterLibs>
 	</PropertyGroup>
 
 	<!-- Check for MSBuildCommunityTasks -->
@@ -39,6 +40,12 @@
 		<HasMSBuildWiXTasks>false</HasMSBuildWiXTasks>
 		<HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
 		<HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
+	</PropertyGroup>
+
+	<!-- Check for ant -->
+	<PropertyGroup>
+		<HasAnt>false</HasAnt>
+		<HasAnt Condition="Exists('$(ANT_HOME)\bin\ant.cmd')">true</HasAnt>
 	</PropertyGroup>
 
 	<!-- Make configuration Debug or Release -->
@@ -75,7 +82,7 @@
 
 	<!-- Build and make master -->
 	<Target Name="Make"
-			DependsOnTargets="CleanMaster;Build;MakeMaster;MakeMsi">
+			DependsOnTargets="CleanMaster;Build;BuildLibs;MakeMaster;MakeMsi">
 	</Target>
 
 	<!-- Build -->
@@ -85,6 +92,14 @@
 			Targets="Build"
 			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform)"
 			ContinueOnError="false" />
+	</Target>
+
+	<!-- BuildLibs -->
+	<Target Name="BuildLibs">
+		<Exec
+			Command='"$(ANT_HOME)"\bin\ant dist -Dversion=$(Version)'
+			ContinueOnError="false"
+			Condition="$(HasAnt) == true" />
 	</Target>
 
 	<!-- Make master -->
@@ -105,6 +120,10 @@
 
 		<ItemGroup>
 			<MasterToolsFiles_x64 Include="dist\x64\Release\*.exe;dist\x64\Release\conf\*.*" Exclude="dist\x64\Release\Hypertable.*.exe;dist\x64\Release\Hyperspace.Master.exe;dist\x64\Release\hypertable.exe" />
+		</ItemGroup>
+
+		<ItemGroup>
+			<MasterLibsFiles Include="dist\libs\java\*.*" />
 		</ItemGroup>
 
 		<Zip
@@ -128,6 +147,12 @@
 			ZipFileName="$(MasterTools_x64)"
 			WorkingDirectory="dist\x64\Release\"
 			Condition="$(Is64Bit) == true" />
+
+		<Zip
+			Files="@(MasterLibsFiles)" 
+			ZipFileName="$(MasterLibs)"
+			WorkingDirectory="dist\libs\"
+			Condition="$(HasAnt) == true And Exists('dist\libs\java\hypertable-$(Version).jar')" />
 	</Target>
 	
 	<!-- Make msi -->
@@ -162,6 +187,10 @@
 			Targets="Clean"
 			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform)"
 			ContinueOnError="false" />
+		<Exec
+			Command='"$(ANT_HOME)"\bin\ant clean -Dversion=$(Version)'
+			ContinueOnError="false"
+			Condition="$(HasAnt) == true" />
 	</Target>
 
 	<!-- Deletes the master files -->
@@ -174,6 +203,8 @@
 			Files="$(MasterTools_x86)" />
 		<Delete
 			Files="$(MasterTools_x64)" />
+		<Delete
+			Files="$(MasterLibs)" />
 		<Delete
 			Files="$(MasterMsi_x86)" />
 		<Delete

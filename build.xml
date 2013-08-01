@@ -1,0 +1,149 @@
+<!-- Hypertable -->
+<project name="hypertable" default="compile" basedir="./">
+
+  <property name="Name" value="Hypertable"/>
+  <property name="name" value="hypertable"/>
+  <property name="final.name" value="${name}-${version}"/>
+  <property name="examples.name" value="${name}-${version}-examples"/>
+  <property name="year" value="2013"/>
+
+  <property name="thriftsrc.dir" value="${basedir}/src/java/ThriftClient"/>
+  <property name="gensrc.dir" value="${basedir}/src/gen-java"/>
+  <property name="src.lib.dir" value="${basedir}/lib"/>
+  <property name="examples.dir" value="${basedir}/examples/java"/>
+
+  <property name="contrib.dir" value="${basedir}/contrib"/>
+  <property name="lib.dir" value="${basedir}/lib"/>
+
+  <property name="build.dir" value="${basedir}/build/java"/>
+  <property name="build.classes" value="${build.dir}/classes"/>
+
+  <property name="dist.dir" value="${basedir}/dist/libs/java"/>
+
+  <!-- javadoc -->
+  <property name="doc.dir" location="doc" />
+
+  <!-- test directory -->
+  <property name="test.dir" location="test" />
+
+  <path id="project.classpath">
+    <pathelement location="${build.classes}" />
+    <fileset dir="${src.lib.dir}">
+      <!-- Dont prefer thrift jar included with hive -->
+      <include name="libthrift-*.jar"/>
+    </fileset>
+    <fileset dir="${src.lib.dir}">
+      <include name="commons-cli-*.jar"/>
+      <include name="commons-logging-*.jar"/>
+      <exclude name="hadoop-*.jar"/>
+      <exclude name="hbase-*.jar"/>
+      <exclude name="hive-*.jar"/>
+      <include name="junit-*.jar"/>
+      <include name="log4j-*.jar"/>
+      <include name="slf4j-*.jar"/>
+      <exclude name="zookeeper-*.jar"/>
+      <exclude name="hypertable-*.jar"/>
+    </fileset>
+  </path>
+
+
+  <!-- convert project.classpath to project.mf.classpath (the string needed for the manifest task) -->
+  <pathconvert property="project.mf.classpath" pathsep=" ">
+    <path refid="project.classpath" />
+    <flattenmapper />
+  </pathconvert>
+
+
+  <!-- Default target: usage.  Prints out instructions. -->
+  <target name="usage" description="Prints out instructions">
+    <echo message="Welcome to the Hypertable project!" />
+    <echo message="And for developers:"/>
+    <echo message="Use 'ant clean' to clean compiled files." />
+    <echo message="Use 'ant compile' to compile the source code." />
+    <echo message="Use 'ant jar' to build a release tarball." />
+    <echo message="Use 'ant test' to run unit tests." />
+    <echo message= "Classpath ${project.mf.classpath}" />
+  </target>
+
+
+  <target name="prepare">
+    <mkdir dir="${build.classes}"/>
+  </target>
+
+  <target name="compile" depends="prepare" description="Standard compile">
+    <javac srcdir='${gensrc.dir}' destdir='${build.classes}'
+           deprecation='yes' debug='true' includeantruntime='false'>
+      <classpath refid='project.classpath'/>
+    </javac>
+    <javac srcdir='${thriftsrc.dir}' destdir='${build.classes}'
+           deprecation='yes' debug='true' includeantruntime='false'>
+      <classpath refid='project.classpath'/>
+    </javac>
+    <javac srcdir="${examples.dir}" excludes="**/hadoop/**,**/PerformanceTest/**"
+           destdir="${build.classes}" deprecation="yes"
+           debug="true" includeantruntime='false'>
+      <classpath refid="project.classpath"/>
+    </javac>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Make hypertable.jar                                                -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="jar" depends="clean, compile">
+    <jar destfile="${build.dir}/${final.name}.jar" basedir="${build.classes}"
+         excludes="**/${examples.name}.jar,**/examples/**,**/*Test.class">
+      <manifest>
+        <section name="org/hypertable">
+          <attribute name="Implementation-Title" value="Hypertable"/>
+          <attribute name="Implementation-Version" value="${version}"/>
+        </section>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+  </target>
+
+  <target name="dist" depends="jar">
+    <mkdir dir="${dist.dir}"/>
+    <copy file="${build.dir}/${final.name}.jar" todir="${dist.dir}"/>
+    <copy todir="${dist.dir}">
+        <fileset dir="${lib.dir}">
+            <include name="libthrift-*.jar"/>
+            <include name="log4j-*.jar"/>
+            <include name="slf4j-*.jar"/>
+        </fileset>
+    </copy>
+  </target>
+
+  <target name="test" depends="compile" description="Execute tests">
+    <junit showoutput="true" haltonfailure="true">
+      <classpath refid="project.classpath" />
+      <formatter type="brief" usefile="false" />
+      <batchtest fork="true">
+        <fileset dir="${build.classes}" includes="**/*Test.class" />
+      </batchtest>
+    </junit>
+  </target>
+
+  <target name="examples" depends="jar" description="Example programs">
+    <mkdir dir="${build.classes}/lib" />
+    <copy todir="${build.classes}/lib">
+      <fileset dir="${src.lib.dir}" includes="*.jar" excludes="hypertable*.jar"/>
+      <fileset dir="${build.dir}" includes="${final.name}.jar"/>
+    </copy>
+    <jar destfile="${build.dir}/${examples.name}.jar" basedir="${build.classes}" includes="**/examples/**/*.class" excludes="**/${examples.name}.jar">
+      <manifest>
+        <section name="org/hypertable">
+          <attribute name="Implementation-Title" value="Hypertable"/>
+          <attribute name="Implementation-Version" value="${version}"/>
+        </section>
+      </manifest>
+    </jar>
+  </target>
+
+</project>
