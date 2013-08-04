@@ -71,15 +71,15 @@
   </target>
 
   <target name="compile" depends="prepare" description="Standard compile">
-    <javac srcdir='${gensrc.dir}' destdir='${build.classes}'
+    <javac target="1.5" srcdir='${gensrc.dir}' destdir='${build.classes}'
            deprecation='yes' debug='true' includeantruntime='false'>
       <classpath refid='project.classpath'/>
     </javac>
-    <javac srcdir='${thriftsrc.dir}' destdir='${build.classes}'
+    <javac target="1.5" srcdir='${thriftsrc.dir}' destdir='${build.classes}'
            deprecation='yes' debug='true' includeantruntime='false'>
       <classpath refid='project.classpath'/>
     </javac>
-    <javac srcdir="${examples.dir}" excludes="**/hadoop/**,**/PerformanceTest/**"
+    <javac target="1.5" srcdir="${examples.dir}" excludes="**/hadoop/**,**/PerformanceTest/**"
            destdir="${build.classes}" deprecation="yes"
            debug="true" includeantruntime='false'>
       <classpath refid="project.classpath"/>
