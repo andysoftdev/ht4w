@@ -75,6 +75,7 @@
     <ClCompile Include="Schema.cc" />
     <ClCompile Include="StatsRangeServer.cc" />
     <ClCompile Include="StatsTable.cc" />
+    <ClCompile Include="SystemVariable.cc" />
     <ClCompile Include="Table.cc" />
     <ClCompile Include="TableCache.cc" />
     <ClCompile Include="TableCallback.cc" />
@@ -162,6 +163,7 @@
     <ClInclude Include="SerializedKey.h" />
     <ClInclude Include="StatsRangeServer.h" />
     <ClInclude Include="StatsTable.h" />
+    <ClInclude Include="SystemVariable.h" />
     <ClInclude Include="Table.h" />
     <ClInclude Include="TableCache.h" />
     <ClInclude Include="TableCallback.h" />

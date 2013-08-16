@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,13 @@
  * 02110-1301, USA.
  */
 
+/** @file
+ * Definitions for RequestHandlerGetStatistics.
+ * This file contains the definition for RequestHandlerGetStatistics, a
+ * class for de-marshalling request parameters and issuing a
+ * RangeServer::get_statistics() request.
+ */
+
 #include "Common/Compat.h"
 #include "AsyncComm/ResponseCallback.h"
 
@@ -35,8 +42,14 @@ using namespace Hypertable;
 void RequestHandlerGetStatistics::run() {
   ResponseCallbackGetStatistics cb(m_comm, m_event);
 
+  const uint8_t *decode_ptr = m_event->payload;
+  size_t decode_remain = m_event->payload_len;
+
   try {
-    m_range_server->get_statistics(&cb);
+    std::vector<SystemVariable::Spec> specs;
+    uint64_t generation = decode_i64(&decode_ptr, &decode_remain);
+    SystemVariable::decode_specs(specs, &decode_ptr, &decode_remain);
+    m_range_server->get_statistics(&cb, specs, generation);
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

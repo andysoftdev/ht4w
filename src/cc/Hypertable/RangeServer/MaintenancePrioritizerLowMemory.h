@@ -28,18 +28,18 @@ namespace Hypertable {
 
   class MaintenancePrioritizerLowMemory : public MaintenancePrioritizer {
   public:
-    MaintenancePrioritizerLowMemory(RSStatsPtr &server_stats)
-      : MaintenancePrioritizer(server_stats) { }
-    virtual void prioritize(RangeDataVector &range_data, MemoryState &memory_state,
+
+    virtual void prioritize(std::vector<RangeData> &range_data, MemoryState &memory_state,
                             int32_t priority, String *trace);
 
   private:
 
-    void assign_priorities_all(RangeDataVector &range_data, CommitLog *log,
+    void assign_priorities_all(std::vector<RangeData> &range_data, CommitLog *log,
                                int64_t prune_threshold, MemoryState &memory_state,
                                int32_t &priority, String *trace);
 
-    void assign_priorities_user(RangeDataVector &range_data,
+    void assign_priorities_user(std::vector<RangeData> &range_data,
+                                LoadStatistics::Bundle &load_stats,
                                 MemoryState &memory_state,
                                 int32_t &priority, String *trace);
 

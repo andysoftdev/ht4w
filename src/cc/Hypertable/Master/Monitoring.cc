@@ -200,7 +200,8 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
 
     numerator = denominator = 0.0;
     for (size_t j=0; j<stats[i].stats->system.fs_stat.size(); j++) {
-      numerator += stats[i].stats->system.fs_stat[j].used;
+      numerator += stats[i].stats->system.fs_stat[j].total 
+        - stats[i].stats->system.fs_stat[j].avail;
       denominator += stats[i].stats->system.fs_stat[j].total;
     }
     if (denominator != 0.0)
@@ -633,7 +634,9 @@ namespace {
     " \"disk\": \"%.2f\", \"diskUsePct\": \"%u\", \"rangeCount\": \"%llu\","
     " \"lastContact\": \"%s\", \"lastError\": \"%s\"}";
 
-  const char *master_json = "{\"MasterSummary\": {\"version\": \"%s\"}}\n";
+  const char *master_json_header = "{\"MasterSummary\": {\"version\": \"%s\", \"state\": [\n";
+  const char *master_json_footer = "\n]}}\n";
+  const char *state_variable_format = "{\"name\": \"%s\", \"value\": \"%s\"}";
 
   const char *table_json_header = "{\"TableSummary\": {\n  \"tables\": [\n";
   const char *table_json_footer= "\n  ]\n}}\n";
@@ -643,9 +646,24 @@ namespace {
 }
 
 void Monitoring::dump_master_summary_json() {
-  String contents = format(master_json, version_string());
+  String contents = String(master_json_header);
+  String entry;
   String tmp_filename = m_monitoring_dir + "/master_summary.tmp";
   String json_filename = m_monitoring_dir + "/master_summary.json";
+  std::vector<SystemVariable::Spec> specs;
+
+  m_context->system_state->get_non_default(specs);
+  for (size_t i = 0; i<specs.size(); i++) {
+    entry = format(state_variable_format,
+                   SystemVariable::code_to_string(specs[i].code),
+                   specs[i].value ? "true" : "false");
+    if (i == 0)
+      contents += String("    ") + entry;
+    else
+      contents += String(",\n    ") + entry;
+  }
+  contents += master_json_footer;
+
   if (FileUtils::write(tmp_filename, contents) == -1)
     return;
   FileUtils::rename(tmp_filename, json_filename);
@@ -669,7 +687,8 @@ void Monitoring::dump_rangeserver_summary_json(std::vector<RangeServerStatistics
       disk = 0.0;
       disk_use_pct = 0;
       for (size_t j=0; j<stats[i].stats->system.fs_stat.size(); j++) {
-        numerator += stats[i].stats->system.fs_stat[j].used;
+        numerator += stats[i].stats->system.fs_stat[j].total -
+          stats[i].stats->system.fs_stat[j].avail;
         denominator += stats[i].stats->system.fs_stat[j].total;
         disk += stats[i].stats->system.fs_stat[j].total;
       }

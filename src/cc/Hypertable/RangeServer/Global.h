@@ -43,6 +43,7 @@
 #include "Hypertable/Lib/Types.h"
 
 #include "FileBlockCache.h"
+#include "LoadStatistics.h"
 #include "LocationInitializer.h"
 #include "MaintenanceQueue.h"
 #include "MemoryTracker.h"
@@ -67,6 +68,8 @@ namespace Hypertable {
     static Hypertable::RangeLocatorPtr range_locator;
     static Hypertable::PseudoTables *pseudo_tables;
     static MetaLogEntityRemoveOkLogsPtr remove_ok_logs;
+    static LoadStatisticsPtr load_statistics;
+    static RangesPtr      ranges;
     static bool           verbose;
     static bool           row_size_unlimited;
     static CommitLog     *user_log;
@@ -75,7 +78,7 @@ namespace Hypertable {
     static CommitLog     *root_log;
     static MetaLog::WriterPtr rsml_writer;
     static std::string    log_dir;
-    static LocationInitializerPtr location_initializer;
+    static LocationInitializer *location_initializer;
     static int64_t        range_split_size;
     static int64_t        range_maximum_size;
     static int32_t        failover_timeout;
@@ -113,6 +116,8 @@ namespace Hypertable {
     static void immovable_range_set_add(const TableIdentifier &table, const RangeSpec &spec);
     static void immovable_range_set_remove(const TableIdentifier &table, const RangeSpec &spec);
     static bool immovable_range_set_contains(const TableIdentifier &table, const RangeSpec &spec);
+    static void set_ranges(RangesPtr &r);
+    static RangesPtr get_ranges();
   };
 
 } // namespace Hypertable

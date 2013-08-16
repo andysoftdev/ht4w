@@ -96,7 +96,6 @@
     <ClCompile Include="Range.cc" />
     <ClCompile Include="RangeReplayBuffer.cc" />
     <ClCompile Include="RangeServer.cc" />
-    <ClCompile Include="RangeStatsGatherer.cc" />
     <ClCompile Include="ReplayBuffer.cc" />
     <ClCompile Include="ReplayDispatchHandler.cc" />
     <ClCompile Include="RequestHandlerAcknowledgeLoad.cc" />
@@ -121,6 +120,7 @@
     <ClCompile Include="RequestHandlerPhantomUpdate.cc" />
     <ClCompile Include="RequestHandlerRelinquishRange.cc" />
     <ClCompile Include="RequestHandlerReplayFragments.cc" />
+    <ClCompile Include="RequestHandlerSetState.cc" />
     <ClCompile Include="RequestHandlerShutdown.cc" />
     <ClCompile Include="RequestHandlerStatus.cc" />
     <ClCompile Include="RequestHandlerUpdate.cc" />
@@ -134,6 +134,7 @@
     <ClCompile Include="ResponseCallbackUpdate.cc" />
     <ClCompile Include="ScanContext.cc" />
     <ClCompile Include="ScannerMap.cc" />
+    <ClCompile Include="ServerState.cc" />
     <ClCompile Include="TableIdCache.cc" />
     <ClCompile Include="TableInfo.cc" />
     <ClCompile Include="TableInfoMap.cc" />
@@ -197,6 +198,7 @@
     <ClInclude Include="LiveFileTracker.h" />
     <ClInclude Include="LoadFactors.h" />
     <ClInclude Include="LoadMetricsRange.h" />
+    <ClInclude Include="LoadStatistics.h" />
     <ClInclude Include="LocationInitializer.h" />
     <ClInclude Include="MaintenanceFlag.h" />
     <ClInclude Include="MaintenancePrioritizer.h" />
@@ -231,7 +233,6 @@
     <ClInclude Include="RangeReplayBuffer.h" />
     <ClInclude Include="RangeServer.h" />
     <ClInclude Include="RangeSet.h" />
-    <ClInclude Include="RangeStatsGatherer.h" />
     <ClInclude Include="RangeTransferInfo.h" />
     <ClInclude Include="ReplayBuffer.h" />
     <ClInclude Include="ReplayDispatchHandler.h" />
@@ -257,6 +258,7 @@
     <ClInclude Include="RequestHandlerPhantomUpdate.h" />
     <ClInclude Include="RequestHandlerRelinquishRange.h" />
     <ClInclude Include="RequestHandlerReplayFragments.h" />
+    <ClInclude Include="RequestHandlerSetState.h" />
     <ClInclude Include="RequestHandlerShutdown.h" />
     <ClInclude Include="RequestHandlerStatus.h" />
     <ClInclude Include="RequestHandlerUpdate.h" />
@@ -271,6 +273,7 @@
     <ClInclude Include="RSStats.h" />
     <ClInclude Include="ScanContext.h" />
     <ClInclude Include="ScannerMap.h" />
+    <ClInclude Include="ServerState.h" />
     <ClInclude Include="TableIdCache.h" />
     <ClInclude Include="TableInfo.h" />
     <ClInclude Include="TableInfoMap.h" />

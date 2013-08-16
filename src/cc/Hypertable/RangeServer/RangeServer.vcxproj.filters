@@ -148,9 +148,6 @@
     <ClCompile Include="RangeServer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RangeStatsGatherer.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RequestHandlerCommitLogSync.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -355,6 +352,12 @@
     <ClCompile Include="TableSchemaCache.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RequestHandlerSetState.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerState.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroup.h">
@@ -532,9 +535,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RangeSet.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RangeStatsGatherer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RequestHandlerCommitLogSync.h">
@@ -760,6 +760,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TableSchemaCache.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadStatistics.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerSetState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerState.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

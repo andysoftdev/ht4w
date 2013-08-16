@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,6 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Declarations for Context.
+ * This file contains declarations for Context, a class that provides execution
+ * context for the Master.
  */
 
 #ifndef HYPERTABLE_CONTEXT_H
@@ -50,8 +56,13 @@
 #include "RangeServerConnection.h"
 #include "RangeServerConnectionManager.h"
 #include "RecoveryStepFuture.h"
+#include "SystemState.h"
 
 namespace Hypertable {
+
+  /** @addtogroup Master
+   *  @{
+   */
 
   class LoadBalancer;
   class Operation;
@@ -61,6 +72,8 @@ namespace Hypertable {
   class ReferenceManager;
   class BalancePlanAuthority;
 
+  /** Represents execution context for the Master.
+   */
   class Context : public ReferenceCount {
 
     class RecoveryState {
@@ -89,23 +102,19 @@ namespace Hypertable {
     };
 
   public:
-    Context() : timer_interval(0), monitoring_interval(0), gc_interval(0),
-                next_monitoring_time(0), next_gc_time(0),
-                test_mode(false), quorum_reached(false),
-                m_balance_plan_authority(0) {
-      master_file_handle = 0;
-      balancer = 0;
-      response_manager = 0;
-      reference_manager = 0;
-      op = 0;
-      recovery_barrier_op = 0;
-    }
 
+    /** Context.
+     * @param p Reference to properties object
+     */
+    Context(PropertiesPtr &p);
+
+    /** Destructor. */
     ~Context();
 
     Mutex mutex;
     boost::condition cond;
     Comm *comm;
+    SystemStatePtr system_state;       //!< System state entity
     RangeServerConnectionManagerPtr rsc_manager;
     StringSet available_servers;
     PropertiesPtr props;
@@ -132,6 +141,7 @@ namespace Hypertable {
     OperationProcessor *op;
     OperationTimedBarrier *recovery_barrier_op;
     String location_hash;
+    int32_t disk_threshold;            //!< Disk use threshold percentage
     int32_t max_allowable_skew;
     bool test_mode;
     bool quorum_reached;
@@ -147,10 +157,10 @@ namespace Hypertable {
     void prepare_complete(EventPtr &event);
     void commit_complete(EventPtr &event);
 
-    // invoke notification hook
+    /** Invoke notification hook. */
     void notification_hook(const String &subject, const String &message);
 
-    // set the BalancePlanAuthority
+    /** set the BalancePlanAuthority. */
     void set_balance_plan_authority(BalancePlanAuthority *bpa);
 
     // get the BalancePlanAuthority; this creates a new instance when
@@ -164,7 +174,11 @@ namespace Hypertable {
     RecoveryState m_recovery_state;
     BalancePlanAuthority *m_balance_plan_authority;
   };
+
+  /// Smart pointer to Context
   typedef intrusive_ptr<Context> ContextPtr;
+
+  /** @}*/
 
 } // namespace Hypertable
 

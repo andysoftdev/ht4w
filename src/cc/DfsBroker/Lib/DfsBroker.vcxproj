@@ -41,6 +41,7 @@
     <ClCompile Include="RequestHandlerLength.cc" />
     <ClCompile Include="RequestHandlerMkdirs.cc" />
     <ClCompile Include="RequestHandlerOpen.cc" />
+    <ClCompile Include="RequestHandlerPosixReaddir.cc" />
     <ClCompile Include="RequestHandlerPread.cc" />
     <ClCompile Include="RequestHandlerRead.cc" />
     <ClCompile Include="RequestHandlerReaddir.cc" />
@@ -53,6 +54,7 @@
     <ClCompile Include="ResponseCallbackExists.cc" />
     <ClCompile Include="ResponseCallbackLength.cc" />
     <ClCompile Include="ResponseCallbackOpen.cc" />
+    <ClCompile Include="ResponseCallbackPosixReaddir.cc" />
     <ClCompile Include="ResponseCallbackRead.cc" />
     <ClCompile Include="ResponseCallbackReaddir.cc" />
   </ItemGroup>
@@ -76,6 +78,7 @@
     <ClInclude Include="RequestHandlerLength.h" />
     <ClInclude Include="RequestHandlerMkdirs.h" />
     <ClInclude Include="RequestHandlerOpen.h" />
+    <ClInclude Include="RequestHandlerPosixReaddir.h" />
     <ClInclude Include="RequestHandlerPread.h" />
     <ClInclude Include="RequestHandlerRead.h" />
     <ClInclude Include="RequestHandlerReaddir.h" />
@@ -88,6 +91,7 @@
     <ClInclude Include="ResponseCallbackExists.h" />
     <ClInclude Include="ResponseCallbackLength.h" />
     <ClInclude Include="ResponseCallbackOpen.h" />
+    <ClInclude Include="ResponseCallbackPosixReaddir.h" />
     <ClInclude Include="ResponseCallbackRead.h" />
     <ClInclude Include="ResponseCallbackReaddir.h" />
   </ItemGroup>

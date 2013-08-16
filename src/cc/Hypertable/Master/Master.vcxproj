@@ -33,6 +33,7 @@
     <ClCompile Include="Context.cc" />
     <ClCompile Include="DispatchHandlerOperation.cc" />
     <ClCompile Include="DispatchHandlerOperationGetStatistics.cc" />
+    <ClCompile Include="DispatchHandlerOperationSetState.cc" />
     <ClCompile Include="GcWorker.cc" />
     <ClCompile Include="LoadBalancer.cc" />
     <ClCompile Include="MetaLogDefinitionMaster.cc" />
@@ -56,6 +57,7 @@
     <ClCompile Include="OperationRegisterServer.cc" />
     <ClCompile Include="OperationRelinquishAcknowledge.cc" />
     <ClCompile Include="OperationRenameTable.cc" />
+    <ClCompile Include="OperationSetState.cc" />
     <ClCompile Include="OperationStatus.cc" />
     <ClCompile Include="OperationStop.cc" />
     <ClCompile Include="OperationSystemUpgrade.cc" />
@@ -68,6 +70,7 @@
     <ClCompile Include="ResponseManager.cc" />
     <ClCompile Include="RSMetrics.cc" />
     <ClCompile Include="ServerMetrics.cc" />
+    <ClCompile Include="SystemState.cc" />
     <ClCompile Include="Utility.cc" />
   </ItemGroup>
   <ItemGroup>
@@ -83,11 +86,13 @@
     <ClInclude Include="DispatchHandlerOperationCompact.h" />
     <ClInclude Include="DispatchHandlerOperationDropTable.h" />
     <ClInclude Include="DispatchHandlerOperationGetStatistics.h" />
+    <ClInclude Include="DispatchHandlerOperationSetState.h" />
     <ClInclude Include="EntityType.h" />
     <ClInclude Include="GcWorker.h" />
     <ClInclude Include="LoadBalancer.h" />
     <ClInclude Include="MetaLogDefinitionMaster.h" />
     <ClInclude Include="Monitoring.h" />
+    <ClInclude Include="NotificationMessage.h" />
     <ClInclude Include="Operation.h" />
     <ClInclude Include="OperationAlterTable.h" />
     <ClInclude Include="OperationBalance.h" />
@@ -107,6 +112,7 @@
     <ClInclude Include="OperationRegisterServer.h" />
     <ClInclude Include="OperationRelinquishAcknowledge.h" />
     <ClInclude Include="OperationRenameTable.h" />
+    <ClInclude Include="OperationSetState.h" />
     <ClInclude Include="OperationStatus.h" />
     <ClInclude Include="OperationStop.h" />
     <ClInclude Include="OperationSystemUpgrade.h" />
@@ -124,6 +130,7 @@
     <ClInclude Include="ResponseManager.h" />
     <ClInclude Include="RSMetrics.h" />
     <ClInclude Include="ServerMetrics.h" />
+    <ClInclude Include="SystemState.h" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -105,6 +105,8 @@ namespace Hypertable {
       virtual void readdir(const String &name, DispatchHandler *handler);
       virtual void readdir(const String &name, std::vector<String> &listing);
 
+      virtual void posix_readdir(const String &name, std::vector<DirectoryEntry> &listing);
+
       virtual void exists(const String &name, DispatchHandler *handler);
       virtual bool exists(const String &name);
 
@@ -199,6 +201,7 @@ namespace Hypertable {
       void flush(int fd, bool sync);
       void rmdir(const String &name, bool force, bool sync);
       void readdir(const String &name, std::vector<String> &listing, bool sync);
+      void posix_readdir(const String &name, std::vector<DirectoryEntry> &listing, bool sync);
       bool exists(const String &name, bool sync);
       void rename(const String &src, const String &dst, bool sync);
 
@@ -232,6 +235,7 @@ namespace Hypertable {
 
       String m_rootdir;
       bool m_directio;
+      bool m_no_removal;
       bool m_asyncio;
       Protocol m_protocol;
       ThreadGroup m_asyncio_thread;

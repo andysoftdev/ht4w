@@ -64,6 +64,7 @@ extern "C" {
 #include "OperationWaitForServers.h"
 #include "ReferenceManager.h"
 #include "ResponseManager.h"
+#include "SystemState.h"
 #include "BalancePlanAuthority.h"
 
 #ifdef _WIN32
@@ -157,10 +158,11 @@ void obtain_master_lock(ContextPtr &context);
 void write_master_address(ContextPtr &context);
 
 int main(int argc, char **argv) {
+  ContextPtr context;
+
   #ifdef _WIN32
   ServerLaunchEvent server_launch_event;
   #endif
-  ContextPtr context = new Context();
 
   // Register ourselves as the Comm-layer proxy master
   ReactorFactory::proxy_master = true;
@@ -170,9 +172,10 @@ int main(int argc, char **argv) {
     HT_NOTICE("Starting master");
     uint16_t port = get_i16("port");
 
+    context = new Context(properties);
+
     context->comm = Comm::instance();
     context->conn_manager = new ConnectionManager(context->comm);
-    context->props = properties;
     context->hyperspace = new Hyperspace::Session(context->comm, context->props);
     context->rsc_manager = new RangeServerConnectionManager();
 
@@ -272,6 +275,10 @@ int main(int argc, char **argv) {
         }
         else if (dynamic_cast<BalancePlanAuthority *>(entity.get()))
           bpa_entity = entity;
+        else if (dynamic_cast<SystemState *>(entity.get())) {
+          context->system_state = dynamic_cast<SystemState *>(entity.get());
+          entities2.push_back(entity);
+        }
         else
           entities2.push_back(entity);
       }
@@ -279,6 +286,9 @@ int main(int argc, char **argv) {
         entities2.push_back(rsc.get());
       entities.swap(entities2);
     }
+
+    if (!context->system_state)
+      context->system_state = new SystemState();
 
     context->mml_writer = new MetaLog::Writer(context->dfs, context->mml_definition,
                                               log_dir, entities);

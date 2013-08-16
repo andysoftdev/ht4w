@@ -41,6 +41,8 @@ namespace Hypertable {
   RangeLocatorPtr        Global::range_locator = 0;
   PseudoTables          *Global::pseudo_tables = 0;
   MetaLogEntityRemoveOkLogsPtr Global::remove_ok_logs;
+  LoadStatisticsPtr      Global::load_statistics;
+  RangesPtr              Global::ranges;
   bool                   Global::verbose = false;
   bool                   Global::row_size_unlimited = false;
   CommitLog             *Global::user_log = 0;
@@ -49,7 +51,7 @@ namespace Hypertable {
   CommitLog             *Global::root_log = 0;
   MetaLog::WriterPtr     Global::rsml_writer;
   std::string            Global::log_dir = "";
-  LocationInitializerPtr Global::location_initializer;
+  LocationInitializer   *Global::location_initializer = 0;
   int64_t                Global::range_split_size = 0;
   int64_t                Global::range_maximum_size = 0;
   int32_t                Global::failover_timeout = 0;
@@ -113,6 +115,16 @@ namespace Hypertable {
     ScopedLock lock(Global::mutex);
     String name = format("%s[%s..%s]", table.id, spec.start_row, spec.end_row);
     return Global::immovable_range_set.count(name) > 0;
+  }
+
+  void Global::set_ranges(RangesPtr &r) {
+    ScopedLock lock(Global::mutex);
+    Global::ranges = r;
+  }
+
+  RangesPtr Global::get_ranges() {
+    ScopedLock lock(Global::mutex);
+    return Global::ranges;
   }
 
 }

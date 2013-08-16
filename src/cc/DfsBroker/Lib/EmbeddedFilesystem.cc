@@ -64,6 +64,7 @@ atomic_t EmbeddedFilesystem::ms_next_fd = ATOMIC_INIT(0);
 EmbeddedFilesystem::EmbeddedFilesystem(PropertiesPtr &cfg)
   : m_directio(false), m_asyncio(true), m_request_queue(m_mutex) {
   m_directio = cfg->get_bool("DfsBroker.Local.DirectIO");
+  m_no_removal = cfg->get_bool("DfsBroker.DisableFileRemoval");
   m_asyncio = cfg->get_bool("DfsBroker.Local.Embedded.AsyncIO");
 
   Path root = cfg->get_str("DfsBroker.Local.Root", "fs/local");
@@ -394,6 +395,9 @@ void EmbeddedFilesystem::readdir(const String &name, std::vector<String> &listin
   readdir(name, listing, m_asyncio);
 }
 
+void EmbeddedFilesystem::posix_readdir(const String &name, std::vector<DirectoryEntry> &listing) {
+  posix_readdir(name, listing, m_asyncio);
+}
 
 void EmbeddedFilesystem::exists(const String &name, DispatchHandler *handler) {
   try {
@@ -940,8 +944,67 @@ void EmbeddedFilesystem::readdir(const String &name, std::vector<String> &listin
     do {
       if (*ffd.cFileName) {
         if (ffd.cFileName[0] != '.' ||
-            (ffd.cFileName[1] != 0 && (ffd.cFileName[1] != '.' || ffd.cFileName[2] != 0)))
-          listing.push_back((String)ffd.cFileName);
+            (ffd.cFileName[1] != 0 && (ffd.cFileName[1] != '.' || ffd.cFileName[2] != 0))) {
+          if (m_no_removal) {
+            size_t len = strlen(ffd.cFileName);
+            if (len <= 8 || strcmp(&ffd.cFileName[len-8], ".deleted"))
+              listing.push_back((String)ffd.cFileName);
+          }
+          else
+            listing.push_back((String)ffd.cFileName);
+        }
+      }
+    } while (FindNextFile(hFind, &ffd) != 0);
+    if (!FindClose(hFind))
+      HT_ERRORF("FindClose failed: %s", IO_ERROR);
+  }
+  catch (Exception &e) {
+    HT_THROW2F(e.code(), e, "Error reading directory entries for DFS "
+               "directory: %s", name.c_str());
+  }
+}
+
+
+void EmbeddedFilesystem::posix_readdir(const String &name, std::vector<DirectoryEntry> &listing, bool sync) {
+  try {
+    FdSyncGuard guard(this, Request::fdWrite, sync);
+
+    String absdir;
+    if (name[0] == '/')
+      absdir = m_rootdir + name;
+    else
+      absdir = m_rootdir + "/" + name;
+
+    WIN32_FIND_DATA ffd;
+    HANDLE hFind = FindFirstFile( (absdir + "\\*").c_str(), &ffd);
+    if (hFind == INVALID_HANDLE_VALUE)
+        throw_error();
+
+    do {
+      if (*ffd.cFileName) {
+        if (ffd.cFileName[0] != '.' ||
+            (ffd.cFileName[1] != 0 && (ffd.cFileName[1] != '.' || ffd.cFileName[2] != 0))) {
+          Filesystem::DirectoryEntry dirent;
+          if (m_no_removal) {
+            size_t len = strlen(ffd.cFileName);
+            if (len <= 8 || strcmp(&ffd.cFileName[len-8], ".deleted"))
+              dirent.name = ffd.cFileName;
+            else
+              continue;
+          }
+          else
+            dirent.name = ffd.cFileName;
+
+          if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            dirent.flags = Filesystem::DIRENT_DIRECTORY;
+            dirent.length = 0;
+          }
+          else {
+            dirent.flags = 0;
+            dirent.length = ffd.nFileSizeLow;
+          }
+          listing.push_back(dirent);
+        }
       }
     } while (FindNextFile(hFind, &ffd) != 0);
     if (!FindClose(hFind))

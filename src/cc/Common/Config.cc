@@ -262,6 +262,13 @@ void DefaultPolicy::init_options() {
     ("Kfs.Broker.Reactors", i32(), "Number of Kfs broker reactor threads")
     ("Kfs.MetaServer.Name", str(), "Hostname of Kosmos meta server")
     ("Kfs.MetaServer.Port", i16(), "Port number for Kosmos meta server")
+    ("Qfs.Broker.Workers", i32()->default_value(20), "Number of worker "
+        "threads for Qfs broker")
+    ("Qfs.Broker.Reactors", i32(), "Number of Qfs broker reactor threads")
+    ("Qfs.MetaServer.Name", str()->default_value("localhost"), "Hostname of "
+        "QFS meta server")
+    ("Qfs.MetaServer.Port", i16()->default_value(20000), "Port number for QFS "
+        "meta server")
     ("DfsBroker.DisableFileRemoval", boo()->default_value(false),
         "Rename files with .deleted extension instead of removing (for testing)")
     ("DfsBroker.Local.DirectIO", boo()->default_value(false),
@@ -386,6 +393,8 @@ void DefaultPolicy::init_options() {
     ("Hypertable.Master.FailedRangeServerLimit.Percentage", i32()->default_value(80),
         "Fail hard if less than this percentage of the RangeServers are unavailable "
         "at a given time")
+    ("Hypertable.Master.NotificationInterval", i32()->default_value(3600),
+        "Notification interval (in seconds) of abnormal state")
     ("Hypertable.Failover.GracePeriod", i32()->default_value(30000),
         "Master wait this long before trying to recover a RangeServer")
     ("Hypertable.Failover.Timeout", i32()->default_value(300000),
@@ -451,7 +460,7 @@ void DefaultPolicy::init_options() {
     ("Hypertable.RangeServer.Range.RowSize.Unlimited", boo()->default_value(false),
      "Marks range active and unsplittable upon encountering row overflow condition. "
      "Can cause ranges to grow extremely large.  Use with caution!")
-    ("Hypertable.RangeServer.Range.SplitSize", i64()->default_value(256*MiB),
+    ("Hypertable.RangeServer.Range.SplitSize", i64()->default_value(512*MiB),
         "Size of range in bytes before splitting")
     ("Hypertable.RangeServer.Range.MaximumSize", i64()->default_value(3*G),
         "Maximum size of a range in bytes before updates get throttled")

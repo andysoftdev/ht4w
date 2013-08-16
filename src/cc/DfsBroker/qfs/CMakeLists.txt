@@ -1,6 +1,5 @@
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2013 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,10 +17,11 @@
 # 02110-1301, USA.
 #
 
-# rsstat show statistics of a range server
-add_executable(rsstat rsstat.cc)
-target_link_libraries(rsstat Hypertable)
+include_directories(${Qfs_INCLUDE_DIR})
 
-if (NOT HT_COMPONENT_INSTALL)
-  install(TARGETS rsstat RUNTIME DESTINATION bin)
-endif ()
+# qfsBroker
+add_executable(qfsBroker main.cc QfsBroker.cc)
+target_link_libraries(qfsBroker ${Qfs_LIBRARIES} HyperDfsBroker
+                      ${MALLOC_LIBRARY})
+
+install(TARGETS qfsBroker RUNTIME DESTINATION bin)

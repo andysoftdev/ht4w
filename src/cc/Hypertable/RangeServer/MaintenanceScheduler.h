@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -26,14 +26,14 @@
 
 #include "MaintenancePrioritizerLogCleanup.h"
 #include "MaintenancePrioritizerLowMemory.h"
-#include "RSStats.h"
+#include "LoadStatistics.h"
 #include "TableInfoMap.h"
 
 namespace Hypertable {
 
   class MaintenanceScheduler : public ReferenceCount {
   public:
-    MaintenanceScheduler(MaintenanceQueuePtr &queue, RSStatsPtr &server_stats,
+    MaintenanceScheduler(MaintenanceQueuePtr &queue,
                          TableInfoMapPtr &live_map);
 
     void schedule();
@@ -67,11 +67,10 @@ namespace Hypertable {
 
     /** Writes debugging output and removes signal file.
      */
-    void write_debug_output(boost::xtime now, RangeDataVector &range_data,
+    void write_debug_output(boost::xtime now, Ranges &ranges,
                             const String &header_str);
 
     MaintenanceQueuePtr m_queue;
-    RSStatsPtr m_server_stats;
     TableInfoMapPtr m_live_map;
     MaintenancePrioritizer *m_prioritizer;
     MaintenancePrioritizerLogCleanup m_prioritizer_log_cleanup;

@@ -217,6 +217,9 @@
     <ClCompile Include="RangeRecoveryReplayPlan.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SystemVariable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">
@@ -490,6 +493,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ScanLimitState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemVariable.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

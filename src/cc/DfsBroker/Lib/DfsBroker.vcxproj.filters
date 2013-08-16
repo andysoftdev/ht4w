@@ -100,6 +100,12 @@
     <ClCompile Include="EmbeddedFilesystem.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ResponseCallbackPosixReaddir.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerPosixReaddir.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Broker.h">
@@ -199,6 +205,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="EmbeddedFilesystem.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResponseCallbackPosixReaddir.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerPosixReaddir.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -142,6 +142,15 @@
     <ClCompile Include="OperationCompact.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DispatchHandlerOperationSetState.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationSetState.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemState.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -304,6 +313,18 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="OperationCompact.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DispatchHandlerOperationSetState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NotificationMessage.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationSetState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemState.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
