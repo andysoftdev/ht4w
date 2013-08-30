@@ -190,12 +190,12 @@ void Writer::write_header() {
   assert((ptr-buf.base) == Header::LENGTH);
   memcpy(backup_buf, buf.base, Header::LENGTH);
 
+  FileUtils::write(m_backup_fd, backup_buf, Header::LENGTH);
   if (m_fs->append(m_fd, buf, Filesystem::O_FLUSH) != Header::LENGTH)
     HT_THROWF(Error::DFSBROKER_IO_ERROR, "Error writing %s "
               "metalog header to file: %s", m_definition->name(),
               m_filename.c_str());
 
-  FileUtils::write(m_backup_fd, backup_buf, Header::LENGTH);
   m_offset += Header::LENGTH;
 }
 
@@ -225,8 +225,8 @@ void Writer::record_state(Entity *entity) {
     memcpy(backup_buf.get(), buf.base, buf.size);
   }
 
-  m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
   FileUtils::write(m_backup_fd, backup_buf.get(), buf.size);
+  m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
   m_offset += buf.size;
 }
 
@@ -266,8 +266,8 @@ void Writer::record_state(std::vector<Entity *> &entities) {
 
   memcpy(backup_buf.get(), buf.base, buf.size);
 
-  m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
   FileUtils::write(m_backup_fd, backup_buf.get(), buf.size);
+  m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
   m_offset += buf.size;
 }
 
@@ -289,8 +289,8 @@ void Writer::record_removal(Entity *entity) {
   HT_ASSERT((ptr-buf.base) == (ptrdiff_t)buf.size);
   memcpy(backup_buf, buf.base, buf.size);
 
-  m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
   FileUtils::write(m_backup_fd, backup_buf, buf.size);
+  m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
   m_offset += buf.size;
 
 }
@@ -318,8 +318,8 @@ void Writer::record_removal(std::vector<Entity *> &entities) {
     HT_ASSERT((ptr-buf.base) == (ptrdiff_t)buf.size);
     memcpy(backup_buf.get(), buf.base, buf.size);
 
-    m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
     FileUtils::write(m_backup_fd, backup_buf.get(), buf.size);
+    m_fs->append(m_fd, buf, Filesystem::O_FLUSH);
     m_offset += buf.size;
   }
 

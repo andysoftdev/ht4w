@@ -820,6 +820,8 @@ void LocalBroker::posix_readdir(ResponseCallbackPosixReaddir *cb,
         size_t len = strlen(result->d_name);
         if (len <= 8 || strcmp(&result->d_name[len-8], ".deleted"))
           dirent.name = result->d_name;
+        else
+          continue;
       }
       else
         dirent.name = result->d_name;

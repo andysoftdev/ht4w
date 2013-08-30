@@ -64,12 +64,18 @@ Context::~Context() {
 
 
 void Context::notification_hook(const String &subject, const String &message) {
+  String cmd;
 
 #ifndef _WIN32
 
-  String cmd = format("%s/conf/notification-hook.sh '%s' '%s'", 
-                      System::install_dir.c_str(), subject.c_str(),
-                      message.c_str());
+  if (!cluster_name.empty())
+    cmd = format("%s/conf/notification-hook.sh '[Hypertable %s] %s' '%s'", 
+                 System::install_dir.c_str(), cluster_name.c_str(),
+                 subject.c_str(), message.c_str());
+  else
+    cmd = format("%s/conf/notification-hook.sh '[Hypertable] %s' '%s'", 
+                 System::install_dir.c_str(), subject.c_str(),
+                 message.c_str());
 
 #else
 
@@ -85,10 +91,15 @@ void Context::notification_hook(const String &subject, const String &message) {
   else
     return;
 
-  String cmd = format("%s '%s' '%s'", 
-                      prg.c_str(), subject.c_str(),
-                      message.c_str());
-
+  if (!cluster_name.empty())
+    cmd = format("%s '[Hypertable %s] %s' '%s'", 
+                 prg.c_str(), cluster_name.c_str(),
+                 subject.c_str(), message.c_str());
+  else
+    cmd = format("%s '[Hypertable] %s' '%s'", 
+                 prg.c_str(), subject.c_str(),
+                 message.c_str());
+                 
 #endif
 
   int ret = ::system(cmd.c_str());
