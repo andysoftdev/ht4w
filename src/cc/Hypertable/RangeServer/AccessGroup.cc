@@ -435,6 +435,8 @@ void AccessGroup::load_cellstore(CellStorePtr &cellstore) {
   m_garbage_tracker.accumulate_expirable( m_stores.back().expirable_data );
 
   m_file_tracker.add_live_noupdate(cellstore->get_filename(), total_index_entries);
+
+  cellstore->purge_indexes();
 }
 
 void AccessGroup::compute_garbage_stats(uint64_t *input_bytesp, uint64_t *output_bytesp) {
