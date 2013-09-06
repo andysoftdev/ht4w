@@ -143,6 +143,8 @@ Entity *DefinitionMaster::create(uint16_t log_version, const EntityHeader &heade
       operation = new OperationCompact(m_context, header);
     else if (header.type == EntityType::OPERATION_SET)
       operation = new OperationSetState(m_context, header);
+    else if (header.type == EntityType::SYSTEM_STATE)
+      return new SystemState(header);
   }
 
   if (operation)
