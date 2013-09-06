@@ -309,6 +309,16 @@ void MaintenanceScheduler::schedule() {
              "QueryCache=%.2f%%",
              block_cache_pct, block_index_pct, bloom_filter_pct,
              cell_cache_pct, shadow_cache_pct, query_cache_pct);
+
+    if (debug) {
+      trace_str += format("\nblock cache memory\t%lld\n", (Lld)block_cache_memory);
+      trace_str += format("block index memory\t%lld\n", (Lld)block_index_memory);
+      trace_str += format("bloom filter memory\t%lld\n", (Lld)bloom_filter_memory);
+      trace_str += format("cell cache memory\t%lld\n", (Lld)cell_cache_memory);
+      trace_str += format("shadow cache memory\t%lld\n", (Lld)shadow_cache_memory);
+      trace_str += format("query cache memory\t%lld\n", (Lld)m_query_cache_memory);
+      trace_str += format("total memory\t%lld\n", (Lld)total_memory);
+    }
   }
 
   if (debug)
