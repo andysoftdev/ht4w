@@ -64,7 +64,6 @@ namespace Hypertable {
       add_operation(op);
     }
     void add_operations(std::vector<OperationPtr> &operations);
-    OperationPtr remove_operation(int64_t hash_code);
     void shutdown();
     void join();
     void wait_for_empty();
@@ -241,9 +240,6 @@ namespace Hypertable {
     ThreadContext m_context;
     ThreadGroup m_threads;
   };
-
-  /// Smart pointer to OperationProcessor
-  typedef intrusive_ptr<OperationProcessor> OperationProcessorPtr;
 
   /** @} */
 
