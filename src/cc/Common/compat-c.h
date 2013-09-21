@@ -175,6 +175,15 @@ inline void localtime_r(const ::time_t* time, ::tm* t) {
   localtime_s(t, time);
 }
 
+inline uint8_t* valloc(size_t size) {
+  return (uint8_t*) VirtualAlloc(0, size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+}
+
+inline void vfree(const uint8_t* p) {
+  if (p)
+    VirtualFree((LPVOID)p, 0, MEM_RELEASE);
+}
+
 #endif
 
 #define HT_USE_ABORT
