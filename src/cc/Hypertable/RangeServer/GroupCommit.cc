@@ -87,12 +87,10 @@ void GroupCommit::trigger() {
   TableUpdateMap::iterator iter = m_table_map.begin();
   while (iter != m_table_map.end()) {
     if ((m_counter % (*iter).second->commit_iteration) == 0) {
-      TableUpdateMap::iterator remove_iter = iter;
       if (iter->second->expire_time.sec > expire_time.sec)
 	expire_time = iter->second->expire_time;
-      ++iter;
-      updates.push_back((*remove_iter).second);
-      m_table_map.erase(remove_iter);
+      updates.push_back((*iter).second);
+      iter = m_table_map.erase(iter);
     }
     else
       ++iter;
