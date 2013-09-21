@@ -208,22 +208,29 @@ namespace Hypertable {
       static bool remove_dir(const String& absdir);
       void throw_error();
 
-      inline void set_handle(int fd, HANDLE h) {
+      inline void set_handle(int fd, HANDLE h, uint32_t flags) {
         ScopedRecLock lock(m_mutex);
-        m_handles[fd] = h;
+        m_handles[fd] = std::make_pair(h, flags);
       }
 
       inline HANDLE get_handle(int fd) {
         ScopedRecLock lock(m_mutex);
-        return m_handles[fd];
+        return m_handles[fd].first;
+      }
+
+      inline HANDLE get_handle(int fd, uint32_t& flags) {
+        ScopedRecLock lock(m_mutex);
+        std::pair<HANDLE, uint32_t> item = m_handles[fd];
+        flags = item.second;
+        return item.first;
       }
 
       inline void close_handle(int fd) {
         HANDLE h;
         {
           ScopedRecLock lock(m_mutex);
-          std::map<int, HANDLE>::iterator it = m_handles.find(fd);
-          h = it->second;
+          std::map<int, std::pair<HANDLE, uint32_t>>::iterator it = m_handles.find(fd);
+          h = it->second.first;
           m_handles.erase(it);
         }
         ::CloseHandle(h);
@@ -231,7 +238,7 @@ namespace Hypertable {
 
       static atomic_t ms_next_fd;
       RecMutex m_mutex;
-      std::map<int, HANDLE> m_handles;
+      std::map<int, std::pair<HANDLE, uint32_t>> m_handles;
 
       String m_rootdir;
       bool m_directio;

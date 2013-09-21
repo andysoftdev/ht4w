@@ -105,7 +105,7 @@ void AccessGroupHintsFile::write(String location) {
         Global::dfs->mkdirs(parent_dir);
     }
     fd = Global::dfs->create(parent_dir + "/hints",
-                             Filesystem::OPEN_FLAG_OVERWRITE, -1, -1, -1);
+                             Filesystem::OPEN_FLAG_OVERWRITE|Filesystem::OPEN_FLAG_DIRECTIO, -1, -1, -1);
     StaticBuffer sbuf(contents.length());
     memcpy(sbuf.base, contents.c_str(), contents.length());
     Global::dfs->append(fd, sbuf, Filesystem::O_FLUSH);

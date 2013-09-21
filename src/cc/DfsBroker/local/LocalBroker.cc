@@ -179,8 +179,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
     return;
   }
 #else
-  DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
-  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, OPEN_EXISTING, attr, 0)) == INVALID_HANDLE_VALUE) {
+  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0)) == INVALID_HANDLE_VALUE) {
     report_error(cb);
     DWORD err = GetLastError();
     HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
@@ -202,7 +201,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
 
   {
     struct sockaddr_in addr;
-    OpenFileDataLocalPtr fdata(new OpenFileDataLocal(fname, local_fd, O_RDONLY));
+    OpenFileDataLocalPtr fdata(new OpenFileDataLocal(fname, local_fd, flags));
 
     cb->get_address(addr);
 
@@ -256,7 +255,7 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
   }
 #else
   DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
-  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, CREATE_ALWAYS, attr, 0)) == INVALID_HANDLE_VALUE) {
+  if ((local_fd = CreateFile(abspath.c_str(), GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, CREATE_ALWAYS, attr, 0)) == INVALID_HANDLE_VALUE) {
     report_error(cb);
     DWORD err = GetLastError();
     HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
@@ -280,7 +279,7 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
 
   {
     struct sockaddr_in addr;
-    OpenFileDataLocalPtr fdata(new OpenFileDataLocal(fname, local_fd, O_WRONLY));
+    OpenFileDataLocalPtr fdata(new OpenFileDataLocal(fname, local_fd, flags));
 
     cb->get_address(addr);
 
@@ -413,6 +412,8 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
     HT_WIN32_LASTERROR("WriteFile failed");
     return;
   }
+  if (sync)
+    sync = !(m_directio && (fdata->flags & Filesystem::OPEN_FLAG_DIRECTIO)); // no sync because handle has FILE_FLAG_WRITE_THROUGH
 #endif
 
 

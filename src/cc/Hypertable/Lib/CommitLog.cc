@@ -116,7 +116,7 @@ CommitLog::initialize(const String &log_dir, PropertiesPtr &props,
 
   try {
     m_fs->mkdirs(m_log_dir);
-    m_fd = m_fs->create(m_cur_fragment_fname, Filesystem::OPEN_FLAG_OVERWRITE,
+    m_fd = m_fs->create(m_cur_fragment_fname, Filesystem::OPEN_FLAG_OVERWRITE|Filesystem::OPEN_FLAG_DIRECTIO,
                         -1, m_replication, -1);
   }
   catch (Hypertable::Exception &e) {
@@ -429,7 +429,7 @@ int CommitLog::roll(CommitLogFileInfo **clfip) {
   }
 
   try {
-    m_fd = m_fs->create(m_cur_fragment_fname, Filesystem::OPEN_FLAG_OVERWRITE,
+    m_fd = m_fs->create(m_cur_fragment_fname, Filesystem::OPEN_FLAG_OVERWRITE|Filesystem::OPEN_FLAG_DIRECTIO,
                         -1, m_replication, -1);
   }
   catch (Exception &e) {

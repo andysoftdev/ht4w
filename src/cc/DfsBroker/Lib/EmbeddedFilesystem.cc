@@ -692,10 +692,9 @@ int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
     HANDLE h;
     int fd = atomic_inc_return(&ms_next_fd);
 
-    DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
-    if ((h = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, OPEN_EXISTING, attr, 0)) == INVALID_HANDLE_VALUE)
+    if ((h = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0)) == INVALID_HANDLE_VALUE)
       throw_error();
-    set_handle(fd, h);
+    set_handle(fd, h, flags);
     return fd;
   }
   catch (Exception &e) {
@@ -719,9 +718,9 @@ int EmbeddedFilesystem::create(const String &name, uint32_t flags, int32_t bufsz
     int fd = atomic_inc_return(&ms_next_fd);
 
     DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
-    if ((h = CreateFile(abspath.c_str(), GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, CREATE_ALWAYS, attr, 0)) == INVALID_HANDLE_VALUE)
+    if ((h = CreateFile(abspath.c_str(), GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, CREATE_ALWAYS, attr, 0)) == INVALID_HANDLE_VALUE)
       throw_error();
-    set_handle(fd, h);
+    set_handle(fd, h, flags);
     return fd;
   }
   catch (Exception &e) {
@@ -760,7 +759,8 @@ size_t EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags, 
   try {
     FdSyncGuard guard(this, fd, sync);
 
-    HANDLE h = get_handle(fd);
+    uint32_t hflags;
+    HANDLE h = get_handle(fd, hflags);
     DWORD nwritten;
     if (!WriteFile(h, buffer.base, buffer.size, &nwritten, 0))
       throw_error();
@@ -768,7 +768,7 @@ size_t EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags, 
       if ((*offset = SetFilePointer(h, 0, FILE_CURRENT)) == (uint64_t)-1)
         throw_error();
     }
-    if (flags) {
+    if (flags && !(m_directio && (hflags & Filesystem::OPEN_FLAG_DIRECTIO))) { // no sync because handle has FILE_FLAG_WRITE_THROUGH
       if (!::FlushFileBuffers(h))
         throw_error();
     }
