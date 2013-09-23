@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,7 +27,7 @@
 using namespace Hypertable;
 
 OperationWaitForServers::OperationWaitForServers(ContextPtr &context)
-  : Operation(context, MetaLog::EntityType::OPERATION_WAIT_FOR_SERVERS) {
+  : OperationEphemeral(context, MetaLog::EntityType::OPERATION_WAIT_FOR_SERVERS) {
   m_obstructions.insert(Dependency::SERVERS);
 }
 
@@ -41,7 +41,7 @@ void OperationWaitForServers::execute() {
     return;
   }
 
-  set_state(OperationState::COMPLETE);
+  complete_ok();
 
   HT_INFOF("Leaving WaitForServers-%lld (state=%s)",
            (Lld)header.id, OperationState::get_text(get_state()));

@@ -55,6 +55,7 @@
     <ClCompile Include="OperationRecoverRanges.cc" />
     <ClCompile Include="OperationRecoveryBlocker.cc" />
     <ClCompile Include="OperationRegisterServer.cc" />
+    <ClCompile Include="OperationRegisterServerBlocker.cc" />
     <ClCompile Include="OperationRelinquishAcknowledge.cc" />
     <ClCompile Include="OperationRenameTable.cc" />
     <ClCompile Include="OperationSetState.cc" />
@@ -102,6 +103,7 @@
     <ClInclude Include="OperationCreateTable.h" />
     <ClInclude Include="OperationDropNamespace.h" />
     <ClInclude Include="OperationDropTable.h" />
+    <ClInclude Include="OperationEphemeral.h" />
     <ClInclude Include="OperationGatherStatistics.h" />
     <ClInclude Include="OperationInitialize.h" />
     <ClInclude Include="OperationMoveRange.h" />
@@ -110,6 +112,7 @@
     <ClInclude Include="OperationRecoverRanges.h" />
     <ClInclude Include="OperationRecoveryBlocker.h" />
     <ClInclude Include="OperationRegisterServer.h" />
+    <ClInclude Include="OperationRegisterServerBlocker.h" />
     <ClInclude Include="OperationRelinquishAcknowledge.h" />
     <ClInclude Include="OperationRenameTable.h" />
     <ClInclude Include="OperationSetState.h" />

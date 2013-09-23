@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,6 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
+ */
+
+/** @file
+ * Definitions for Protocol.
+ * This file contains definitions for Protocol, a protocol driver class
+ * for encoding request messages.
  */
 
 #include "Common/Compat.h"
@@ -81,12 +87,14 @@ const char *Hyperspace::Protocol::command_text(uint64_t command) {
  */
 CommBuf *
 Hyperspace::Protocol::create_client_keepalive_request(uint64_t session_id,
-    uint64_t last_known_event, bool destroy_session) {
+    std::set<uint64_t> &delivered_events, bool destroy_session) {
   CommHeader header(COMMAND_KEEPALIVE);
   header.flags |= CommHeader::FLAGS_BIT_URGENT;
-  CommBuf *cbuf = new CommBuf(header, 17);
+  CommBuf *cbuf = new CommBuf(header, 8 + 4 + (8*delivered_events.size()) + 1);
   cbuf->append_i64(session_id);
-  cbuf->append_i64(last_known_event);
+  cbuf->append_i32(delivered_events.size());
+  foreach_ht (uint64_t event_id, delivered_events)
+    cbuf->append_i64(event_id);
   cbuf->append_bool(destroy_session);
   return cbuf;
 }
@@ -379,23 +387,28 @@ Hyperspace::Protocol::create_attr_del_request(uint64_t handle,
 }
 
 CommBuf *
-Hyperspace::Protocol::create_attr_exists_request(uint64_t handle, const std::string *name,
+Hyperspace::Protocol::create_attr_exists_request(uint64_t handle,
                                                  const std::string &attr) {
   CommHeader header(COMMAND_ATTREXISTS);
   CommBuf *cbuf;
-  if (name && !name->empty()) {
-    header.gid = filename_to_group(*name);
-    cbuf = new CommBuf(header, 1 + encoded_length_vstr(name->size())
-                       + encoded_length_vstr(attr.size()));
-    cbuf->append_bool(true);
-    cbuf->append_vstr(*name);
-  }
-  else {
-    header.gid = (uint32_t)((handle ^ (handle >> 32)) & 0x0FFFFFFFFLL);
-    cbuf = new CommBuf(header, 1 + 8 + encoded_length_vstr(attr.size()));
-    cbuf->append_bool(false);
-    cbuf->append_i64(handle);
-  }
+  header.gid = (uint32_t)((handle ^ (handle >> 32)) & 0x0FFFFFFFFLL);
+  cbuf = new CommBuf(header, 1 + 8 + encoded_length_vstr(attr));
+  cbuf->append_bool(false);
+  cbuf->append_i64(handle);
+  cbuf->append_vstr(attr);
+  return cbuf;
+}
+
+CommBuf *
+Hyperspace::Protocol::create_attr_exists_request(const std::string &name,
+                                                 const std::string &attr) {
+  CommHeader header(COMMAND_ATTREXISTS);
+  CommBuf *cbuf;
+  header.gid = filename_to_group(name);
+  cbuf = new CommBuf(header, 1 + encoded_length_vstr(name)
+                     + encoded_length_vstr(attr));
+  cbuf->append_bool(true);
+  cbuf->append_vstr(name);
   cbuf->append_vstr(attr);
   return cbuf;
 }

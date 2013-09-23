@@ -208,9 +208,6 @@
     <ClCompile Include="ScannerMap.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TableIdCache.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TableInfo.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -598,9 +595,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ScannerMap.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TableIdCache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TableInfo.h">

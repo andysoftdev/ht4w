@@ -167,8 +167,7 @@ void OperationAlterTable::execute() {
       op_handler->get_results(results);
       foreach_ht (const DispatchHandlerOperation::Result &result, results) {
         if (result.error == Error::OK ||
-            result.error == Error::TABLE_NOT_FOUND ||
-            result.error == Error::RANGESERVER_TABLE_DROPPED) {
+            result.error == Error::TABLE_NOT_FOUND) {
           ScopedLock lock(m_mutex);
           m_completed.insert(result.location);
           m_dependencies.erase(result.location);
@@ -204,6 +203,12 @@ void OperationAlterTable::execute() {
 
 void OperationAlterTable::display_state(std::ostream &os) {
   os << " name=" << m_name << " id=" << m_id << " ";
+}
+
+#define OPERATION_ALTER_TABLE_VERSION 1
+
+uint16_t OperationAlterTable::encoding_version() const {
+  return OPERATION_ALTER_TABLE_VERSION;
 }
 
 size_t OperationAlterTable::encoded_state_length() const {

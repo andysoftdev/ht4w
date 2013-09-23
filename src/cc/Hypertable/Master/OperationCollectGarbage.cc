@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,7 +28,7 @@
 using namespace Hypertable;
 
 OperationCollectGarbage::OperationCollectGarbage(ContextPtr &context)
-  : Operation(context, MetaLog::EntityType::OPERATION_COLLECT_GARBAGE) {
+  : OperationEphemeral(context, MetaLog::EntityType::OPERATION_COLLECT_GARBAGE) {
   m_dependencies.insert(Dependency::INIT);
   m_dependencies.insert(Dependency::METADATA);
 }
@@ -43,7 +43,7 @@ void OperationCollectGarbage::execute() {
   catch (Exception &e) {
     HT_THROW2(e.code(), e, "Garbage Collection");
   }
-  set_state(OperationState::COMPLETE);
+  complete_ok();
   HT_INFOF("Leaving CollectGarbage-%lld", (Lld)header.id);
 }
 

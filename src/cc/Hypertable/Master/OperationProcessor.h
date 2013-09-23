@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -53,7 +53,7 @@ namespace Hypertable {
    *  @{
    */
 
-  /** Manages the execution of operations with dependency relationship.
+  /** Runs a set of operaions with dependency relationships.
    */
   class OperationProcessor : public ReferenceCount {
   public:
@@ -64,7 +64,6 @@ namespace Hypertable {
       add_operation(op);
     }
     void add_operations(std::vector<OperationPtr> &operations);
-    OperationPtr remove_operation(int64_t hash_code);
     void shutdown();
     void join();
     void wait_for_empty();
@@ -241,9 +240,6 @@ namespace Hypertable {
     ThreadContext m_context;
     ThreadGroup m_threads;
   };
-
-  /// Smart pointer to OperationProcessor
-  typedef intrusive_ptr<OperationProcessor> OperationProcessorPtr;
 
   /** @} */
 

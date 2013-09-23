@@ -135,7 +135,6 @@
     <ClCompile Include="ScanContext.cc" />
     <ClCompile Include="ScannerMap.cc" />
     <ClCompile Include="ServerState.cc" />
-    <ClCompile Include="TableIdCache.cc" />
     <ClCompile Include="TableInfo.cc" />
     <ClCompile Include="TableInfoMap.cc" />
     <ClCompile Include="TableSchemaCache.cc" />
@@ -274,7 +273,6 @@
     <ClInclude Include="ScanContext.h" />
     <ClInclude Include="ScannerMap.h" />
     <ClInclude Include="ServerState.h" />
-    <ClInclude Include="TableIdCache.h" />
     <ClInclude Include="TableInfo.h" />
     <ClInclude Include="TableInfoMap.h" />
     <ClInclude Include="TableSchemaCache.h" />

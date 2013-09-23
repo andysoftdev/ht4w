@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -43,11 +43,8 @@ extern "C" {
 #include <time.h>
 }
 
-#define OPERATION_RECOVER_VERSION 1
-
 using namespace Hypertable;
 using namespace Hyperspace;
-
 
 OperationRecover::OperationRecover(ContextPtr &context, 
                                    RangeServerConnectionPtr &rsc, int flags)
@@ -59,9 +56,10 @@ OperationRecover::OperationRecover(ContextPtr &context,
   m_dependencies.insert(m_subop_dependency);
   m_dependencies.insert(Dependency::RECOVERY_BLOCKER);
   m_dependencies.insert(Dependency::RECOVERY);
+  m_dependencies.insert(String("RegisterServer ") + m_location);
   m_exclusivities.insert(m_rsc->location());
   m_obstructions.insert(Dependency::RECOVER_SERVER);
-  m_hash_code = md5_hash("RecoverServer") ^ md5_hash(m_rsc->location().c_str());
+
   HT_ASSERT(m_rsc != 0);
   HT_INFOF("OperationRecover %s state=%s restart=%s",
            m_location.c_str(), OperationState::get_text(get_state()),
@@ -92,20 +90,33 @@ void OperationRecover::execute() {
   if (m_hostname.empty() && m_rsc)
     m_hostname = m_rsc->hostname();
 
-  if (!acquire_server_lock()) {
-    if (m_rsc)
-      m_rsc->set_recovering(false);
-    m_context->add_available_server(m_location);
-    complete_ok();
-    return;
-  }
-
   switch (state) {
-  case OperationState::INITIAL:
 
-    m_rsc->set_recovering(true);
+  case OperationState::INITIAL:
+    // Prevent any RegisterServer operations for this server from running while
+    // recovery is in progress
+    {
+      ScopedLock lock(m_mutex);
+      String register_server_label = String("RegisterServer ") + m_location;
+      m_dependencies.erase(register_server_label);
+      m_exclusivities.insert(register_server_label);
+      m_state = OperationState::STARTED;
+    }
+    break;
+
+  case OperationState::STARTED:
+
+    if (!acquire_server_lock()) {
+      if (m_rsc)
+        m_rsc->set_recovering(false);
+      m_expiration_time.reset();  // force it to get removed immediately
+      complete_ok();
+      return;
+    }
 
     if (m_rsc) {
+
+      m_rsc->set_recovering(true);
 
       m_context->remove_available_server(m_location);
 
@@ -211,6 +222,7 @@ void OperationRecover::execute() {
     // server being recovered then it unlocks the hyperspace file
     clear_server_state();
     HT_MAYBE_FAIL("recover-server-4");
+    m_expiration_time.reset();  // force it to get removed immediately
     complete_ok();
     // Send notification
     subject = format("NOTICE: Recovery of %s (%s) succeeded",
@@ -462,9 +474,14 @@ void OperationRecover::handle_split_shrunk(MetaLogEntityRange *range_entity) {
   
 }
 
+#define OPERATION_RECOVER_VERSION 1
+
+uint16_t OperationRecover::encoding_version() const {
+  return OPERATION_RECOVER_VERSION;
+}
 
 size_t OperationRecover::encoded_state_length() const {
-  size_t len = 2 + Serialization::encoded_length_vstr(m_location) + 16;
+  size_t len = Serialization::encoded_length_vstr(m_location) + 16;
   for (size_t i=0; i<m_root_specs.size(); i++)
     len += m_root_specs[i].encoded_length() + m_root_states[i].encoded_length();
   for (size_t i=0; i<m_metadata_specs.size(); i++)
@@ -477,7 +494,6 @@ size_t OperationRecover::encoded_state_length() const {
 }
 
 void OperationRecover::encode_state(uint8_t **bufp) const {
-  Serialization::encode_i16(bufp, (int16_t)OPERATION_RECOVER_VERSION);
   Serialization::encode_vstr(bufp, m_location);
   // root
   Serialization::encode_i32(bufp, m_root_specs.size());
@@ -512,8 +528,8 @@ void OperationRecover::decode_state(const uint8_t **bufp, size_t *remainp) {
 }
 
 void OperationRecover::decode_request(const uint8_t **bufp, size_t *remainp) {
-  // skip version for now
-  Serialization::decode_i16(bufp, remainp);
+  if (m_decode_version == 0)
+    Serialization::decode_i16(bufp, remainp);  // skip old version
   m_location = Serialization::decode_vstr(bufp, remainp);
   int nn;
   QualifiedRangeSpec spec;

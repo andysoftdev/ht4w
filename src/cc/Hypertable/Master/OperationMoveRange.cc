@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -35,6 +35,10 @@
 #include "OperationProcessor.h"
 #include "Utility.h"
 #include "BalancePlanAuthority.h"
+
+extern "C" {
+#include <poll.h>
+}
 
 using namespace Hypertable;
 using namespace Hyperspace;
@@ -85,6 +89,7 @@ void OperationMoveRange::initialize_dependencies() {
     m_dependencies.insert(Dependency::SYSTEM);
   }
   m_obstructions.insert(String("OperationMove ") + m_range_name);
+  m_obstructions.insert(String(m_table.id) + " move range");
 }
 
 void OperationMoveRange::execute() {
@@ -149,27 +154,30 @@ void OperationMoveRange::execute() {
     }
     catch (Exception &e) {
       if (e.code() != Error::RANGESERVER_RANGE_ALREADY_LOADED) {
-        if (e.code() != Error::RANGESERVER_TABLE_DROPPED) {
-          if (!Utility::table_exists(m_context, m_table.id)) {
-            HT_WARNF("Aborting MoveRange %s because table no longer exists",
-                    m_range_name.c_str());
-            bpa->balance_move_complete(m_table, m_range);
-            remove_approval_add(0x03);
-            complete_ok(bpa);
-            return;
-          }
-          // server might be down - go back to the initial state and pick a
-          // new destination
-          HT_WARNF("Problem moving range %s to %s: %s - %s",
-                  m_range_name.c_str(), m_destination.c_str(),
-                  Error::get_text(e.code()), e.what());
-          poll(0, 0, 5000);
-          set_state(OperationState::INITIAL);
+
+        // If not yet relinquished, wait a couple of seconds and try again
+        if (e.code() == Error::RANGESERVER_RANGE_NOT_YET_RELINQUISHED) {
+          HT_INFOF("%s - %s", Error::get_text(e.code()), e.what());
+          poll(0, 0, 2000);
           return;
         }
-        bpa->balance_move_complete(m_table, m_range);
-        remove_approval_add(0x03);
-        complete_ok(bpa);
+
+        if (!Utility::table_exists(m_context, m_table.id)) {
+          HT_WARNF("Aborting MoveRange %s because table no longer exists",
+                   m_range_name.c_str());
+          bpa->balance_move_complete(m_table, m_range);
+          remove_approval_add(0x03);
+          complete_ok(bpa);
+          return;
+        }
+
+        // server might be down - go back to the initial state and pick a
+        // new destination
+        HT_WARNF("Problem moving range %s to %s: %s - %s",
+                 m_range_name.c_str(), m_destination.c_str(),
+                 Error::get_text(e.code()), e.what());
+        poll(0, 0, 5000);
+        set_state(OperationState::INITIAL);
         return;
       }
     }
@@ -198,7 +206,6 @@ void OperationMoveRange::execute() {
           rsc.acknowledge_load(addr, range_vec, response_map);
           map<QualifiedRangeSpec, int>::iterator it = response_map.begin();
           if (it->second != Error::OK &&
-              it->second != Error::RANGESERVER_TABLE_DROPPED &&
               it->second != Error::TABLE_NOT_FOUND &&
               it->second != Error::RANGESERVER_RANGE_NOT_FOUND)
             HT_THROWF(it->second, "Problem acknowledging load range %s to %s",
@@ -238,6 +245,12 @@ void OperationMoveRange::display_state(std::ostream &os) {
   os << "' soft-limit=" << m_soft_limit << " is_split="
      << ((m_is_split) ? "true" : "false");
   os << "source='" << m_source << "' location='" << m_destination << "' ";
+}
+
+#define OPERATION_MOVE_RANGE_VERSION 1
+
+uint16_t OperationMoveRange::encoding_version() const {
+  return OPERATION_MOVE_RANGE_VERSION;
 }
 
 size_t OperationMoveRange::encoded_state_length() const {

@@ -20,7 +20,7 @@
  */
 
 /** @file
- * Declarations for MasterProtocol
+ * Declarations for MasterProtocol.
  * This file contains declarations for MasterProtocol, a class for generating
  * Master protocol messages.
  */
@@ -103,6 +103,7 @@ namespace Hypertable {
 
     static CommBuf *create_register_server_request(const String &location,
                                                    uint16_t listen_port,
+                                                   bool lock_held,
                                                    StatsSystem &system_stats);
 
     static CommBuf *

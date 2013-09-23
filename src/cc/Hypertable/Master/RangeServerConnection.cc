@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,16 +28,18 @@
 using namespace Hypertable;
 
 RangeServerConnection::RangeServerConnection(const String &location,
-                                             const String &hostname, InetAddr public_addr)
+                                             const String &hostname,
+                                             InetAddr public_addr)
   : MetaLog::Entity(MetaLog::EntityType::RANGE_SERVER_CONNECTION), 
-    m_handle(0), m_location(location), m_hostname(hostname), 
-    m_state(RangeServerConnectionFlags::INIT), m_public_addr(public_addr),
-    m_disk_fill_percentage(0.0), m_connected(false), m_recovering(false) {
+    m_handle(0), m_hyperspace_callback(0), m_location(location),
+    m_hostname(hostname), m_state(RangeServerConnectionFlags::INIT),
+    m_public_addr(public_addr), m_disk_fill_percentage(0.0),
+    m_connected(false), m_recovering(false) {
   m_comm_addr.set_proxy(m_location);
 }
 
 RangeServerConnection::RangeServerConnection(const MetaLog::EntityHeader &header_)
-  : MetaLog::Entity(header_), m_handle(0),
+  : MetaLog::Entity(header_), m_handle(0), m_hyperspace_callback(0),
     m_disk_fill_percentage(0.0), m_connected(false), m_recovering(false) {
   m_comm_addr.set_proxy(m_location);
 }
@@ -115,13 +117,19 @@ void RangeServerConnection::set_recovering(bool b) {
   m_recovering = b;
 }
 
-void RangeServerConnection::set_handle(uint64_t handle) { 
+void RangeServerConnection::set_hyperspace_handle(uint64_t handle,
+                                                  RangeServerHyperspaceCallback *cb) {
   ScopedLock lock(m_mutex);
   m_handle = handle;
+  m_hyperspace_callback = cb;
 }
 
-uint64_t RangeServerConnection::get_handle() { 
+bool RangeServerConnection::get_hyperspace_handle(uint64_t *handle,
+                                                  RangeServerHyperspaceCallback **cb) {
   ScopedLock lock(m_mutex);
+  *handle = m_handle;
+  *cb = m_hyperspace_callback;
+  return m_hyperspace_callback;
   return m_handle;
 }
 
@@ -133,7 +141,7 @@ CommAddress RangeServerConnection::get_comm_address() {
 }
 
 void RangeServerConnection::display(std::ostream &os) {
-  os << " " << m_location << " state=";
+  os << " " << m_location << " (" << m_hostname << ") state=";
   if (m_state) {
     bool continuation = false;
     if (m_state & RangeServerConnectionFlags::REMOVED) {
@@ -153,12 +161,15 @@ void RangeServerConnection::display(std::ostream &os) {
 }
 
 size_t RangeServerConnection::encoded_length() const {
-  return 8 + m_public_addr.encoded_length() +
+  return 10 + m_public_addr.encoded_length() +
     Serialization::encoded_length_vstr(m_location) +
     Serialization::encoded_length_vstr(m_hostname);
 }
 
+#define RANGESERVER_CONNECTION_VERSION 1
+
 void RangeServerConnection::encode(uint8_t **bufp) const {
+  Serialization::encode_i16(bufp, RANGESERVER_CONNECTION_VERSION);
   Serialization::encode_i32(bufp, m_state);
   // was removal_time but not used ...
   Serialization::encode_i32(bufp, 0);  
@@ -167,7 +178,10 @@ void RangeServerConnection::encode(uint8_t **bufp) const {
   Serialization::encode_vstr(bufp, m_hostname);
 }
 
-void RangeServerConnection::decode(const uint8_t **bufp, size_t *remainp) {
+void RangeServerConnection::decode(const uint8_t **bufp, size_t *remainp,
+                                   uint16_t definition_version) {
+  if (definition_version >= 2)
+    Serialization::decode_i16(bufp, remainp);  // currently not used
   m_state = Serialization::decode_i32(bufp, remainp);
   // was removal_time but not used ...
   Serialization::decode_i32(bufp, remainp);

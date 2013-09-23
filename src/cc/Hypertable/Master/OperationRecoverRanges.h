@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -45,6 +45,7 @@ namespace Hypertable {
     virtual const String name();
     virtual const String label();
     virtual void display_state(std::ostream &os);
+    virtual uint16_t encoding_version() const;
     virtual size_t encoded_state_length() const;
     virtual void encode_state(uint8_t **bufp) const;
     virtual void decode_state(const uint8_t **bufp, size_t *remainp);
@@ -75,8 +76,6 @@ namespace Hypertable {
     int m_plan_generation;
     time_t m_last_notification;
   };
-
-  typedef intrusive_ptr<OperationRecoverRanges> OperationRecoverRangesPtr;
 
 } // namespace Hypertable
 

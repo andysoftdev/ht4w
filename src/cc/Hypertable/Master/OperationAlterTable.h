@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -95,6 +95,8 @@ namespace Hypertable {
      */
     virtual void display_state(std::ostream &os);
 
+    virtual uint16_t encoding_version() const;
+
     /** Returns serialized state length.
      * This method returns the length of the serialized representation of the
      * object state.  See encode() for a description of the serialized format.
@@ -185,9 +187,6 @@ namespace Hypertable {
     /// Set of range servers that have completed operation
     StringSet m_completed;
   };
-
-  /// Smart pointer to OperationAlterTable
-  typedef intrusive_ptr<OperationAlterTable> OperationAlterTablePtr;
 
   /* @}*/
 

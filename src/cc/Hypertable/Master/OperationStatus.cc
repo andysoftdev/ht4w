@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -30,15 +30,12 @@
 using namespace Hypertable;
 
 OperationStatus::OperationStatus(ContextPtr &context, EventPtr &event) 
-  : Operation(context, event, MetaLog::EntityType::OPERATION_STATUS) {
+  : OperationEphemeral(context, event, MetaLog::EntityType::OPERATION_STATUS) {
   HT_INFOF("Status-%lld", (Lld)header.id);
-  set_state(OperationState::STARTED);
 }
 
 void OperationStatus::execute() {
-  ScopedLock lock(m_mutex);
-  m_expiration_time.reset();
-  m_state = OperationState::COMPLETE;
+  complete_ok();
 }
 
 const String OperationStatus::name() {

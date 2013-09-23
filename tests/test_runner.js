@@ -742,13 +742,12 @@ all_tests.add("scope_guard_test", run_target);
 all_tests.add("serialization_test", run_target);
 all_tests.add("stats_serialize_test", run_target);
 all_tests.add("string_compressor_test", run_target);
-all_tests.add("tableid_cache_test", run_target);
 all_tests.add("timeinline_test", run_target);
 all_tests.add("unique_test", unique_test);
 
 // globals
 var wshshell = new ActiveXObject("WScript.Shell");
-var fso = new ActiveXObject("Scripting.FileSystemObject")
+var fso = new ActiveXObject("Scripting.FileSystemObject");
 var timeout = 240000; // [ms]
 
 var solutionDir = null;

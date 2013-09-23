@@ -38,6 +38,8 @@ namespace Hypertable {
     };
   }
 
+  class RangeServerHyperspaceCallback;
+
   class RangeServerConnection : public MetaLog::Entity {
   public:
     RangeServerConnection(const String &location, const String &hostname,
@@ -62,8 +64,8 @@ namespace Hypertable {
     void set_recovering(bool b);
     bool is_recovering();
 
-    void set_handle(uint64_t handle);
-    uint64_t get_handle();
+    void set_hyperspace_handle(uint64_t handle, RangeServerHyperspaceCallback *cb);
+    bool get_hyperspace_handle(uint64_t *handle, RangeServerHyperspaceCallback **cb);
 
     CommAddress get_comm_address();
 
@@ -76,10 +78,19 @@ namespace Hypertable {
     virtual void display(std::ostream &os);
     virtual size_t encoded_length() const;
     virtual void encode(uint8_t **bufp) const;
-    virtual void decode(const uint8_t **bufp, size_t *remainp);
+
+    /** Decodes serialized RangeServerConnection object.
+     * @param bufp Address of source buffer pointer (advanced by call)
+     * @param remainp Amount of remaining buffer pointed to by
+     * <code>*bufp</code> (decremented by call).
+     * @param definition_version Version of DefinitionMaster
+     */
+    virtual void decode(const uint8_t **bufp, size_t *remainp,
+                        uint16_t definition_version);
 
   private:
     uint64_t m_handle;
+    RangeServerHyperspaceCallback *m_hyperspace_callback;
     String m_location;
     String m_hostname;
     int32_t m_state;

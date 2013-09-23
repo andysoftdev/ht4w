@@ -20,7 +20,7 @@
  */
 
 /** @file
- * Definitions for MasterProtocol
+ * Definitions for MasterProtocol.
  * This file contains definitions for MasterProtocol, a class for generating
  * Master protocol messages.
  */
@@ -128,12 +128,14 @@ namespace Hypertable {
   CommBuf *
   MasterProtocol::create_register_server_request(const String &location,
                                                  uint16_t listen_port,
+                                                 bool lock_held,
                                                  StatsSystem &system_stats) {
     int64_t now = get_ts64();
     CommHeader header(COMMAND_REGISTER_SERVER);
-    CommBuf *cbuf = new CommBuf(header, encoded_length_vstr(location) + 2 + system_stats.encoded_length() + 8);
+    CommBuf *cbuf = new CommBuf(header, encoded_length_vstr(location) + 3 + system_stats.encoded_length() + 8);
     cbuf->append_vstr(location);
     cbuf->append_i16(listen_port);
+    cbuf->append_bool(lock_held);
     system_stats.encode(cbuf->get_data_ptr_address());
     cbuf->append_i64(now);
     return cbuf;

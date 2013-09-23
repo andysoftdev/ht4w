@@ -50,8 +50,7 @@
 /** %Hyperspace definitions */
 namespace Hyperspace {
 
-  /** @defgroup Hyperspace Hyperspace
-   * %Hyperspace highly available lock manager
+  /** @addtogroup Hyperspace
    * @{
    */
 

@@ -43,7 +43,7 @@ extern "C" {
 using namespace Hypertable;
 
 OperationGatherStatistics::OperationGatherStatistics(ContextPtr &context)
-  : Operation(context, MetaLog::EntityType::OPERATION_GATHER_STATISTICS) {
+  : OperationEphemeral(context, MetaLog::EntityType::OPERATION_GATHER_STATISTICS) {
   m_dependencies.insert(Dependency::INIT);
   m_dependencies.insert(Dependency::METADATA);
   m_dependencies.insert(Dependency::SYSTEM);
@@ -68,7 +68,7 @@ void OperationGatherStatistics::execute() {
   case OperationState::INITIAL:
     m_context->rsc_manager->get_servers(servers);
     if (servers.empty()) {
-      set_state(OperationState::COMPLETE);
+      complete_ok();
       break;
     }
     results.resize(servers.size());
@@ -156,7 +156,7 @@ void OperationGatherStatistics::execute() {
 
     m_context->monitoring->add(results);
     m_context->balancer->transfer_monitoring_data(results);
-    set_state(OperationState::COMPLETE);
+    complete_ok();
     break;
 
   default:

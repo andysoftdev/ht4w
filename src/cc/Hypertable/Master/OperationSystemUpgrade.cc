@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -32,12 +32,12 @@ using namespace Hypertable;
 using namespace Hyperspace;
 
 OperationSystemUpgrade::OperationSystemUpgrade(ContextPtr &context)
-  : Operation(context, MetaLog::EntityType::OPERATION_SYSTEM_UPGRADE) {
+  : OperationEphemeral(context, MetaLog::EntityType::OPERATION_SYSTEM_UPGRADE) {
 }
 
 OperationSystemUpgrade::OperationSystemUpgrade(ContextPtr &context,
                                                const MetaLog::EntityHeader &header_)
-  : Operation(context, header_) {
+  : OperationEphemeral(context, header_) {
 }
 
 
@@ -96,8 +96,8 @@ void OperationSystemUpgrade::execute() {
       m_context->rs_metrics_table = new Table(m_context->props, m_context->conn_manager,
                                               m_context->hyperspace, m_context->namemap,
                                               "sys/RS_METRICS");
-    
-    set_state(OperationState::COMPLETE);
+
+    complete_ok();
     break;
 
   default:

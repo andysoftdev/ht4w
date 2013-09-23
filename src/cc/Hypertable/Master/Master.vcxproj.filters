@@ -151,6 +151,9 @@
     <ClCompile Include="SystemState.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OperationRegisterServerBlocker.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -325,6 +328,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="SystemState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationEphemeral.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRegisterServerBlocker.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
