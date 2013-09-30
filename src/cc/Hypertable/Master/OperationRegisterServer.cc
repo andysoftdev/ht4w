@@ -142,7 +142,7 @@ void OperationRegisterServer::execute() {
 
   if (m_context->rsc_manager->is_connected(m_location)) {
     complete_error(Error::CONNECT_ERROR_MASTER,
-                   format("Problem connecting location %s",m_location.c_str()));
+                   format("%s already connected", m_location.c_str()));
     CommHeader header;
     header.initialize_from_request_header(m_event->header);
     header.command = RangeServerProtocol::COMMAND_INITIALIZE;
@@ -264,15 +264,23 @@ void OperationRegisterServer::execute() {
     }
   }
 
+  OperationPtr operation;
+
+  // At this point, any pending Recover operations should be irrelevant
+  operation = m_context->op->remove_operation( md5_hash("OperationRecover") ^
+                                               md5_hash(m_location.c_str()) );
+  if (operation)
+    operation->complete_ok();
+
   m_context->rsc_manager->connect_server(m_rsc, m_system_stats.net_info.host_name,
                                          m_local_addr, m_public_addr);
 
   m_context->add_available_server(m_location);
 
   // Prevent subsequent registration until lock is released
-  OperationPtr op =
+  operation =
     new OperationRegisterServerBlocker(m_context, m_rsc->location());
-  m_context->op->add_operation(op);
+  m_context->op->add_operation(operation);
 
   if (!m_rsc->get_balanced())
     m_context->balancer->signal_new_server();

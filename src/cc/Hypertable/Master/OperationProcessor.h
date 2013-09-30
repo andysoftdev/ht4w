@@ -64,6 +64,7 @@ namespace Hypertable {
       add_operation(op);
     }
     void add_operations(std::vector<OperationPtr> &operations);
+    OperationPtr remove_operation(int64_t hash_code);
     void shutdown();
     void join();
     void wait_for_empty();

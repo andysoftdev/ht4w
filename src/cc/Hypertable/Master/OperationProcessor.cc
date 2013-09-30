@@ -122,6 +122,26 @@ void OperationProcessor::add_operation_internal(OperationPtr &operation) {
   add_dependencies(v, operation);
 }
 
+OperationPtr OperationProcessor::remove_operation(int64_t hash_code) {
+  ScopedLock lock(m_context.mutex);
+  OperationPtr operation;
+  Vertex vertex;
+
+  hash_map<int64_t, OperationVertex>::iterator iter =
+    m_context.operation_hash.find(hash_code);
+
+  if (iter == m_context.operation_hash.end() ||
+      m_context.busy[iter->second.vertex])
+    return 0;
+
+  operation = iter->second.operation;
+  vertex = iter->second.vertex;
+
+  retire_operation(vertex, operation);
+
+  return operation;
+}
+
 void OperationProcessor::shutdown() {
   ScopedLock lock(m_context.mutex);
   m_context.shutdown = true;

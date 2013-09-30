@@ -80,6 +80,7 @@ class TServerSocket : public TServerTransport {
 
   struct addrinfo server_addr_info_;
   LPFN_ACCEPTEX lpfnAcceptEx_;
+  LPFN_GETACCEPTEXSOCKADDRS lpfnGetAcceptExSockaddrs_;
   static HANDLE hIOCP_;
   void init();
 

@@ -429,7 +429,32 @@ void TServerSocket::listen() {
   }
   static GUID GuidAcceptEx = WSAID_ACCEPTEX;
   DWORD dwBytes;
-  if( WSAIoctl(serverSocket_,  SIO_GET_EXTENSION_FUNCTION_POINTER,  &GuidAcceptEx,  sizeof(GuidAcceptEx), &lpfnAcceptEx_, sizeof(lpfnAcceptEx_), &dwBytes, NULL, NULL) == SOCKET_ERROR ) {
+  if( WSAIoctl(
+        serverSocket_,
+        SIO_GET_EXTENSION_FUNCTION_POINTER,
+        &GuidAcceptEx,
+        sizeof(GuidAcceptEx),
+        &lpfnAcceptEx_,
+        sizeof(lpfnAcceptEx_),
+        &dwBytes, 
+        NULL, 
+        NULL) == SOCKET_ERROR ) {
+    int errno_copy = SOCKETERRNO;
+    close();
+    THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() WSAIoctl()",  errno_copy )
+  }
+
+  static GUID GuidGetAcceptExSockaddrs = WSAID_GETACCEPTEXSOCKADDRS;
+  if( WSAIoctl(
+        serverSocket_,
+        SIO_GET_EXTENSION_FUNCTION_POINTER,
+        &GuidGetAcceptExSockaddrs,
+        sizeof(GuidGetAcceptExSockaddrs),
+        &lpfnGetAcceptExSockaddrs_,
+        sizeof(lpfnGetAcceptExSockaddrs_),
+        &dwBytes, 
+        NULL, 
+        NULL) == SOCKET_ERROR ) {
     int errno_copy = SOCKETERRNO;
     close();
     THROW( TTransportException::NOT_OPEN, "TServerSocket::listen() WSAIoctl()",  errno_copy )
@@ -565,17 +590,18 @@ shared_ptr<TTransport> TServerSocket::acceptImpl() {
     THROW( TTransportException::UNKNOWN, "Could not create accepting socket, TServerSocket::acceptImpl() WSASocket()",  WSAGetLastError() )
   }
 
-  char clientAddress[(sizeof(struct sockaddr_in6) + 16)*2];
+  const int addrSize = sizeof(struct sockaddr_storage) + 16;
+  char buffer[addrSize*2];
   WSAOVERLAPPED ol;
   memset(&ol, 0, sizeof(ol));
   DWORD size;
 
   if( !lpfnAcceptEx_(serverSocket_, 
       clientSocket,
-      clientAddress,
+      buffer,
       0,
-      sizeof(sockaddr_in6) + 16,
-      sizeof(sockaddr_in6) + 16,
+      addrSize,
+      addrSize,
       &size, 
       &ol) && WSAGetLastError() != ERROR_IO_PENDING ) {
 
@@ -606,6 +632,18 @@ shared_ptr<TTransport> TServerSocket::acceptImpl() {
        }
     }
   }
+
+  LPSOCKADDR localAddress = 0;
+  int localAddressLen = 0;
+  LPSOCKADDR peerAddress = 0;
+  int peerAddressLen = 0;
+  lpfnGetAcceptExSockaddrs_(buffer, 0, addrSize, addrSize,
+    &localAddress, &localAddressLen, &peerAddress, &peerAddressLen);
+
+  struct sockaddr_storage clientAddress;
+  memset(&clientAddress, 0, sizeof(clientAddress));
+  memcpy(&clientAddress, peerAddress, peerAddressLen);
+  size = peerAddressLen;
 
   // Make sure client socket is blocking
   u_long zero_arg = 0;
@@ -681,6 +719,7 @@ void TServerSocket::close() {
 void TServerSocket::init() {
   memset( &server_addr_info_, 0, sizeof(server_addr_info_) );
   lpfnAcceptEx_ = 0;
+  lpfnGetAcceptExSockaddrs_ = 0;
 
   TWinsockSingleton::create();
 

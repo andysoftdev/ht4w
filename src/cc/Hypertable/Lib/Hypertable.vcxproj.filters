@@ -498,5 +498,8 @@
     <ClInclude Include="SystemVariable.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="ClientObject.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

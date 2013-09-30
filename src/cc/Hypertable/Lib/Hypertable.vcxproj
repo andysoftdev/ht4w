@@ -102,6 +102,7 @@
     <ClInclude Include="Cell.h" />
     <ClInclude Include="Cells.h" />
     <ClInclude Include="Client.h" />
+    <ClInclude Include="ClientObject.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="DataGenerator.h" />
     <ClInclude Include="DataGeneratorColumn.h" />

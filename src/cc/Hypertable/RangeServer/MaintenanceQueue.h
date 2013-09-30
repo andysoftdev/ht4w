@@ -59,12 +59,12 @@ namespace Hypertable {
 
     struct LtMaintenanceTask {
       bool
-      operator()(const MaintenanceTask *sm1, const MaintenanceTask *sm2) const {
-	if (sm1->level != sm2->level)
-	  return sm1->level > sm2->level;
-	if (sm1->priority != sm2->priority)
-	  return sm1->priority > sm2->priority;
-        return xtime_cmp(sm1->start_time, sm2->start_time) >= 0;
+        operator()(const MaintenanceTask *sm1, const MaintenanceTask *sm2) const {
+          if (sm1->level != sm2->level)
+            return sm1->level >= sm2->level;
+          if (sm1->priority != sm2->priority)
+            return sm1->priority >= sm2->priority;
+          return xtime_cmp(sm1->start_time, sm2->start_time) >= 0;
       }
     };
 
