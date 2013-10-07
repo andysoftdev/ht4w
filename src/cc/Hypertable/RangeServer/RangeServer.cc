@@ -181,8 +181,6 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   m_namemap = new NameIdMapper(m_hyperspace, Global::toplevel_dir);
 
-  m_group_commit = new GroupCommit(this);
-
   m_scanner_ttl = (time_t)cfg.get_i32("Scanner.Ttl");
 
   Global::metrics_interval = props->get_i32("Hypertable.LoadMetrics.Interval");
@@ -420,8 +418,6 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   HT_INFOF("Prune thresholds - min=%lld, max=%lld", (Lld)Global::log_prune_threshold_min,
            (Lld)Global::log_prune_threshold_max);
-
-  m_group_commit_timer_handler = new GroupCommitTimerHandler(m_comm, this, m_app_queue);
 
 }
 
@@ -2089,7 +2085,7 @@ RangeServer::commit_log_sync(ResponseCallback *cb,
 
     // Check for group commit
     if (schema->get_group_commit_interval() > 0) {
-      m_group_commit->add(cb->get_event(), schema, table, 0, buffer, 0);
+      group_commit_add(cb->get_event(), schema, table, 0, buffer, 0);
       return;
     }
 
@@ -2159,7 +2155,7 @@ RangeServer::update(ResponseCallbackUpdate *cb, const TableIdentifier *table,
 
   // Check for group commit
   if (schema->get_group_commit_interval() > 0) {
-    m_group_commit->add(cb->get_event(), schema, table, count, buffer, flags);
+    group_commit_add(cb->get_event(), schema, table, count, buffer, flags);
     delete table_update;
     return;
   }
@@ -4615,4 +4611,13 @@ RangeServer::wait_for_recovery_finish(const TableIdentifier *table,
   }
 
   return true;
+}
+
+void RangeServer::group_commit_add(EventPtr &event, SchemaPtr &schema, const TableIdentifier *table,
+                                   uint32_t count, StaticBuffer &buffer, uint32_t flags) {
+  if (!m_group_commit)
+    m_group_commit = new GroupCommit(this);
+  if (!m_group_commit_timer_handler)
+    m_group_commit_timer_handler = new GroupCommitTimerHandler(m_comm, this, m_app_queue);
+  m_group_commit->add(event, schema, table, count, buffer, flags);
 }
