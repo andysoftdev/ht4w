@@ -310,7 +310,7 @@ namespace Hyperspace {
     std::string   m_base_dir;
     std::string   m_lock_file;
 #ifdef _WIN32
-    HANDLE        m_lock_fd;
+    ::HANDLE      m_lock_fd;
 #else
 	int           m_lock_fd;	
 #endif

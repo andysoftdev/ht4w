@@ -41,16 +41,16 @@ namespace Hypertable {
     inline bool is_existing_event() const { 
       return already_exists;
     }
-    inline HANDLE handle() const { 
+    inline ::HANDLE handle() const { 
       return evt;
     }
 
   private:
-    HANDLE evt;
+    ::HANDLE evt;
     DWORD pid;
     bool already_exists;
 
-    static HANDLE create_event(const char* preffix, DWORD pid, bool& already_exists);
+    static ::HANDLE create_event(const char* preffix, DWORD pid, bool& already_exists);
   };
 
 }

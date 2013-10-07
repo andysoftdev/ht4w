@@ -54,7 +54,7 @@ void test_schema(Thrift::Client *client, std::ostream &out);
 void test_put(Thrift::Client *client);
 void test_async(Thrift::Client *client, std::ostream &out);
 void test_error(Thrift::Client *client, std::ostream &out);
-
+void test_multiple_open(Thrift::Client *client, std::ostream &out);
 
 int main() {
 
@@ -96,6 +96,8 @@ void run(Thrift::Client *client) {
     test_error(client, out);
     out << "running test_scan_keysonly" << std::endl;
     test_scan_keysonly(client, out);
+    out << "running test_multiple_open" << std::endl;
+    test_multiple_open(client, out);
   }
   catch (ClientException &e) {
     std::cout << e << std::endl;
@@ -622,3 +624,11 @@ void test_error(Thrift::Client *client, std::ostream &out) {
   check_error("ERROR NOT REGISTERED", s, out);
 }
 
+
+void test_multiple_open(Thrift::Client *client, std::ostream &out) {
+  (void)out;
+  Namespace ns = client->namespace_open("test");
+  Namespace ns2 = client->namespace_open("test");
+  client->namespace_close(ns2);
+  client->namespace_close(ns);
+}

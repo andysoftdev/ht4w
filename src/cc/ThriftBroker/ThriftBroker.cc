@@ -561,7 +561,6 @@ public:
 
   ServerHandler(const String& remote_peer, Context &c)
     : m_remote_peer(remote_peer), m_context(c) {
-    m_rng.seed(time(0));
   }
 
   virtual ~ServerHandler() {
@@ -1000,8 +999,8 @@ public:
             << ss << " result.size=" << result.size());
 
     try {
-      TableScanner *scanner = _open_scanner(ns, table, ss);
-      _next(result, scanner, INT32_MAX);
+      TableScannerPtr scanner = _open_scanner(ns, table, ss);
+      _next(result, scanner.get(), INT32_MAX);
     } RETHROW("namespace=" << ns << " table="<< table <<" scan_spec="<< ss)
     LOG_API_FINISH_E(" result.size="<< result.size());
   }
@@ -1012,8 +1011,8 @@ public:
     LOG_API_START("namespace=" << ns << " table="<< table <<" scan_spec="<< ss);
 
     try {
-      TableScanner *scanner = _open_scanner(ns, table, ss);
-      _next(result, scanner, INT32_MAX);
+      TableScannerPtr scanner = _open_scanner(ns, table, ss);
+      _next(result, scanner.get(), INT32_MAX);
     } RETHROW("namespace=" << ns << " table="<< table <<" scan_spec="<< ss)
     LOG_API_FINISH_E(" result.size="<< result.size());
   }
@@ -1025,7 +1024,7 @@ public:
 
     try {
       SerializedCellsWriter writer(0, true);
-      TableScanner *scanner = _open_scanner(ns, table, ss);
+      TableScannerPtr scanner = _open_scanner(ns, table, ss);
       Hypertable::Cell cell;
 
       while (scanner->next(cell))
@@ -2089,8 +2088,8 @@ public:
     ss.row_intervals.push_back(Hypertable::RowInterval(row.c_str(), true,
                                                        row.c_str(), true));
     ss.max_versions = 1;
-    TableScanner *scanner = t->create_scanner(ss);
-    _next(result, scanner, INT32_MAX);
+    TableScannerPtr scanner = t->create_scanner(ss);
+    _next(result, scanner.get(), INT32_MAX);
   }
 
   void run_hql_interp(const ThriftGen::Namespace ns, const String &hql,
@@ -2188,7 +2187,7 @@ public:
   int64_t new_object_id(ClientObjectPtr co) {
     int64_t id;
     ScopedLock lock(m_mutex);
-    while (!m_object_map.insert(make_pair(id = m_rng() & INT64_MAX, co)).second || id == 0); // no overwrite
+    while (!m_object_map.insert(make_pair(id = Random::number32(), co)).second || id == 0); // no overwrite
     return id;
   }
 
@@ -2349,7 +2348,6 @@ private:
   Context &m_context;
   Mutex m_mutex;
   ObjectMap m_object_map;
-  boost::mt19937_64 m_rng;
 };
 
 template <class ResultT, class CellT>
@@ -2416,7 +2414,7 @@ private:
 
     ServerHandler* serverHandler = new ServerHandler(remotePeer, *g_context);
     m_server_handler_map.insert(
-      std::make_pair(remotePeer, 
+      std::make_pair(remotePeer,
       std::make_pair(1, serverHandler)));
 
     return serverHandler;
@@ -2425,7 +2423,7 @@ private:
   void release_handler(ServerHandler* serverHandler) {
     {
       ScopedLock lock(m_mutex);
-      ServerHandlerMap::iterator it = 
+      ServerHandlerMap::iterator it =
         m_server_handler_map.find(serverHandler->remote_peer());
       if (it != m_server_handler_map.end()) {
         if (--it->second.first > 0) {
@@ -2438,7 +2436,7 @@ private:
   }
 
   Mutex m_mutex;
-  typedef std::map<String, std::pair<int, ServerHandler*>> ServerHandlerMap;
+  typedef std::map<String, std::pair<int, ServerHandler*> > ServerHandlerMap;
   ServerHandlerMap m_server_handler_map;
   static ServerHandlerFactory instance;
 };

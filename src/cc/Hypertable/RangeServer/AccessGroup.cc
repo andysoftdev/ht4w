@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,6 +28,7 @@
 
 #include "Common/DynamicBuffer.h"
 #include "Common/Error.h"
+#include "Common/FailureInducer.h"
 #include "Common/md5.h"
 
 #include "AccessGroup.h"
@@ -112,7 +113,7 @@ AccessGroup::AccessGroup(const TableIdentifier *identifier,
  */
 void AccessGroup::update_schema(SchemaPtr &schema,
                                 Schema::AccessGroup *ag) {
-  ScopedLock lock(m_mutex);
+  ScopedLock lock(m_schema_mutex);
   std::set<uint8_t>::iterator iter;
 
   m_garbage_tracker.set_schema(schema, ag);
@@ -136,6 +137,7 @@ void AccessGroup::update_schema(SchemaPtr &schema,
     }
 
     // Update schema ptr
+    ScopedLock lock(m_mutex);
     m_schema = schema;
   }
 }
@@ -173,9 +175,11 @@ void AccessGroup::add(const Key &key, const ByteString value) {
 
 
 CellListScanner *AccessGroup::create_scanner(ScanContextPtr &scan_context) {
-  bool all = scan_context->spec ? scan_context->spec->return_deletes : false;
-  MergeScanner *scanner = new MergeScannerAccessGroup(m_table_name, 
-          scan_context, all);
+  uint32_t flags = (scan_context->spec && scan_context->spec->return_deletes) ?
+    MergeScanner::RETURN_DELETES : 0;
+  MergeScanner *scanner = 
+    new MergeScannerAccessGroup(m_table_name, scan_context,
+                                flags | MergeScanner::ACCUMULATE_COUNTERS);
 
   CellStoreReleaseCallback callback(this);
 
@@ -252,7 +256,7 @@ CellListScanner *AccessGroup::create_scanner(ScanContextPtr &scan_context) {
 }
 
 bool AccessGroup::include_in_scan(ScanContextPtr &scan_context) {
-  ScopedLock lock(m_mutex);
+  ScopedLock lock(m_schema_mutex);
   for (std::set<uint8_t>::iterator iter = m_column_families.begin();
        iter != m_column_families.end(); ++iter) {
     if (scan_context->family_mask[*iter])
@@ -439,10 +443,11 @@ void AccessGroup::load_cellstore(CellStorePtr &cellstore) {
   cellstore->purge_indexes();
 }
 
-void AccessGroup::compute_garbage_stats(uint64_t *input_bytesp, uint64_t *output_bytesp) {
+void AccessGroup::compute_garbage_stats(uint64_t *input_bytesp,
+                                        uint64_t *output_bytesp) {
   ScanContextPtr scan_context = new ScanContext(m_schema);
-  MergeScannerPtr mscanner = new MergeScannerAccessGroup(m_table_name,
-                scan_context);
+  MergeScannerPtr mscanner 
+    = new MergeScannerAccessGroup(m_table_name, scan_context);
   ByteString value;
   Key key;
 
@@ -463,6 +468,7 @@ void AccessGroup::compute_garbage_stats(uint64_t *input_bytesp, uint64_t *output
 }
 
 
+
 void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
   ByteString bskey;
   ByteString value;
@@ -478,6 +484,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
   bool major = false;
   bool gc = false;
   bool garbage_check_performed = false;
+  bool cellstore_created = false;
   size_t merge_offset=0, merge_length=0;
   String added_file;
 
@@ -489,8 +496,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
     if (m_in_memory) {
       if (m_cell_cache_manager->immutable_cache_empty())
         break;
-      HT_INFOF("Starting InMemory Compaction of %s(%s)",
-               m_range_name.c_str(), m_name.c_str());
+      HT_INFOF("Starting InMemory Compaction of %s", m_full_name.c_str());
     }
     else if (MaintenanceFlag::major_compaction(maintenance_flags) ||
              MaintenanceFlag::move_compaction(maintenance_flags)) {
@@ -500,8 +506,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
            !MaintenanceFlag::move_compaction(maintenance_flags)))
         break;
       major = true;
-      HT_INFOF("Starting Major Compaction of %s(%s)",
-               m_range_name.c_str(), m_name.c_str());
+      HT_INFOF("Starting Major Compaction of %s", m_full_name.c_str());
     }
     else {
       if (MaintenanceFlag::merging_compaction(maintenance_flags)) {
@@ -509,8 +514,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
           m_needs_merging = false;
           break;
         }
-        HT_INFOF("Starting Merging Compaction of %s(%s)",
-                 m_range_name.c_str(), m_name.c_str());
+        HT_INFOF("Starting Merging Compaction of %s", m_full_name.c_str());
         merging = true;
         merge_caches();
       }
@@ -522,8 +526,8 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
           gc = true;
         else
           minor = true;
-        HT_INFOF("Starting %s Compaction of %s(%s)", (gc ? "GC" : "Minor"),
-                 m_range_name.c_str(), m_name.c_str());
+        HT_INFOF("Starting %s Compaction of %s", (gc ? "GC" : "Minor"),
+                 m_full_name.c_str());
       }
     }
     abort_loop = false;
@@ -537,9 +541,9 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
     return;
   }
 
-  try {
+  String cs_file;
 
-    String cs_file;
+  try {
 
     int64_t max_num_entries = 0;
 
@@ -585,14 +589,16 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       max_num_entries = m_cell_cache_manager->immutable_items();
 
       if (m_in_memory) {
-        mscanner = new MergeScannerAccessGroup(m_table_name, scan_context);
+        mscanner = new MergeScannerAccessGroup(m_table_name, scan_context,
+                                             MergeScanner::ACCUMULATE_COUNTERS);
         scanner = mscanner;
         m_cell_cache_manager->add_immutable_scanner(mscanner, scan_context);
         filtered_cache = new CellCache();
       }
       else if (merging) {
-        mscanner = new MergeScannerAccessGroup(m_table_name, 
-                        scan_context, true, true);
+        mscanner = new MergeScannerAccessGroup(m_table_name, scan_context,
+                                               MergeScanner::IS_COMPACTION |
+                                               MergeScanner::RETURN_DELETES);
         scanner = mscanner;
         max_num_entries = 0;
         for (size_t i=merge_offset; i<merge_offset+merge_length; i++) {
@@ -605,7 +611,8 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       }
       else if (major || gc) {
         mscanner = new MergeScannerAccessGroup(m_table_name, scan_context, 
-                        false, true);
+                                               MergeScanner::IS_COMPACTION |
+                                             MergeScanner::ACCUMULATE_COUNTERS);
         scanner = mscanner;
         m_cell_cache_manager->add_immutable_scanner(mscanner, scan_context);
         for (size_t i=0; i<m_stores.size(); i++) {
@@ -640,6 +647,18 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       trailer->flags |= CellStoreTrailerV6::SPLIT;
 
     cellstore->finalize(&m_identifier);
+
+    if (FailureInducer::enabled()) {
+      if (MaintenanceFlag::split(maintenance_flags))
+        FailureInducer::instance->maybe_fail("compact-split-1");
+      if (MaintenanceFlag::relinquish(maintenance_flags))
+        FailureInducer::instance->maybe_fail("compact-relinquish-1");
+      if (!MaintenanceFlag::split(maintenance_flags) &&
+          !MaintenanceFlag::relinquish(maintenance_flags))
+        FailureInducer::instance->maybe_fail("compact-manual-1");
+    }
+
+    cellstore_created = true;
 
     /**
      * Install new CellCache and CellStore and update Live file tracker
@@ -733,13 +752,23 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
         Global::dfs->remove(fname);
       }
       catch (Hypertable::Exception &e) {
-        HT_ERROR_OUT << "Problem removing '" << fname << "' " << e << HT_END;
+        HT_WARN_OUT << "Problem removing empty CellStore '" << fname << "' " << e << HT_END;
       }
     }
 
     m_file_tracker.update_live(added_file, removed_files, m_next_cs_id, total_index_entries);
     m_file_tracker.update_files_column();
     m_file_tracker.get_file_list(hints->files);
+
+    if (FailureInducer::enabled()) {
+      if (MaintenanceFlag::split(maintenance_flags))
+        FailureInducer::instance->maybe_fail("compact-split-2");
+      if (MaintenanceFlag::relinquish(maintenance_flags))
+        FailureInducer::instance->maybe_fail("compact-relinquish-2");
+      if (!MaintenanceFlag::split(maintenance_flags) &&
+          !MaintenanceFlag::relinquish(maintenance_flags))
+        FailureInducer::instance->maybe_fail("compact-manual-2");
+    }
 
     if (merging)
       m_needs_merging = find_merge_run();
@@ -751,8 +780,20 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
 
   }
   catch (Exception &e) {
-    HT_ERROR_OUT << m_range_name << "(" << m_name << ") " << e << HT_END;
-    throw;
+    // Remove newly created file
+    if (!cellstore_created) {
+      if (!cs_file.empty()) {
+        try {
+          Global::dfs->remove(cs_file);
+        }
+        catch (Hypertable::Exception &e) {
+        }
+      }
+      HT_ERROR_OUT << m_full_name << " " << e << HT_END;
+      throw;
+    }
+    HT_FATALF("Problem compacting access group %s: %s - %s",
+              m_full_name.c_str(), Error::get_text(e.code()), e.what());
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2013 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -544,13 +544,13 @@ RangeServer::~RangeServer() {
  */
 void RangeServer::initialize(PropertiesPtr &props) {
   String top_dir = Global::toplevel_dir + "/servers/" + Global::location_initializer->get();
-  uint32_t lock_status;
+  LockStatus lock_status;
   uint32_t oflags = OPEN_FLAG_READ | OPEN_FLAG_WRITE | OPEN_FLAG_LOCK;
 
   m_existence_file_handle = m_hyperspace->open(top_dir, oflags);
 
   while (true) {
-    lock_status = 0;
+    lock_status = (LockStatus)0;
 
     m_hyperspace->try_lock(m_existence_file_handle, LOCK_MODE_EXCLUSIVE,
                            &lock_status, &m_existence_file_sequencer);
@@ -667,7 +667,6 @@ void RangeServer::local_recover() {
   TableInfoMap replay_map(new TableSchemaCache(m_hyperspace, Global::toplevel_dir));
   int priority = 0;
   String rsml_dir = Global::log_dir + "/" + rsml_definition->name();
-  bool found_remove_ok_logs = false;
 
   try {
     rsml_reader = 
@@ -724,17 +723,15 @@ void RangeServer::local_recover() {
             continue;
           }
           else if (dynamic_cast<MetaLogEntityRemoveOkLogs *>(entity.get())) {
-            ScopedLock glock(Global::mutex);
-            Global::remove_ok_logs = (MetaLogEntityRemoveOkLogs *)entity.get();
-	    found_remove_ok_logs = true;
+            MetaLogEntityRemoveOkLogs *remove_ok_logs = 
+              dynamic_cast<MetaLogEntityRemoveOkLogs *>(entity.get());
+            if (remove_ok_logs->decode_version() > 1)
+              Global::remove_ok_logs = remove_ok_logs;
+            else
+              continue;
           }
           stripped_entities.push_back(entity);
         }
-      }
-
-      if (!found_remove_ok_logs) {
-	ScopedLock glock(Global::mutex);
-	Global::remove_ok_logs = new MetaLogEntityRemoveOkLogs();
       }
 
       entities.swap(stripped_entities);
@@ -964,12 +961,6 @@ void RangeServer::local_recover() {
     else {
       ScopedLock lock(m_mutex);
 
-      // Create RemoveOkLogs entity
-      {
-	ScopedLock glock(Global::mutex);
-	Global::remove_ok_logs = new MetaLogEntityRemoveOkLogs();
-      }
-
       /**
        *  Create the logs
        */
@@ -1005,7 +996,8 @@ void RangeServer::local_recover() {
 
     }
 
-    if (!found_remove_ok_logs) {
+    if (!Global::remove_ok_logs) {
+      Global::remove_ok_logs = new MetaLogEntityRemoveOkLogs();
       Global::remove_ok_logs->insert(transfer_logs);
       Global::rsml_writer->record_state(Global::remove_ok_logs.get());
     }
@@ -1172,14 +1164,30 @@ RangeServer::compact(ResponseCallback *cb, const TableIdentifier *table,
   size_t range_count = 0;
 
   if (table)
-    HT_INFOF("compacting table ID=%s ROW=%s", table->id, row ? row : "");
+    HT_INFOF("compacting table ID=%s ROW=%s FLAGS=%s",
+             table->id, row ? row : "",
+             RangeServerProtocol::compact_flags_to_string(flags).c_str());
   else
-    HT_INFOF("compacting ranges FLAGS=%s", RangeServerProtocol::compact_flags_to_string(flags).c_str());
+    HT_INFOF("compacting ranges FLAGS=%s",
+             RangeServerProtocol::compact_flags_to_string(flags).c_str());
 
   if (!m_replay_finished) {
     if (!RangeServer::wait_for_recovery_finish(cb->get_event()->expiration_time()))
       return;
   }
+
+  int compaction_type = MaintenanceFlag::COMPACT_MAJOR;
+  if ((flags & RangeServerProtocol::COMPACT_FLAG_MINOR) ==
+      RangeServerProtocol::COMPACT_FLAG_MINOR)
+    compaction_type = MaintenanceFlag::COMPACT_MINOR;
+  else if ((flags & RangeServerProtocol::COMPACT_FLAG_MERGING) ==
+      RangeServerProtocol::COMPACT_FLAG_MERGING)
+    compaction_type = MaintenanceFlag::COMPACT_MERGING;
+  else if ((flags & RangeServerProtocol::COMPACT_FLAG_GC) ==
+      RangeServerProtocol::COMPACT_FLAG_GC)
+    compaction_type = MaintenanceFlag::COMPACT_GC;
+
+  HT_INFOF("compaction type = 0x%x", compaction_type);
 
   try {
 
@@ -1196,14 +1204,14 @@ RangeServer::compact(ResponseCallback *cb, const TableIdentifier *table,
                     format("Unable to find range for row '%s'", row));
           return;
         }
-        range->set_needs_compaction(true);
+        range->set_compaction_type_needed(compaction_type);
         range_count = 1;
       }
       else {
         ranges.array.clear();
         table_info->get_ranges(ranges);
         foreach_ht(RangeData &rd, ranges.array)
-          rd.range->set_needs_compaction(true);
+          rd.range->set_compaction_type_needed(compaction_type);
         range_count = ranges.array.size();
       }
     }
@@ -1221,7 +1229,7 @@ RangeServer::compact(ResponseCallback *cb, const TableIdentifier *table,
             ranges.array.clear();
             tables[i]->get_ranges(ranges);
             foreach_ht(RangeData &rd, ranges.array)
-              rd.range->set_needs_compaction(true);
+              rd.range->set_compaction_type_needed(compaction_type);
             range_count += ranges.array.size();
           }
           else if ((flags & RangeServerProtocol::COMPACT_FLAG_ROOT) ==
@@ -1230,7 +1238,7 @@ RangeServer::compact(ResponseCallback *cb, const TableIdentifier *table,
             tables[i]->get_ranges(ranges);
             foreach_ht(RangeData &rd, ranges.array) {
               if (rd.range->is_root()) {
-                rd.range->set_needs_compaction(true);
+                rd.range->set_compaction_type_needed(compaction_type);
                 range_count++;
                 break;
               }
@@ -1242,7 +1250,7 @@ RangeServer::compact(ResponseCallback *cb, const TableIdentifier *table,
             ranges.array.clear();
             tables[i]->get_ranges(ranges);
             foreach_ht(RangeData &rd, ranges.array)
-              rd.range->set_needs_compaction(true);
+              rd.range->set_compaction_type_needed(compaction_type);
             range_count += ranges.array.size();
           }
         }
@@ -1251,7 +1259,7 @@ RangeServer::compact(ResponseCallback *cb, const TableIdentifier *table,
             ranges.array.clear();
             tables[i]->get_ranges(ranges);
             foreach_ht(RangeData &rd, ranges.array)
-              rd.range->set_needs_compaction(true);
+              rd.range->set_compaction_type_needed(compaction_type);
             range_count += ranges.array.size();
           }
         }
@@ -4070,7 +4078,7 @@ void RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_id,
       if (!phantom_range || phantom_range->prepared())
         continue;
 
-      phantom_range->populate_range_and_log(Global::log_dfs, &is_empty);
+      phantom_range->populate_range_and_log(Global::log_dfs, op_id, &is_empty);
 
       HT_DEBUG_OUT << "populated range and log for range " << rr << HT_END;
 

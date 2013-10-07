@@ -558,6 +558,30 @@ namespace Hypertable {
       ParserState &state;
     };
 
+    struct modify_column_family {
+      modify_column_family(ParserState &state) : state(state) { }
+      void operator()(char const *str, char const *end) const {
+        state.cf = new Schema::ColumnFamily();
+        state.cf->name = String(str, end-str);
+        if (state.cf->name.find_first_of(':') != String::npos)
+          HT_THROWF(Error::HQL_PARSE_ERROR,
+                    "Invalid column family name %s, ':' character not allowed",
+                    state.cf->name.c_str());
+        state.cf->deleted = false;
+        state.cf->modification = true;
+        trim_if(state.cf->name, is_any_of("'\""));
+        Schema::ColumnFamilyMap::const_iterator iter =
+            state.cf_map.find(state.cf->name);
+        if (iter != state.cf_map.end())
+          HT_THROW(Error::HQL_PARSE_ERROR, String("Column family '") +
+                   state.cf->name + " multiply defined.");
+        state.cf_map[state.cf->name] = state.cf;
+        state.cf_list.push_back(state.cf);
+      }
+      ParserState &state;
+    };
+
+
     struct drop_column_family {
       drop_column_family(ParserState &state) : state(state) { }
       void operator()(char const *str, char const *end) const {
@@ -1830,6 +1854,28 @@ namespace Hypertable {
       ParserState &state;
     };
 
+    struct set_flags_compaction_type {
+      set_flags_compaction_type(ParserState &state) : state(state) { }
+      void operator()(char const *str, char const *end) const {
+        String compaction_type_str = String(str, end-str);
+        trim_if(compaction_type_str, is_any_of("'\""));
+        to_lower(compaction_type_str);
+        if (compaction_type_str == "minor")
+          state.flags |= RangeServerProtocol::COMPACT_FLAG_MINOR;
+        else if (compaction_type_str == "major")
+          state.flags |= RangeServerProtocol::COMPACT_FLAG_MAJOR;
+        else if (compaction_type_str == "merging")
+          state.flags |= RangeServerProtocol::COMPACT_FLAG_MERGING;
+        else if (compaction_type_str == "gc")
+          state.flags |= RangeServerProtocol::COMPACT_FLAG_GC;
+        else
+          HT_THROW(Error::HQL_PARSE_ERROR,
+                   format("Invalid compaction type specifier:  %s", compaction_type_str.c_str()));
+
+      }
+      ParserState &state;
+    };
+
     struct set_variable_name {
       set_variable_name(ParserState &state) : state(state) { }
       void operator()(char const *str, char const *end) const {
@@ -1916,6 +1962,7 @@ namespace Hypertable {
           Token BALANCE      = as_lower_d["balance"];
           Token DURATION     = as_lower_d["duration"];
           Token ADD          = as_lower_d["add"];
+          Token MODIFY       = as_lower_d["modify"];
           Token USE          = as_lower_d["use"];
           Token RENAME       = as_lower_d["rename"];
           Token COLUMN       = as_lower_d["column"];
@@ -1929,6 +1976,7 @@ namespace Hypertable {
           Token TABLES       = as_lower_d["tables"];
           Token TO           = as_lower_d["to"];
           Token TTL          = as_lower_d["ttl"];
+          Token TYPE         = as_lower_d["type"];
           Token COUNTER      = as_lower_d["counter"];
           Token MONTHS       = as_lower_d["months"];
           Token MONTH        = as_lower_d["month"];
@@ -2053,6 +2101,10 @@ namespace Hypertable {
           Token SYSTEM       = as_lower_d["system"];
           Token USER         = as_lower_d["user"];
           Token RANGES       = as_lower_d["ranges"];
+          Token MINOR        = as_lower_d["minor"];
+          Token MAJOR        = as_lower_d["major"];
+          Token MERGING      = as_lower_d["merging"];
+          Token GC           = as_lower_d["gc"];
           Token SYNC         = as_lower_d["sync"];
           Token FS           = as_lower_d["fs"];
           Token SET          = as_lower_d["set"];
@@ -2175,9 +2227,10 @@ namespace Hypertable {
             ;
 
           compact_statement
-            = COMPACT >> TABLE >> user_identifier[set_table_name(self.state)]
+            = COMPACT >> *(compact_type_option)
+                      >> TABLE >> user_identifier[set_table_name(self.state)]
                       >> *(string_literal[set_str(self.state)])
-            | COMPACT >> RANGES
+            | COMPACT >> *(compact_type_option) >> RANGES
                       >> (range_type[set_flags_range_type(self.state)]
                           >> *(PIPE >> range_type[set_flags_range_type(self.state)]))
             ;
@@ -2188,6 +2241,17 @@ namespace Hypertable {
             | METADATA
             | SYSTEM
             | USER
+            ;
+
+          compact_type_option
+            = TYPE >> '=' >> compaction_type[set_flags_compaction_type(self.state)]
+            ;
+
+          compaction_type
+            = MINOR
+            | MAJOR
+            | MERGING
+            | GC
             ;
 
           heapcheck_statement
@@ -2323,6 +2387,7 @@ namespace Hypertable {
           alter_table_statement
             = ALTER >> TABLE >> user_identifier[set_table_name(self.state)]
             >> +(ADD >> add_column_definitions
+                | MODIFY >> modify_column_definitions
                 | DROP >> drop_column_definitions
                 | RENAME >> COLUMN >> FAMILY >> rename_column_definition)
             ;
@@ -2490,11 +2555,21 @@ namespace Hypertable {
               >> RPAREN
             ;
 
+          modify_column_definitions
+            = LPAREN >> modify_column_definition
+                     >> *(COMMA >> modify_column_definition)
+                     >> RPAREN
+            ;
+
+          modify_column_definition
+            = column_name[modify_column_family(self.state)] >> *(column_option)
+            ;
+
           column_name
             = (identifier | string_literal)
             ;
 
-          column_definition
+           column_definition
             = column_name[create_column_family(self.state)] >> *(column_option)
             ;
 
@@ -2797,6 +2872,8 @@ namespace Hypertable {
           BOOST_SPIRIT_DEBUG_RULE(drop_column_definition);
           BOOST_SPIRIT_DEBUG_RULE(drop_column_definitions);
           BOOST_SPIRIT_DEBUG_RULE(rename_column_definition);
+          BOOST_SPIRIT_DEBUG_RULE(modify_column_definitions);
+          BOOST_SPIRIT_DEBUG_RULE(modify_column_definition);
           BOOST_SPIRIT_DEBUG_RULE(create_table_statement);
           BOOST_SPIRIT_DEBUG_RULE(create_namespace_statement);
           BOOST_SPIRIT_DEBUG_RULE(use_namespace_statement);
@@ -2884,6 +2961,8 @@ namespace Hypertable {
           BOOST_SPIRIT_DEBUG_RULE(range_move_spec);
           BOOST_SPIRIT_DEBUG_RULE(heapcheck_statement);
           BOOST_SPIRIT_DEBUG_RULE(compact_statement);
+          BOOST_SPIRIT_DEBUG_RULE(compact_type_option);
+          BOOST_SPIRIT_DEBUG_RULE(compaction_type);
           BOOST_SPIRIT_DEBUG_RULE(metadata_sync_statement);
           BOOST_SPIRIT_DEBUG_RULE(metadata_sync_option_spec);
           BOOST_SPIRIT_DEBUG_RULE(stop_statement);
@@ -2903,6 +2982,7 @@ namespace Hypertable {
           add_column_definition, add_column_definitions,
           drop_column_definition, drop_column_definitions,
           rename_column_definition, create_table_statement, duration,
+          modify_column_definitions, modify_column_definition,
           create_namespace_statement, use_namespace_statement, 
           drop_namespace_statement, identifier, user_identifier, 
           max_versions_option, time_order_option, statement,
@@ -2932,6 +3012,7 @@ namespace Hypertable {
           cell_spec, wait_for_maintenance_statement, move_range_statement,
           balance_statement, range_move_spec_list, range_move_spec,
           balance_option_spec, heapcheck_statement, compact_statement,
+          compact_type_option, compaction_type,
           metadata_sync_statement, metadata_sync_option_spec, stop_statement,
           range_type, table_identifier, pseudo_table_reference,
           dump_pseudo_table_statement, set_statement, set_variable_spec;

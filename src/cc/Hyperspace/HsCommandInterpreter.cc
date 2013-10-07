@@ -139,16 +139,22 @@ void HsCommandInterpreter::execute_line(const String &line) {
     }
 
     else if (state.command == COMMAND_ATTRSET) {
-      ::uint64_t handle;
+      ::uint64_t handle = 0;
       int size = state.last_attr_size;
       String name = state.last_attr_name;
       String value = state.last_attr_value;
       String fname = state.node_name;
       const char *val = value.c_str();
 
-      handle = Util::get_handle(fname);
-
-      m_session->attr_set(handle, name, val, size);
+      try {
+        handle = Util::get_handle(fname);
+        m_session->attr_set(handle, name, val, size);
+      }
+      catch (Exception &e) {
+        String normalized_fname;
+        Util::normalize_pathname(fname, normalized_fname);
+        m_session->attr_set(normalized_fname, name, val, size);
+      }
     }
 
     else if (state.command == COMMAND_ATTRGET) {
@@ -157,13 +163,18 @@ void HsCommandInterpreter::execute_line(const String &line) {
       String fname = state.node_name;
       DynamicBuffer value(0);
 
-      handle = Util::get_handle(fname);
-
-      m_session->attr_get(handle, name, value);
+      try {
+        handle = Util::get_handle(fname);
+        m_session->attr_get(handle, name, value);
+      }
+      catch (Exception &e) {
+        String normalized_fname;
+        Util::normalize_pathname(fname, normalized_fname);
+        m_session->attr_get(normalized_fname, name, value);
+      }
 
       String valstr = String((const char*)(value.base),value.fill());
       cout << valstr << endl;
-
     }
 
     else if (state.command == COMMAND_ATTRINCR) {
@@ -172,23 +183,34 @@ void HsCommandInterpreter::execute_line(const String &line) {
       String fname = state.node_name;
       ::uint64_t attr_val;
 
-      handle = Util::get_handle(fname);
-
-      attr_val = m_session->attr_incr(handle, name);
+      try {
+        handle = Util::get_handle(fname);
+        attr_val = m_session->attr_incr(handle, name);
+      }
+      catch (Exception &e) {
+        String normalized_fname;
+        Util::normalize_pathname(fname, normalized_fname);
+        attr_val = m_session->attr_incr(normalized_fname, name);
+      }
 
       cout << attr_val << endl;
-
     }
 
     else if (state.command == COMMAND_ATTREXISTS) {
-      ::uint64_t handle;
+      ::uint64_t handle = 0;
       String name = state.last_attr_name;
       String fname = state.node_name;
       bool exists;
 
-      handle = Util::get_handle(fname);
-
-      exists = m_session->attr_exists(handle, name);
+      try {
+        handle = Util::get_handle(fname);
+        exists = m_session->attr_exists(handle, name);
+      }
+      catch (Exception &e) {
+        String normalized_fname;
+        Util::normalize_pathname(fname, normalized_fname);
+        exists = m_session->attr_exists(normalized_fname, name);
+      }
 
       if (exists)
         cout << "true" << endl;
@@ -419,7 +441,7 @@ void HsCommandInterpreter::execute_line(const String &line) {
 
     else if (state.command == COMMAND_LOCK) {
       ::uint64_t handle;
-      ::uint32_t mode = state.lock_mode;
+      LockMode mode = (LockMode)state.lock_mode;
       String fname = state.node_name;
       struct LockSequencer lockseq;
 
@@ -433,10 +455,10 @@ void HsCommandInterpreter::execute_line(const String &line) {
 
     else if (state.command == COMMAND_TRYLOCK) {
       ::uint64_t handle;
-      ::uint32_t mode = state.lock_mode;
+      LockMode mode = (LockMode)state.lock_mode;
       String fname = state.node_name;
       struct LockSequencer lockseq;
-      ::uint32_t status;
+      LockStatus status;
 
       handle = Util::get_handle(fname);
       m_session->try_lock(handle, mode, &status, &lockseq);
