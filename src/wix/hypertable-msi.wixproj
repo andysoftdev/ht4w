@@ -3,8 +3,8 @@
   <PropertyGroup>
     <!-- MsiProductVersion and MsiProductCode passed by ht4w.buildproj -->
     <MsiProductVersion>0.9.7.11</MsiProductVersion>
-    <MsiProductCode Condition="'$(Platform)' == 'x86'">F687C4E0-4C5A-4503-BBBB-184867FFEF1B</MsiProductCode>
-    <MsiProductCode Condition="'$(Platform)' == 'x64'">FB3D1A29-9873-4962-B074-ADA8D83D3181</MsiProductCode>
+    <MsiProductCode Condition="'$(Platform)' == 'x86'">F02E7FC4-C18E-4A32-B104-69E6193FE946</MsiProductCode>
+    <MsiProductCode Condition="'$(Platform)' == 'x64'">C9C5023C-8C34-41DA-8C4B-918F3ED7A825</MsiProductCode>
 
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x86'">ProgramFilesFolder</MsiProgramFilesFolder>
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x64'">ProgramFiles64Folder</MsiProgramFilesFolder>
