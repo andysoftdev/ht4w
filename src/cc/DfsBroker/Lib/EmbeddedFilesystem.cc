@@ -692,7 +692,7 @@ int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
     HANDLE h;
     int fd = atomic_inc_return(&ms_next_fd);
 
-    if ((h = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0)) == INVALID_HANDLE_VALUE)
+    if ((h = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0)) == INVALID_HANDLE_VALUE)
       throw_error();
     set_handle(fd, h, flags);
     return fd;
@@ -717,8 +717,9 @@ int EmbeddedFilesystem::create(const String &name, uint32_t flags, int32_t bufsz
     HANDLE h;
     int fd = atomic_inc_return(&ms_next_fd);
 
-    DWORD attr = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
-    if ((h = CreateFile(abspath.c_str(), GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, CREATE_ALWAYS, attr, 0)) == INVALID_HANDLE_VALUE)
+    DWORD creationDisposition = flags & Filesystem::OPEN_FLAG_OVERWRITE ? CREATE_ALWAYS : OPEN_ALWAYS;
+    DWORD flagsAndAttributes = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
+    if ((h = CreateFile(abspath.c_str(), GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, creationDisposition, flagsAndAttributes, 0)) == INVALID_HANDLE_VALUE)
       throw_error();
     set_handle(fd, h, flags);
     return fd;
@@ -761,13 +762,13 @@ size_t EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags, 
 
     uint32_t hflags;
     HANDLE h = get_handle(fd, hflags);
-    DWORD nwritten;
-    if (!WriteFile(h, buffer.base, buffer.size, &nwritten, 0))
-      throw_error();
     if (offset) {
       if ((*offset = SetFilePointer(h, 0, FILE_CURRENT)) == (uint64_t)-1)
         throw_error();
     }
+    DWORD nwritten;
+    if (!WriteFile(h, buffer.base, buffer.size, &nwritten, 0))
+      throw_error();
     if (flags && !(m_directio && (hflags & Filesystem::OPEN_FLAG_DIRECTIO))) { // no sync because handle has FILE_FLAG_WRITE_THROUGH
       if (!::FlushFileBuffers(h))
         throw_error();
