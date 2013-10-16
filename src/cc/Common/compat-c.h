@@ -98,6 +98,7 @@
 #pragma warning( disable : 4244 ) // conversion from 'x' to 'y', possible loss of data
 #pragma warning( disable : 4267 ) // 'initializing' : conversion from 'x' to 'y', possible loss of data
 #pragma warning( disable : 4309 ) // '=' : truncation of constant value
+#pragma warning( disable : 4396 ) // the inline specifier cannot be used when a friend declaration refers to a specialization of a function template
 
 #define _WIN32_WINNT 0x0502 // Windows Server 2003 SP1, Windows XP SP2
 #define NOMINMAX
