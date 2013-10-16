@@ -112,11 +112,10 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
     m_replay_finished(false), m_props(props), m_verbose(false),
     m_shutdown(false), m_comm(conn_mgr->get_comm()), m_conn_manager(conn_mgr),
     m_app_queue(app_queue), m_hyperspace(hyperspace), m_timer_handler(0),
-    m_group_commit_timer_handler(0), m_query_cache(0),
-    m_last_revision(TIMESTAMP_MIN), m_last_metrics_update(0),
+    m_query_cache(0), m_last_revision(TIMESTAMP_MIN), m_last_metrics_update(0),
     m_loadavg_accum(0.0), m_page_in_accum(0), m_page_out_accum(0),
-    m_metric_samples(0), m_maintenance_pause_interval(0), m_pending_metrics_updates(0),
-    m_profile_query(false)
+    m_metric_samples(0), m_maintenance_pause_interval(0),
+    m_pending_metrics_updates(0), m_profile_query(false)
 {
 #ifdef _WIN32
 
@@ -134,6 +133,8 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   m_verbose = props->get_bool("verbose");
   Global::row_size_unlimited = cfg.get_bool("Range.RowSize.Unlimited", false);
+  Global::ignore_cells_with_clock_skew 
+    = cfg.get_bool("Range.IgnoreCellsWithClockSkew");
   Global::failover_timeout = props->get_i32("Hypertable.Failover.Timeout");
   Global::range_split_size = cfg.get_i64("Range.SplitSize");
   Global::range_maximum_size = cfg.get_i64("Range.MaximumSize");
@@ -4615,9 +4616,11 @@ RangeServer::wait_for_recovery_finish(const TableIdentifier *table,
 
 void RangeServer::group_commit_add(EventPtr &event, SchemaPtr &schema, const TableIdentifier *table,
                                    uint32_t count, StaticBuffer &buffer, uint32_t flags) {
-  if (!m_group_commit)
+  ScopedLock lock(m_mutex);
+  if (!m_group_commit) {
     m_group_commit = new GroupCommit(this);
-  if (!m_group_commit_timer_handler)
+    HT_ASSERT(!m_group_commit_timer_handler);
     m_group_commit_timer_handler = new GroupCommitTimerHandler(m_comm, this, m_app_queue);
+  }
   m_group_commit->add(event, schema, table, count, buffer, flags);
 }
