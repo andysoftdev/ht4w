@@ -158,7 +158,7 @@
           Program="[#Hypertable.LocalBroker.exe]"
           IgnoreFailure="yes"
           Protocol="tcp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -170,7 +170,7 @@
           Program="[#Hypertable.LocalBroker.exe]"
           IgnoreFailure="yes"
           Protocol="udp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -182,7 +182,7 @@
           Program="[#Hyperspace.Master.exe]"
           IgnoreFailure="yes"
           Protocol="tcp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -194,7 +194,7 @@
           Program="[#Hyperspace.Master.exe]"
           IgnoreFailure="yes"
           Protocol="udp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -206,7 +206,7 @@
           Program="[#Hypertable.Master.exe]"
           IgnoreFailure="yes"
           Protocol="tcp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -218,7 +218,7 @@
           Program="[#Hypertable.Master.exe]"
           IgnoreFailure="yes"
           Protocol="udp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -230,7 +230,7 @@
           Program="[#Hypertable.RangeServer.exe]"
           IgnoreFailure="yes"
           Protocol="tcp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -242,7 +242,7 @@
           Program="[#Hypertable.RangeServer.exe]"
           IgnoreFailure="yes"
           Protocol="udp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -254,7 +254,7 @@
           Program="[#Hypertable.ThriftBroker.exe]"
           IgnoreFailure="yes"
           Protocol="tcp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
@@ -266,7 +266,7 @@
           Program="[#Hypertable.ThriftBroker.exe]"
           IgnoreFailure="yes"
           Protocol="udp"
-          Scope="localSubnet"
+          Scope="any"
           Profile="all">
         </fw:FirewallException>
       </Component>
