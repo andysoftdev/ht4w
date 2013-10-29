@@ -85,11 +85,6 @@
 #  define __STDC_LIMIT_MACROS
 #endif
 
-
-#ifdef _MSC_VER
-#define inline __inline
-#endif
-
 #ifdef _WIN32
 
 #pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
