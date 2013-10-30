@@ -441,8 +441,6 @@ void AccessGroup::load_cellstore(CellStorePtr &cellstore) {
   m_garbage_tracker.accumulate_expirable( m_stores.back().expirable_data );
 
   m_file_tracker.add_live_noupdate(cellstore->get_filename(), total_index_entries);
-
-  cellstore->purge_indexes();
 }
 
 void AccessGroup::compute_garbage_stats(uint64_t *input_bytesp,
@@ -453,7 +451,11 @@ void AccessGroup::compute_garbage_stats(uint64_t *input_bytesp,
   ByteString value;
   Key key;
 
-  mscanner->add_scanner(m_cell_cache_manager->create_immutable_scanner(scan_context));
+  CellListScanner *immutable_scanner =
+    m_cell_cache_manager->create_immutable_scanner(scan_context);
+
+  if (immutable_scanner)
+    mscanner->add_scanner(immutable_scanner);
 
   if (!m_in_memory) {
     for (size_t i=0; i<m_stores.size(); i++) {
@@ -485,7 +487,6 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
   bool merging = false;
   bool major = false;
   bool gc = false;
-  bool garbage_check_performed = false;
   bool cellstore_created = false;
   size_t merge_offset=0, merge_length=0;
   String added_file;
@@ -566,7 +567,6 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       if (gc || (minor && m_garbage_tracker.check_needed(m_cell_cache_manager->immutable_memory_used()))) {
         uint64_t total_bytes, valid_bytes;
         compute_garbage_stats(&total_bytes, &valid_bytes);
-        garbage_check_performed = true;
         m_garbage_tracker.set_garbage_stats(total_bytes, valid_bytes);
         if (m_garbage_tracker.need_collection()) {
           if (minor)
@@ -578,6 +578,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
         else if (gc) {
           HT_INFOF("Aborting GC compaction because measured garbage of %.2f%% is below threshold",
                    ((double)(total_bytes-valid_bytes)/(double)total_bytes)*100.00);
+          HT_INFOF("GC total_bytes=%lld, valid_bytes=%lld", (Lld)total_bytes, (Lld)valid_bytes);
           merge_caches();
           hints->latest_stored_revision = m_latest_stored_revision;
           hints->disk_usage = m_disk_usage;
@@ -686,20 +687,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       }
       else {
 
-        /**
-         * If major compaction was performed and we didn't do a garbage
-         * check, then update the garbage tracker with statistics from
-         * the MergeScanner.  Also clear the garbage tracker.
-         */
-        if (major && mscanner) {
-          if (!garbage_check_performed) {
-            uint64_t input_bytes, output_bytes;
-            mscanner->get_io_accounting_data(&input_bytes, &output_bytes);
-            m_garbage_tracker.set_garbage_stats(input_bytes, output_bytes);
-          }
-          m_garbage_tracker.clear();
-        }
-        else if (m_in_memory)
+        if ((major && mscanner) || m_in_memory)
           m_garbage_tracker.clear();
 
         m_latest_stored_revision = boost::any_cast<int64_t>
@@ -944,7 +932,7 @@ AccessGroup::shrink(String &split_row, bool drop_high, Hints *hints) {
 
     m_recovering = false;
   }
-  catch (Exception &) {
+  catch (Exception &e) {
     m_recovering = false;
     m_cell_cache_manager->install_new_cell_cache(old_cell_cache);
     m_earliest_cached_revision = m_earliest_cached_revision_saved;

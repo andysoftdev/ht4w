@@ -243,6 +243,9 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
   if (tss.__isset.scan_and_filter_rows)
     hss.scan_and_filter_rows = tss.scan_and_filter_rows;
 
+  if (tss.__isset.do_not_cache)
+    hss.do_not_cache = tss.do_not_cache;
+
   if (tss.__isset.row_offset)
     hss.row_offset = tss.row_offset;
 
@@ -2170,7 +2173,7 @@ public:
   }
 
   Hypertable::Future *get_future(int64_t id) {
-    Hypertable::Future *future = static_cast<Hypertable::Future *>(get_object(id));
+    Hypertable::Future *future = dynamic_cast<Hypertable::Future *>(get_object(id));
     if (future == 0) {
       HT_ERROR_OUT << "Bad future id - " << id << HT_END;
       THROW_TE(Error::THRIFTBROKER_BAD_FUTURE_ID,
@@ -2181,7 +2184,7 @@ public:
 
 
   Hypertable::Namespace *get_namespace(int64_t id) {
-    Hypertable::Namespace *ns = static_cast<Hypertable::Namespace *>(get_cached_object(id));
+    Hypertable::Namespace *ns = dynamic_cast<Hypertable::Namespace *>(get_cached_object(id));
     if (ns == 0) {
       HT_ERROR_OUT << "Bad namespace id - " << id << HT_END;
       THROW_TE(Error::THRIFTBROKER_BAD_NAMESPACE_ID,
@@ -2206,7 +2209,7 @@ public:
 
   TableScannerAsync *get_scanner_async(int64_t id) {
     TableScannerAsync *scanner = 
-      static_cast<TableScannerAsync *>(get_object(id));
+      dynamic_cast<TableScannerAsync *>(get_object(id));
     if (scanner == 0) {
       HT_ERROR_OUT << "Bad scanner id - " << id << HT_END;
       THROW_TE(Error::THRIFTBROKER_BAD_SCANNER_ID,
@@ -2217,7 +2220,7 @@ public:
 
   TableScanner *get_scanner(int64_t id) {
     TableScanner *scanner = 
-      static_cast<TableScanner *>(get_object(id));
+      dynamic_cast<TableScanner *>(get_object(id));
     if (scanner == 0) {
       HT_ERROR_OUT << "Bad scanner id - " << id << HT_END;
       THROW_TE(Error::THRIFTBROKER_BAD_SCANNER_ID,
@@ -2321,7 +2324,7 @@ public:
   }
 
   TableMutator *get_mutator(int64_t id) {
-    TableMutator *mutator = static_cast<TableMutator *>(get_object(id));
+    TableMutator *mutator = dynamic_cast<TableMutator *>(get_object(id));
     if (mutator == 0) {
       HT_ERROR_OUT << "Bad mutator id - " << id << HT_END;
       THROW_TE(Error::THRIFTBROKER_BAD_MUTATOR_ID,
@@ -2332,7 +2335,7 @@ public:
 
   TableMutatorAsync *get_mutator_async(int64_t id) {
     TableMutatorAsync *mutator =
-      static_cast<TableMutatorAsync *>(get_object(id));
+      dynamic_cast<TableMutatorAsync *>(get_object(id));
     if (mutator == 0) {
       HT_ERROR_OUT << "Bad mutator id - " << id << HT_END;
       THROW_TE(Error::THRIFTBROKER_BAD_MUTATOR_ID,
