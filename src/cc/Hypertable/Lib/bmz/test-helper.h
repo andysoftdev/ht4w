@@ -29,7 +29,7 @@
   double t0 = ht_time_d(); _code_; _t_ = ht_time_d() - t0; \
 } while (0)
 
-static inline double
+static __inline double
 ht_time_d() {
 
 #ifndef _WIN32

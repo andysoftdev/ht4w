@@ -401,17 +401,17 @@ pow_mod32(UInt32 x, UInt32 n, UInt32 m) {
   if (h < 0) h += m; \
   return (h % m)
 
-static inline Int64
+static __inline Int64
 update_hash_mod(Int64 h, Byte in, Byte out, Int64 pow_n, Int64 b, Int64 m) {
   UPDATE_HASH_MOD_BODY;
 }
 
-static inline Int32
+static __inline Int32
 update_hash_mod32(Int32 h, Byte in, Byte out, Int32 pow_n, Int32 b, Int32 m) {
   UPDATE_HASH_MOD_BODY;
 }
 
-static inline UInt32
+static __inline UInt32
 update_hash_mod16x2(UInt32 h, int in, int out, UInt32 pow1, UInt32 pow2,
                     UInt32 b1, UInt32 b2, UInt32 m1, UInt32 m2) {
   return (update_hash_mod32((h >> 16), in, out, pow1, b1, m1) << 16) |
@@ -481,25 +481,25 @@ pow_mask32(UInt32 x, UInt32 n, UInt32 m) {
   h += in; \
   return (h & m)
 
-static inline UInt64
+static __inline UInt64
 update_hash_mask(UInt64 h, int in, int out, UInt64 pow_n, UInt64 b, UInt64 m) {
   UPDATE_HASH_MASK_BODY;
 }
 
-static inline UInt32
+static __inline UInt32
 update_hash_mask32(UInt32 h, int in, int out, UInt32 pow_n,
                    UInt32 b, UInt32 m) {
   UPDATE_HASH_MASK_BODY;
 }
 
-static inline UInt32
+static __inline UInt32
 update_hash_mask16x2(UInt32 h, int in, int out, UInt32 pow1, UInt32 pow2,
                      UInt32 b1, UInt32 b2) {
   return (update_hash_mask32((h >> 16), in, out, pow1, b1, BM_MASK16) << 16) |
          update_hash_mask32((h & BM_MASK16), in, out, pow2, b2, BM_MASK16);
 }
 
-static inline UInt64
+static __inline UInt64
 update_hash_mask32x2(UInt64 h, int in, int out, UInt64 pow1, UInt64 pow2,
                      UInt64 b1, UInt64 b2) {
   return (update_hash_mask((h >> 32), in, out, pow1, b1, BM_MASK32) << 32) |
