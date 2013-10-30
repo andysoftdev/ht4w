@@ -3,8 +3,8 @@
   <PropertyGroup>
     <!-- MsiProductVersion and MsiProductCode passed by ht4w.buildproj -->
     <MsiProductVersion>0.9.7.13</MsiProductVersion>
-    <MsiProductCode Condition="'$(Platform)' == 'x86'">F02E7FC4-C18E-4A32-B104-69E6193FE946</MsiProductCode>
-    <MsiProductCode Condition="'$(Platform)' == 'x64'">C9C5023C-8C34-41DA-8C4B-918F3ED7A825</MsiProductCode>
+    <MsiProductCode Condition="'$(Platform)' == 'x86'">66BBD944-96D2-40B9-A7B0-B73836CAF4D6</MsiProductCode>
+    <MsiProductCode Condition="'$(Platform)' == 'x64'">8500F860-2084-4FE8-BE65-5179180EAC36</MsiProductCode>
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x86'">ProgramFilesFolder</MsiProgramFilesFolder>
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x64'">ProgramFiles64Folder</MsiProgramFilesFolder>
     <MsiMasterDir Condition="'$(Platform)' == 'x86'">..\..\dist\$(VisualStudioVersion)\Win32\Release</MsiMasterDir>
