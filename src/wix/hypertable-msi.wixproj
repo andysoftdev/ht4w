@@ -42,14 +42,14 @@
     </WixVariables>
     <OutputPath>..\..\dist\$(VisualStudioVersion)\</OutputPath>
     <IntermediateOutputPath>..\..\build\$(VisualStudioVersion)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=no;MergeModulesDir=$(MsiMergeModluesFolder);VisualStudioVersion=$(VisualStudioVersion)</DefineConstants>
+    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=yes;MergeModulesDir=$(MsiMergeModluesFolder);VisualStudioVersion=$(VisualStudioVersion)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
     <WixVariables>
     </WixVariables>
     <OutputPath>..\..\dist\$(VisualStudioVersion)\</OutputPath>
     <IntermediateOutputPath>..\..\build\$(VisualStudioVersion)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=no;MergeModulesDir=$(MsiMergeModluesFolder);VisualStudioVersion=$(VisualStudioVersion)</DefineConstants>
+    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=yes;MergeModulesDir=$(MsiMergeModluesFolder);VisualStudioVersion=$(VisualStudioVersion)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Hypertable.wxs" />
@@ -66,7 +66,7 @@
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <PropertyGroup>
-    <PostBuildEvent>del $(TargetPdbPath) &gt; nul</PostBuildEvent>
+    <PostBuildEvent>del $(TargetPdbPath) > nul</PostBuildEvent>
   </PropertyGroup>
   <!--
     To modify your build process, add your task inside one of the targets below and uncomment it.
