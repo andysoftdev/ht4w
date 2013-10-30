@@ -7,6 +7,17 @@
   <?define Description="Hypertable for Windows"?>
   <?define Copyright="ht4w, Copyright © 2010-2013"?>
 
+  <?if $(var.VisualStudioVersion) = "10.0"?>
+    <?define VCRedistTitle="Visual C++ 10.0 Runtime"?>
+    <?define VCRedistVersion="VC100"?>
+  <?elseif $(var.VisualStudioVersion) = "11.0"?>
+    <?define VCRedistTitle="Visual C++ 11.0 Runtime"?>
+    <?define VCRedistVersion="VC110"?>
+  <?elseif $(var.VisualStudioVersion) = "12.0"?>
+    <?define VCRedistTitle="Visual C++ 12.0 Runtime"?>
+    <?define VCRedistVersion="VC120"?>
+  <?endif?>
+
   <!-- ProductVersion/ProductCode passed by hypertable-msi.wixproj -->
   <?define RTMProductVersion="0.0.0.1" ?>
   <?define UpgradeCode="6B37E81D-D706-4339-B55F-EA7DD7F0F43A"?> <!-- immutable -->
@@ -60,7 +71,7 @@
         <Directory Id="INSTALLLOCATION" Name="Hypertable">
           <Merge
             Id="VCRedist"
-            SourceFile="$(var.MergeModulesDir)\Microsoft_VC100_CRT_$(var.ProductPlatform).msm"
+            SourceFile="$(var.MergeModulesDir)\Microsoft_$(var.VCRedistVersion)_CRT_$(var.ProductPlatform).msm"
             DiskId="1"
             Language="0" />
 
@@ -303,7 +314,7 @@
     </Feature>
 
     <!-- Visual C++ CRT-->
-    <Feature Id="VCRedist" Title="Visual C++ 10.0 Runtime" AllowAdvertise="no" Display="hidden" Level="1">
+    <Feature Id="VCRedist" Title="$(var.VCRedistTitle)" AllowAdvertise="no" Display="hidden" Level="1">
       <MergeRef Id="VCRedist" />
     </Feature>
 

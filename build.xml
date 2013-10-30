@@ -1,5 +1,5 @@
 <!-- Hypertable -->
-<project name="hypertable" default="compile" basedir="./">
+<project name="hypertable" default="compile" basedir="./" >
 
   <property name="Name" value="Hypertable"/>
   <property name="name" value="hypertable"/>
@@ -15,10 +15,10 @@
   <property name="contrib.dir" value="${basedir}/contrib"/>
   <property name="lib.dir" value="${basedir}/lib"/>
 
-  <property name="build.dir" value="${basedir}/build/java"/>
+  <property name="build.dir" value="${basedir}/build/${visualstudioversion}/java"/>
   <property name="build.classes" value="${build.dir}/classes"/>
 
-  <property name="dist.dir" value="${basedir}/dist/libs/java"/>
+  <property name="dist.dir" value="${basedir}/dist/${visualstudioversion}/libs/java"/>
 
   <!-- javadoc -->
   <property name="doc.dir" location="doc" />

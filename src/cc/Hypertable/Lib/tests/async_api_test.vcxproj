@@ -72,23 +72,23 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\tests\</OutDir>
+    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\tests\</OutDir>
+    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\tests\</OutDir>
+    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)dist\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\tests\</OutDir>
+    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -107,7 +107,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;Hypertable.lib;RangeServer.lib;Hyperspace.lib;Hypertools.lib;HyperAppHelper.lib;DfsBroker.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
@@ -134,7 +134,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;Hypertable.lib;RangeServer.lib;Hyperspace.lib;Hypertools.lib;HyperAppHelper.lib;DfsBroker.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
@@ -166,7 +166,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;Hypertable.lib;RangeServer.lib;Hyperspace.lib;Hypertools.lib;HyperAppHelper.lib;DfsBroker.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
@@ -198,7 +198,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(Platform)\lib;$(SolutionDir)dist\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;Hypertable.lib;RangeServer.lib;Hyperspace.lib;Hypertools.lib;HyperAppHelper.lib;DfsBroker.lib;expat.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>

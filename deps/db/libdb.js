@@ -86,12 +86,12 @@ function prepXml( xml, hasLibraryProps ) {
 
     var outDirs = root.selectNodes( "/ns:Project/ns:PropertyGroup/ns:OutDir" );
     for( var n = 0; n < outDirs.length; ++n ) {
-        outDirs[n].text = "$(SolutionDir)dist\\$(Platform)\\$(Configuration)\\libs\\";
+        outDirs[n].text = "$(SolutionDir)dist\\$(VisualStudioVersion)\\$(Platform)\\$(Configuration)\\libs\\";
     }
 
     var intDirs = root.selectNodes( "/ns:Project/ns:PropertyGroup/ns:IntDir" );
     for( var n = 0; n < intDirs.length; ++n ) {
-        intDirs[n].text = "$(SolutionDir)build\\deps\\$(ProjectName)\\$(Platform)\\$(Configuration)\\";
+        intDirs[n].text = "$(SolutionDir)build\\$(VisualStudioVersion)\\deps\\$(ProjectName)\\$(Platform)\\$(Configuration)\\";
     }
 
     var targetNames = root.selectNodes( "/ns:Project/ns:PropertyGroup/ns:TargetName" );

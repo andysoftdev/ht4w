@@ -2,6 +2,7 @@
 setlocal EnableDelayedExpansion
 
 set platform=Win32
+set visualstudioversion=10.0
 set configuration=Release
 set params=
 
@@ -33,7 +34,7 @@ for %%p in (%*) do (
 	)
 )
 
-set bin=%~dp0..\dist\%platform%\%configuration%\
+set bin=%~dp0..\dist\%visualstudioversion%\%platform%\%configuration%\
 
 if not exist %bin%\conf md %bin%\conf > nul
 if not exist %bin%\conf\hypertable.cfg xcopy %~dp0..\conf\hypertable.cfg %bin%\conf\ /Q /R /Y /D > nul

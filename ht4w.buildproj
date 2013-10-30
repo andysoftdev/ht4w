@@ -8,13 +8,13 @@
 		<ProductCode_x64>C9C5023C-8C34-41DA-8C4B-918F3ED7A825</ProductCode_x64>
 
 		<!-- Master files to make -->
-		<MasterServers_x86>dist\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
-		<MasterTools_x86>dist\ht4w-tools-$(Version)-win-x86.zip</MasterTools_x86>
-		<MasterMsi_x86>dist\ht4w-$(Version)-win-x86.msi</MasterMsi_x86>
-		<MasterServers_x64>dist\ht4w-$(Version)-win-x64.zip</MasterServers_x64>
-		<MasterTools_x64>dist\ht4w-tools-$(Version)-win-x64.zip</MasterTools_x64>
-		<MasterMsi_x64>dist\ht4w-$(Version)-win-x64.msi</MasterMsi_x64>
-		<MasterLibs>dist\ht4w-libs-$(Version)-win.zip</MasterLibs>
+		<MasterServers_x86>dist\$(VisualStudioVersion)\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
+		<MasterTools_x86>dist\$(VisualStudioVersion)\ht4w-tools-$(Version)-win-x86.zip</MasterTools_x86>
+		<MasterMsi_x86>dist\$(VisualStudioVersion)\ht4w-$(Version)-win-x86.msi</MasterMsi_x86>
+		<MasterServers_x64>dist\$(VisualStudioVersion)\ht4w-$(Version)-win-x64.zip</MasterServers_x64>
+		<MasterTools_x64>dist\$(VisualStudioVersion)\ht4w-tools-$(Version)-win-x64.zip</MasterTools_x64>
+		<MasterMsi_x64>dist\$(VisualStudioVersion)\ht4w-$(Version)-win-x64.msi</MasterMsi_x64>
+		<MasterLibs>dist\$(VisualStudioVersion)\ht4w-libs-$(Version)-win.zip</MasterLibs>
 	</PropertyGroup>
 
 	<!-- Check for MSBuildCommunityTasks -->
@@ -33,6 +33,20 @@
 		<Is64Bit>False</Is64Bit>
 		<Is64Bit
 			Condition="'$(MachineProcessorArchitecture)' == 'AMD64'">true</Is64Bit>
+	</PropertyGroup>
+
+	<!-- Platform toolset -->
+	<PropertyGroup>
+		<PlatformToolset Condition="'$(VisualStudioVersion)' == '10.0'">v100</PlatformToolset>
+		<PlatformToolset Condition="'$(VisualStudioVersion)' == '11.0'">v110</PlatformToolset>
+		<PlatformToolset Condition="'$(VisualStudioVersion)' == '12.0'">v120</PlatformToolset>
+	</PropertyGroup>
+
+	<!-- Platform toolset -->
+	<PropertyGroup>
+		<TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '10.0'">v4.0</TargetFrameworkVersion>
+		<TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '11.0'">v4.5</TargetFrameworkVersion>
+		<TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '12.0'">v4.5</TargetFrameworkVersion>
 	</PropertyGroup>
 
 	<!-- Check for WiX -->
@@ -82,7 +96,7 @@
 
 	<!-- Build and make master -->
 	<Target Name="Make"
-			DependsOnTargets="CleanMaster;Build;BuildLibs;MakeMaster;MakeMsi">
+			DependsOnTargets="CleanMaster;Build;BuildJavaThriftClient;MakeMaster;MakeMsi">
 	</Target>
 
 	<!-- Build -->
@@ -90,14 +104,23 @@
 		<MSBuild
 			Projects="ht4w.sln"
 			Targets="Build"
-			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform)"
+			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
 			ContinueOnError="false" />
 	</Target>
 
-	<!-- BuildLibs -->
+	<!-- Build libs-->
 	<Target Name="BuildLibs">
+		<MSBuild
+			Projects="ht4w-libs.sln"
+			Targets="Build"
+			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
+			ContinueOnError="false" />
+	</Target>
+
+	<!-- Build Java thrift client -->
+	<Target Name="BuildJavaThriftClient">
 		<Exec
-			Command='"$(ANT_HOME)"\bin\ant dist -Dversion=$(Version)'
+			Command='"$(ANT_HOME)"\bin\ant dist -Dversion=$(Version) -Dvisualstudioversion=$(VisualStudioVersion)'
 			ContinueOnError="false"
 			Condition="$(HasAnt) == true" />
 	</Target>
@@ -107,52 +130,52 @@
 			Condition="$(HasMSBuildCommunityTasks) == true" >
 
 		<ItemGroup>
-			<MasterServersFiles_x86 Include="dist\Win32\Release\Hypertable.*.exe;dist\Win32\Release\Hyperspace.Master.exe;dist\Win32\Release\hypertable.exe;dist\Win32\Release\conf\*.*" />
+			<MasterServersFiles_x86 Include="dist\$(VisualStudioVersion)\Win32\Release\Hypertable.*.exe;dist\$(VisualStudioVersion)\Win32\Release\Hyperspace.Master.exe;dist\$(VisualStudioVersion)\Win32\Release\hypertable.exe;dist\$(VisualStudioVersion)\Win32\Release\conf\*.*" />
 		</ItemGroup>
 
 		<ItemGroup>
-			<MasterServersFiles_x64 Include="dist\x64\Release\Hypertable.*.exe;dist\x64\Release\Hyperspace.Master.exe;dist\x64\Release\hypertable.exe;dist\x64\Release\conf\*.*" />
+			<MasterServersFiles_x64 Include="dist\$(VisualStudioVersion)\x64\Release\Hypertable.*.exe;dist\$(VisualStudioVersion)\x64\Release\Hyperspace.Master.exe;dist\$(VisualStudioVersion)\x64\Release\hypertable.exe;dist\$(VisualStudioVersion)\x64\Release\conf\*.*" />
 		</ItemGroup>
 		
 		<ItemGroup>
-			<MasterToolsFiles_x86 Include="dist\Win32\Release\*.exe;dist\x86\Release\conf\*.*" Exclude="dist\Win32\Release\Hypertable.*.exe;dist\Win32\Release\Hyperspace.Master.exe;dist\Win32\Release\hypertable.exe" />
+			<MasterToolsFiles_x86 Include="dist\$(VisualStudioVersion)\Win32\Release\*.exe;dist\$(VisualStudioVersion)\x86\Release\conf\*.*" Exclude="dist\$(VisualStudioVersion)\Win32\Release\Hypertable.*.exe;dist\$(VisualStudioVersion)\Win32\Release\Hyperspace.Master.exe;dist\$(VisualStudioVersion)\Win32\Release\hypertable.exe" />
 		</ItemGroup>
 
 		<ItemGroup>
-			<MasterToolsFiles_x64 Include="dist\x64\Release\*.exe;dist\x64\Release\conf\*.*" Exclude="dist\x64\Release\Hypertable.*.exe;dist\x64\Release\Hyperspace.Master.exe;dist\x64\Release\hypertable.exe" />
+			<MasterToolsFiles_x64 Include="dist\$(VisualStudioVersion)\x64\Release\*.exe;dist\$(VisualStudioVersion)\x64\Release\conf\*.*" Exclude="dist\$(VisualStudioVersion)\x64\Release\Hypertable.*.exe;dist\$(VisualStudioVersion)\x64\Release\Hyperspace.Master.exe;dist\$(VisualStudioVersion)\x64\Release\hypertable.exe" />
 		</ItemGroup>
 
 		<ItemGroup>
-			<MasterLibsFiles Include="dist\libs\java\*.*" />
+			<MasterLibsFiles Include="dist\$(VisualStudioVersion)\libs\java\*.*" />
 		</ItemGroup>
 
 		<Zip
 			Files="@(MasterServersFiles_x86)" 
 			ZipFileName="$(MasterServers_x86)"
-			WorkingDirectory="dist\Win32\Release\" />
+			WorkingDirectory="dist\$(VisualStudioVersion)\Win32\Release\" />
 
 		<Zip
 			Files="@(MasterServersFiles_x64)" 
 			ZipFileName="$(MasterServers_x64)"
-			WorkingDirectory="dist\x64\Release\"
+			WorkingDirectory="dist\$(VisualStudioVersion)\x64\Release\"
 			Condition="$(Is64Bit) == true" />
 
 		<Zip
 			Files="@(MasterToolsFiles_x86)" 
 			ZipFileName="$(MasterTools_x86)"
-			WorkingDirectory="dist\Win32\Release\" />
+			WorkingDirectory="dist\$(VisualStudioVersion)\Win32\Release\" />
 
 		<Zip
 			Files="@(MasterToolsFiles_x64)" 
 			ZipFileName="$(MasterTools_x64)"
-			WorkingDirectory="dist\x64\Release\"
+			WorkingDirectory="dist\$(VisualStudioVersion)\x64\Release\"
 			Condition="$(Is64Bit) == true" />
 
 		<Zip
 			Files="@(MasterLibsFiles)" 
 			ZipFileName="$(MasterLibs)"
-			WorkingDirectory="dist\libs\"
-			Condition="$(HasAnt) == true And Exists('dist\libs\java\hypertable-$(Version).jar')" />
+			WorkingDirectory="dist\$(VisualStudioVersion)\libs\"
+			Condition="$(HasAnt) == true And Exists('dist\$(VisualStudioVersion)\libs\java\hypertable-$(Version).jar')" />
 	</Target>
 	
 	<!-- Make msi -->
@@ -185,10 +208,10 @@
 		<MSBuild
 			Projects="ht4w.sln"
 			Targets="Clean"
-			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform)"
+			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
 			ContinueOnError="false" />
 		<Exec
-			Command='"$(ANT_HOME)"\bin\ant clean -Dversion=$(Version)'
+			Command='"$(ANT_HOME)"\bin\ant clean -Dversion=$(Version) -Dvisualstudioversion=$(VisualStudioVersion)'
 			ContinueOnError="false"
 			Condition="$(HasAnt) == true" />
 	</Target>
