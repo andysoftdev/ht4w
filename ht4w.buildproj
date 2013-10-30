@@ -3,7 +3,7 @@
 
 	<PropertyGroup>
 		<!-- Version and ProductCode (x86/x64), change for each version (update also src\wix\hypertable-msi.wixproj) -->
-		<Version>0.9.7.12</Version>
+		<Version>0.9.7.13</Version>
 		<ProductCode_x86>F02E7FC4-C18E-4A32-B104-69E6193FE946</ProductCode_x86>
 		<ProductCode_x64>C9C5023C-8C34-41DA-8C4B-918F3ED7A825</ProductCode_x64>
 
