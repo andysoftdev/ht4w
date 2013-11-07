@@ -2584,7 +2584,7 @@ sigar_net_interface_list_get(sigar_t *sigar,
 {
     MIB_IFTABLE *ift;
     int i, status;
-    int lo=0, eth=0, la=0;
+    int lo=0, eth=0, wlan=0, la=0;
 
     if (!sigar->netif_mib_rows) {
         sigar->netif_mib_rows =
@@ -2617,6 +2617,9 @@ sigar_net_interface_list_get(sigar_t *sigar,
         }
         else if (ifr->dwType == MIB_IF_TYPE_ETHERNET) {
             sprintf(name, "eth%d", eth++);
+        }
+        else if (ifr->dwType == IF_TYPE_IEEE80211) {
+            sprintf(name, "wlan%d", wlan++);
         }
         else {
             continue; /*XXX*/
@@ -2663,12 +2666,12 @@ sigar_net_interface_config_get(sigar_t *sigar,
 
     sigar_net_address_mac_set(ifconfig->hwaddr,
                               ifr->bPhysAddr,
-                              SIGAR_IFHWADDRLEN);
+                              min(ifr->dwPhysAddrLen, SIGAR_IFHWADDRLEN));
 
     SIGAR_SSTRCPY(ifconfig->description,
                   ifr->bDescr);
 
-    if (ifr->dwOperStatus & MIB_IF_OPER_STATUS_OPERATIONAL) {
+    if (ifr->dwAdminStatus && ifr->dwOperStatus == MIB_IF_OPER_STATUS_OPERATIONAL) {
         ifconfig->flags |= SIGAR_IFF_UP|SIGAR_IFF_RUNNING;
     }
 

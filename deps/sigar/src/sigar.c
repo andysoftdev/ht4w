@@ -1828,6 +1828,18 @@ sigar_net_interface_config_primary_get(sigar_t *sigar,
             continue; /* alias */
         }
 
+#ifdef _WIN32
+
+       if (!(ifconfig->flags & (SIGAR_IFF_UP|SIGAR_IFF_RUNNING))) {
+            continue; /* disabled */
+       }
+
+       if (strstr(ifconfig->description, "VMware") || strstr(ifconfig->description, "VMnet")) {
+           continue; /* virtual adapter */
+       }
+
+#endif
+
         found = 1;
         break;
     }
