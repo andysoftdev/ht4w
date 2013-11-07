@@ -21,11 +21,11 @@ Building Hypertable for Windows from source requires at least Microsoft Visual S
 * Download the latest boost version either from [boost](http://www.boost.org/users/download/)
   or from [sourceforge](http://sourceforge.net/projects/boost/files/boost/).
 
-* Unpack the content of the package (i.e. the content of the root folder, e.g. of the boost_1_44_0\) into ht4w\deps\boost\ and run:
+* Unpack the content of the package (i.e. the content of the root folder, e.g. of the boost_1_54_0\) into ht4w\deps\boost\ and run:
 
 		cd ht4w\deps\boost
-		build-win32.bat
-		build-x64.bat
+		build-[v100|v110]-win32.bat
+		build-[v100|v110]-x64.bat
   When the build is successfully completed the intermediate files located in ht4w\build\deps\boost can be deleted.
 
 
@@ -33,7 +33,7 @@ Building Hypertable for Windows from source requires at least Microsoft Visual S
 
 * Download the latest Berkeley DB from [Oracle](http://www.oracle.com/technetwork/database/berkeleydb/downloads/index.html).
 
-* Unpack the content of the package (i.e. the content of the root folder, e.g. of the db-5.2.28\) into ht4w\deps\db\ and run:
+* Unpack the content of the package (i.e. the content of the root folder, e.g. of the db-6.0.20\) into ht4w\deps\db\ and run:
 
 		cd ht4w\deps\db
 		cscript libdb.js
