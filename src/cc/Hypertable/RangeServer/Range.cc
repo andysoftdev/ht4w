@@ -332,6 +332,7 @@ void Range::load_cell_stores() {
     String file_basename = Global::toplevel_dir + "/tables/";
 
     bool skip_not_found = Config::properties->get_bool("Hypertable.RangeServer.CellStore.SkipNotFound");
+    bool skip_bad = Config::properties->get_bool("Hypertable.RangeServer.CellStore.SkipBad");
 
     for (size_t i=0; i<csvec.size(); i++) {
 
@@ -345,13 +346,20 @@ void Range::load_cell_stores() {
       }
       catch (Exception &e) {
         // issue 986: mapr returns IO_ERROR if CellStore does not exist
-        if (skip_not_found &&
-            (e.code() == Error::DFSBROKER_FILE_NOT_FOUND ||
-             e.code() == Error::DFSBROKER_BAD_FILENAME ||
-             e.code() == Error::DFSBROKER_IO_ERROR)) {
-          HT_WARNF("CellStore file '%s' not found, skipping", csvec[i].c_str());
-          continue;
+	if (e.code() == Error::DFSBROKER_FILE_NOT_FOUND ||
+	    e.code() == Error::DFSBROKER_BAD_FILENAME ||
+	    e.code() == Error::DFSBROKER_IO_ERROR) {
+	  if (skip_not_found) {
+	    HT_WARNF("CellStore file '%s' not found, skipping", csvec[i].c_str());
+	    continue;
+	  }
         }
+	if (e.code() == Error::RANGESERVER_CORRUPT_CELLSTORE) {
+	  if (skip_bad) {
+	    HT_WARNF("CellStore file '%s' is corrupt, skipping", csvec[i].c_str());
+	    continue;
+	  }
+	}
         HT_FATALF("Problem opening CellStore file '%s' - %s", csvec[i].c_str(),
                   Error::get_text(e.code()));
       }
@@ -1301,7 +1309,13 @@ void Range::split_compact_and_shrink() {
     m_hints_file.set(hints);
     m_hints_file.write(location);
     for (size_t i=0; i<new_hints_file.get().size(); i++) {
-      HT_ASSERT(hints[i].disk_usage <= new_hints_file.get()[i].disk_usage);
+      if (hints[i].disk_usage > new_hints_file.get()[i].disk_usage) {
+        // issue 1159
+        HT_ERRORF("hints[%d].disk_usage (%llu) > new_hints_file.get()[%d].disk_usage (%llu)",
+                  (int)i, (Llu)hints[i].disk_usage, (int)i, (Llu)new_hints_file.get()[i].disk_usage);
+        HT_ERRORF("%s", ag_vector[i]->describe().c_str());
+        HT_ASSERT(hints[i].disk_usage <= new_hints_file.get()[i].disk_usage);
+      }
       new_hints_file.get()[i].disk_usage -= hints[i].disk_usage;
     }
     new_hints_file.write("");
