@@ -147,6 +147,8 @@ run/monitoring/*stats.txt
 /tests/*.log
 /deps/boost/bjam.exe
 /deps/boost/bjam.log
+/deps/boost/b2.exe
+/deps/boost/bootstrap.log
 /deps/boost/boost/*
 /deps/boost/*.jam
 /deps/boost/boost.css
