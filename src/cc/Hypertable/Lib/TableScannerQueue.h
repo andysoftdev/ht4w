@@ -76,7 +76,9 @@ namespace Hypertable {
             m_cells_queue.pop_front();
             break;
           }
-          while (m_work_queue.empty() && m_cells_queue.empty()) {
+          while (m_work_queue.empty() && 
+                 m_cells_queue.empty() &&
+                (m_error == Error::OK || m_error_shown)) {
             m_cond.wait(lock);
           }
           if (!m_work_queue.size())
@@ -107,6 +109,7 @@ namespace Hypertable {
       m_error = error;
       m_error_msg = error_msg;
       m_error_shown = false;
+      m_cond.notify_one();
     }
 
   private:
