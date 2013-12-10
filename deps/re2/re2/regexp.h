@@ -197,7 +197,7 @@ class RegexpStatus {
 
   // Returns text equivalent of code, e.g.:
   //   "Bad character class"
-  static const string& CodeText(enum RegexpStatusCode code);
+  static string CodeText(enum RegexpStatusCode code);
 
   // Returns text describing error, e.g.:
   //   "Bad character class: [z-a]"
@@ -299,6 +299,7 @@ class Regexp {
                            //   and \P{Han} for its negation.
     NeverNL      = 1<<11,  // Never match NL, even if the regexp mentions
                            //   it explicitly.
+    NeverCapture = 1<<12,  // Parse all parens as non-capturing.
 
     // As close to Perl as we can get.
     LikePerl     = ClassNL | OneLine | PerlClasses | PerlB | PerlX |
@@ -369,6 +370,11 @@ class Regexp {
   // or NULL if the regexp contains no named capture groups.
   // The caller is responsible for deleting the map.
   map<string, int>* NamedCaptures();
+
+  // Returns a map from capturing group indices to capturing group
+  // names or NULL if the regexp contains no named capture groups. The
+  // caller is responsible for deleting the map.
+  map<int, string>* CaptureNames();
 
   // Returns a string representation of the current regexp,
   // using as few parentheses as possible.

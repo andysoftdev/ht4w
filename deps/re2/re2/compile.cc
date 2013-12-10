@@ -44,7 +44,7 @@ struct PatchList {
   static PatchList Append(Prog::Inst *inst0, PatchList l1, PatchList l2);
 };
 
-static PatchList nullPatchList = { 0 };
+static PatchList nullPatchList;
 
 // Returns patch list containing just p.
 PatchList PatchList::Mk(uint32 p) {
@@ -106,11 +106,12 @@ struct Frag {
   uint32 begin;
   PatchList end;
 
+  explicit Frag(LinkerInitialized) {}
   Frag() : begin(0) { end.p = 0; }  // needed so Frag can go in vector
   Frag(uint32 begin, PatchList end) : begin(begin), end(end) {}
 };
 
-static Frag kNullFrag;
+static Frag kNullFrag(LINKER_INITIALIZED);
 
 // Input encodings.
 enum Encoding {
@@ -392,7 +393,7 @@ Frag Compiler::ByteRange(int lo, int hi, bool foldcase) {
   int id = AllocInst(1);
   if (id < 0)
     return NoMatch();
-  inst_[id].InitByteRange(lo, hi, foldcase, NULL);
+  inst_[id].InitByteRange(lo, hi, foldcase, 0);
   prog_->byte_inst_count_++;
   prog_->MarkByteRange(lo, hi);
   if (foldcase && lo <= 'z' && hi >= 'a') {
@@ -458,7 +459,7 @@ Frag Compiler::Capture(Frag a, int n) {
 // A Rune is a name for a Unicode code point.
 // Returns maximum rune encoded by UTF-8 sequence of length len.
 static int MaxRune(int len) {
-  int b;  // number of Rune blents lenn len-byte UTF-8 sequence (len < UTFmax)
+  int b;  // number of Rune bits in len-byte UTF-8 sequence (len < UTFmax)
   if (len == 1)
     b = 7;
   else
@@ -476,7 +477,7 @@ static int MaxRune(int len) {
 
 void Compiler::BeginRange() {
   rune_cache_.clear();
-  rune_range_.begin = NULL;
+  rune_range_.begin = 0;
   rune_range_.end = nullPatchList;
 }
 
@@ -588,7 +589,7 @@ static struct ByteRangeProg {
 };
 
 void Compiler::Add_80_10ffff() {
-  int inst[arraysize(prog_80_10ffff)];
+  int inst[arraysize(prog_80_10ffff)] = { 0 }; // does not need to be initialized; silences gcc warning
   for (int i = 0; i < arraysize(prog_80_10ffff); i++) {
     const ByteRangeProg& p = prog_80_10ffff[i];
     int next = 0;
@@ -732,7 +733,7 @@ Frag Compiler::PostVisit(Regexp* re, Frag, Frag, Frag* child_frags,
       Frag f = Match(re->match_id());
       // Remember unanchored match to end of string.
       if (anchor_ != RE2::ANCHOR_BOTH)
-        f = Cat(DotStar(), f);
+        f = Cat(DotStar(), Cat(EmptyWidth(kEmptyEndText), f));
       return f;
     }
 
@@ -854,59 +855,97 @@ Frag Compiler::PostVisit(Regexp* re, Frag, Frag, Frag* child_frags,
 // Is this regexp required to start at the beginning of the text?
 // Only approximate; can return false for complicated regexps like (\Aa|\Ab),
 // but handles (\A(a|b)).  Could use the Walker to write a more exact one.
-static bool IsAnchorStart(Regexp** pre) {
-  for (;;) {
-    Regexp* re = *pre;
-    if (re == NULL)
-      return false;
-    switch (re->op()) {
-      default:
-        break;
-      case kRegexpConcat:
-        if (re->nsub() > 0) {
-          pre = &re->sub()[0];
-          continue;
+static bool IsAnchorStart(Regexp** pre, int depth) {
+  Regexp* re = *pre;
+  Regexp* sub;
+  // The depth limit makes sure that we don't overflow
+  // the stack on a deeply nested regexp.  As the comment
+  // above says, IsAnchorStart is conservative, so returning
+  // a false negative is okay.  The exact limit is somewhat arbitrary.
+  if (re == NULL || depth >= 4)
+    return false;
+  switch (re->op()) {
+    default:
+      break;
+    case kRegexpConcat:
+      if (re->nsub() > 0) {
+        sub = re->sub()[0]->Incref();
+        if (IsAnchorStart(&sub, depth+1)) {
+          Regexp** subcopy = new Regexp*[re->nsub()];
+          subcopy[0] = sub;  // already have reference
+          for (int i = 1; i < re->nsub(); i++)
+            subcopy[i] = re->sub()[i]->Incref();
+          *pre = Regexp::Concat(subcopy, re->nsub(), re->parse_flags());
+          delete[] subcopy;
+          re->Decref();
+          return true;
         }
-        break;
-      case kRegexpCapture:
-        pre = &re->sub()[0];
-        continue;
-      case kRegexpBeginText:
-        *pre = Regexp::LiteralString(NULL, 0, re->parse_flags());
+        sub->Decref();
+      }
+      break;
+    case kRegexpCapture:
+      sub = re->sub()[0]->Incref();
+      if (IsAnchorStart(&sub, depth+1)) {
+        *pre = Regexp::Capture(sub, re->parse_flags(), re->cap());
         re->Decref();
         return true;
-    }
-    return false;
+      }
+      sub->Decref();
+      break;
+    case kRegexpBeginText:
+      *pre = Regexp::LiteralString(NULL, 0, re->parse_flags());
+      re->Decref();
+      return true;
   }
+  return false;
 }
 
 // Is this regexp required to start at the end of the text?
 // Only approximate; can return false for complicated regexps like (a\z|b\z),
 // but handles ((a|b)\z).  Could use the Walker to write a more exact one.
-static bool IsAnchorEnd(Regexp** pre) {
-  for (;;) {
-    Regexp* re = *pre;
-    if (re == NULL)
-      return false;
-    switch (re->op()) {
-      default:
-        break;
-      case kRegexpConcat:
-        if (re->nsub() > 0) {
-          pre = &re->sub()[re->nsub() - 1];
-          continue;
+static bool IsAnchorEnd(Regexp** pre, int depth) {
+  Regexp* re = *pre;
+  Regexp* sub;
+  // The depth limit makes sure that we don't overflow
+  // the stack on a deeply nested regexp.  As the comment
+  // above says, IsAnchorEnd is conservative, so returning
+  // a false negative is okay.  The exact limit is somewhat arbitrary.
+  if (re == NULL || depth >= 4)
+    return false;
+  switch (re->op()) {
+    default:
+      break;
+    case kRegexpConcat:
+      if (re->nsub() > 0) {
+        sub = re->sub()[re->nsub() - 1]->Incref();
+        if (IsAnchorEnd(&sub, depth+1)) {
+          Regexp** subcopy = new Regexp*[re->nsub()];
+          subcopy[re->nsub() - 1] = sub;  // already have reference
+          for (int i = 0; i < re->nsub() - 1; i++)
+            subcopy[i] = re->sub()[i]->Incref();
+          *pre = Regexp::Concat(subcopy, re->nsub(), re->parse_flags());
+          delete[] subcopy;
+          re->Decref();
+          return true;
         }
-        break;
-      case kRegexpCapture:
-        pre = &re->sub()[0];
-        continue;
-      case kRegexpEndText:
-        *pre = Regexp::LiteralString(NULL, 0, re->parse_flags());
+        sub->Decref();
+      }
+      break;
+    case kRegexpCapture:
+      sub = re->sub()[0]->Incref();
+      if (IsAnchorEnd(&sub, depth+1)) {
+        *pre = Regexp::Capture(sub, re->parse_flags(), re->cap());
         re->Decref();
         return true;
-    }
-    return false;
+      }
+      sub->Decref();
+      break;
+    case kRegexpEndText:
+      *pre = Regexp::LiteralString(NULL, 0, re->parse_flags());
+      re->Decref();
+      return true;
   }
+  return false;
 }
 
 void Compiler::Setup(Regexp::ParseFlags flags, int64 max_mem,
@@ -963,8 +1002,8 @@ Prog* Compiler::Compile(Regexp* re, bool reversed, int64 max_mem) {
 
   // Record whether prog is anchored, removing the anchors.
   // (They get in the way of other optimizations.)
-  bool is_anchor_start = IsAnchorStart(&sre);
-  bool is_anchor_end = IsAnchorEnd(&sre);
+  bool is_anchor_start = IsAnchorStart(&sre, 0);
+  bool is_anchor_end = IsAnchorEnd(&sre, 0);
 
   // Generate fragment for entire regexp.
   Frag f = c.WalkExponential(sre, kNullFrag, 2*c.max_inst_);

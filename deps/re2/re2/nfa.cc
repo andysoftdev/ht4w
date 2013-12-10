@@ -84,7 +84,7 @@ class NFA {
   inline Thread* AllocThread();
   inline void FreeThread(Thread*);
 
-  // Add r (or its children, following unlabeled arrows)
+  // Add id (or its children, following unlabeled arrows)
   // to the workqueue q with associated capture info.
   void AddToThreadq(Threadq* q, int id, int flag,
                     const char* p, const char** capture);
@@ -179,7 +179,7 @@ void NFA::CopyCapture(const char** dst, const char** src) {
   }
 }
 
-// Follows all empty arrows from r and enqueues all the states reached.
+// Follows all empty arrows from id0 and enqueues all the states reached.
 // The bits in flag (Bol, Eol, etc.) specify whether ^, $ and \b match.
 // The pointer p is the current input position, and m is the
 // current set of match boundaries.
@@ -214,7 +214,7 @@ void NFA::AddToThreadq(Threadq* q, int id0, int flag,
 
     // Create entry in q no matter what.  We might fill it in below,
     // or we might not.  Even if not, it is necessary to have it,
-    // so that we don't revisit r during the recursion.
+    // so that we don't revisit id0 during the recursion.
     q->set_new(id, NULL);
 
     Thread** tp = &q->find(id)->second;
@@ -252,7 +252,7 @@ void NFA::AddToThreadq(Threadq* q, int id0, int flag,
       if ((j=ip->cap()) < ncapture_) {
         // Push a dummy whose only job is to restore capture[j]
         // once we finish exploring this possibility.
-        stk[nstk++] = AddState(NULL, capture[j], j);
+        stk[nstk++] = AddState(0, capture[j], j);
 
         // Record capture.
         capture[j] = p;
@@ -363,7 +363,7 @@ int NFA::Step(Threadq* runq, Threadq* nextq, int c, int flag, const char* p) {
             FreeThread(i->second);
           runq->clear();
           matched_ = true;
-          return NULL;
+          return 0;
         }
         t->capture[0] = old;
         matched_ = true;
@@ -372,7 +372,7 @@ int NFA::Step(Threadq* runq, Threadq* nextq, int c, int flag, const char* p) {
     FreeThread(t);
   }
   runq->clear();
-  return NULL;
+  return 0;
 }
 
 string NFA::FormatCapture(const char** capture) {

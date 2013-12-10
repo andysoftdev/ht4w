@@ -3,9 +3,8 @@
 // license that can be found in the LICENSE file.
 
 #include "util/util.h"
-
 #ifdef _WIN32
-#define va_copy(d,s) ((d) = (s))
+#define va_copy(dest, src) (dest = src)
 #endif
 
 namespace re2 { 

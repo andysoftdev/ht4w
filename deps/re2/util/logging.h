@@ -7,6 +7,13 @@
 #ifndef RE2_UTIL_LOGGING_H__
 #define RE2_UTIL_LOGGING_H__
 
+#ifndef _WIN32
+#include <unistd.h>  /* for write */
+#else
+#include <io.h>
+#endif
+#include <sstream>
+
 // Debug-only checking.
 #define DCHECK(condition) assert(condition)
 #define DCHECK_EQ(val1, val2) assert((val1) == (val2))
@@ -45,13 +52,26 @@
 
 class LogMessage {
  public:
-  LogMessage(const char* file, int line) {
-    std::cerr << file << ":" << line << ": ";
+  LogMessage(const char* file, int line) : flushed_(false) {
+    stream() << file << ":" << line << ": ";
   }
-  ~LogMessage() { std::cerr << "\n"; }
-  ostream& stream() { return std::cerr; }
+  void Flush() {
+    stream() << "\n";
+    string s = str_.str();
+    int n = (int)s.size(); // shut up msvc
+    if(write(2, s.data(), n) < 0) {}  // shut up gcc
+    flushed_ = true;
+  }
+  ~LogMessage() {
+    if (!flushed_) {
+      Flush();
+    }
+  }
+  ostream& stream() { return str_; }
  
  private:
+  bool flushed_;
+  std::ostringstream str_;
   DISALLOW_EVIL_CONSTRUCTORS(LogMessage);
 };
 
@@ -60,7 +80,7 @@ class LogMessageFatal : public LogMessage {
   LogMessageFatal(const char* file, int line)
     : LogMessage(file, line) { }
   ~LogMessageFatal() {
-    std::cerr << "\n";
+    Flush();
     abort();
   }
  private:

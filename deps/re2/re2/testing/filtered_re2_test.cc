@@ -39,6 +39,23 @@ TEST(FilteredRE2Test, SmallOrTest) {
   EXPECT_EQ(id, v.matches[0]);
 }
 
+TEST(FilteredRE2Test, SmallLatinTest) {
+  FLAGS_filtered_re2_min_atom_len = 3;
+  FilterTestVars v;
+  int id;
+
+  v.opts.set_utf8(false);
+  v.f.Add("\xde\xadQ\xbe\xef", v.opts, &id);
+  v.f.Compile(&v.atoms);
+  EXPECT_EQ(1, v.atoms.size());
+  EXPECT_EQ(v.atoms[0], "\xde\xadq\xbe\xef");
+
+  v.atom_indices.push_back(0);
+  v.f.AllMatches("foo\xde\xadQ\xbe\xeflemur", v.atom_indices, &v.matches);
+  EXPECT_EQ(1, v.matches.size());
+  EXPECT_EQ(id, v.matches[0]);
+}
+
 struct AtomTest {
   const char* testname;
   // If any test needs more than this many regexps or atoms, increase
@@ -99,13 +116,23 @@ AtomTest atom_tests[] = {
       "xbcdea", "xbcdeb",
       "ybcdea", "ybcdeb"
     }
-  }
+  }, {
+    // Test upper/lower of non-ASCII.
+    "UnicodeLower", {
+      "(?i)ΔδΠϖπΣςσ",
+      "ΛΜΝΟΠ",
+      "ψρστυ",
+    }, {
+      "δδπππσσσ",
+      "λμνοπ",
+      "ψρστυ",
+    },
+  },
 };
 
 void AddRegexpsAndCompile(const char* regexps[],
                           int n,
                           struct FilterTestVars* v) {
-  v->opts.set_utf8(false);
   for (int i = 0; i < n; i++) {
     int id;
     v->f.Add(regexps[i], v->opts, &id);

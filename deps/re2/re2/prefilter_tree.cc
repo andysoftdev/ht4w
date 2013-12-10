@@ -8,6 +8,11 @@
 #include "re2/prefilter_tree.h"
 #include "re2/re2.h"
 
+#ifdef _WIN32
+#include <stdio.h>
+#define snprintf _snprintf
+#endif
+
 DEFINE_int32(filtered_re2_min_atom_len,
              3,
              "Strings less than this length are not stored as atoms");
@@ -136,11 +141,7 @@ Prefilter* PrefilterTree::CanonicalNode(Prefilter* node) {
 
 static string Itoa(int n) {
   char buf[100];
-#ifndef _WIN32
   snprintf(buf, sizeof buf, "%d", n);
-#else
-  sprintf_s(buf, sizeof(buf), "%d", n);
-#endif
   return string(buf);
 }
 

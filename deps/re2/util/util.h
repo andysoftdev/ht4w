@@ -16,6 +16,7 @@
 #include <sys/time.h>
 #endif
 #include <time.h>
+#include <ctype.h>	// For isdigit, isalpha.
 
 // C++
 #include <vector>
@@ -24,18 +25,9 @@
 #include <iosfwd>
 #include <map>
 #include <stack>
-#include <iostream>
+#include <ostream>
 #include <utility>
 #include <set>
-
-#ifndef _WIN32
-#define _BACKWARD_BACKWARD_WARNING_H
-#include <ext/hash_set>
-#include <ext/hash_map>
-#else
-#include <hash_set>
-#include <hash_map>
-#endif
 
 // Use std names.
 using std::set;
@@ -50,15 +42,18 @@ using std::stack;
 using std::sort;
 using std::swap;
 using std::make_pair;
-#ifndef _WIN32
-using __gnu_cxx::hash_set;
-using __gnu_cxx::hash;
-#else
-using std::hash_set;
-using std::hash;
-#endif
 
-// Needed on OS X.
+#if defined(__GNUC__) && !defined(USE_CXX0X)
+
+#include <tr1/unordered_set>
+using std::tr1::unordered_set;
+
+#else
+
+#include <unordered_set>
+using std::unordered_set;
+
+#endif
 
 namespace re2 {
 
@@ -88,17 +83,7 @@ template<bool> struct CompileAssert {};
 
 #define arraysize(array) (sizeof(array)/sizeof((array)[0]))
 
-// Fake lock annotations.  For real ones, see
-// http://code.google.com/p/data-race-test/
-#define ANNOTATE_PUBLISH_MEMORY_RANGE(a, b)
-#define ANNOTATE_IGNORE_WRITES_BEGIN()
-#define ANNOTATE_IGNORE_WRITES_END()
-#define ANNOTATE_BENIGN_RACE(a, b)
-#define NO_THREAD_SAFETY_ANALYSIS
-#define ANNOTATE_HAPPENS_BEFORE(x)
-#define ANNOTATE_HAPPENS_AFTER(x)
-
-struct StringPiece;
+class StringPiece;
 
 string CEscape(const StringPiece& src);
 int CEscapeString(const char* src, int src_len, char* dest, int dest_len);
@@ -125,6 +110,8 @@ static inline uint64 Hash64StringWithSeed(const char* s, int len, uint32 seed) {
 
 #ifndef _WIN32
 int RunningOnValgrind();
+#else
+inline int RunningOnValgrind() { return 0; }
 #endif
 
 }  // namespace re2
