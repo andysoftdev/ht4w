@@ -53,10 +53,10 @@ namespace Hypertable {
     virtual void add(ApplicationHandler *app_handler) {
       ScopedLock lock(m_mutex);
       m_work_queue.push_back(app_handler);
-      m_cond.notify_one();
+      m_cond.notify_all();
     }
 
-    virtual void add_unlocked(ApplicationHandler *app_handler) { }
+    virtual void add_unlocked(ApplicationHandler *app_handler) { HT_ASSERT(false); }
 
     void next_result(ScanCellsPtr &cells, int *error, String &error_msg) {
       ApplicationHandler *app_handler;
@@ -90,18 +90,23 @@ namespace Hypertable {
         app_handler->run();
         delete app_handler;
       }
-      if (m_error != Error::OK) {
-        *error = m_error;
-        error_msg = m_error_msg;
-        cells = 0;
+
+      {
+        ScopedLock lock(m_mutex);
+        if (m_error != Error::OK) {
+          *error = m_error;
+          error_msg = m_error_msg;
+          cells = 0;
+        }
       }
+
       HT_ASSERT(cells != 0 || *error != Error::OK);
     }
 
     void add_cells(ScanCellsPtr &cells) {
       ScopedLock lock(m_mutex);
       m_cells_queue.push_back(cells);
-      m_cond.notify_one();
+      m_cond.notify_all();
     }
 
     void set_error(int error, const String &error_msg) {
