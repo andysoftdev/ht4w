@@ -179,6 +179,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
     return;
   }
 #else
+  //DWORD flagsAndAttributes = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_NO_BUFFERING : FILE_FLAG_RANDOM_ACCESS;
   if ((local_fd = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0)) == INVALID_HANDLE_VALUE) {
     report_error(cb);
     DWORD err = GetLastError();
@@ -255,7 +256,7 @@ LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
   }
 #else
   DWORD creationDisposition = flags & Filesystem::OPEN_FLAG_OVERWRITE ? CREATE_ALWAYS : OPEN_ALWAYS;
-  DWORD flagsAndAttributes = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH : 0;
+  DWORD flagsAndAttributes = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH/*|FILE_FLAG_NO_BUFFERING*/ : 0;
   if ((local_fd = CreateFile(abspath.c_str(), GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, creationDisposition, flagsAndAttributes, 0)) == INVALID_HANDLE_VALUE) {
     report_error(cb);
     DWORD err = GetLastError();
@@ -308,18 +309,9 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
   DWORD nread;
 #endif
   uint64_t offset;
-  uint8_t *readbuf;
   int error;
 
-#if defined(__linux__)
-  void *vptr = 0;
-  HT_ASSERT(posix_memalign(&vptr, HT_DIRECT_IO_ALIGNMENT, amount) == 0);
-  readbuf = (uint8_t *)vptr;
-#else
-  readbuf = new uint8_t [amount];
-#endif
-
-  StaticBuffer buf(readbuf, amount);
+  StaticBuffer buf((size_t)amount, (size_t)HT_DIRECT_IO_ALIGNMENT);
 
   HT_DEBUGF("read fd=%d amount=%d", fd, amount);
 
@@ -413,8 +405,8 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
     HT_WIN32_LASTERROR("WriteFile failed");
     return;
   }
-  if (sync)
-    sync = !(m_directio && (fdata->flags & Filesystem::OPEN_FLAG_DIRECTIO)); // no sync because handle has FILE_FLAG_WRITE_THROUGH
+  if (sync && m_directio && (fdata->flags & Filesystem::OPEN_FLAG_DIRECTIO))
+    sync = false; // no sync because handle has FILE_FLAG_WRITE_THROUGH
 #endif
 
 
@@ -552,20 +544,11 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
 #else
   DWORD nread;
 #endif
-  uint8_t *readbuf;
   int error;
 
   HT_DEBUGF("pread fd=%d offset=%llu amount=%d", fd, (Llu)offset, amount);
 
-#if defined(__linux__)
-  void *vptr = 0;
-  HT_ASSERT(posix_memalign(&vptr, HT_DIRECT_IO_ALIGNMENT, amount) == 0);
-  readbuf = (uint8_t *)vptr;
-#else
-  readbuf = new uint8_t [amount];
-#endif
-
-  StaticBuffer buf(readbuf, amount);
+  StaticBuffer buf((size_t)amount, (size_t)HT_DIRECT_IO_ALIGNMENT);
 
   if (!m_open_file_map.get(fd, fdata)) {
     char errbuf[32];
@@ -574,19 +557,18 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
     return;
   }
 
-  if ((nread = FileUtils::pread(fdata->fd, buf.base, amount, (off_t)offset)) != (ssize_t)amount) {
+  nread = FileUtils::pread(fdata->fd, buf.base, buf.aligned_size(), (off_t)offset);
+  if (nread != (ssize_t)buf.aligned_size()) {
     report_error(cb);
-    HT_ERRORF("pread failed: fd=%d amount=%d offset=%llu - %s", fdata->fd,
-              amount, (Llu)offset, IO_ERROR);
+    HT_ERRORF("pread failed: fd=%d amount=%d aligned_size=%d offset=%llu - %s",
+              fdata->fd, (int)amount, (int)buf.aligned_size(), (Llu)offset,
+              IO_ERROR);
     return;
   }
-
-  buf.size = nread;
 
   if ((error = cb->response(offset, buf)) != Error::OK)
     HT_ERRORF("Problem sending response for pread(%u, %llu, %u) - %s",
               (unsigned)fd, (Llu)offset, (unsigned)amount, Error::get_text(error));
-
 }
 
 

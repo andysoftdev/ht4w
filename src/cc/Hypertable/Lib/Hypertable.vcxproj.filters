@@ -5,6 +5,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Source Files\RS_METRICS">
+      <UniqueIdentifier>{d5eba01a-765b-4d1b-8fb4-10f42951c8e6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApacheLogParser.cc">
@@ -219,6 +222,15 @@
     </ClCompile>
     <ClCompile Include="SystemVariable.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RS_METRICS\RangeMetrics.cc">
+      <Filter>Source Files\RS_METRICS</Filter>
+    </ClCompile>
+    <ClCompile Include="RS_METRICS\ReaderTable.cc">
+      <Filter>Source Files\RS_METRICS</Filter>
+    </ClCompile>
+    <ClCompile Include="RS_METRICS\ServerMetrics.cc">
+      <Filter>Source Files\RS_METRICS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -500,6 +512,18 @@
     </ClInclude>
     <ClInclude Include="ClientObject.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RS_METRICS\RangeMetrics.h">
+      <Filter>Source Files\RS_METRICS</Filter>
+    </ClInclude>
+    <ClInclude Include="RS_METRICS\Reader.h">
+      <Filter>Source Files\RS_METRICS</Filter>
+    </ClInclude>
+    <ClInclude Include="RS_METRICS\ReaderTable.h">
+      <Filter>Source Files\RS_METRICS</Filter>
+    </ClInclude>
+    <ClInclude Include="RS_METRICS\ServerMetrics.h">
+      <Filter>Source Files\RS_METRICS</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

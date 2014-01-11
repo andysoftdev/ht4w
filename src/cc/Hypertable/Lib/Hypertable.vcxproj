@@ -69,6 +69,9 @@
     <ClCompile Include="RangeState.cc" />
     <ClCompile Include="Result.cc" />
     <ClCompile Include="RootFileHandler.cc" />
+    <ClCompile Include="RS_METRICS\RangeMetrics.cc" />
+    <ClCompile Include="RS_METRICS\ReaderTable.cc" />
+    <ClCompile Include="RS_METRICS\ServerMetrics.cc" />
     <ClCompile Include="ScanBlock.cc" />
     <ClCompile Include="ScanCells.cc" />
     <ClCompile Include="ScanSpec.cc" />
@@ -156,6 +159,10 @@
     <ClInclude Include="Result.h" />
     <ClInclude Include="ResultCallback.h" />
     <ClInclude Include="RootFileHandler.h" />
+    <ClInclude Include="RS_METRICS\RangeMetrics.h" />
+    <ClInclude Include="RS_METRICS\Reader.h" />
+    <ClInclude Include="RS_METRICS\ReaderTable.h" />
+    <ClInclude Include="RS_METRICS\ServerMetrics.h" />
     <ClInclude Include="ScanBlock.h" />
     <ClInclude Include="ScanCells.h" />
     <ClInclude Include="ScanLimitState.h" />

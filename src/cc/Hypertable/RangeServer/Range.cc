@@ -197,21 +197,30 @@ void Range::deferred_initialization() {
 }
 
 void Range::deferred_initialization(uint32_t timeout_millis) {
-  boost::xtime now, expiration_time;
 
   if (m_initialized)
     return;
 
+  boost::xtime expiration_time;
   boost::xtime_get(&expiration_time, TIME_UTC_);
   expiration_time.sec += timeout_millis/1000;
+
+  deferred_initialization(expiration_time);
+}
+
+void Range::deferred_initialization(boost::xtime expire_time) {
+
+  if (m_initialized)
+    return;
 
   while (true) {
     try {
       deferred_initialization();
     }
     catch (Exception &e) {
+      boost::xtime now;
       boost::xtime_get(&now, TIME_UTC_);
-      if (boost::xtime_cmp(now, expiration_time) < 0) {
+      if (boost::xtime_cmp(now, expire_time) < 0) {
         poll(0, 0, 10000);
         continue;
       }
@@ -564,8 +573,9 @@ bool Range::cancel_maintenance() {
 }
 
 
-Range::MaintenanceData *Range::get_maintenance_data(ByteArena &arena, time_t now,
-                                                    TableMutator *mutator) {
+Range::MaintenanceData *
+Range::get_maintenance_data(ByteArena &arena, time_t now,
+                            int flags, TableMutator *mutator) {
   MaintenanceData *mdata = (MaintenanceData *)arena.alloc( sizeof(MaintenanceData) );
   AccessGroup::MaintenanceData **tailp = 0;
   AccessGroupVector  ag_vector(0);
@@ -608,11 +618,11 @@ Range::MaintenanceData *Range::get_maintenance_data(ByteArena &arena, time_t now
 
   for (size_t i=0; i<ag_vector.size(); i++) {
     if (mdata->agdata == 0) {
-      mdata->agdata = ag_vector[i]->get_maintenance_data(arena, now);
+      mdata->agdata = ag_vector[i]->get_maintenance_data(arena, now, flags);
       tailp = &mdata->agdata;
     }
     else {
-      (*tailp)->next = ag_vector[i]->get_maintenance_data(arena, now);
+      (*tailp)->next = ag_vector[i]->get_maintenance_data(arena, now, flags);
       tailp = &(*tailp)->next;
     }
     size += (*tailp)->disk_estimate;

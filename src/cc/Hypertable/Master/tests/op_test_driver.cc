@@ -1017,7 +1017,7 @@ void balance_plan_authority_test(ContextPtr &context) {
 
   out.close();
 
-  if (system("sed.exe -e s/timestamp=.*2013,/timestamp=0,/ig balance_plan_authority_test.output > balance_plan_authority_test.sed.output") != 0) {
+  if (system("sed.exe -e s/timestamp=.*20[0-9][0-9],/timestamp=0,/ig balance_plan_authority_test.output > balance_plan_authority_test.sed.output") != 0) {
     std::cout << "sed failed\n";
     _exit(1);
   }

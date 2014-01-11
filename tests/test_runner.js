@@ -230,7 +230,7 @@ function run_servers(args) {
     system("rd /S /Q run");
     system("rd /S /Q log");
     system("rd /S /Q conf");
-    var status = system("..\\hypertable.service --start-servers " + args);
+    var status = system("..\\hypertable.service --start-servers --Hypertable.Master.DiskThreshold.Percentage=100 " + args);
     if (status != 0) {
         throw "Unable to start servers [" + args +"]";
     }
@@ -673,6 +673,13 @@ function schema_test(logfile, testName) {
     return run_target(logfile, testName);
 }
 
+function timewindow_test(logfile, testName) {
+    prepare_target(testName, ["TimeWindowTest.golden"]);
+    var status = run_target(logfile, testName);
+    files_delete(["TimeWindowTest*"]);
+    return status;
+}
+
 function unique_test(logfile, testName) {
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
     return run_target(logfile, testName);
@@ -743,6 +750,7 @@ all_tests.add("serialization_test", run_target);
 all_tests.add("stats_serialize_test", run_target);
 all_tests.add("string_compressor_test", run_target);
 all_tests.add("timeinline_test", run_target);
+all_tests.add("timewindow_test", timewindow_test);
 all_tests.add("unique_test", unique_test);
 
 // globals

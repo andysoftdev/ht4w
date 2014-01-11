@@ -103,6 +103,9 @@
     <ClCompile Include="Crontab.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TimeWindow.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h">
@@ -331,6 +334,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="StlAllocator.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeWindow.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -180,6 +180,11 @@ inline void vfree(const uint8_t* p) {
     VirtualFree((LPVOID)p, 0, MEM_RELEASE);
 }
 
+inline int posix_memalign(void **memptr, size_t alignment, size_t size) {
+  *memptr = _aligned_malloc(size, alignment);
+  return errno; 
+}
+
 #endif
 
 #define HT_USE_ABORT

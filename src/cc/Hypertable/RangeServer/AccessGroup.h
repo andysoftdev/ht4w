@@ -101,6 +101,7 @@ namespace Hypertable {
       bool     in_memory;
       bool     gc_needed;
       bool     needs_merging;
+      bool     end_merge;
     };
 
     class Hints {
@@ -181,7 +182,7 @@ namespace Hypertable {
 
     void post_load_cellstores() {
       sort_cellstores_by_timestamp();
-      m_needs_merging = find_merge_run();
+      get_merge_info(m_needs_merging, m_end_merge);
       if (!m_in_memory &&
           m_latest_stored_revision > m_latest_stored_revision_hint)
         purge_stored_cells_from_cache();
@@ -193,7 +194,8 @@ namespace Hypertable {
 
     uint64_t purge_memory(MaintenanceFlag::Map &subtask_map);
 
-    MaintenanceData *get_maintenance_data(ByteArena &arena, time_t now);
+    MaintenanceData *get_maintenance_data(ByteArena &arena, time_t now,
+                                          int flags);
 
     void stage_compaction();
 
@@ -230,10 +232,27 @@ namespace Hypertable {
   private:
 
     void purge_stored_cells_from_cache();
-    void merge_caches(bool reset_earliest_cached_revision=true);
+    void merge_caches();
     void range_dir_initialize();
     void recompute_compression_ratio(int64_t *total_index_entriesp=0);
+
     bool find_merge_run(size_t *indexp=0, size_t *lenp=0);
+
+    /** Gets merging compaction information.
+     * Determines whether or not a merging compaction is needed, and if so,
+     * whether or not the "merge run" includes the end cell store (the one
+     * containing the most recent data) and therefore the cell cache can be
+     * included in the merging compaction.
+     * @param needs_merging Set to <i>true</i> if merge is needed
+     * @param end_merge Set to <i>true</i> if merge run includes end cell store
+     */
+    void get_merge_info(bool &needs_merging, bool &end_merge) {
+      size_t index, length;
+      needs_merging = find_merge_run(&index, &length);
+      if (needs_merging)
+        end_merge = (index + length) == m_stores.size();
+    }
+
     void sort_cellstores_by_timestamp();
 
     Mutex                m_mutex;
@@ -268,7 +287,9 @@ namespace Hypertable {
     bool                 m_recovering;
     bool                 m_bloom_filter_disabled;
     bool                 m_needs_merging;
-
+    bool                 m_end_merge;
+    bool                 m_dirty;
+    bool m_cellcache_needs_compaction;
   };
   typedef boost::intrusive_ptr<AccessGroup> AccessGroupPtr;
 

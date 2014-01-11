@@ -165,6 +165,8 @@ namespace Hypertable {
 
     void deferred_initialization(uint32_t timeout_millis);
 
+    void deferred_initialization(boost::xtime expire_time);
+
     void get_boundary_rows(String &start, String &end) {
       m_metalog_entity->get_boundary_rows(start, end);
     }
@@ -178,7 +180,7 @@ namespace Hypertable {
     void replay_transfer_log(CommitLogReader *commit_log_reader);
 
     MaintenanceData *get_maintenance_data(ByteArena &arena, time_t now,
-                                          TableMutator *mutator=0);
+                                          int flags, TableMutator *mutator=0);
 
     void disable_maintenance() {
       m_maintenance_guard.wait_for_complete(true);

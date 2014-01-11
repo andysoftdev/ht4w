@@ -97,15 +97,6 @@
     <ClCompile Include="LoadBalancer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RangeMetrics.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RSMetrics.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ServerMetrics.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="OperationStop.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -253,15 +244,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="LoadBalancer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RangeMetrics.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RSMetrics.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ServerMetrics.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="OperationStop.h">
