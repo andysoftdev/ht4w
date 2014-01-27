@@ -282,7 +282,7 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
 
   // reduce access group max memory limit if required
   HT_ASSERT(Global::memory_limit - block_cache_min - query_cache_memory > 0);
-  int64_t access_group_max_mem_limit = (int64_t)((double)(Global::memory_limit - block_cache_min - query_cache_memory) * 0.75);
+  int64_t access_group_max_mem_limit = (int64_t)((double)(Global::memory_limit - block_cache_min - query_cache_memory) * 0.5);
   if (Global::access_group_max_mem > access_group_max_mem_limit) {
     Global::access_group_max_mem = access_group_max_mem_limit;
     HT_INFOF("Maximum size of access group cache has been reduced to %.2fMB",
