@@ -341,7 +341,8 @@ MaintenancePrioritizer::schedule_necessary_compactions(std::vector<RangeData> &r
         }
         else {
           range_data[i].data->maintenance_flags |= MaintenanceFlag::COMPACT;
-          ag_data->maintenance_flags |= MaintenanceFlag::COMPACT_MINOR;
+          ag_data->maintenance_flags |=
+            ag_data->needs_merging ? MaintenanceFlag::COMPACT_MERGING : MaintenanceFlag::COMPACT_MINOR;
         }
         if (range_data[i].data->priority == 0)
           range_data[i].data->priority = priority++;
