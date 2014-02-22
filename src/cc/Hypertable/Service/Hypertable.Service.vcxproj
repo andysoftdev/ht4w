@@ -135,6 +135,12 @@ xcopy $(SolutionDir)conf\METADATA.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
 xcopy $(SolutionDir)conf\RS_METRICS.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
 </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>if not exist $(OutDir)conf md $(OutDir)conf &gt; nul
+xcopy $(SolutionDir)conf\hypertable.cfg $(OutDir)conf\ /Q /R /Y /D &gt; nul
+xcopy $(SolutionDir)conf\METADATA.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul
+xcopy $(SolutionDir)conf\RS_METRICS.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -164,6 +170,12 @@ xcopy $(SolutionDir)conf\METADATA.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
 xcopy $(SolutionDir)conf\RS_METRICS.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
 </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>if not exist $(OutDir)conf md $(OutDir)conf &gt; nul
+xcopy $(SolutionDir)conf\hypertable.cfg $(OutDir)conf\ /Q /R /Y /D &gt; nul
+xcopy $(SolutionDir)conf\METADATA.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul
+xcopy $(SolutionDir)conf\RS_METRICS.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -199,6 +211,12 @@ xcopy $(SolutionDir)conf\METADATA.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
 xcopy $(SolutionDir)conf\RS_METRICS.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
 </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>if not exist $(OutDir)conf md $(OutDir)conf &gt; nul
+xcopy $(SolutionDir)conf\hypertable.cfg $(OutDir)conf\ /Q /R /Y /D &gt; nul
+xcopy $(SolutionDir)conf\METADATA.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul
+xcopy $(SolutionDir)conf\RS_METRICS.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -234,6 +252,12 @@ xcopy $(SolutionDir)conf\METADATA.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
 xcopy $(SolutionDir)conf\RS_METRICS.xml $(TargetDir)conf\ /Q /R /Y /D &gt; nul
 </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>if not exist $(OutDir)conf md $(OutDir)conf &gt; nul
+xcopy $(SolutionDir)conf\hypertable.cfg $(OutDir)conf\ /Q /R /Y /D &gt; nul
+xcopy $(SolutionDir)conf\METADATA.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul
+xcopy $(SolutionDir)conf\RS_METRICS.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
