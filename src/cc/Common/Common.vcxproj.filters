@@ -186,9 +186,6 @@
     <ClInclude Include="FlyweightString.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="HashMap.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="InetAddr.h">
       <Filter>Source Files</Filter>
     </ClInclude>

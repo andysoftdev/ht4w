@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/* -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -22,23 +22,22 @@
 #ifndef HYPERTABLE_LOADDATASOURCE_H
 #define HYPERTABLE_LOADDATASOURCE_H
 
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <vector>
+#include <Hypertable/Lib/DataSource.h>
+#include <Hypertable/Lib/FixedRandomStringGenerator.h>
+#include <Hypertable/Lib/LoadDataFlags.h>
+
+#include <Common/ByteString.h>
+#include <Common/DynamicBuffer.h>
+#include <Common/String.h>
+#include <Common/ReferenceCount.h>
 
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 
-#include "Common/ByteString.h"
-#include "Common/DynamicBuffer.h"
-#include "Common/String.h"
-#include "Common/ReferenceCount.h"
-
-#include "DataSource.h"
-#include "FixedRandomStringGenerator.h"
-#include "LoadDataFlags.h"
-
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
 
 namespace Hypertable {
 
@@ -79,7 +78,8 @@ namespace Hypertable {
         m_first_line_cached = false;
         return true;
       }
-      return getline(m_fin, line) != 0;
+      getline(m_fin, line);
+      return m_fin.good();
     }
 
     virtual void parse_header(const String& header,

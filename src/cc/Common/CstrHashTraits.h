@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -24,8 +24,8 @@
 #ifndef HYPERTABLE_CSTR_HASH_TRAITS_H
 #define HYPERTABLE_CSTR_HASH_TRAITS_H
 
-#include "PageArena.h"
-#include "TclHash.h"
+#include <Common/PageArena.h>
+#include <Common/TclHash.h>
 
 namespace Hypertable {
 
@@ -40,28 +40,11 @@ template <class HashT = TclHash2>
 struct CstrHashTraits {
   typedef CharArena key_allocator;
 
- #ifndef _WIN32
-
   struct hasher {
-    HashT hasher;
+    typename HashT hash_fun;
 
-    size_t operator()(const char *s) const { return hasher(s); }
-  };
-
-#else
-
-  struct hash_compare {
-    enum {   // parameters for hash table
-        bucket_size = 4,    // 0 < bucket_size
-        min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
-    HashT hash_fun;
     size_t operator()(const char *s) const { return hash_fun(s); }
-    bool operator()(const char *a, const char *b) const {
-      return std::strcmp(a, b) < 0;
-    }
   };
-
-#endif
 
   struct key_equal {
     bool

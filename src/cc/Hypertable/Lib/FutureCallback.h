@@ -63,8 +63,6 @@ namespace Hypertable {
 
     void wait_for_completion();
 
-    const ScanSpec &get_scan_spec(TableScannerAsync *scanner);
-
   private:
     friend class TableScannerAsync;
     friend class TableMutator;

@@ -24,24 +24,50 @@
  * This file contains method and type definitions for the RangeServer
  */
 
+#include <Common/Compat.h>
+#include "RangeServer.h"
 
-#include "Common/Compat.h"
-#include <algorithm>
-#include <cassert>
-#include <cstdio>
-#include <cstring>
-#include <iostream>
-#include <fstream>
-#include <sstream>
+#include <Hypertable/RangeServer/FillScanBlock.h>
+#include <Hypertable/RangeServer/Global.h>
+#include <Hypertable/RangeServer/GroupCommit.h>
+#include <Hypertable/RangeServer/HandlerFactory.h>
+#include <Hypertable/RangeServer/LocationInitializer.h>
+#include <Hypertable/RangeServer/MaintenanceQueue.h>
+#include <Hypertable/RangeServer/MaintenanceScheduler.h>
+#include <Hypertable/RangeServer/MaintenanceTaskCompaction.h>
+#include <Hypertable/RangeServer/MaintenanceTaskRelinquish.h>
+#include <Hypertable/RangeServer/MaintenanceTaskSplit.h>
+#include <Hypertable/RangeServer/MergeScanner.h>
+#include <Hypertable/RangeServer/MergeScannerRange.h>
+#include <Hypertable/RangeServer/MetaLogDefinitionRangeServer.h>
+#include <Hypertable/RangeServer/MetaLogEntityRange.h>
+#include <Hypertable/RangeServer/MetaLogEntityRemoveOkLogs.h>
+#include <Hypertable/RangeServer/MetaLogEntityTask.h>
+#include <Hypertable/RangeServer/ReplayBuffer.h>
+#include <Hypertable/RangeServer/ScanContext.h>
+#include <Hypertable/RangeServer/TableSchemaCache.h>
+#include <Hypertable/RangeServer/UpdateThread.h>
+
+#include <Hypertable/Lib/CommitLog.h>
+#include <Hypertable/Lib/Key.h>
+#include <Hypertable/Lib/MetaLogDefinition.h>
+#include <Hypertable/Lib/MetaLogReader.h>
+#include <Hypertable/Lib/MetaLogWriter.h>
+#include <Hypertable/Lib/PseudoTables.h>
+#include <Hypertable/Lib/RangeServerProtocol.h>
+#include <Hypertable/Lib/RangeRecoveryReceiverPlan.h>
+
+#include <DfsBroker/Lib/Client.h>
+
+#include <Common/FailureInducer.h>
+#include <Common/FileUtils.h>
+#include <Common/md5.h>
+#include <Common/Random.h>
+#include <Common/StringExt.h>
+#include <Common/SystemInfo.h>
+#include <Common/ScopeGuard.h>
 
 #include <boost/algorithm/string.hpp>
-
-extern "C" {
-#include <fcntl.h>
-#include <math.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-}
 
 #if defined(TCMALLOC)
 #include <google/tcmalloc.h>
@@ -50,55 +76,26 @@ extern "C" {
 #include <google/malloc_extension.h>
 #endif
 
-#include "Common/FailureInducer.h"
-#include "Common/FileUtils.h"
-#include "Common/HashMap.h"
-#include "Common/md5.h"
-#include "Common/Random.h"
-#include "Common/StringExt.h"
-#include "Common/SystemInfo.h"
-#include "Common/ScopeGuard.h"
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <unordered_map>
+
+extern "C" {
+#include <fcntl.h>
+#include <math.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+}
 
 #ifdef _WIN32
 #include "Common/Path.h"
-#endif
-
-#include "Hypertable/Lib/CommitLog.h"
-#include "Hypertable/Lib/Key.h"
-#include "Hypertable/Lib/MetaLogDefinition.h"
-#include "Hypertable/Lib/MetaLogReader.h"
-#include "Hypertable/Lib/MetaLogWriter.h"
-#include "Hypertable/Lib/PseudoTables.h"
-#include "Hypertable/Lib/RangeServerProtocol.h"
-#include "Hypertable/Lib/RangeRecoveryReceiverPlan.h"
-
-#include "DfsBroker/Lib/Client.h"
-
-#ifdef _WIN32
 #include "DfsBroker/Lib/EmbeddedFilesystem.h"
 #endif
-
-#include "FillScanBlock.h"
-#include "Global.h"
-#include "GroupCommit.h"
-#include "HandlerFactory.h"
-#include "LocationInitializer.h"
-#include "MaintenanceQueue.h"
-#include "MaintenanceScheduler.h"
-#include "MaintenanceTaskCompaction.h"
-#include "MaintenanceTaskSplit.h"
-#include "MaintenanceTaskRelinquish.h"
-#include "MergeScanner.h"
-#include "MergeScannerRange.h"
-#include "MetaLogEntityRange.h"
-#include "MetaLogEntityRemoveOkLogs.h"
-#include "MetaLogEntityTask.h"
-#include "RangeServer.h"
-#include "ScanContext.h"
-#include "UpdateThread.h"
-#include "ReplayBuffer.h"
-#include "MetaLogDefinitionRangeServer.h"
-#include "TableSchemaCache.h"
 
 using namespace std;
 using namespace Hypertable;
@@ -157,8 +154,14 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   boost::xtime_get(&m_last_control_file_check, boost::TIME_UTC_);
 
   // Initialize "low activity" window
-  vector<String> time_window_specs = cfg.get_strs("LowActivityPeriod");
-  Global::low_activity_time = TimeWindow(time_window_specs);
+  {
+    vector<String> specs = cfg.get_strs("LowActivityPeriod");
+    if (specs.empty())
+      specs.push_back("* 2-4 * * *");
+    else if (find(specs.begin(), specs.end(), "none") != specs.end())
+      specs.clear();
+    Global::low_activity_time = TimeWindow(specs);
+  }
 
   /** Compute maintenance threads **/
   uint32_t maintenance_threads;
@@ -588,16 +591,16 @@ void RangeServer::initialize(PropertiesPtr &props) {
 namespace {
 
   struct ByFragmentNumber {
-    bool operator()(const String &x, const String &y) const {
-      int num_x = atoi(x.c_str());
-      int num_y = atoi(y.c_str());
+    bool operator()(const Filesystem::Dirent &x, const Filesystem::Dirent &y) const {
+      int num_x = atoi(x.name.c_str());
+      int num_y = atoi(y.name.c_str());
       return num_x < num_y;
     }
   };
 
   void add_mark_file_to_commit_logs(const String &logname) {
-    vector<String> listing;
-    vector<String> listing2;
+    vector<Filesystem::Dirent> listing;
+    vector<Filesystem::Dirent> listing2;
     String logdir = Global::log_dir + "/" + logname;
 
     try {
@@ -615,8 +618,8 @@ namespace {
     sort(listing.begin(), listing.end(), ByFragmentNumber());
 
     // Remove zero-length files
-    foreach_ht (String &entry, listing) {
-      String fragment_file = logdir + "/" + entry;
+    foreach_ht (Filesystem::Dirent &entry, listing) {
+      String fragment_file = logdir + "/" + entry.name;
       try {
         if (Global::log_dfs->length(fragment_file) == 0) {
           HT_INFOF("Removing log fragment '%s' because it has zero length",
@@ -635,7 +638,7 @@ namespace {
       return;
 
     char *endptr;
-    long num = strtol(listing2.back().c_str(), &endptr, 10);
+    long num = strtol(listing2.back().name.c_str(), &endptr, 10);
     String mark_filename = logdir + "/" + (int64_t)num + ".mark";
 
     try {
@@ -2621,7 +2624,7 @@ void RangeServer::update_qualify_and_transform() {
              * being aborted, so reset all of the RangeUpdateLists,
              * reset the go_buf and the root_buf
              */
-            for (hash_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin();
+            for (std::unordered_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin();
                  iter != table_update->range_map.end(); ++iter)
               (*iter).second->reset_updates(request);
             table_update->go_buf.ptr = table_update->go_buf.base + go_buf_reset_offset;
@@ -2708,7 +2711,7 @@ void RangeServer::update_commit() {
       coalesce_amount += table_update->total_buffer_size;
 
       // Iterate through all of the ranges, committing any transferring updates
-      for (hash_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin(); iter != table_update->range_map.end(); ++iter) {
+      for (std::unordered_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin(); iter != table_update->range_map.end(); ++iter) {
         if ((*iter).second->transfer_buf.ptr > (*iter).second->transfer_buf.mark) {
           committed_transfer_data += (*iter).second->transfer_buf.ptr - (*iter).second->transfer_buf.mark;
           if ((error = (*iter).second->transfer_log->write((*iter).second->transfer_buf, (*iter).second->latest_transfer_revision)) != Error::OK) {
@@ -2831,7 +2834,7 @@ void RangeServer::update_add_and_respond() {
     foreach_ht (TableUpdate *table_update, uc->updates) {
 
       // Iterate through all of the ranges, inserting updates
-      for (hash_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin(); iter != table_update->range_map.end(); ++iter) {
+      for (std::unordered_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin(); iter != table_update->range_map.end(); ++iter) {
         ByteString value;
         Key key_comps;
 
@@ -2873,7 +2876,7 @@ void RangeServer::update_add_and_respond() {
      * Decrement usage counters for all referenced ranges
      */
     foreach_ht (TableUpdate *table_update, uc->updates) {
-      for (hash_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin(); iter != table_update->range_map.end(); ++iter) {
+      for (std::unordered_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin(); iter != table_update->range_map.end(); ++iter) {
         if ((*iter).second->range_blocked)
           (*iter).first->decrement_update_counter();
       }
@@ -2889,7 +2892,7 @@ void RangeServer::update_add_and_respond() {
        * If any of the newly updated ranges needs maintenance,
        * schedule immediately
        */
-      for (hash_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin(); iter != table_update->range_map.end(); ++iter) {
+      for (std::unordered_map<Range *, RangeUpdateList *>::iterator iter = table_update->range_map.begin(); iter != table_update->range_map.end(); ++iter) {
         if ((*iter).first->need_maintenance() &&
             !Global::maintenance_queue->contains((*iter).first)) {
           ScopedLock lock(m_mutex);
@@ -3519,7 +3522,6 @@ RangeServer::replay_update(TableInfoMap &replay_map,
   size_t remaining = len;
   const char *row;
   String err_msg;
-  int64_t revision;
   RangePtr range;
   String start_row, end_row;
 
@@ -3531,7 +3533,7 @@ RangeServer::replay_update(TableInfoMap &replay_map,
 
       // decode key/value block size + revision
       block_size = decode_i32(&ptr, &remaining);
-      revision = decode_i64(&ptr, &remaining);
+      decode_i64(&ptr, &remaining);
 
       // decode table identifier
       table_identifier.decode(&ptr, &remaining);

@@ -17,8 +17,14 @@
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#include "Common/Compat.h"
-#include "Common/System.h"
+#include <Common/Compat.h>
+#include <Common/Logger.h>
+#include <Common/System.h>
+
+#include <ThriftBroker/Client.h>
+#include <ThriftBroker/gen-cpp/HqlService.h>
+#include <ThriftBroker/ThriftHelper.h>
+#include <ThriftBroker/SerializedCellsReader.h>
 
 #ifdef _WIN32
 #include "Common/ReferenceCount.h"
@@ -26,10 +32,6 @@
 
 #include <iostream>
 #include <fstream>
-#include "ThriftBroker/Client.h"
-#include "ThriftBroker/gen-cpp/HqlService.h"
-#include "ThriftBroker/ThriftHelper.h"
-#include "ThriftBroker/SerializedCellsReader.h"
 
 using namespace Hypertable;
 using namespace Hypertable::ThriftGen;
@@ -194,7 +196,7 @@ void test_unique(Thrift::Client *client, std::ostream &out) {
   catch (ClientException &) {
     caught=true;
   }
-  assert(caught);
+  HT_ASSERT(caught);
 
   client->namespace_close(ns);
 }

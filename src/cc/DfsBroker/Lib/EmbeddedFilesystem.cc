@@ -391,7 +391,7 @@ void EmbeddedFilesystem::readdir(const String &name, DispatchHandler *handler) {
 }
 
 
-void EmbeddedFilesystem::readdir(const String &name, std::vector<String> &listing) {
+void EmbeddedFilesystem::readdir(const String &name, std::vector<Dirent> &listing) {
   readdir(name, listing, m_asyncio);
 }
 
@@ -622,17 +622,17 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
     case Protocol::COMMAND_READDIR:
       {
         const char *dname = decode_str16(&decode_ptr, &decode_remain);
-        std::vector<String> listing;
+        std::vector<Dirent> listing;
         readdir(dname, listing, false);
 
         uint32_t len = 8;
-        for (size_t i=0; i<listing.size(); i++)
-          len += encoded_length_str16(listing[i]);
+        for each (const Dirent& d in listing)
+          len += d.encoded_length();
         response.ensure(len);
         encode_i32(&response.ptr, Error::OK);
         encode_i32(&response.ptr, listing.size());
-        for (size_t i=0; i<listing.size(); i++)
-          encode_str16(&response.ptr, listing[i]);
+        for each (const Dirent& d in listing)
+          d.encode(&response.ptr);
       }
       break;
     case Protocol::COMMAND_EXISTS:
@@ -928,7 +928,7 @@ void EmbeddedFilesystem::rmdir(const String &name, bool force, bool sync) {
 }
 
 
-void EmbeddedFilesystem::readdir(const String &name, std::vector<String> &listing, bool sync) {
+void EmbeddedFilesystem::readdir(const String &name, std::vector<Dirent> &listing, bool sync) {
   try {
     FdSyncGuard guard(this, Request::fdWrite, sync);
 
@@ -939,21 +939,26 @@ void EmbeddedFilesystem::readdir(const String &name, std::vector<String> &listin
       absdir = m_rootdir + "/" + name;
 
     WIN32_FIND_DATA ffd;
-    HANDLE hFind = FindFirstFile( (absdir + "\\*").c_str(), &ffd);
+    HANDLE hFind = FindFirstFile((absdir + "\\*").c_str(), &ffd);
     if (hFind == INVALID_HANDLE_VALUE)
       throw_error();
 
+    Dirent entry;
     do {
       if (*ffd.cFileName) {
         if (ffd.cFileName[0] != '.' ||
             (ffd.cFileName[1] != 0 && (ffd.cFileName[1] != '.' || ffd.cFileName[2] != 0))) {
+          entry.name = ffd.cFileName;
+          entry.is_dir = is_directory(ffd);
+          entry.length = get_file_length(ffd);
+          entry.last_modification_time = get_last_access_time(ffd);
           if (m_no_removal) {
             size_t len = strlen(ffd.cFileName);
             if (len <= 8 || strcmp(&ffd.cFileName[len-8], ".deleted"))
-              listing.push_back((String)ffd.cFileName);
+              listing.push_back(entry);
           }
           else
-            listing.push_back((String)ffd.cFileName);
+            listing.push_back(entry);
         }
       }
     } while (FindNextFile(hFind, &ffd) != 0);

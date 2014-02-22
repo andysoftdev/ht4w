@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -70,6 +70,18 @@ namespace Hypertable {
       OPEN_FLAG_DIRECTIO = 0x00000001,
       OPEN_FLAG_OVERWRITE = 0x00000002,
       OPEN_FLAG_VERIFY_CHECKSUM = 0x00000004
+    };
+
+    class Dirent {
+    public:
+      Dirent() : length(0), last_modification_time(0), is_dir(false) { }
+      size_t encoded_length() const;
+      void encode(uint8_t **bufp) const;
+      void decode(const uint8_t **bufp, size_t *remainp);
+      String name;
+      uint64_t length;
+      time_t last_modification_time;
+      bool is_dir;
     };
 
     virtual ~Filesystem() { }
@@ -403,19 +415,18 @@ namespace Hypertable {
     /** Obtains a listing of all files in a directory.  Issues a readdir request
      * and waits for it to complete.
      *
-     * @param name absolute pathname of directory
-     * @param listing reference to vector of entry names
+     * @param name Absolute pathname of directory
+     * @param listing Reference to output vector of Dirent objects for each entry
      */
-    virtual void readdir(const String &name, std::vector<String> &listing) = 0;
+    virtual void readdir(const String &name, std::vector<Dirent> &listing) = 0;
 
     /** Decodes the response from a readdir request
      *
      * @param event_ptr A reference to the response event
-     * @param listing Reference to a vector of entry names; will be filled with
-     *      the data returned from the DfsBroker
+     * @param listing Reference to output vector of Dirent objects for each entry
      */
     static void decode_response_readdir(EventPtr &event_ptr,
-            std::vector<String> &listing);
+					std::vector<Dirent> &listing);
 
     /** directory entries for the posix_readdir request */
     struct DirectoryEntry {
@@ -556,7 +567,38 @@ namespace Hypertable {
 
   typedef intrusive_ptr<Filesystem> FilesystemPtr;
 
+  inline bool operator< (const Filesystem::Dirent& lhs,
+			 const Filesystem::Dirent& rhs) {
+    return lhs.name.compare(rhs.name) < 0;
+  }
+
   /** @} */
+
+  #ifdef _WIN32
+
+  inline time_t filetime_to_time_t(const FILETIME& ft) {
+     ULARGE_INTEGER ull;
+     ull.LowPart = ft.dwLowDateTime;
+     ull.HighPart = ft.dwHighDateTime;
+     return ull.QuadPart / 10000000ULL - 11644473600ULL;
+  }
+
+  inline uint64_t get_file_length(const WIN32_FIND_DATA& ffd) {
+     ULARGE_INTEGER ull;
+     ull.LowPart = ffd.nFileSizeLow;
+     ull.HighPart = ffd.nFileSizeHigh;
+     return ull.QuadPart;
+  }
+
+  inline time_t get_last_access_time(const WIN32_FIND_DATA& ffd) {
+    return filetime_to_time_t(ffd.ftLastAccessTime);
+  }
+
+  inline bool is_directory(const WIN32_FIND_DATA& ffd) {
+     return (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) > 0;
+  }
+
+  #endif
 
 } // namespace Hypertable
 

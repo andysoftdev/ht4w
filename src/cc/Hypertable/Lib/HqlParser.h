@@ -36,6 +36,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include "Common/SpiritParser.h"
@@ -43,6 +44,7 @@
 #include "Common/FileUtils.h"
 #include "Common/Logger.h"
 #include "Common/Time.h"
+#include "Common/TimeInline.h"
 
 #include "HyperAppHelper/Unique.h"
 
@@ -341,6 +343,7 @@ namespace Hypertable {
       bool nokeys;
       String current_rename_column_old_name;
       String current_column_family;
+      String current_column_predicate_name;
       char field_separator;
 
       void validate_function(const String &s) {
@@ -765,6 +768,8 @@ namespace Hypertable {
     struct set_access_group_blocksize {
       set_access_group_blocksize(ParserState &state) : state(state) { }
       void operator()(size_t blocksize) const {
+        std::stringstream ss;
+        ss << "AG " << state.ag->name << " block size = " << blocksize;
         state.ag->blocksize = blocksize;
       }
       ParserState &state;
@@ -856,6 +861,14 @@ namespace Hypertable {
       ParserState &state;
     };
 
+    struct scan_set_no_cache {
+      scan_set_no_cache(ParserState &state) : state(state) { }
+      void operator()(char const *str, char const *end) const {
+        state.scan.builder.set_do_not_cache(true);
+      }
+      ParserState &state;
+    };
+
     struct scan_set_row_regexp {
       scan_set_row_regexp(ParserState &state) : state(state) { }
       void operator()(char const *str, char const *end) const {
@@ -881,9 +894,7 @@ namespace Hypertable {
       void operator()(char const *str, char const *end) const {
         String s(str, end-str);
         trim_if(s, boost::is_any_of("'\""));
-        if (state.current_column_family != s)
-          HT_THROW(Error::HQL_PARSE_ERROR, "Column predicate name not "
-                  "identical with selected column");
+        state.current_column_predicate_name = s;
        }
        ParserState &state;
     };
@@ -894,7 +905,7 @@ namespace Hypertable {
       void operator()(char const *str, char const *end) const {
         String s(str, end-str);
         trim_if(s, boost::is_any_of("'\""));
-        state.scan.builder.add_column_predicate(state.current_column_family.c_str(), 
+        state.scan.builder.add_column_predicate(state.current_column_predicate_name.c_str(),
                     operation, s.c_str());
        }
        ParserState &state;
@@ -933,6 +944,8 @@ namespace Hypertable {
     struct set_table_blocksize {
       set_table_blocksize(ParserState &state) : state(state) { }
       void operator()(size_t blocksize) const {
+        std::stringstream ss;
+        ss << "table block size = " << blocksize;
         state.table_blocksize = blocksize;
       }
       ParserState &state;
@@ -1586,11 +1599,16 @@ namespace Hypertable {
     struct scan_set_time {
       scan_set_time(ParserState &state) : state(state){ }
       void operator()(char const *str, char const *end) const {
-        time_t t = timegm(&state.tmval);
-        state.scan.current_timestamp = (::int64_t)t * 1000000000LL
-                                        + (::int64_t)(state.decimal_seconds *
-                                                      ((double) 1000000000LL))
-                                        + state.nanoseconds;
+        String time_str = create_string_without_quotes(str, end-str);
+
+        try {
+          state.scan.current_timestamp = parse_ts(time_str.c_str());
+        }
+        catch (std::runtime_error &e) {
+          HT_THROWF(Error::HQL_PARSE_ERROR,
+                    "Unable to parse timestamp - '%s'",
+                    time_str.c_str());
+        }
         if (state.scan.current_relop != 0) {
           switch (state.scan.current_relop) {
           case RELOP_EQ:
@@ -1680,16 +1698,16 @@ namespace Hypertable {
     struct set_insert_timestamp {
       set_insert_timestamp(ParserState &state) : state(state) { }
       void operator()(char const *str, char const *end) const {
-        time_t t = timegm(&state.tmval);
-        if (t == (time_t)-1)
-          HT_THROW(Error::HQL_PARSE_ERROR, "INSERT invalid timestamp.");
-        state.current_insert_value.timestamp = (::int64_t)t * 1000000000LL
-                                               + (::int64_t)(state.decimal_seconds *
-                                                              ((double) 1000000000LL))
-                                               + state.nanoseconds;
-        memset(&state.tmval, 0, sizeof(state.tmval));
-        state.nanoseconds = 0;
-        state.decimal_seconds = 0;
+        String time_str = create_string_without_quotes(str, end-str);
+
+        try {
+          state.current_insert_value.timestamp = parse_ts(time_str.c_str());
+        }
+        catch (std::runtime_error &e) {
+          HT_THROWF(Error::HQL_PARSE_ERROR,
+                    "Unable to parse INSERT timestamp - '%s'",
+                    time_str.c_str());
+        }
       }
       ParserState &state;
     };
@@ -1791,15 +1809,16 @@ namespace Hypertable {
     struct set_delete_timestamp {
       set_delete_timestamp(ParserState &state) : state(state) { }
       void operator()(char const *str, char const *end) const {
-        time_t t = timegm(&state.tmval);
-        if (t == (time_t)-1)
-          HT_THROW(Error::HQL_PARSE_ERROR, String("DELETE invalid timestamp."));
-        state.delete_time = (::int64_t)t * 1000000000LL + (::int64_t)(state.decimal_seconds *
-                                                                      ((double) 1000000000LL))
-                            + state.nanoseconds;
-        memset(&state.tmval, 0, sizeof(state.tmval));
-        state.nanoseconds = 0;
-        state.decimal_seconds = 0;
+        String time_str = create_string_without_quotes(str, end-str);
+
+        try {
+          state.delete_time = parse_ts(time_str.c_str());
+        }
+        catch (std::runtime_error &e) {
+          HT_THROWF(Error::HQL_PARSE_ERROR,
+                    "Unable to parse DELETE timestamp - '%s'",
+                    time_str.c_str());
+        }
       }
       ParserState &state;
     };
@@ -1807,14 +1826,16 @@ namespace Hypertable {
     struct set_delete_version_timestamp {
       set_delete_version_timestamp(ParserState &state) : state(state) { }
       void operator()(char const *str, char const *end) const {
-        time_t t = timegm(&state.tmval);
-        if (t == (time_t)-1)
-          HT_THROW(Error::HQL_PARSE_ERROR, String("DELETE invalid timestamp."));
-        state.delete_version_time = (::int64_t)t * 1000000000LL +
-            (::int64_t)(state.decimal_seconds * ((double) 1000000000LL)) + state.nanoseconds;
-        memset(&state.tmval, 0, sizeof(state.tmval));
-        state.nanoseconds = 0;
-        state.decimal_seconds = 0;
+        String time_str = create_string_without_quotes(str, end-str);
+
+        try {
+          state.delete_version_time = parse_ts(time_str.c_str());
+        }
+        catch (std::runtime_error &e) {
+          HT_THROWF(Error::HQL_PARSE_ERROR,
+                    "Unable to parse DELETE timestamp - '%s'",
+                    time_str.c_str());
+        }
       }
       ParserState &state;
     };
@@ -2087,6 +2108,7 @@ namespace Hypertable {
           Token AND          = as_lower_d["and"];
           Token OR           = as_lower_d["or"];
           Token LIKE         = as_lower_d["like"];
+          Token NO_CACHE     = as_lower_d["no_cache"];
           Token NOESCAPE     = as_lower_d["noescape"];
           Token NO_ESCAPE    = as_lower_d["no_escape"];
           Token IDS          = as_lower_d["ids"];
@@ -2410,8 +2432,8 @@ namespace Hypertable {
               >> FROM >> user_identifier[set_table_name(self.state)]
               >> WHERE >> ROW >> EQUAL >> string_literal[
                   delete_set_row(self.state)]
-              >> !(TIMESTAMP >> date_expression[set_delete_timestamp(self.state)]
-                  | VERSION >> date_expression[set_delete_version_timestamp(self.state)])
+              >> !(TIMESTAMP >> string_literal[set_delete_timestamp(self.state)]
+                  | VERSION >> string_literal[set_delete_version_timestamp(self.state)])
             ;
 
           delete_column_clause
@@ -2444,7 +2466,7 @@ namespace Hypertable {
                     parameter_list[set_insert_value_call(self.state)] ) 
                 >> RPAREN
               | LPAREN
-              >> date_expression[set_insert_timestamp(self.state)] >> COMMA
+              >> string_literal[set_insert_timestamp(self.state)] >> COMMA
               >> ( string_literal[set_insert_rowkey(self.state)] 
                  | identifier[set_insert_rowkey(self.state)] >>
                     parameter_list[set_insert_rowkey_call(self.state)] ) 
@@ -2510,7 +2532,7 @@ namespace Hypertable {
             ;
 
           table_option_blocksize
-            = BLOCKSIZE >> EQUAL >> uint_p[
+            = BLOCKSIZE >> *EQUAL >> uint_p[
                 set_table_blocksize(self.state)]
             ;
 
@@ -2696,8 +2718,8 @@ namespace Hypertable {
             ;
 
           time_predicate
-            = !(date_expression[scan_set_time(self.state)] >> relop) >>
-            TIMESTAMP >> relop >> date_expression[scan_set_time(self.state)]
+            = !(string_literal[scan_set_time(self.state)] >> relop) >>
+            TIMESTAMP >> relop >> string_literal[scan_set_time(self.state)]
             ;
 
           row_interval
@@ -2772,6 +2794,7 @@ namespace Hypertable {
             | DISPLAY_TIMESTAMPS[scan_set_display_timestamps(self.state)]
             | RETURN_DELETES[scan_set_return_deletes(self.state)]
             | KEYS_ONLY[scan_set_keys_only(self.state)]
+            | NO_CACHE[scan_set_no_cache(self.state)]
             | NOESCAPE[set_noescape(self.state)]
             | NO_ESCAPE[set_noescape(self.state)]
             | SCAN_AND_FILTER_ROWS[scan_set_scan_and_filter_rows(self.state)]
@@ -2787,11 +2810,6 @@ namespace Hypertable {
             | EXCLUSIVE
             | STATS
             | STARTS
-            ;
-
-          date_expression
-            = SINGLEQUOTE >> (datetime | date | time | year) >> SINGLEQUOTE
-            | DOUBLEQUOTE >> (datetime | date | time | year) >> DOUBLEQUOTE
             ;
 
           datetime
@@ -2918,7 +2936,6 @@ namespace Hypertable {
           BOOST_SPIRIT_DEBUG_RULE(row_predicate);
           BOOST_SPIRIT_DEBUG_RULE(value_predicate);
           BOOST_SPIRIT_DEBUG_RULE(option_spec);
-          BOOST_SPIRIT_DEBUG_RULE(date_expression);
           BOOST_SPIRIT_DEBUG_RULE(unused_tokens);
           BOOST_SPIRIT_DEBUG_RULE(datetime);
           BOOST_SPIRIT_DEBUG_RULE(date);
@@ -3000,7 +3017,7 @@ namespace Hypertable {
           where_clause, where_predicate,
           time_predicate, relop, row_interval, row_predicate, column_predicate,
           value_predicate, column_selection,
-          option_spec, date_expression, unused_tokens, datetime, date, time, year,
+          option_spec, unused_tokens, datetime, date, time, year,
           load_data_statement, load_data_input, load_data_option, insert_statement,
           insert_value_list, insert_value, delete_statement,
           delete_column_clause, table_option, table_option_in_memory,

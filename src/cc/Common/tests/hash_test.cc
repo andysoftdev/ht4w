@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -20,18 +20,17 @@
  */
 
 #include "Common/Compat.h"
+#include <Common/BlobHashSet.h>
+#include <Common/CstrHashMap.h>
+#include <Common/Init.h>
+#include <Common/MurmurHash.h>
+#include <Common/Stopwatch.h>
+#include <Common/SystemInfo.h>
+#include <Common/TclHash.h>
+#include <Common/md5.h>
 
 #include <vector>
-
-#include "Common/Init.h"
-#include "Common/Stopwatch.h"
-#include "Common/md5.h"
-#include "Common/HashMap.h"
-#include "Common/TclHash.h"
-#include "Common/MurmurHash.h"
-#include "Common/BlobHashSet.h"
-#include "Common/CstrHashMap.h"
-#include "Common/SystemInfo.h"
+#include <unordered_set>
 
 using namespace Hypertable;
 using namespace Config;
@@ -111,33 +110,11 @@ struct HashTest {
     cout <<"  length="<< len <<" last hash="<< last_hash << endl;
   }
 
-#ifdef _WIN32
-
-  template< class T, class HashT>
-  struct hash_compare {
-    enum { bucket_size = 4 };
-    HashT hash_fun;
-    size_t operator()(const T &t) const {
-      return hash_fun(t);
-    }
-    bool operator()(const T &x, const T &y) const {
-      return x < y;
-    }
-  };
-
-#endif
-
   template <class HashT>
   void test(const String &label, int repeats) {
-#ifndef _WIN32
-    hash_set<String, HashT> str_set(items.size());
+    std::unordered_set<String, HashT> str_set(items.size());
     BlobHashSet<BlobHashTraits<HashT> > blob_set(items.size());
     CstrHashMap<size_t, CstrHashTraits<HashT> > cstr_map(items.size());
-#else
-    hash_set<String, hash_compare<String, HashT> > str_set;
-    BlobHashSet<BlobHashTraits<HashT> > blob_set;
-    CstrHashMap<size_t, CstrHashTraits<HashT> > cstr_map;
-#endif
     uint32_t last_hash = 0;     // ditto
 
     for (int r = 0; r < repeats; ++r) {
@@ -226,5 +203,4 @@ int main(int ac, char *av[]) {
     HT_ERROR_OUT << e << HT_END;
     return 1;
   }
-  return 0;
 }

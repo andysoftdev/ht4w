@@ -19,68 +19,45 @@
  * 02110-1301, USA.
  */
 
-/** @file
- * A HashMap for %InetAddr objects.
- */
+/// @file
+/// Declarations for SockAddrMap.
+/// This file contains declarations for SockAddrMap, a template specialization
+/// for an unordered_map with InetAddr keys.
 
 #ifndef SOCKADDRMAP_H
 #define SOCKADDRMAP_H
 
-#include "Common/InetAddr.h"
-#include "Common/HashMap.h"
+#include <Common/InetAddr.h>
+
+#include <unordered_map>
 
 namespace Hypertable {
 
-/** @addtogroup Common
- *  @{
- */
- 
-#ifndef _WIN32
+  /// @addtogroup Common
+  /// @{
 
-/** A "Hasher" for the boost::hash_map */
-class SockAddrHash {
- public:
-  size_t operator () (const InetAddr &addr) const {
-    return (size_t)(addr.sin_addr.s_addr ^ addr.sin_port);
-  }
-};
+  /// Hash functor class for InetAddr.
+  class SockAddrHash {
+  public:
+    size_t operator () (const InetAddr &addr) const {
+      return (size_t)(addr.sin_addr.s_addr ^ addr.sin_port);
+    }
+  };
 
-/** An "Equal" predicate for the boost::hash_map */
-struct SockAddrEqual {
-  bool operator()(const InetAddr &addr1, const InetAddr &addr2) const {
-    return (addr1.sin_addr.s_addr == addr2.sin_addr.s_addr)
-           && (addr1.sin_port == addr2.sin_port);
-  }
-};
+  /// Equality predicate functor class for InetAddr.
+  struct SockAddrEqual {
+    bool operator()(const InetAddr &addr1, const InetAddr &addr2) const {
+      return (addr1.sin_addr.s_addr == addr2.sin_addr.s_addr)
+        && (addr1.sin_port == addr2.sin_port);
+    }
+  };
 
-/** A hash map for %InetAddr object. Based on boost::hash_map. */
-template<typename TypeT, typename addr = InetAddr>
-class SockAddrMap : public hash_map<addr, TypeT, SockAddrHash, SockAddrEqual> {
-};
+  /// Unordered map specialization for InetAddr keys.
+  template<typename TypeT, typename addr = InetAddr>
+    class SockAddrMap : public std::unordered_map<addr, TypeT, SockAddrHash, SockAddrEqual> {
+  };
 
-#else
-
-class SockAddrHashCompare {
- public:
-   enum {   // parameters for hash table
-     bucket_size = 4,    // 0 < bucket_size
-     min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
-  size_t operator () (const InetAddr &addr) const {
-    return (size_t)(addr.sin_family ^ addr.sin_addr.s_addr ^ addr.sin_port);
-  }
-  // test if addr1 ordered before addr2
-  bool operator()(const InetAddr &addr1, const InetAddr &addr2) const {
-    return addr1 < addr2;
-  }
-};
-
-template<typename TypeT, typename addr=InetAddr>
-class SockAddrMap : public hash_map<addr, TypeT, SockAddrHashCompare> {
-};
-
-#endif
-
-/** @} */
+  /// @}
 
 } // namespace Hypertable
 

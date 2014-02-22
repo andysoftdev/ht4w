@@ -20,11 +20,6 @@
 #ifndef HYPERTABLE_THRIFT_CLIENT_H
 #define HYPERTABLE_THRIFT_CLIENT_H
 
-#ifdef _WIN32
-#pragma warning( push, 3 )
-#pragma warning( disable : 4250 ) // inherits via dominance
-#endif
-
 // Note: do NOT add any hypertable dependencies in this file
 #include <protocol/TBinaryProtocol.h>
 #include <transport/TSocket.h>
@@ -82,7 +77,10 @@ private:
   bool m_do_close;
 };
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(HYPERTABLE_REFERENCECOUNT_H)
+
+#pragma warning( push, 3 )
+#pragma warning( disable : 4250 ) // inherits via dominance
 
 class ThriftClient : public Client, public ReferenceCount {
   public:
@@ -215,14 +213,12 @@ class ThriftClient : public Client, public ReferenceCount {
     int next_client;
 };
 
+#pragma warning( pop )
+
 typedef ::boost::intrusive_ptr<ThriftClient> ClientPtr;
 
 #endif
 
 }} // namespace Hypertable::Thrift
-
-#ifdef _WIN32
-#pragma warning( pop )
-#endif
 
 #endif /* HYPERTABLE_THRIFT_CLIENT_H */

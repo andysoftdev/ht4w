@@ -171,7 +171,7 @@ int Comm::connect(const CommAddress &addr, DispatchHandlerPtr &default_handler) 
     m_local_addr.sin_port = htons(port);
 
     // bind socket to local address
-    if ((bind(sd, (const sockaddr *)&m_local_addr, sizeof(sockaddr_in))) < 0) {
+    if ((::bind(sd, (const sockaddr *)&m_local_addr, sizeof(sockaddr_in))) < 0) {
       if (errno == EADDRINUSE) {
         ::close(sd);
         continue;
@@ -231,7 +231,7 @@ int Comm::connect(const CommAddress &addr, const CommAddress &local_addr,
   }
 
   // bind socket to local address
-  if ((bind(sd, (const sockaddr *)&local_addr.inet, sizeof(sockaddr_in))) < 0) {
+  if ((::bind(sd, (const sockaddr *)&local_addr.inet, sizeof(sockaddr_in))) < 0) {
     HT_ERRORF( "bind: %s: %s", local_addr.to_str().c_str(), strerror(errno));
     return Error::COMM_BIND_ERROR;
   }
@@ -346,7 +346,7 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
     HT_ERRORF("setting SO_REUSEADDR: %s", strerror(errno));
 
   int bind_attempts = 0;
-  while ((bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0) {
+  while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0) {
     if (bind_attempts == 24)
       HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
                 addr.to_str().c_str(), strerror(errno));
@@ -526,7 +526,7 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
 
 #else
 
-  while ((bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0)
+  while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0)
     if (bind_attempts == 24)
       HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
                 addr.to_str().c_str(), strerror(errno));
@@ -676,7 +676,7 @@ void Comm::find_available_tcp_port(InetAddr &addr) {
     check_addr = addr;
     check_addr.sin_port = htons(starting_port+i);
 
-    if (bind(sd, (const sockaddr *)&check_addr, sizeof(sockaddr_in)) == 0) {
+    if (::bind(sd, (const sockaddr *)&check_addr, sizeof(sockaddr_in)) == 0) {
       ::close(sd);
       addr.sin_port = check_addr.sin_port;
       return;
@@ -736,7 +736,7 @@ void Comm::find_available_udp_port(InetAddr &addr) {
     check_addr = addr;
     check_addr.sin_port = htons(starting_port+i);
 
-    if (bind(sd, (const sockaddr *)&addr, sizeof(sockaddr_in)) == 0) {
+    if (::bind(sd, (const sockaddr *)&addr, sizeof(sockaddr_in)) == 0) {
       ::close(sd);
       addr.sin_port = check_addr.sin_port;
       return;

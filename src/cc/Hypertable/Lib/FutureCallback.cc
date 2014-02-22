@@ -79,7 +79,3 @@ void FutureCallback::wait_for_completion() {
   }
   ResultCallback::wait_for_completion();
 }
-
-const ScanSpec &FutureCallback::get_scan_spec(TableScannerAsync *scanner) {
-  return scanner->get_scan_spec();
-}

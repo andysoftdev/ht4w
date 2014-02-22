@@ -240,7 +240,6 @@
     <ClInclude Include="FileUtils.h" />
     <ClInclude Include="FixedStream.h" />
     <ClInclude Include="FlyweightString.h" />
-    <ClInclude Include="HashMap.h" />
     <ClInclude Include="HRTimer.h" />
     <ClInclude Include="InetAddr.h" />
     <ClInclude Include="Init.h" />

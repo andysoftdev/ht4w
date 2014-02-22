@@ -813,7 +813,7 @@ try {
     WScript.Quit(tests_failed);
 }
 catch (e) {
-    echo("")
+    echo("");
     echo(e.toString());
     WScript.Quit(-1);
 }

@@ -26,12 +26,11 @@
 #error Platform isn't supported
 #endif
 
-#include <map>
+#include <unordered_map>
 #include <set>
 #include <deque>
 #include <boost/thread/condition.hpp>
 
-#include "Common/HashMap.h"
 #include "Common/Mutex.h"
 #include "Common/Properties.h"
 #include "Common/Filesystem.h"
@@ -103,7 +102,7 @@ namespace Hypertable {
       virtual void rmdir(const String &name, bool force = true);
 
       virtual void readdir(const String &name, DispatchHandler *handler);
-      virtual void readdir(const String &name, std::vector<String> &listing);
+      virtual void readdir(const String &name, std::vector<Dirent> &listing);
 
       virtual void posix_readdir(const String &name, std::vector<DirectoryEntry> &listing);
 
@@ -200,7 +199,7 @@ namespace Hypertable {
       void mkdirs(const String &name, bool sync);
       void flush(int fd, bool sync);
       void rmdir(const String &name, bool force, bool sync);
-      void readdir(const String &name, std::vector<String> &listing, bool sync);
+      void readdir(const String &name, std::vector<Dirent> &listing, bool sync);
       void posix_readdir(const String &name, std::vector<DirectoryEntry> &listing, bool sync);
       bool exists(const String &name, bool sync);
       void rename(const String &src, const String &dst, bool sync);
@@ -208,28 +207,28 @@ namespace Hypertable {
       static bool remove_dir(const String& absdir);
       void throw_error();
 
-      inline void set_handle(int fd, HANDLE h, uint32_t flags) {
+      inline void set_handle(int fd, ::HANDLE h, uint32_t flags) {
         ScopedRecLock lock(m_mutex);
         m_handles[fd] = std::make_pair(h, flags);
       }
 
-      inline HANDLE get_handle(int fd) {
+      inline ::HANDLE get_handle(int fd) {
         ScopedRecLock lock(m_mutex);
         return m_handles[fd].first;
       }
 
-      inline HANDLE get_handle(int fd, uint32_t& flags) {
+      inline ::HANDLE get_handle(int fd, uint32_t& flags) {
         ScopedRecLock lock(m_mutex);
-        std::pair<HANDLE, uint32_t> item = m_handles[fd];
+        std::pair<::HANDLE, uint32_t> item = m_handles[fd];
         flags = item.second;
         return item.first;
       }
 
       inline void close_handle(int fd) {
-        HANDLE h;
+        ::HANDLE h;
         {
           ScopedRecLock lock(m_mutex);
-          std::map<int, std::pair<HANDLE, uint32_t>>::iterator it = m_handles.find(fd);
+          std::map<int, std::pair<::HANDLE, uint32_t>>::iterator it = m_handles.find(fd);
           h = it->second.first;
           m_handles.erase(it);
         }
@@ -238,7 +237,7 @@ namespace Hypertable {
 
       static atomic_t ms_next_fd;
       RecMutex m_mutex;
-      std::map<int, std::pair<HANDLE, uint32_t>> m_handles;
+      std::map<int, std::pair<::HANDLE, uint32_t>> m_handles;
 
       String m_rootdir;
       bool m_directio;
@@ -248,7 +247,7 @@ namespace Hypertable {
       ThreadGroup m_asyncio_thread;
       RequestQueue m_request_queue;
 
-      typedef hash_map<int, ClientBufferedReaderHandler *>
+      typedef std::unordered_map<int, ClientBufferedReaderHandler *>
           BufferedReaderMap;
       BufferedReaderMap m_buffered_reader_map;
     };

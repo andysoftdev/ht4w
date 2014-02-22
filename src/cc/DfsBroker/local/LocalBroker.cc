@@ -19,7 +19,17 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+#include "LocalBroker.h"
+
+#include <Common/FileUtils.h>
+#include <Common/Filesystem.h>
+#include <Common/Path.h>
+#include <Common/String.h>
+#include <Common/System.h>
+#include <Common/SystemInfo.h>
+
+#include <AsyncComm/ReactorFactory.h>
 
 #include <cerrno>
 #include <cstdio>
@@ -35,24 +45,14 @@ extern "C" {
 #include <fcntl.h>
 #include <limits.h>
 #include <poll.h>
-#include <sys/types.h>
 #if defined(__sun__)
 #include <sys/fcntl.h>
 #endif
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
 }
-
-#include "AsyncComm/ReactorFactory.h"
-
-#include "Common/FileUtils.h"
-#include "Common/Filesystem.h"
-#include "Common/Path.h"
-#include "Common/String.h"
-#include "Common/System.h"
-#include "Common/SystemInfo.h"
-
-#include "LocalBroker.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -640,7 +640,8 @@ void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
 }
 
 void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
-  std::vector<String> listing;
+  std::vector<Filesystem::Dirent> listing;
+  Filesystem::Dirent entry;
   String absdir;
 
   HT_DEBUGF("Readdir dir='%s'", dname);
@@ -653,7 +654,7 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
 #ifdef _WIN32
 
   WIN32_FIND_DATA ffd;
-  HANDLE hFind = FindFirstFile( (absdir + "\\*").c_str(), &ffd);
+  HANDLE hFind = FindFirstFile((absdir + "\\*").c_str(), &ffd);
   if (hFind == INVALID_HANDLE_VALUE) {
     report_error(cb);
     return;
@@ -662,13 +663,17 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
     if (*ffd.cFileName) {
       if (ffd.cFileName[0] != '.' ||
           (ffd.cFileName[1] != 0 && (ffd.cFileName[1] != '.' || ffd.cFileName[2] != 0))) {
+        entry.name = ffd.cFileName;
+        entry.is_dir = is_directory(ffd);
+        entry.length = get_file_length(ffd);
+        entry.last_modification_time = get_last_access_time(ffd);
         if (m_no_removal) {
           size_t len = strlen(ffd.cFileName);
           if (len <= 8 || strcmp(&ffd.cFileName[len-8], ".deleted"))
-            listing.push_back((String)ffd.cFileName);
+            listing.push_back(entry);
         }
         else
-          listing.push_back((String)ffd.cFileName);
+          listing.push_back(entry);
       }
     }
   } while (FindNextFile(hFind, &ffd) != 0);
@@ -695,16 +700,50 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
     return;
   }
 
+  String full_entry_path;
+  struct stat statbuf;
   while (result != 0) {
 
     if (result->d_name[0] != '.' && result->d_name[0] != 0) {
       if (m_no_removal) {
         size_t len = strlen(result->d_name);
-        if (len <= 8 || strcmp(&result->d_name[len-8], ".deleted"))
-          listing.push_back((String)result->d_name);
+        if (len <= 8 || strcmp(&result->d_name[len-8], ".deleted")) {
+          entry.name.clear();
+          entry.name.append(result->d_name);
+          entry.is_dir = result->d_type == DT_DIR;
+          full_entry_path.clear();
+          full_entry_path.append(absdir);
+          full_entry_path.append("/");
+          full_entry_path.append(entry.name);
+          if (stat(full_entry_path.c_str(), &statbuf) == -1) {
+            report_error(cb);
+            HT_ERRORF("readdir('%s') failed - %s", absdir.c_str(), strerror(errno));
+            delete [] (uint8_t *)dp;
+            return;
+          }
+          entry.length = (uint64_t)statbuf.st_size;
+          entry.last_modification_time = statbuf.st_mtime;
+          listing.push_back(entry);
+        }
       }
-      else
-        listing.push_back((String)result->d_name);
+      else {
+        entry.name.clear();
+        entry.name.append(result->d_name);
+        entry.is_dir = result->d_type == DT_DIR;
+        full_entry_path.clear();
+        full_entry_path.append(absdir);
+        full_entry_path.append("/");
+        full_entry_path.append(entry.name);
+        if (stat(full_entry_path.c_str(), &statbuf) == -1) {
+          report_error(cb);
+          HT_ERRORF("readdir('%s') failed - %s", absdir.c_str(), strerror(errno));
+          delete [] (uint8_t *)dp;
+          return;
+        }
+        entry.length = (uint64_t)statbuf.st_size;
+        entry.last_modification_time = statbuf.st_mtime;
+        listing.push_back(entry);
+      }
       //HT_INFOF("readdir Adding listing '%s'", result->d_name);
     }
 

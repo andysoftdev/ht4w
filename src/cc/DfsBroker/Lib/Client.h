@@ -1,4 +1,4 @@
-/**
+/* -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -22,20 +22,19 @@
 #ifndef HYPERTABLE_DFSBROKER_CLIENT_H
 #define HYPERTABLE_DFSBROKER_CLIENT_H
 
-#include "Common/InetAddr.h"
-#include "Common/Mutex.h"
-#include "Common/HashMap.h"
-#include "Common/Properties.h"
+#include <DfsBroker/Lib/ClientBufferedReaderHandler.h>
+#include <DfsBroker/Lib/Protocol.h>
 
-#include "AsyncComm/Comm.h"
-#include "AsyncComm/DispatchHandlerSynchronizer.h"
-#include "AsyncComm/ConnectionManager.h"
+#include <AsyncComm/Comm.h>
+#include <AsyncComm/ConnectionManager.h>
+#include <AsyncComm/DispatchHandlerSynchronizer.h>
 
-#include "Common/Filesystem.h"
+#include <Common/Filesystem.h>
+#include <Common/InetAddr.h>
+#include <Common/Mutex.h>
+#include <Common/Properties.h>
 
-#include "ClientBufferedReaderHandler.h"
-#include "Protocol.h"
-
+#include <unordered_map>
 
 namespace Hypertable { namespace DfsBroker {
 
@@ -150,7 +149,7 @@ namespace Hypertable { namespace DfsBroker {
       virtual void rmdir(const String &name, bool force = true);
 
       virtual void readdir(const String &name, DispatchHandler *handler);
-      virtual void readdir(const String &name, std::vector<String> &listing);
+      virtual void readdir(const String &name, std::vector<Dirent> &listing);
 
       virtual void posix_readdir(const String &name,
               std::vector<Filesystem::DirectoryEntry> &listing);
@@ -200,7 +199,7 @@ namespace Hypertable { namespace DfsBroker {
        */
       void send_message(CommBufPtr &cbp, DispatchHandler *handler);
 
-      typedef hash_map<uint32_t, ClientBufferedReaderHandler *>
+      typedef std::unordered_map<uint32_t, ClientBufferedReaderHandler *>
           BufferedReaderMap;
 
       Mutex                 m_mutex;

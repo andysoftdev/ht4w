@@ -29,7 +29,7 @@
 #ifndef HYPERTABLE_MAINTENANCEFLAG_H
 #define HYPERTABLE_MAINTENANCEFLAG_H
 
-#include "Common/HashMap.h"
+#include <unordered_map>
 
 namespace Hypertable {
 
@@ -159,10 +159,7 @@ namespace Hypertable {
       return (flags & RECOMPUTE_MERGE_RUN) == RECOMPUTE_MERGE_RUN;
     }
 
-#ifndef _WIN32
-
     /** Hash function class for pointers. */
-
     class Hash {
     public:
       size_t operator () (const void *obj) const {
@@ -187,27 +184,7 @@ namespace Hypertable {
      * used to map AccessGroup and CellStore pointers to corresponding bit
      * fields describing what maintenance needs to be performed on them.
      */
-class Map : public hash_map<const void *, int, Hash, Equal> {
-
-#else
-
-    class HashCompare {
-    public:
-      enum {   // parameters for hash table
-        bucket_size = 4,    // 0 < bucket_size
-        min_buckets = 8};   // min_buckets = 2 ^^ N, 0 < N
-      size_t operator () (const void *obj) const {
-        return (size_t)obj;
-      }
-      bool operator()(const void *obj1, const void *obj2) const {
-        return obj1 < obj2;
-      }
-    };
-
-    class Map : public hash_map<const void *, int, HashCompare> {
-
-#endif
-
+    class Map : public std::unordered_map<const void *, int, Hash, Equal> {
     public:
       /** Returns bit field for a give pointer
        * @param key Pointer for which to return bit field
