@@ -90,14 +90,11 @@ bool Future::get(ResultPtr &result, uint32_t timeout_ms, bool &timed_out) {
 
 
   size_t mem_result=0;
-  boost::xtime wait_time;
-    boost::xtime_get(&wait_time, boost::TIME_UTC_);
-  xtime_add_millis(wait_time, timeout_ms);
 
   while (true) {
     // wait till we have results to serve
     while(_is_empty() && !_is_done() && !_is_cancelled()) {
-	timed_out = m_outstanding_cond.timed_wait(lock, wait_time) == 0;
+      timed_out = m_outstanding_cond.timed_wait(lock, boost::posix_time::milliseconds(timeout_ms)) == 0;
       if (timed_out)
         return _is_done();
     }
