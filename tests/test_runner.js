@@ -1,5 +1,5 @@
 /** -*- js -*-
- * Copyright (C) 2010-2012 Thalmann Software & Consulting, http://www.softdev.ch
+ * Copyright (C) 2010-2014 Thalmann Software & Consulting, http://www.softdev.ch
  *
  * This file is part of ht4w.
  *
@@ -756,7 +756,7 @@ all_tests.add("unique_test", unique_test);
 // globals
 var wshshell = new ActiveXObject("WScript.Shell");
 var fso = new ActiveXObject("Scripting.FileSystemObject");
-var timeout = 240000; // [ms]
+var timeout = 5 * 60 * 1000; // [ms]
 
 var solutionDir = null;
 var targetDir = null;
