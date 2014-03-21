@@ -755,11 +755,16 @@ bool IOHandlerData::handle_write_readiness() {
       }
 
       int sndbufsize = 0;
-      int rcvbufsize = 4*32768;
       if (setsockopt(m_sd, SOL_SOCKET, SO_SNDBUF, (char *)&sndbufsize, sizeof(sndbufsize)) == SOCKET_ERROR)
         HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", winapi_strerror(WSAGetLastError()));
+
+      int rcvbufsize = 4*32768;
       if (setsockopt(m_sd, SOL_SOCKET, SO_RCVBUF, (char *)&rcvbufsize, sizeof(rcvbufsize)) == SOCKET_ERROR)
         HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", winapi_strerror(WSAGetLastError()));
+
+      u_long arg_one = 1;
+      if (setsockopt(m_sd, SOL_SOCKET, SO_KEEPALIVE, (char *)&arg_one, sizeof(arg_one)) == SOCKET_ERROR)
+        HT_ERRORF("setsockopt(SO_KEEPALIVE) failed - %s", winapi_strerror(WSAGetLastError()));
 
       if (getsockname(m_sd, (struct sockaddr *)&m_local_addr, &name_len) == SOCKET_ERROR) {
         HT_ERRORF("getsockname(%d) failed - %s", m_sd, winapi_strerror(WSAGetLastError()));
@@ -790,6 +795,10 @@ bool IOHandlerData::handle_write_readiness() {
 		     sizeof(bufsize)) < 0) {
 	HT_INFOF("setsockopt(SO_RCVBUF) failed - %s", strerror(errno));
       }
+
+      int one = 1;
+      if (setsockopt(m_sd, SOL_SOCKET, SO_KEEPALIVE, &one, sizeof(one)) < 0)
+        HT_ERRORF("setsockopt(SO_KEEPALIVE) failure: %s", strerror(errno));
 
       if (getsockname(m_sd, (struct sockaddr *)&m_local_addr, &name_len) < 0) {
 	HT_INFOF("getsockname(%d) failed - %s", m_sd, strerror(errno));

@@ -23,11 +23,11 @@ project(HYPERTABLE)
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
 set(VERSION_MICRO "7")
-set(VERSION_PATCH "16")
+set(VERSION_PATCH "17")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 2.8)
 mark_as_advanced(CMAKE_BACKWARDS_COMPATIBILITY)
 
 # saner control structure syntax

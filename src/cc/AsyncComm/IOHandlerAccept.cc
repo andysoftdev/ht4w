@@ -123,6 +123,9 @@ bool IOHandlerAccept::handle_event(IOOP *ioop, time_t) {
   if (setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, (const char*)&one, sizeof(one)) == SOCKET_ERROR)
     HT_ERRORF("setsockopt(TCP_NODELAY) failure: %s", winapi_strerror(WSAGetLastError()));
 
+  if (setsockopt(sd, SOL_SOCKET, SO_KEEPALIVE, (char *)&arg_one, sizeof(arg_one)) == SOCKET_ERROR)
+        HT_ERRORF("setsockopt(SO_KEEPALIVE) failed - %s", winapi_strerror(WSAGetLastError()));
+
   const int bufsize = 4*32768;
 
   if (setsockopt(sd, SOL_SOCKET, SO_SNDBUF, (const char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
@@ -224,6 +227,9 @@ bool IOHandlerAccept::handle_incoming_connection() {
     if (setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one)) < 0)
       HT_WARNF("setsockopt(SO_NOSIGPIPE) failure: %s", strerror(errno));
 #endif
+
+    if (setsockopt(m_sd, SOL_SOCKET, SO_KEEPALIVE, &one, sizeof(one)) < 0)
+      HT_ERRORF("setsockopt(SO_KEEPALIVE) failure: %s", strerror(errno));
 
     int bufsize = 4*32768;
 

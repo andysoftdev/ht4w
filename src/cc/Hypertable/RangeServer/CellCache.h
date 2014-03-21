@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -22,17 +22,16 @@
 #ifndef HYPERTABLE_CELLCACHE_H
 #define HYPERTABLE_CELLCACHE_H
 
+#include <Hypertable/RangeServer/CellCacheAllocator.h>
+#include <Hypertable/RangeServer/CellListScanner.h>
+#include <Hypertable/RangeServer/CellList.h>
+
+#include <Hypertable/Lib/SerializedKey.h>
+
+#include <Common/Mutex.h>
+
 #include <map>
 #include <set>
-
-#include "Common/Mutex.h"
-
-#include "CellListScanner.h"
-#include "CellList.h"
-
-#include "Hypertable/Lib/SerializedKey.h"
-
-#include "CellCacheAllocator.h"
 
 //#define HT_CELLCACHE_ARENA_USED
 //#define HT_CELLCACHE_ARENA_TOTAL
@@ -56,6 +55,21 @@ namespace Hypertable {
   class CellCache : public CellList {
 
   public:
+
+    /// Holds cache statistics.
+    struct Statistics {
+      size_t size;
+      size_t deletes;
+      int64_t memory_used;
+      int64_t memory_allocated;
+      int64_t key_bytes;
+      int64_t value_bytes;
+
+      Statistics()
+        : size(0), deletes(0), memory_used(0),
+          memory_allocated(0), key_bytes(0),value_bytes(0) { }
+    };
+
     CellCache();
     CellCache(CellCacheArena &arena);
     virtual ~CellCache() { m_cell_map.clear(); }
@@ -73,19 +87,17 @@ namespace Hypertable {
 
     virtual void split_row_estimate_data(SplitRowDataMapT &split_row_data);
 
-    virtual int64_t get_total_entries() { return m_cell_map.size(); }
-
     /** Creates a CellCacheScanner object that contains an shared pointer
      * (intrusive_ptr) to this CellCache.
      */
     virtual CellListScanner *create_scanner(ScanContextPtr &scan_ctx);
 
-    void lock()   { if (!m_frozen) m_mutex.lock(); }
-    void unlock() { if (!m_frozen) m_mutex.unlock(); }
+    void lock()   { m_mutex.lock(); }
+    void unlock() { m_mutex.unlock(); }
 
-    size_t size() { return m_cell_map.size(); }
+    size_t size() { ScopedLock lock(m_mutex); return m_cell_map.size(); }
 
-    bool empty() {ScopedLock lock(m_mutex); return m_cell_map.empty(); }
+    bool empty() { ScopedLock lock(m_mutex); return m_cell_map.empty(); }
 
     /** Returns the amount of memory used by the CellCache.  This is the
      * summation of the lengths of all the keys and values in the map.
@@ -93,13 +105,10 @@ namespace Hypertable {
     int64_t memory_used() {
       ScopedLock lock(m_mutex);
 #ifdef HT_CELLCACHE_ARENA_USED
-      int64_t used = m_arena.used();
+      return m_arena.used();
 #else
-      int64_t used = m_key_bytes + m_value_bytes;
+      return m_key_bytes + m_value_bytes;
 #endif
-      if (used < 0)
-        HT_WARN_OUT << "[Issue 339] Mem usage for CellCache=" << used << HT_END;
-      return used;
     }
 
     /**
@@ -110,23 +119,29 @@ namespace Hypertable {
 #ifdef HT_CELLCACHE_ARENA_TOTAL
       return m_arena.total();
 #else
-      return m_arena.freeable();
+     return m_arena.freeable();
 #endif
     }
 
-    void add_counts(size_t *cellsp, int64_t *key_bytesp, int64_t *value_bytesp) {
+    int64_t logical_size() {
       ScopedLock lock(m_mutex);
-      *cellsp += m_cell_map.size();
-      *key_bytesp += m_key_bytes;
-      *value_bytesp += m_value_bytes;
+      return m_key_bytes + m_value_bytes;
     }
 
-    int32_t get_delete_count() { return m_deletes; }
+    void add_statistics(Statistics &stats) {
+      ScopedLock lock(m_mutex);
+      stats.size += m_cell_map.size();
+      stats.deletes += m_deletes;
+      stats.memory_used += m_arena.used();
+      stats.memory_allocated += m_arena.total();
+      stats.key_bytes += m_key_bytes;
+      stats.value_bytes += m_value_bytes;
+    }
 
-    void freeze() { m_frozen = true; }
-    void unfreeze() { m_frozen = false; }
-
-    void merge(CellCache *other);
+    int32_t delete_count() {
+      ScopedLock lock(m_mutex);
+      return m_deletes;
+    }
 
     void populate_key_set(KeySet &keys) {
       Key key;
@@ -148,21 +163,17 @@ namespace Hypertable {
 
   protected:
 
-    void swap(CellCache &other);
-    void clear();
     void inc_key_values_bytes(const CellMap::value_type& v);
     void dec_key_values_bytes(const CellMap::value_type& v);
 
-    Mutex              m_mutex;
-    CellCacheArena     m_arena_base;
-    CellCacheArena    &m_arena;
-    CellMap            m_cell_map;
-    int32_t            m_deletes;
-    int32_t            m_collisions;
-    int64_t            m_key_bytes;
-    int64_t            m_value_bytes;
-    bool               m_frozen;
-    bool               m_have_counter_deletes;
+    Mutex m_mutex;
+    CellCacheArena m_arena;
+    CellMap m_cell_map;
+    int32_t m_deletes;
+    int32_t m_collisions;
+    int64_t m_key_bytes;
+    int64_t m_value_bytes;
+    bool m_have_counter_deletes;
 
   };
 

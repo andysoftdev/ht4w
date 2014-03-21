@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/* -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -38,18 +38,9 @@ using namespace std;
 
 
 CellCache::CellCache()
-  : m_arena_base(), m_arena(m_arena_base), m_cell_map(std::less<const SerializedKey>(), Alloc(m_arena)),
+  : m_cell_map(std::less<const SerializedKey>(), Alloc(m_arena)),
     m_deletes(0), m_collisions(0), m_key_bytes(0), m_value_bytes(0),
-    m_frozen(false), m_have_counter_deletes(false) {
-  assert(Config::properties); // requires Config::init* first
-  m_arena.set_page_size((size_t)
-      Config::get_i32("Hypertable.RangeServer.AccessGroup.CellCache.PageSize"));
-}
-
-CellCache::CellCache(CellCacheArena &arena)
-  : m_arena(arena), m_cell_map(std::less<const SerializedKey>(), Alloc(m_arena)),
-    m_deletes(0), m_collisions(0), m_key_bytes(0), m_value_bytes(0),
-    m_frozen(false), m_have_counter_deletes(false) {
+    m_have_counter_deletes(false) {
   assert(Config::properties); // requires Config::init* first
   m_arena.set_page_size((size_t)
       Config::get_i32("Hypertable.RangeServer.AccessGroup.CellCache.PageSize"));
@@ -65,8 +56,6 @@ void CellCache::add(const Key &key, const ByteString value) {
 
   m_key_bytes += key.length;
   m_value_bytes += value.length();
-
-  assert(!m_frozen);
 
   new_key.ptr = ptr = m_arena.alloc(total_len);
 
@@ -201,49 +190,6 @@ void CellCache::split_row_estimate_data(SplitRowDataMapT &split_row_data) {
 CellListScanner *CellCache::create_scanner(ScanContextPtr &scan_ctx) {
   CellCachePtr cellcache(this);
   return new CellCacheScanner(cellcache, scan_ctx);
-}
-
-void CellCache::merge(CellCache *other) {
-  ScopedLock lock(m_mutex);
-  HT_ASSERT(&m_arena == &(other->m_arena));
-  Locker<CellCache> write_lock(*other);
-  if (m_cell_map.empty())
-    swap(*other);
-  else {
-    for (CellMap::const_iterator iter = other->m_cell_map.begin();
-         iter != other->m_cell_map.end(); ++iter) {
-      inc_key_values_bytes(*iter);
-      std::pair<CellMap::iterator, bool> r = m_cell_map.insert(*iter);
-      if (!r.second) {
-        dec_key_values_bytes(*r.first);
-        m_cell_map.erase(r.first);
-        m_cell_map.insert(*iter);
-        m_collisions++;
-        HT_WARNF("Collision detected merge (row = %s)", iter->first.row());
-      }
-    }
-    other->clear();
-  }
-}
-
-void CellCache::swap(CellCache &other) {
-  // frozen state remains
-  m_cell_map.swap(other.m_cell_map);
-  std::swap(m_deletes, other.m_deletes);
-  std::swap(m_collisions, other.m_collisions);
-  std::swap(m_key_bytes, other.m_key_bytes);
-  std::swap(m_value_bytes, other.m_value_bytes);
-  std::swap(m_have_counter_deletes, other.m_have_counter_deletes);
-}
-
-void CellCache::clear() {
-  // frozen state remains
-  m_cell_map.clear();
-  m_deletes = 0;
-  m_collisions = 0;
-  m_key_bytes = 0;
-  m_value_bytes = 0;
-  m_have_counter_deletes = false;
 }
 
 void CellCache::inc_key_values_bytes(const CellMap::value_type& v) {
