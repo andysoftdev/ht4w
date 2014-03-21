@@ -28,9 +28,9 @@
 #define HT_VERSION_MAJOR        0
 #define HT_VERSION_MINOR        9
 #define HT_VERSION_MICRO        7
-#define HT_VERSION_PATCH        16
+#define HT_VERSION_PATCH        17
 #define HT_VERSION_MISC_SUFFIX  ""
-#define HT_VERSION_STRING       "0.9.7.16"
+#define HT_VERSION_STRING       "0.9.7.17"
 
 namespace Hypertable {
   extern const int version_major;
