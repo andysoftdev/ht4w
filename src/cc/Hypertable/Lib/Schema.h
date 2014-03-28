@@ -187,7 +187,7 @@ namespace Hypertable {
     static const uint32_t      ms_max_column_id;
 
   private:
-    typedef std::unordered_map<uint32_t, ColumnFamily *> ColumnFamilyIdMap;
+    typedef std::map<uint32_t, ColumnFamily *> ColumnFamilyIdMap;
 
     String m_error_string;
     int    m_next_column_id;
