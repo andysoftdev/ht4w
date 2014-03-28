@@ -26,7 +26,7 @@
 
 namespace Hypertable {
 
-struct TableMutatorIntervalHandler;
+class TableMutatorIntervalHandler;
 
 /**
  * A TableMutator that can be shared from multiple threads and incidentally

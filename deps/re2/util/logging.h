@@ -79,10 +79,17 @@ class LogMessageFatal : public LogMessage {
  public:
   LogMessageFatal(const char* file, int line)
     : LogMessage(file, line) { }
+#ifdef _WIN32
+#pragma warning(push)
+#pragma disable(4722) // 'LogMessageFatal::~LogMessageFatal' : destructor never returns, potential memory leak
+#endif
   ~LogMessageFatal() {
     Flush();
     abort();
   }
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
  private:
   DISALLOW_EVIL_CONSTRUCTORS(LogMessageFatal);
 };

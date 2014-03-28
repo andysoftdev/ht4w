@@ -1604,7 +1604,7 @@ namespace Hypertable {
         try {
           state.scan.current_timestamp = parse_ts(time_str.c_str());
         }
-        catch (std::runtime_error &e) {
+        catch (std::runtime_error &) {
           HT_THROWF(Error::HQL_PARSE_ERROR,
                     "Unable to parse timestamp - '%s'",
                     time_str.c_str());

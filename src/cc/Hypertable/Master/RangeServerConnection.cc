@@ -129,8 +129,7 @@ bool RangeServerConnection::get_hyperspace_handle(uint64_t *handle,
   ScopedLock lock(m_mutex);
   *handle = m_handle;
   *cb = m_hyperspace_callback;
-  return m_hyperspace_callback;
-  return m_handle;
+  return m_handle != 0;
 }
 
 

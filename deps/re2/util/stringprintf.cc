@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 #include "util/util.h"
-#ifdef _WIN32
+#ifndef va_copy
 #define va_copy(dest, src) (dest = src)
 #endif
 

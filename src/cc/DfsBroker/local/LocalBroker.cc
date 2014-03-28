@@ -524,7 +524,16 @@ void LocalBroker::length(ResponseCallbackLength *cb, const char *fname,
     abspath = m_rootdir + "/" + fname;
 
   if ((length = FileUtils::length(abspath)) == (uint64_t)-1) {
+#ifdef _WIN32
+    DWORD err = ::GetLastError();
+#endif
     report_error(cb);
+#ifdef _WIN32
+    if (err == ERROR_FILE_NOT_FOUND) {
+      HT_DEBUGF("length (stat) failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
+      return;
+    }
+#endif
     HT_ERRORF("length (stat) failed: file='%s' - %s", abspath.c_str(), IO_ERROR);
     return;
   }

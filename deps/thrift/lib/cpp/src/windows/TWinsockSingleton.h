@@ -33,6 +33,9 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/once.hpp>
 
+#pragma warning(push)
+#pragma warning(disable: 4396) // 'boost::call_once' : the inline specifier cannot be used when a friend declaration refers to a specialization of a function template
+
 namespace apache { namespace thrift { namespace transport {
 
 /**
@@ -71,6 +74,8 @@ private:
     static instance_ptr     instance_ptr_;
     static boost::once_flag flags_;
 };
+
+#pragma warning(pop)
 
 }}} // apache::thrift::transport
 

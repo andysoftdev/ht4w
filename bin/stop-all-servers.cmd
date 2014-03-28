@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 set platform=Win32
-set visualstudioversion=10.0
+set visualstudioversion=12.0
 set configuration=Release
 set params=
 
