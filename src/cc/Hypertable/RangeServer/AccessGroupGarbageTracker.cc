@@ -52,6 +52,7 @@ AccessGroupGarbageTracker::AccessGroupGarbageTracker(PropertiesPtr &props,
     = cfg.get_i32("AccessGroup.GarbageThreshold.Percentage") / 100.0;
   m_accum_data_target = cfg.get_i64("Range.SplitSize") / 10;
   m_accum_data_target_minimum = m_accum_data_target / 2;
+  m_last_collection_time = time(0);
   update_schema(ag);
 }
 
@@ -191,8 +192,7 @@ int64_t AccessGroupGarbageTracker::memory_accumulated_since_collection() {
     accum = m_cell_cache_manager->logical_size();
   if (m_in_memory)
     accum -= m_last_collection_disk_usage;
-  HT_ASSERT(accum >= 0);
-  return accum;
+  return (accum < 0) ? 0 : accum;
 }
 
 int64_t AccessGroupGarbageTracker::total_accumulated_since_collection() {
