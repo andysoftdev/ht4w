@@ -496,7 +496,7 @@ function hypertable_test(logfile, testName) {
     prepare_target(testName, ["hypertable_test.hql", "hypertable_test.golden", "offset_test.*", "timeorder_test.*", "indices_test.hql", "indices_test.golden", "hypertable_select_gz_test.golden", "*.tsv"]);
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
     var status = run_target(logfile, testName);
-    files_delete(["gzip.exe", "sed.exe"]);
+    files_delete(["gzip.exe", "sed.exe", "T.gz"]);
     return status;
 }
 
