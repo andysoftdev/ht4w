@@ -26,7 +26,7 @@ call "%THIS_PATH%\bootstrap.bat"
 :build_boost
 if not exist "%THIS_PATH%\stage" md "%THIS_PATH%\stage"
 if not exist "%THIS_PATH%\stage\%VISUALSTUDIOVERSION%" md "%THIS_PATH%\stage\%VISUALSTUDIOVERSION%"
-if not exist "%THIS_PATH%\stage\%PLATFORM%" md "%THIS_PATH%\stage\%PLATFORM%"
+if not exist "%THIS_PATH%\stage\%VISUALSTUDIOVERSION%\%PLATFORM%" md "%THIS_PATH%\stage\%VISUALSTUDIOVERSION%\%PLATFORM%"
 
 bjam --toolset=msvc-12.0 --build-dir="%THIS_PATH%\..\..\build\%VISUALSTUDIOVERSION%\deps\boost\%PLATFORM%" --stagedir="%THIS_PATH%\stage\%VISUALSTUDIOVERSION%\%PLATFORM%" --without-python --without-mpi -sNO_COMPRESSION=0 -sNO_ZLIB=0 -sZLIB_SOURCE="%ZLIB_SOURCE%" -sNO_BZIP2=0 -sBZIP2_SOURCE="%BZIP2_SOURCE%" address-model=64 debug link=static runtime-link=shared cflags=/GF cxxflags=/GF stage
 bjam --toolset=msvc-12.0 --build-dir="%THIS_PATH%\..\..\build\%VISUALSTUDIOVERSION%\deps\boost\%PLATFORM%" --stagedir="%THIS_PATH%\stage\%VISUALSTUDIOVERSION%\%PLATFORM%" --without-python --without-mpi -sNO_COMPRESSION=0 -sNO_ZLIB=0 -sZLIB_SOURCE="%ZLIB_SOURCE%" -sNO_BZIP2=0 -sBZIP2_SOURCE="%BZIP2_SOURCE%" address-model=64 release link=static runtime-link=shared cflags="/GL /GF /fp:precise" cxxflags="/GL /GF /fp:precise" linkflags=/LTCG stage
