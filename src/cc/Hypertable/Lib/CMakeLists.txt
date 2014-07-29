@@ -1,5 +1,5 @@
- #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+#
+# Copyright (C) 2007-2013 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,6 +18,7 @@
 #
 
 set(Hypertable_SRCS
+AccessGroupSpec.cc
 ApacheLogParser.cc
 BalancePlan.cc
 BlockCompressionCodec.cc
@@ -27,10 +28,13 @@ BlockCompressionCodecNone.cc
 BlockCompressionCodecQuicklz.cc
 BlockCompressionCodecZlib.cc
 BlockCompressionCodecSnappy.cc
-BlockCompressionHeader.cc
-BlockCompressionHeaderCommitLog.cc
+BlockHeader.cc
+BlockHeaderCellStore.cc
+BlockHeaderCommitLog.cc
 Cell.cc
 Client.cc
+ClusterId.cc
+ColumnFamilySpec.cc
 CommitLog.cc
 CommitLogBlockStream.cc
 CommitLogReader.cc
@@ -43,6 +47,7 @@ Future.cc
 HqlCommandInterpreter.cc
 HqlHelpText.cc
 HqlInterpreter.cc
+IndexTables.cc
 IntervalScannerAsync.cc
 Key.cc
 KeySpec.cc
@@ -96,6 +101,7 @@ TableMutatorAsync.cc
 TableMutatorAsyncDispatchHandler.cc
 TableMutatorAsyncHandler.cc
 TableMutatorAsyncScatterBuffer.cc
+TableParts.cc
 TableScanner.cc
 TableScannerDispatchHandler.cc
 TableScannerAsync.cc
@@ -109,15 +115,23 @@ bmz/bmz.c
 
 add_library(Hypertable ${Hypertable_SRCS})
 add_dependencies(Hypertable HyperComm Hyperspace HyperCommon)
-target_link_libraries(Hypertable ${EXPAT_LIBRARIES} Hyperspace HyperDfsBroker ${MALLOC_LIBRARY} HyperThirdParty m)
+target_link_libraries(Hypertable ${EXPAT_LIBRARIES} Hyperspace HyperFsBroker ${MALLOC_LIBRARY} HyperThirdParty m)
 
 # generate_test_data
 add_executable(generate_test_data generate_test_data.cc)
 target_link_libraries(generate_test_data Hypertable)
 
-# schemaTest
-add_executable(schemaTest tests/schemaTest.cc)
-target_link_libraries(schemaTest Hypertable)
+# ColumnFamilySpec_test
+add_executable(ColumnFamilySpec_test tests/ColumnFamilySpec_test.cc)
+target_link_libraries(ColumnFamilySpec_test Hypertable)
+
+# AccessGroupSpec_test
+add_executable(AccessGroupSpec_test tests/AccessGroupSpec_test.cc)
+target_link_libraries(AccessGroupSpec_test Hypertable)
+
+# Schema_test
+add_executable(Schema_test tests/Schema_test.cc)
+target_link_libraries(Schema_test Hypertable)
 
 # locationCacheTest
 add_executable(locationCacheTest tests/locationCacheTest.cc)
@@ -146,9 +160,13 @@ else (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
    target_link_libraries(bmzip Hypertable m)
 endif (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
 
+# block_header_test
+add_executable(block_header_test tests/block_header_test.cc)
+target_link_libraries(block_header_test Hypertable)
+
 # commit_log_test
 add_executable(commit_log_test tests/commit_log_test.cc)
-target_link_libraries(commit_log_test HyperDfsBroker Hypertable)
+target_link_libraries(commit_log_test HyperFsBroker Hypertable)
 
 # escape_test
 add_executable(escape_test tests/escape_test.cc)
@@ -212,7 +230,7 @@ target_link_libraries(rangeserver_serialize_test Hypertable Hyperspace)
 
 # MetaLog test
 add_executable(metalog_test tests/metalog_test.cc)
-target_link_libraries(metalog_test HyperDfsBroker Hypertable)
+target_link_libraries(metalog_test HyperFsBroker Hypertable)
 
 
 #
@@ -220,21 +238,13 @@ target_link_libraries(metalog_test HyperDfsBroker Hypertable)
 #
 set(SRC_DIR "${HYPERTABLE_SOURCE_DIR}/src/cc/Hypertable/Lib/tests")
 set(DST_DIR "${HYPERTABLE_BINARY_DIR}/src/cc/Hypertable/Lib")
-configure_file(${SRC_DIR}/bad-schema-1.xml ${DST_DIR}/bad-schema-1.xml COPYONLY)
-configure_file(${SRC_DIR}/bad-schema-2.xml ${DST_DIR}/bad-schema-2.xml COPYONLY)
-configure_file(${SRC_DIR}/bad-schema-3.xml ${DST_DIR}/bad-schema-3.xml COPYONLY)
-configure_file(${SRC_DIR}/bad-schema-4.xml ${DST_DIR}/bad-schema-4.xml COPYONLY)
-configure_file(${SRC_DIR}/bad-schema-5.xml ${DST_DIR}/bad-schema-5.xml COPYONLY)
-configure_file(${SRC_DIR}/bad-schema-6.xml ${DST_DIR}/bad-schema-6.xml COPYONLY)
-configure_file(${SRC_DIR}/bad-schema-7.xml ${DST_DIR}/bad-schema-7.xml COPYONLY)
-configure_file(${SRC_DIR}/bad-schema-8.xml ${DST_DIR}/bad-schema-8.xml COPYONLY)
-configure_file(${SRC_DIR}/bad-schema-9.xml ${DST_DIR}/bad-schema-9.xml COPYONLY)
-configure_file(${SRC_DIR}/good-schema-1.xml ${DST_DIR}/good-schema-1.xml
-               COPYONLY)
+configure_file(${SRC_DIR}/test-schemas.xml ${DST_DIR}/test-schemas.xml COPYONLY)
 
 configure_file(${HYPERTABLE_SOURCE_DIR}/tests/data/random.dat
                ${DST_DIR}/random.dat COPYONLY)
-configure_file(${SRC_DIR}/schemaTest.golden ${DST_DIR}/schemaTest.golden)
+configure_file(${SRC_DIR}/ColumnFamilySpec_test.golden ${DST_DIR}/ColumnFamilySpec_test.golden)
+configure_file(${SRC_DIR}/AccessGroupSpec_test.golden ${DST_DIR}/AccessGroupSpec_test.golden)
+configure_file(${SRC_DIR}/Schema_test.golden ${DST_DIR}/Schema_test.golden)
 configure_file(${SRC_DIR}/indices_test.golden ${DST_DIR}/indices_test.golden)
 configure_file(${SRC_DIR}/locationCacheTest.golden
                ${DST_DIR}/locationCacheTest.golden)
@@ -262,7 +272,9 @@ configure_file(${SRC_DIR}/metalog_test2.golden ${DST_DIR}/metalog_test2.golden)
 
 add_test(Hypertable-Lib-TestSetup env INSTALL_DIR=${INSTALL_DIR}
          ${SRC_DIR}/test_setup.sh)
-add_test(Schema schemaTest)
+add_test(ColumnFamilySpec ColumnFamilySpec_test)
+add_test(AccessGroupSpec AccessGroupSpec_test)
+add_test(Schema Schema_test)
 add_test(LocationCache locationCacheTest)
 add_test(LoadDataSource loadDataSourceTest)
 add_test(LoadDataEscape escape_test)
@@ -272,6 +284,7 @@ add_test(BlockCompressor-NONE compressor_test none)
 add_test(BlockCompressor-QUICKLZ compressor_test quicklz)
 add_test(BlockCompressor-ZLIB compressor_test zlib)
 add_test(BlockCompressor-SNAPPY compressor_test snappy)
+add_test(BlockHeader block_header_test)
 add_test(CommitLog commit_log_test)
 add_test(MetaLog metalog_test)
 add_test(Client-large-block large_insert_test)

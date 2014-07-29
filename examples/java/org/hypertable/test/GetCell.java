@@ -7,6 +7,9 @@ import org.hypertable.thrift.SerializedCellsWriter;
 import org.hypertable.thrift.ThriftClient;
 import org.hypertable.thriftgen.RowInterval;
 import org.hypertable.thriftgen.ScanSpec;
+import org.hypertable.thriftgen.ColumnFamilySpec;
+import org.hypertable.thriftgen.AccessGroupSpec;
+import org.hypertable.thriftgen.Schema;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -29,7 +32,7 @@ public class GetCell {
 
   public static void main(String[] args) {
     try {
-      final ThriftClient client = ThriftClient.create("localhost", 38080);
+      final ThriftClient client = ThriftClient.create("localhost", 15867);
       client.namespace_create(NamespaceName);
 
       final Thread[] threads = new Thread[ThreadCount];
@@ -70,7 +73,7 @@ public class GetCell {
                                                                      .setRow_intervals(Arrays.asList(new RowInterval()
                                                                                                      .setStart_row("A").setStart_inclusive(true)
                                                                                                      .setEnd_row("A").setEnd_inclusive(true))));
-      SerializedCellsReader reader = new SerializedCellsReader(null);
+      SerializedCellsReader reader = new SerializedCellsReader();
       reader.reset(serializedCells);
       reader.next();
       long readFromDb2 = Long.parseLong(new String(reader.get_value()));
@@ -94,11 +97,20 @@ public class GetCell {
 
   private static void runTest(final String id) {
     try {
-      final ThriftClient client = ThriftClient.create("localhost", 38080);
+      final ThriftClient client = ThriftClient.create("localhost", 15867);
       final long ns = client.open_namespace(NamespaceName);
       final String table_name = "table" + id;
 
-      client.create_table(ns, table_name, counter_table_schema_xml);
+      Schema schema = new Schema();
+      AccessGroupSpec ag = new AccessGroupSpec();
+      ag.setName("default");
+      schema.putToAccess_groups(ag.name, ag);
+      ColumnFamilySpec cf = new ColumnFamilySpec();
+      cf.setName("D");
+      cf.options.setCounter(true);
+      schema.putToColumn_families(cf.name, cf);
+
+      client.table_create(ns, table_name, schema);
 
       long expectedValue = 0;
       Random random = new Random();

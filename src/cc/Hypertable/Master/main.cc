@@ -25,47 +25,51 @@
  * server
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
 
-extern "C" {
-#include <poll.h>
-}
+#include <Hypertable/Master/BalancePlanAuthority.h>
+#include <Hypertable/Master/ConnectionHandler.h>
+#include <Hypertable/Master/Context.h>
+#include <Hypertable/Master/LoadBalancer.h>
+#include <Hypertable/Master/MetaLogDefinitionMaster.h>
+#include <Hypertable/Master/OperationBalance.h>
+#include <Hypertable/Master/OperationInitialize.h>
+#include <Hypertable/Master/OperationMoveRange.h>
+#include <Hypertable/Master/OperationProcessor.h>
+#include <Hypertable/Master/OperationRecover.h>
+#include <Hypertable/Master/OperationRecoveryBlocker.h>
+#include <Hypertable/Master/OperationSystemUpgrade.h>
+#include <Hypertable/Master/OperationTimedBarrier.h>
+#include <Hypertable/Master/OperationWaitForServers.h>
+#include <Hypertable/Master/ReferenceManager.h>
+#include <Hypertable/Master/ResponseManager.h>
+#include <Hypertable/Master/SystemState.h>
 
-#include <sstream>
+#include <Hypertable/Lib/ClusterId.h>
+#include <Hypertable/Lib/Config.h>
+#include <Hypertable/Lib/MetaLogReader.h>
 
-#include "Common/FailureInducer.h"
-#include "Common/Init.h"
-#include "Common/ScopeGuard.h"
-#include "Common/System.h"
-#include "Common/Thread.h"
-#include "Common/md5.h"
+#include <FsBroker/Lib/Client.h>
+#include <FsBroker/Lib/EmbeddedFilesystem.h>
+
 #ifdef _WIN32
 #include "Common/Path.h"
 #endif
 
-#include "AsyncComm/Comm.h"
+#include <AsyncComm/Comm.h>
 
-#include "Hypertable/Lib/Config.h"
-#include "Hypertable/Lib/MetaLogReader.h"
-#include "DfsBroker/Lib/Client.h"
-#include "DfsBroker/Lib/EmbeddedFilesystem.h"
+#include <Common/FailureInducer.h>
+#include <Common/Init.h>
+#include <Common/ScopeGuard.h>
+#include <Common/System.h>
+#include <Common/Thread.h>
+#include <Common/md5.h>
 
-#include "ConnectionHandler.h"
-#include "Context.h"
-#include "LoadBalancer.h"
-#include "MetaLogDefinitionMaster.h"
-#include "OperationBalance.h"
-#include "OperationInitialize.h"
-#include "OperationProcessor.h"
-#include "OperationRecover.h"
-#include "OperationRecoveryBlocker.h"
-#include "OperationSystemUpgrade.h"
-#include "OperationTimedBarrier.h"
-#include "OperationWaitForServers.h"
-#include "ReferenceManager.h"
-#include "ResponseManager.h"
-#include "SystemState.h"
-#include "BalancePlanAuthority.h"
+#include <sstream>
+
+extern "C" {
+#include <poll.h>
+}
 
 #ifdef _WIN32
 #include "Common/ServerLaunchEvent.h"
@@ -84,7 +88,7 @@ namespace {
     }
   };
 
-  typedef Meta::list<GenericServerPolicy, DfsClientPolicy,
+  typedef Meta::list<GenericServerPolicy, FsClientPolicy,
                      HyperspaceClientPolicy, DefaultCommPolicy, AppPolicy> Policies;
 
   class HandlerFactory : public ConnectionHandlerFactory {
@@ -206,17 +210,21 @@ int main(int argc, char **argv) {
 
     obtain_master_lock(context);
 
+    // Load (and possibly generate) the cluster ID
+    ClusterId cluster_id(context->hyperspace, ClusterId::GENERATE_IF_NOT_FOUND);
+    HT_INFOF("Cluster id is %llu", (Llu)ClusterId::get());
+
     if (!FileUtils::unlink(state_file))
       HT_INFOF("Unable to delete state file %s", state_file.c_str());
 
     context->namemap = new NameIdMapper(context->hyperspace, context->toplevel_dir);
 #ifndef _WIN32
-    context->dfs = new DfsBroker::Client(context->conn_manager, context->props);
+    context->dfs = new FsBroker::Client(context->conn_manager, context->props);
 #else
-    if (context->props->get_bool("DfsBroker.Local.Embedded"))
-      context->dfs = new DfsBroker::EmbeddedFilesystem(context->props);
+    if (context->props->get_bool("FsBroker.Local.Embedded"))
+      context->dfs = new FsBroker::EmbeddedFilesystem(context->props);
     else
-      context->dfs = new DfsBroker::Client(context->conn_manager, context->props);
+      context->dfs = new FsBroker::Client(context->conn_manager, context->props);
 #endif
     context->mml_definition =
         new MetaLog::DefinitionMaster(context, format("%s_%u", "master", port).c_str());
@@ -328,8 +336,13 @@ int main(int argc, char **argv) {
     foreach_ht (MetaLog::EntityPtr &entity, entities) {
       operation = dynamic_cast<Operation *>(entity.get());
       if (operation) {
-        if (operation->remove_explicitly())
+
+        if (operation->get_remove_approval_mask() && !operation->removal_approved())
           context->reference_manager->add(operation);
+
+        if (dynamic_cast<OperationMoveRange *>(operation.get()))
+          context->add_move_operation(operation.get());
+
         // master was interrupted in the middle of rangeserver failover
         if (dynamic_cast<OperationRecover *>(operation.get())) {
           HT_INFO("Recovery was interrupted; continuing");
@@ -363,11 +376,10 @@ int main(int argc, char **argv) {
     recovery_ops.clear();
 
     if (operations.empty()) {
-      OperationInitializePtr init_op = new OperationInitialize(context);
+      OperationPtr init_op = new OperationInitialize(context);
       if (context->namemap->exists_mapping("/sys/METADATA", 0))
         init_op->set_state(OperationState::CREATE_RS_METRICS);
-      context->reference_manager->add(init_op.get());
-      operations.push_back( init_op );
+      operations.push_back(init_op);
     }
     else {
       if (context->metadata_table == 0)

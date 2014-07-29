@@ -36,9 +36,8 @@ namespace Hypertable {
       : start_time(stime), level(_level), priority(_priority), m_range(range), m_retry(false),
         m_description(desc) { }
 
-    MaintenanceTask(uint32_t _level, int _priority, const String &desc) :
-      level(_level), priority(_priority), m_retry(false), m_description(desc) {
-      boost::xtime_get(&start_time, boost::TIME_UTC_);
+    MaintenanceTask(uint32_t _level, int _priority, const String &desc)
+       : start_time(get_xtime()), level(_level), priority(_priority), m_retry(false), m_description(desc) {
     }
 
     virtual ~MaintenanceTask() { }

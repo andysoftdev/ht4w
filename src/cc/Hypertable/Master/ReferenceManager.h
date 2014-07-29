@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,11 +19,10 @@
  * 02110-1301, USA.
  */
 
-/** @file
- * Declarations for ReferenceManager.
- * This file contains declarations for ReferenceManager, a class for tracking
- * outstanding OperationMoveRange operations.
- */
+/// @file
+/// Declarations for ReferenceManager.
+/// This file contains declarations for ReferenceManager, a class for tracking
+/// manually removed operation.
 
 #ifndef HYPERTABLE_REFERENCEMANAGER_H
 #define HYPERTABLE_REFERENCEMANAGER_H
@@ -34,80 +33,64 @@
 
 namespace Hypertable {
 
-  /** @addtogroup Master
-   *  @{
-   */
+  /// @addtogroup Master
+  /// @{
 
-  /**
-   * Holds references to <i>move range</i> operations until they can be safely
-   * removed.  A move range operation is initiated by a range server when it
-   * wants to give up a range.  It happens in two phases:
-   *
-   *   1. The range server calls MasterClient::move_range() which creates an
-   *      OperationMoveRange to handle the moving of a range to another range
-   *      server.
-   *   2. Once the range entity has been removed from the RSML, the range
-   *      server will call MasterClient::relinquish_acknowledge() to tell
-   *      the master that it has completely relinquished the range.
-   *
-   * This class was introduced to avoid a race condition in which a range server
-   * could create multiple OperationMoveRange operations for a range, causing it
-   * to be assigned to multiple servers.  When an OperationMoveRange gets
-   * created, it is added to the reference manager and won't be removed until
-   * the range server successfully completes the
-   * MasterClient::relinquish_acknowledge() call indicating that it has
-   * completely relinqished the range and will not call
-   * MasterClient::move_range() again for this range (unless it is later
-   * re-assigned to the server).  When a MOVE_RANGE command is received by
-   * the master, it will first check to see if the same move range operation
-   * exists in the ReferenceManager, and if so, it will not create another one,
-   * thus avoiding the race condition.
-   */
+  /// Holds references to operations that are to be manually removed.
   class ReferenceManager {
   public:
 
-    /** Adds an operation.
-     * @return Pointer to operation to add
-     * @return <i>true</i> if successfully added, <i>false</i> if not added
-     * because operation already exists in #m_map.
-     */
-    bool add(Operation *operation);
+    /// Adds an operation.
+    /// Adds <code>operation</code> to #m_map using it's ID as the key.
+    /// @param Smart pointer to operation to add
+    /// @return <i>true</i> if successfully added, <i>false</i> if not added
+    /// because operation already exists in #m_map.
+    bool add(OperationPtr operation) {
+      ScopedLock lock(m_mutex);
+      if (m_map.find(operation->id()) != m_map.end())
+        return false;
+      m_map[operation->id()] = operation;
+      return true;
+    }
 
-    /** Adds an operation.
-     * @return Smart pointer to operation to add
-     * @return <i>true</i> if successfully added, <i>false</i> if not added
-     * because operation already exists in #m_map.
-     */
-    bool add(OperationPtr &operation) { return add(operation.get()); }
+    /// Fetches an operation given its <code>id</code>.
+    /// Looks up <code>id</code> in #m_map and returns the operation to which it
+    /// maps.
+    /// @return %Operation associated with <code>id</code>, nullptr if not found
+    OperationPtr get(int64_t id) {
+      ScopedLock lock(m_mutex);
+      auto iter = m_map.find(id);
+      if (iter == m_map.end())
+        return 0;
+      return (*iter).second;
+    }
 
-    /** Looks up <code>hash_code</code> and returns associated operation.
-     * @return %Operation associated with <code>hash_code</code>, 0 otherwise
-     */
-    OperationPtr get(int64_t hash_code);
+    /// Remove an operation.
+    /// @param operation Operation for which to remove.
+    void remove(OperationPtr operation) {
+      ScopedLock lock(m_mutex);
+      auto iter = m_map.find(operation->id());
+      if (iter != m_map.end())
+        m_map.erase(iter);
+    }
 
-    /** Remove operation associated with <code>hash_code</code>.
-     * @param hash_code Hash code of operation to remove.
-     */
-    void remove(int64_t hash_code);
-
-    /** Remove operation.
-     * @param operation %Operation to remove
-     */
-    void remove(Operation *operation) { remove(operation->hash_code()); }
+    /// Clears all referenced operations.
+    /// Clears #m_map.
+    void clear() {
+      ScopedLock lock(m_mutex);
+      m_map.clear();
+    }
 
   private:
-
-    /// Reference map type (hash_code-to-operation)
-    typedef std::unordered_map<int64_t, OperationPtr> ReferenceMapT;
 
     /// %Mutex for serializing concurrent access
     Mutex m_mutex;
 
     /// Reference map
-    ReferenceMapT m_map;
+    std::unordered_map<int64_t, OperationPtr> m_map;
   };
 
-  /** @} */
+  /// @}
 
 } // namespace Hypertable
 

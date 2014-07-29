@@ -256,7 +256,7 @@ void OperationRegisterServer::execute() {
       try {
         m_context->op->add_operation(operation);
       }
-      catch (Exception &e) {
+      catch (Exception &) {
         // Only exception thrown is Error::MASTER_OPERATION_IN_PROGRESS
       }
       complete_ok();

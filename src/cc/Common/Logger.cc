@@ -134,7 +134,7 @@ void LogWriter::log_string(int priority, const char *message) {
 #ifdef _WIN32
 
     struct tm lt;
-    localtime_r(&t, &lt);
+    localtime_s(&lt, &t);
     char dateTime[64];
     strftime(dateTime, sizeof(dateTime), "%Y-%m-%d %H:%M:%S", &lt);
 

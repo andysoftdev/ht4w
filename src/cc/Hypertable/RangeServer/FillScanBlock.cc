@@ -25,7 +25,8 @@
 namespace Hypertable {
 
   bool
-  FillScanBlock(CellListScannerPtr &scanner, DynamicBuffer &dbuf, int64_t buffer_size) {
+  FillScanBlock(CellListScannerPtr &scanner, DynamicBuffer &dbuf,
+                uint32_t *cell_count, int64_t buffer_size) {
     Key key;
     ByteString value;
     size_t value_len;
@@ -45,13 +46,16 @@ namespace Hypertable {
     while ((more = scanner->get(key, value))) {
       counter = false;
 
+      if (cell_count)
+        (*cell_count)++;
+
       if (keys_only) {
         value.ptr = 0;
         counter_value.clear();
         value_len = 0;
       }
       else {
-        counter = scan_context->family_info[key.column_family_code].counter &&
+        counter = scan_context->cell_predicates[key.column_family_code].counter &&
           (key.flag == FLAG_INSERT);
 
         if (counter) {

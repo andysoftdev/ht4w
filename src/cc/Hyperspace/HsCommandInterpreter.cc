@@ -150,7 +150,7 @@ void HsCommandInterpreter::execute_line(const String &line) {
         handle = Util::get_handle(fname);
         m_session->attr_set(handle, name, val, size);
       }
-      catch (Exception &e) {
+      catch (Exception &) {
         String normalized_fname;
         Util::normalize_pathname(fname, normalized_fname);
         m_session->attr_set(normalized_fname, name, val, size);
@@ -167,7 +167,7 @@ void HsCommandInterpreter::execute_line(const String &line) {
         handle = Util::get_handle(fname);
         m_session->attr_get(handle, name, value);
       }
-      catch (Exception &e) {
+      catch (Exception &) {
         String normalized_fname;
         Util::normalize_pathname(fname, normalized_fname);
         m_session->attr_get(normalized_fname, name, value);
@@ -187,7 +187,7 @@ void HsCommandInterpreter::execute_line(const String &line) {
         handle = Util::get_handle(fname);
         attr_val = m_session->attr_incr(handle, name);
       }
-      catch (Exception &e) {
+      catch (Exception &) {
         String normalized_fname;
         Util::normalize_pathname(fname, normalized_fname);
         attr_val = m_session->attr_incr(normalized_fname, name);
@@ -206,7 +206,7 @@ void HsCommandInterpreter::execute_line(const String &line) {
         handle = Util::get_handle(fname);
         exists = m_session->attr_exists(handle, name);
       }
-      catch (Exception &e) {
+      catch (Exception &) {
         String normalized_fname;
         Util::normalize_pathname(fname, normalized_fname);
         exists = m_session->attr_exists(normalized_fname, name);

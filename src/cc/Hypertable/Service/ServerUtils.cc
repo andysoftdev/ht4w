@@ -33,7 +33,7 @@
 #include "Common/ProcessUtils.h"
 #include "Common/ServerLaunchEvent.h"
 #include "AsyncComm/ApplicationQueue.h"
-#include "DfsBroker/Lib/Client.h"
+#include "FsBroker/Lib/Client.h"
 #include "Hypertable/Lib/RangeServerClient.h"
 #include "Hypertable/Lib/MasterClient.h"
 
@@ -183,7 +183,7 @@ void ServerUtils::get_servers(servers_t& servers) {
     if (Config::properties->get_bool(prop)) \
       servers.insert(server);
 
-  INSERT_SERVER(dfsBroker       , Config::cfg_dfsbroker)
+  INSERT_SERVER(fsBroker        , Config::cfg_fsbroker)
   INSERT_SERVER(hyperspaceMaster, Config::cfg_hyperspace)
   INSERT_SERVER(hypertableMaster, Config::cfg_hypertable)
   INSERT_SERVER(rangeServer     , Config::cfg_rangeserver)
@@ -303,8 +303,8 @@ void ServerUtils::stop(server_t server, DWORD pid, bool& killed, Notify* notify)
     notify->server_stop_pending(server);
   bool shutdown_done = false;
   switch (server) {
-    case dfsBroker:
-      shutdown_done = shutdown_dfsbroker(pid);
+    case fsBroker:
+      shutdown_done = shutdown_fsbroker(pid);
       break;
     case hyperspaceMaster:
       shutdown_done = shutdown_hyperspace(pid);
@@ -384,17 +384,17 @@ bool ServerUtils::check_metadata( ) {
   return true;
 }
 
-bool ServerUtils::shutdown_dfsbroker(DWORD pid) {
+bool ServerUtils::shutdown_fsbroker(DWORD pid) {
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
-  String host = Config::properties->get_str("DfsBroker.Host");
-  uint16_t port = Config::properties->get_i16("DfsBroker.Port");
+  String host = Config::properties->get_str(Config::properties->has("FsBroker.Host") ? "FsBroker.Host" : "DfsBroker.Host");
+  uint16_t port = Config::properties->get_i16(Config::properties->has("FsBroker.Port") ? "FsBroker.Port" : "DfsBroker.Port");
   try {
     std::vector<DWORD> pids;
     if (!pid)
-      find(dfsBroker, pids);
+      find(fsBroker, pids);
     {
-      DfsBroker::ClientPtr client = new DfsBroker::Client(host, port, Config::connection_timeout());
-      HT_NOTICEF("Shutdown DFS broker (%s)", InetAddr(host, port).format().c_str());
+      FsBroker::ClientPtr client = new FsBroker::Client(host, port, Config::connection_timeout());
+      HT_NOTICEF("Shutdown FS broker (%s)", InetAddr(host, port).format().c_str());
       DispatchHandlerSynchronizer sync_handler;
       client->shutdown(0, &sync_handler);
       EventPtr event_ptr;

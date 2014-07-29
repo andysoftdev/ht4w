@@ -94,6 +94,24 @@ int main(int argc, char **argv) {
   if (system(cmd_str.c_str()) != 0)
     _exit(1);
 
+  // Check value index before and after REBUILD
+#ifndef _WIN32
+  cmd_str = "diff products-value-index-before.tsv products-value-index-after.tsv";
+#else
+  cmd_str = "fc products-value-index-before.tsv products-value-index-after.tsv";
+#endif
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
+  // Check qualifier index before and after REBUILD
+#ifndef _WIN32
+  cmd_str = "diff products-qualifier-index-before.tsv products-qualifier-index-after.tsv";
+#else
+  cmd_str = "fc products-qualifier-index-before.tsv products-qualifier-index-after.tsv";
+#endif
+  if (system(cmd_str.c_str()) != 0)
+    _exit(1);
+
   /**
    *  offset-test
    */

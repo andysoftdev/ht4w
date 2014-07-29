@@ -89,6 +89,14 @@ int64_t get_ts64() {
 #endif
 }
 
+boost::xtime get_xtime() {
+  int64_t ts = get_ts64();
+  boost::xtime now;
+  now.sec = ts / 1000000000LL;
+  now.nsec = ts % 1000000000LL;
+  return now;
+}
+
 bool xtime_add_millis(boost::xtime &xt, uint32_t millis) {
   uint64_t nsec = (uint64_t)xt.nsec + ((uint64_t)millis * 1000000LL);
   if (nsec > 1000000000LL) {
@@ -195,23 +203,72 @@ time_t timegm(struct tm *t) {
   return (tl - (tb - tl));
 }
 #elif defined(_WIN32)
-time_t timegm(struct tm *t) {
-  if( t && t->tm_year <= 70 ) { // handle date/times before 1970
-    static time_t ofs = 0;
-    if( !ofs ) {
+
+namespace {
+  class time_ofs_t {
+  public:
+    time_ofs_t() {
       struct tm t_ofs;
       memset(&t_ofs, 0, sizeof(t_ofs));
       t_ofs.tm_year = 126;
       t_ofs.tm_mday = 1;
       ofs = _mkgmtime(&t_ofs);
     }
+    time_t offset() const {
+      return ofs;
+    }
+  private:
+    time_t ofs;
+  };
+  static time_ofs_t before1970;
+}
 
-    struct tm t2 = *t;
-    t2.tm_year += 56;
-    return _mkgmtime(&t2) - ofs;
+time_t timegm(struct tm *t) {
+  time_t time;
+  // handle date/times before 1970
+  if (t && t->tm_year <= 70) {
+    t->tm_year += 56;
+    time = _mkgmtime(t);
+    if (time >= 0)
+      time -= before1970.offset();
+    t->tm_year -= 56;
   }
   return _mkgmtime(t);
 }
+
+time_t _mktime(struct tm *t) {
+  time_t time;
+  // handle date/times before 1970
+  if (t && t->tm_year <= 70) {
+    t->tm_year += 56;
+    time = _mktime64(t);
+    if (time >= 0)
+      time -= before1970.offset();
+    t->tm_year -= 56;
+  }
+  else {
+    time = _mktime64(t);
+  }
+  return time;
+}
+
+void localtime_r(const time_t* time, tm* t) {
+  // handle date/times before 1970
+  if(time && *time < 0) {
+    time_t tmp = *time + before1970.offset();
+    if (tmp >= 0) {
+      localtime_s(t, &tmp);
+      if (t->tm_year != -1)
+        t->tm_year -= 56;
+    }
+    else
+      memset(t, 0xff, sizeof(struct tm));
+  }
+  else {
+    localtime_s(t, time);
+  }
+}
+
 #endif
 
 } // namespace Hypertable

@@ -19,13 +19,39 @@
  * 02110-1301, USA.
  */
 
-/** @file
- * Definitions for Range.
- * This file contains the variable and method definitions for Range, a class
- * used to access and manage a range of table data.
- */
+/// @file
+/// Definitions for Range.
+/// This file contains the variable and method definitions for Range, a class
+/// used to access and manage a range of table data.
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+#include "Range.h"
+
+#include <Hypertable/RangeServer/CellStoreFactory.h>
+#include <Hypertable/RangeServer/Global.h>
+#include <Hypertable/RangeServer/MergeScannerRange.h>
+#include <Hypertable/RangeServer/MetaLogEntityTaskAcknowledgeRelinquish.h>
+#include <Hypertable/RangeServer/MetadataNormal.h>
+#include <Hypertable/RangeServer/MetadataRoot.h>
+
+#include <Hypertable/Lib/CommitLog.h>
+#include <Hypertable/Lib/CommitLogReader.h>
+#include <Hypertable/Lib/LoadDataEscape.h>
+
+#include <Common/Config.h>
+#include <Common/Error.h>
+#include <Common/FailureInducer.h>
+#include <Common/FileUtils.h>
+#include <Common/Random.h>
+#include <Common/ScopeGuard.h>
+#include <Common/StringExt.h>
+#include <Common/md5.h>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+
+#include <re2/re2.h>
+
 #include <cassert>
 #include <string>
 #include <vector>
@@ -35,31 +61,6 @@ extern "C" {
 #include <string.h>
 }
 
-#include<re2/re2.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-
-#include "Common/Config.h"
-#include "Common/Error.h"
-#include "Common/FailureInducer.h"
-#include "Common/FileUtils.h"
-#include "Common/md5.h"
-#include "Common/Random.h"
-#include "Common/ScopeGuard.h"
-#include "Common/StringExt.h"
-
-#include "Hypertable/Lib/CommitLog.h"
-#include "Hypertable/Lib/CommitLogReader.h"
-#include "Hypertable/Lib/LoadDataEscape.h"
-
-#include "CellStoreFactory.h"
-#include "Global.h"
-#include "MergeScannerRange.h"
-#include "MetadataNormal.h"
-#include "MetadataRoot.h"
-#include "MetaLogEntityTaskAcknowledgeRelinquish.h"
-#include "Range.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -168,20 +169,21 @@ void Range::initialize() {
 
   RangeSpecManaged range_spec;
   m_metalog_entity->get_range_spec(range_spec);
-  foreach_ht(Schema::AccessGroup *sag, m_schema->get_access_groups()) {
+  for (auto ag_spec : m_schema->get_access_groups()) {
     const AccessGroup::Hints *h = 0;
-    std::map<String, const AccessGroup::Hints *>::iterator iter = hints_map.find(sag->name);
+    std::map<String, const AccessGroup::Hints *>::iterator iter = hints_map.find(ag_spec->get_name());
     if (iter != hints_map.end())
       h = iter->second;
-    ag = new AccessGroup(&m_table, m_schema, sag, &range_spec, h);
-    m_access_group_map[sag->name] = ag;
+    ag = new AccessGroup(&m_table, m_schema, ag_spec, &range_spec, h);
+    m_access_group_map[ag_spec->get_name()] = ag;
     m_access_group_vector.push_back(ag);
 
-    foreach_ht(Schema::ColumnFamily *scf, sag->columns)
-      m_column_family_vector[scf->id] = ag;
+    for (auto cf_spec : ag_spec->columns())
+      m_column_family_vector[cf_spec->get_id()] = ag;
   }
 
 }
+
 
 void Range::deferred_initialization() {
   RangeMaintenanceGuard::Activator activator(m_maintenance_guard);
@@ -218,7 +220,7 @@ void Range::deferred_initialization(boost::xtime expire_time) {
     try {
       deferred_initialization();
     }
-    catch (Exception &e) {
+    catch (Exception &) {
       boost::xtime now;
       boost::xtime_get(&now, TIME_UTC_);
       if (boost::xtime_cmp(now, expire_time) < 0) {
@@ -356,9 +358,9 @@ void Range::load_cell_stores() {
       }
       catch (Exception &e) {
         // issue 986: mapr returns IO_ERROR if CellStore does not exist
-	if (e.code() == Error::DFSBROKER_FILE_NOT_FOUND ||
-	    e.code() == Error::DFSBROKER_BAD_FILENAME ||
-	    e.code() == Error::DFSBROKER_IO_ERROR) {
+	if (e.code() == Error::FSBROKER_FILE_NOT_FOUND ||
+	    e.code() == Error::FSBROKER_BAD_FILENAME ||
+	    e.code() == Error::FSBROKER_IO_ERROR) {
 	  if (skip_not_found) {
 	    HT_WARNF("CellStore file '%s' not found, skipping", csvec[i].c_str());
 	    continue;
@@ -396,7 +398,7 @@ void Range::load_cell_stores() {
 void Range::update_schema(SchemaPtr &schema) {
   ScopedLock lock(m_schema_mutex);
 
-  vector<Schema::AccessGroup*> new_access_groups;
+  vector<AccessGroupSpec*> new_access_groups;
   AccessGroup *ag;
   AccessGroupMap::iterator ag_iter;
   size_t max_column_family_id = schema->get_max_column_family_id();
@@ -410,17 +412,17 @@ void Range::update_schema(SchemaPtr &schema) {
     m_column_family_vector.resize(max_column_family_id+1);
 
   // update all existing access groups & create new ones as needed
-  foreach_ht(Schema::AccessGroup *s_ag, schema->get_access_groups()) {
-    if( (ag_iter = m_access_group_map.find(s_ag->name)) !=
+  for (auto ag_spec : schema->get_access_groups()) {
+    if( (ag_iter = m_access_group_map.find(ag_spec->get_name())) !=
         m_access_group_map.end()) {
-      ag_iter->second->update_schema(schema, s_ag);
-      foreach_ht(Schema::ColumnFamily *s_cf, s_ag->columns) {
-        if (s_cf->deleted == false)
-          m_column_family_vector[s_cf->id] = ag_iter->second;
+      ag_iter->second->update_schema(schema, ag_spec);
+      for (auto cf_spec : ag_spec->columns()) {
+        if (!cf_spec->get_deleted())
+          m_column_family_vector[cf_spec->get_id()] = ag_iter->second;
       }
     }
     else {
-      new_access_groups.push_back(s_ag);
+      new_access_groups.push_back(ag_spec);
     }
   }
 
@@ -431,14 +433,13 @@ void Range::update_schema(SchemaPtr &schema) {
     m_metalog_entity->set_table_generation(m_table.generation);
     RangeSpecManaged range_spec;
     m_metalog_entity->get_range_spec(range_spec);
-    foreach_ht(Schema::AccessGroup *s_ag, new_access_groups) {
-      ag = new AccessGroup(&m_table, schema, s_ag, &range_spec, 0);
-      m_access_group_map[s_ag->name] = ag;
+    for (auto ag_spec : new_access_groups) {
+      ag = new AccessGroup(&m_table, schema, ag_spec, &range_spec, 0);
+      m_access_group_map[ag_spec->get_name()] = ag;
       m_access_group_vector.push_back(ag);
-
-      foreach_ht(Schema::ColumnFamily *s_cf, s_ag->columns) {
-        if (s_cf->deleted == false)
-          m_column_family_vector[s_cf->id] = ag;
+      for (auto cf_spec : ag_spec->columns()) {
+        if (!cf_spec->get_deleted())
+          m_column_family_vector[cf_spec->get_id()] = ag;
       }
     }
   }
@@ -492,7 +493,7 @@ void Range::add(const Key &key, const ByteString value) {
 
 
 CellListScanner *Range::create_scanner(ScanContextPtr &scan_ctx) {
-  MergeScanner *mscanner = new MergeScannerRange(scan_ctx);
+  MergeScanner *mscanner = new MergeScannerRange(m_table.id, scan_ctx);
   AccessGroupVector  ag_vector(0);
 
 
@@ -765,7 +766,7 @@ void Range::relinquish_install_log() {
     try {
       Global::log_dfs->mkdirs(transfer_log);
     }
-    catch (Exception &e) {
+    catch (Exception &) {
       poll(0, 0, 1200);
       m_metalog_entity->rollback_transfer_log();
       throw;
@@ -1095,7 +1096,7 @@ void Range::split_install_log() {
     try {
       Global::log_dfs->mkdirs(transfer_log);
     }
-    catch (Exception &e) {
+    catch (Exception &) {
       poll(0, 0, 1200);
       m_metalog_entity->rollback_transfer_log();
       throw;
@@ -1346,7 +1347,7 @@ void Range::split_compact_and_shrink() {
   }
 
   if (m_split_off_high) {
-    /** Create DFS directories for this range **/
+    /** Create FS directories for this range **/
     {
       char md5DigestStr[33];
       String table_dir, range_dir;
@@ -1357,9 +1358,9 @@ void Range::split_compact_and_shrink() {
 
       {
         ScopedLock lock(m_schema_mutex);
-        foreach_ht(Schema::AccessGroup *ag, m_schema->get_access_groups()) {
+        for (auto ag_spec : m_schema->get_access_groups()) {
           // notice the below variables are different "range" vs. "table"
-          range_dir = table_dir + "/" + ag->name + "/" + md5DigestStr;
+          range_dir = table_dir + "/" + ag_spec->get_name() + "/" + md5DigestStr;
           Global::dfs->mkdirs(range_dir);
         }
       }
@@ -1543,7 +1544,7 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
           ag_vector[i]->run_compaction(flags, &hints[i]);
           successfully_compacted = true;
         }
-        catch (Exception &e) {
+        catch (Exception &) {
           ag_vector[i]->unstage_compaction();
           ag_vector[i]->load_hints(&hints[i]);
         }
@@ -1568,7 +1569,7 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
       m_metalog_entity->set_needs_compaction(false);
       Global::rsml_writer->record_state(m_metalog_entity.get());
     }
-    catch (Exception &e) {
+    catch (Exception &) {
       HT_ERRORF("Problem updating meta log entry for %s", m_name.c_str());
     }
   }
@@ -1701,7 +1702,7 @@ void Range::unlock() {
  * Called before range has been flipped live so no locking needed
  */
 void Range::replay_transfer_log(CommitLogReader *commit_log_reader) {
-  BlockCompressionHeaderCommitLog header;
+  BlockHeaderCommitLog header;
   const uint8_t *base, *ptr, *end;
   size_t len;
   ByteString key, value;
@@ -1784,7 +1785,7 @@ void Range::acknowledge_load(uint32_t timeout_ms) {
   try {
     Global::rsml_writer->record_state(m_metalog_entity.get());
   }
-  catch (Exception &e) {
+  catch (Exception &) {
     m_metalog_entity->set_load_acknowledged(false);
     throw;
   }

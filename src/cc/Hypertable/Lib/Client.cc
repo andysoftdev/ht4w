@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/* -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -22,6 +22,8 @@
 #include <Common/Compat.h>
 #include "Client.h"
 
+#include <Hypertable/Lib/Config.h>
+#include <Hypertable/Lib/ClusterId.h>
 #include <Hypertable/Lib/HqlCommandInterpreter.h>
 
 #include <Hypertable/Master/Operation.h>
@@ -179,6 +181,10 @@ void Client::drop_namespace(const String &name, Namespace *base, bool if_exists)
 
   Namespace::canonicalize(&sub_name);
 
+  if (sub_name == "tmp" || sub_name == "sys")
+    HT_THROWF(Error::INVALID_OPERATION,
+              "Dropping system namespace /%s is not allowed", sub_name.c_str());
+
   if (base != NULL) {
     full_name = base->get_name() + '/';
   }
@@ -252,6 +258,9 @@ void Client::initialize_with_hyperspace() {
     remaining = timer.remaining();
     wait_time = (remaining < interval) ? remaining : interval;
   }
+
+  // Initialize cluster ID from Hyperspace, enabling ClusterId::get()
+  ClusterId cluster_id(m_hyperspace);
 
   m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
 

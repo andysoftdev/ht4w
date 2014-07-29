@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,31 +19,29 @@
  * 02110-1301, USA.
  */
 
-/** @file
- * Declarations for TableInfoMap.
- * This file contains the type declarations for TableInfoMap, a class used to
- * map table IDs to TableInfo objects and manage the set of "remove ok" logs.
- */
+/// @file
+/// Declarations for TableInfoMap.
+/// This file contains the type declarations for TableInfoMap, a class used to
+/// map table IDs to TableInfo objects and manage the set of "remove ok" logs.
 
-#ifndef HYPERTABLE_TABLEINFOMAP_H
-#define HYPERTABLE_TABLEINFOMAP_H
+#ifndef Hypertable_RangeServer_TableInfoMap_h
+#define Hypertable_RangeServer_TableInfoMap_h
 
-#include <map>
-#include <string>
+#include <Hypertable/RangeServer/HyperspaceTableCache.h>
+#include <Hypertable/RangeServer/TableInfo.h>
+
+#include <Common/StringExt.h>
 
 #include <boost/intrusive_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "Common/StringExt.h"
-
-#include "TableInfo.h"
-#include "TableSchemaCache.h"
+#include <map>
+#include <string>
 
 namespace Hypertable {
 
-  /** @addtogroup RangeServer
-   * @{
-   */
+  /// @addtogroup RangeServer
+  /// @{
 
   /** Manages live range map and set of log names that can be safely removed.
    * This class is used to maintain an active set of ranges, organized by table
@@ -73,13 +71,13 @@ namespace Hypertable {
     /** Constructor. */
     TableInfoMap() { }
 
-    /** Constructor with TableSchemaCache.
+    /** Constructor with HyperspaceTableCache.
      * Objects constructed with this constructor will use the provided
      * schema cache to lookup schemas instead of reading them from
      * %Hyperspace.
      * @param schema_cache Table schema cache
      */
-    TableInfoMap(TableSchemaCachePtr schema_cache) : m_schema_cache(schema_cache) { }
+    TableInfoMap(HyperspaceTableCachePtr schema_cache) : m_schema_cache(schema_cache) { }
 
     /** Destructor. */
     virtual ~TableInfoMap();
@@ -215,8 +213,8 @@ namespace Hypertable {
     /// %Mutex for serializing access
     Mutex m_mutex;
     
-    /// %Schema cache
-    TableSchemaCachePtr m_schema_cache;
+    /// %Hyperspace table cache
+    HyperspaceTableCachePtr m_schema_cache;
 
     /// table_id-to-TableInfoPtr map
     InfoMap m_map;
@@ -225,7 +223,7 @@ namespace Hypertable {
   /// Smart pointer to TableInfoMap
   typedef boost::intrusive_ptr<TableInfoMap> TableInfoMapPtr;
 
-  /* @} */
+  /// @}
 }
 
-#endif // HYPERTABLE_TABLEINFOMAP_H
+#endif // Hypertable_RangeServer_TableInfoMap_h

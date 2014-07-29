@@ -100,9 +100,6 @@
     <ClCompile Include="OperationStop.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ReferenceManager.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BalanceAlgorithmEvenRanges.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -143,6 +140,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OperationRegisterServerBlocker.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationRecreateIndexTables.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationToggleTableMaintenance.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -316,6 +319,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="OperationRegisterServerBlocker.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DispatchHandlerOperationToggleTableMaintenance.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationRecreateIndexTables.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationToggleTableMaintenance.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -54,7 +54,7 @@ const char* cmdline_start_servers        = "start-servers";
 const char* cmdline_join_servers         = "join-servers";
 const char* cmdline_stop_servers         = "stop-servers";
 const char* cmdline_kill_servers         = "kill-servers";
-const char* cmdline_no_dfsbroker         = "no-dfsbroker";
+const char* cmdline_no_fsbroker          = "no-fsbroker";
 const char* cmdline_no_hyperspace        = "no-hyperspace";
 const char* cmdline_no_hypertable        = "no-hypertable";
 const char* cmdline_no_rangeserver       = "no-rangeserver";
@@ -65,7 +65,7 @@ const char* cmdline_rangeserver          = "range-server";
 
 const char* cfg_service_name             = "Hypertable.Service.Name";
 const char* cfg_service_display_name     = "Hypertable.Service.DisplayName";
-const char* cfg_dfsbroker                = "Hypertable.Service.DfsBroker";
+const char* cfg_fsbroker                 = "Hypertable.Service.FsBroker";
 const char* cfg_hyperspace               = "Hypertable.Service.HyperspaceMaster";
 const char* cfg_hypertable               = "Hypertable.Service.HypertableMaster";
 const char* cfg_rangeserver              = "Hypertable.Service.RangeServer";
@@ -102,14 +102,14 @@ void init_service_options() {
     (cmdline_join_servers, boo()->zero_tokens()->default_value(false), "Start servers and join")
     (cmdline_stop_servers, boo()->zero_tokens()->default_value(false), "Stop servers")
     (cmdline_kill_servers, boo()->zero_tokens()->default_value(false), "Kill servers")
-    (cmdline_no_dfsbroker, boo()->zero_tokens()->default_value(false), "Exclude DFS broker")
+    (cmdline_no_fsbroker, boo()->zero_tokens()->default_value(false), "Exclude FS broker")
     (cmdline_no_hyperspace, boo()->zero_tokens()->default_value(false), "Exclude hyperspace master")
     (cmdline_no_hypertable, boo()->zero_tokens()->default_value(false), "Exclude hypertable master")
     (cmdline_no_rangeserver, boo()->zero_tokens()->default_value(false), "Exclude range server")
     (cmdline_no_thriftbroker, boo()->zero_tokens()->default_value(false), "Exclude thrift broker")
     (cmdline_create_console, boo()->zero_tokens()->default_value(false), "Create a console for each server")
     (cmdline_logging_dir, str()->default_value("log"), "Logging directory (if relative, it's relative to the Hypertable data directory root)")
-    (cmdline_rangeserver, str()->default_value("localhost:38060"), "Range server to connect in <host:port> format");
+    (cmdline_rangeserver, str()->default_value("localhost:15865"), "Range server to connect in <host:port> format");
 
   // aliases
   alias(cmdline_service_name, cfg_service_name);
@@ -127,7 +127,7 @@ void init_service() {
       properties->set(file_desc, false, defaulted); \
     }
 
-  EXCLUDE_SERVER(cmdline_no_dfsbroker   , cfg_dfsbroker)
+  EXCLUDE_SERVER(cmdline_no_fsbroker    , cfg_fsbroker)
   EXCLUDE_SERVER(cmdline_no_hyperspace  , cfg_hyperspace)
   EXCLUDE_SERVER(cmdline_no_hypertable  , cfg_hypertable)
   EXCLUDE_SERVER(cmdline_no_rangeserver , cfg_rangeserver)
@@ -287,7 +287,7 @@ String server_args() {
     cmdline_join_servers,
     cmdline_stop_servers,
     cmdline_kill_servers,
-    cmdline_no_dfsbroker,
+    cmdline_no_fsbroker,
     cmdline_no_hyperspace,
     cmdline_no_hypertable,
     cmdline_no_rangeserver,
@@ -298,7 +298,7 @@ String server_args() {
 
     cfg_service_name,
     cfg_service_display_name,
-    cfg_dfsbroker,
+    cfg_fsbroker,
     cfg_hyperspace,
     cfg_hypertable,
     cfg_rangeserver,

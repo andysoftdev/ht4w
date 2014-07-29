@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,21 +19,22 @@
  * 02110-1301, USA.
  */
 
-/** @file
- * Definitions for TableInfoMap.
- * This file contains method definitions for for TableInfoMap, a class used to
- * map table IDs to TableInfo objects and manage the set of "remove ok" logs.
- */
+/// @file
+/// Definitions for TableInfoMap.
+/// This file contains method definitions for for TableInfoMap, a class used to
+/// map table IDs to TableInfo objects and manage the set of "remove ok" logs.
 
-#include "Common/Compat.h"
-#include "Common/FailureInducer.h"
-
-#include "Hypertable/Lib/CommitLog.h"
-#include "Hypertable/Lib/CommitLogReader.h"
-
-#include "Global.h"
-#include "MaintenanceTaskSplit.h"
+#include <Common/Compat.h>
 #include "TableInfoMap.h"
+
+#include <Hypertable/RangeServer/Global.h>
+#include <Hypertable/RangeServer/MaintenanceTaskSplit.h>
+
+#include <Hypertable/Lib/ClusterId.h>
+#include <Hypertable/Lib/CommitLog.h>
+#include <Hypertable/Lib/CommitLogReader.h>
+
+#include <Common/FailureInducer.h>
 
 using namespace Hypertable;
 
@@ -61,19 +62,22 @@ void TableInfoMap::get(const String &table_id, TableInfoPtr &info) {
     return;
   }
 
-  SchemaPtr schema;
+  HyperspaceTableCache::Entry entry;
 
   if (m_schema_cache) {
-    if (!m_schema_cache->get(table_id, schema))
+    if (!m_schema_cache->get(table_id, entry))
       HT_THROWF(Error::RANGESERVER_TABLE_NOT_FOUND,
                 "Unable to locate schema for table %s", table_id.c_str());
   }
   else {
-    DynamicBuffer valbuf;
     String tablefile = Global::toplevel_dir + "/tables/" + table_id;
 
     try {
+      DynamicBuffer valbuf;
       Global::hyperspace->attr_get(tablefile, "schema", valbuf);
+      entry.schema = Schema::new_instance((const char *)valbuf.base);
+      entry.maintenance_disabled =
+        Global::hyperspace->attr_exists(tablefile, "maintenance_disabled");
     }
     catch (Exception &e) {
       if (e.code() == Error::HYPERSPACE_FILE_NOT_FOUND ||
@@ -82,21 +86,12 @@ void TableInfoMap::get(const String &table_id, TableInfoPtr &info) {
                   "Table %s does not exist in hyperspace", table_id.c_str());
       throw;
     }
-
-    schema = Schema::new_instance((char *)valbuf.base, valbuf.fill());
-
-    if (!schema->is_valid())
-      HT_THROW(Error::RANGESERVER_SCHEMA_PARSE_ERROR, table_id);
-
-    if (schema->need_id_assignment())
-      HT_THROW(Error::RANGESERVER_SCHEMA_PARSE_ERROR, table_id);
-
   }
 
   table.id = table_id.c_str();
-  table.generation = schema->get_generation();
+  table.generation = entry.schema->get_generation();
 
-  info = new TableInfo(&table, schema);
+  info = new TableInfo(&table, entry.schema, entry.maintenance_disabled);
 
   m_map[table_id] = info;
 }
@@ -129,7 +124,7 @@ void TableInfoMap::promote_staged_range(const TableIdentifier *table, RangePtr &
 
       commit_log_reader->get_linked_logs(linked_logs);
 
-      if ((error = log->link_log(commit_log_reader.get())) != Error::OK)
+      if ((error = log->link_log(ClusterId::get(), commit_log_reader.get())) != Error::OK)
         HT_THROWF(error, "Unable to link transfer log (%s) into commit log(%s)",
                   transfer_log, log->get_log_dir().c_str());
     }

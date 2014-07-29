@@ -19,6 +19,7 @@
 
 #include <Common/Compat.h>
 #include <Common/Error.h>
+#include <Common/Time.h>
 #include <Common/TimeWindow.h>
 
 #include <boost/algorithm/string.hpp>

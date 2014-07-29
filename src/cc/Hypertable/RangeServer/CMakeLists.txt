@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2013 Hypertable, Inc.
+# Copyright (C) 2007-2014 Hypertable, Inc.
 #
 # This file is part of Hypertable.
 #
@@ -42,6 +42,7 @@ CellStoreTrailerV3.cc
 CellStoreTrailerV4.cc
 CellStoreTrailerV5.cc
 CellStoreTrailerV6.cc
+CellStoreTrailerV7.cc
 CellStore.cc
 CellStoreV0.cc
 CellStoreV1.cc
@@ -50,6 +51,7 @@ CellStoreV3.cc
 CellStoreV4.cc
 CellStoreV5.cc
 CellStoreV6.cc
+CellStoreV7.cc
 Config.cc
 ConnectionHandler.cc
 FileBlockCache.cc
@@ -59,6 +61,7 @@ Global.cc
 GroupCommit.cc
 GroupCommitTimerHandler.cc
 HyperspaceSessionHandler.cc
+HyperspaceTableCache.cc
 IndexUpdater.cc
 KeyCompressorNone.cc
 KeyCompressorPrefix.cc
@@ -67,6 +70,7 @@ KeyDecompressorPrefix.cc
 LiveFileTracker.cc
 LoadMetricsRange.cc
 LocationInitializer.cc
+LogReplayBarrier.cc
 MaintenancePrioritizer.cc
 MaintenancePrioritizerLogCleanup.cc
 MaintenancePrioritizerLowMemory.cc
@@ -120,6 +124,8 @@ RequestHandlerPhantomUpdate.cc
 RequestHandlerPhantomCommitRanges.cc
 RequestHandlerPhantomPrepareRanges.cc
 RequestHandlerSetState.cc
+RequestHandlerTableMaintenanceDisable.cc
+RequestHandlerTableMaintenanceEnable.cc
 ResponseCallbackCreateScanner.cc
 ResponseCallbackFetchScanblock.cc
 ResponseCallbackGetStatistics.cc
@@ -134,9 +140,8 @@ ScannerMap.cc
 ServerState.cc
 TableInfo.cc
 TableInfoMap.cc
-TableSchemaCache.cc
 TimerHandler.cc
-UpdateThread.cc
+UpdatePipeline.cc
 )
 
 if (USE_TCMALLOC)
@@ -145,7 +150,7 @@ endif ()
 
 # RangeServer Lib
 add_library(HyperRanger ${RangeServer_SRCS})
-target_link_libraries(HyperRanger m HyperDfsBroker Hypertable ${RE2_LIBRARIES})
+target_link_libraries(HyperRanger m HyperFsBroker Hypertable ${RE2_LIBRARIES})
 
 # RangeServer
 add_executable(Hypertable.RangeServer main.cc)

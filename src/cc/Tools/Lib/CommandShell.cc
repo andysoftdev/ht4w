@@ -110,6 +110,7 @@ CommandShell::CommandShell(const String &program_name,
       m_no_prompt(false), m_cont(false), m_line_read(0), m_notify(false),
       m_has_cmd_file(false), m_has_cmd_exec(false) {
   m_prompt_str = program_name + "> ";
+  m_verbose = m_props->has("verbose") ? m_props->get_bool("verbose") : false;
   m_batch_mode = m_props->has("batch");
   if (m_batch_mode)
     m_silent = true;
@@ -431,10 +432,11 @@ process_line:
       if (e.code() == Error::BAD_NAMESPACE)
         cerr << "ERROR: No namespace is open (see 'use' command)" << endl;
       else {
-        if (m_test_mode)
-          cerr << "Error: " << e.what() << " - " << Error::get_text(e.code()) << endl;
+        if (m_verbose)
+          cerr << e << endl;
         else
-          cerr << "Error: " << e << " - " << Error::get_text(e.code()) << endl;
+          cerr << "Error: " << e.what() << " - " << Error::get_text(e.code())
+              << endl;
       }
       if(m_notify)
         m_notifier_ptr->notify();
@@ -450,7 +452,7 @@ process_line:
 
 #ifndef _WIN32
   if (!m_batch_mode)
-    write_history(ms_history_file.c_str());
+    history_w(m_history, &m_history_event, H_SAVE, ms_history_file.c_str());
 #endif
 
   return 0;

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,131 +19,53 @@
  * 02110-1301, USA.
  */
 
+/// @file
+/// Declarations for GroupCommitInterface.
+/// This file contains declarations for GroupCommitInterface, a class that
+/// defines the interface to the group commit mechanism.
+
 #ifndef HYPERSPACE_GROUPCOMMITINTERFACE_H
 #define HYPERSPACE_GROUPCOMMITINTERFACE_H
 
-#include <Hypertable/RangeServer/Range.h>
-#include <Hypertable/RangeServer/TableInfo.h>
-
-#include <Hypertable/Lib/CommitLog.h>
 #include <Hypertable/Lib/Schema.h>
 #include <Hypertable/Lib/Types.h>
 
 #include <AsyncComm/Event.h>
 
-#include <Common/ReferenceCount.h>
 #include <Common/StaticBuffer.h>
 
-#include <unordered_map>
-#include <vector>
-
-#if 0
-/** GNU C++ extensions. */
-namespace __gnu_cxx {
-  template<> struct hash<Hypertable::Range *>  {
-    size_t operator()(const Hypertable::Range *x) const {
-      return (size_t)x;
-    }
-  };
-}
-#endif
+#include <memory>
 
 namespace Hypertable {
 
-  struct SendBackRec {
-    int error;
-    uint32_t count;
-    uint32_t offset;
-    uint32_t len;
-  };
+  /// @addtogroup RangeServer
+  /// @{
 
-  class UpdateRequest {
+  /// Abstract base class for group commit implementation.
+  /// <i>Group commit</i> is a feature whereby updates are queued over some
+  /// period of time (usually measured in milliseconds) and then written and
+  /// sync'ed to the commit log and processed in one group.  This improves
+  /// efficiency for situations where there are many concurrent updates
+  /// because otherwise the writing and sync'ing of the commit log can become
+  /// a bottleneck.  This class acts as an interface class to the group
+  /// commit implementation and provides a way for the group commit system
+  /// and the RangeServer to reference one another.
+  class GroupCommitInterface {
   public:
-    UpdateRequest() : count(0), error(0) { }
-    StaticBuffer buffer;
-    uint32_t count;
-    EventPtr event;
-    std::vector<SendBackRec> send_back_vector;
-    uint32_t error;
-  };
 
-  class RangeUpdate {
-  public:
-    DynamicBuffer *bufp;
-    uint64_t offset;
-    uint64_t len;
-  };
+    /// Adds a batch of updates to the group commit queue.
+    virtual void add(EventPtr &event, uint64_t cluster_id, SchemaPtr &schema,
+                     const TableIdentifier *table, uint32_t count,
+                     StaticBuffer &buffer, uint32_t flags) = 0;
 
-  class RangeUpdateList {
-  public:
-    RangeUpdateList() : starting_update_count(0), last_request(0), transfer_buf_reset_offset(0),
-                        latest_transfer_revision(TIMESTAMP_MIN), range_blocked(false) { }
-    void reset_updates(UpdateRequest *request) {
-      if (request == last_request) {
-        if (starting_update_count < updates.size())
-          updates.resize(starting_update_count);
-        transfer_buf.ptr = transfer_buf.base + transfer_buf_reset_offset;
-      }
-    }
-    void add_update(UpdateRequest *request, RangeUpdate &update) {
-      if (request != last_request) {
-        starting_update_count = updates.size();
-        last_request = request;
-        transfer_buf_reset_offset = transfer_buf.empty() ? 0 : transfer_buf.fill();
-      }
-      if (update.len)
-        updates.push_back(update);
-    }
-    RangePtr range;
-    std::vector<RangeUpdate> updates;
-    size_t starting_update_count;
-    UpdateRequest *last_request;
-    DynamicBuffer transfer_buf;
-    uint32_t transfer_buf_reset_offset;
-    int64_t latest_transfer_revision;
-    CommitLogPtr transfer_log;
-    bool range_blocked;
-  };
-
-  class TableUpdate {
-  public:
-    TableUpdate() : flags(0), commit_interval(0), total_count(0),
-                    total_buffer_size(0), wait_for_metadata_recovery(false),
-                    wait_for_system_recovery(false), sync(false),
-                    transfer_count(0), total_added(0), error(0) {}
-    ~TableUpdate() {
-      foreach_ht (UpdateRequest *r, requests)
-        delete r;
-      for (std::unordered_map<Range *, RangeUpdateList *>::iterator iter = range_map.begin(); iter != range_map.end(); ++iter)
-        delete (*iter).second;
-    }
-    TableIdentifier id;
-    std::vector<UpdateRequest *> requests;
-    uint32_t flags;
-    uint32_t commit_interval;
-    uint32_t commit_iteration;
-    uint64_t total_count;
-    uint64_t total_buffer_size;
-    TableInfoPtr table_info;
-    boost::xtime expire_time;
-    std::unordered_map<Range *, RangeUpdateList *> range_map;
-    DynamicBuffer go_buf;
-    bool wait_for_metadata_recovery;
-    bool wait_for_system_recovery;
-    bool sync;
-    uint32_t transfer_count;
-    uint32_t total_added;
-    int error;
-    String error_msg;
-  };
-
-  class GroupCommitInterface : public ReferenceCount {
-  public:
-    virtual void add(EventPtr &event, SchemaPtr &schema, const TableIdentifier *table,
-                     uint32_t count, StaticBuffer &buffer, uint32_t flags) = 0;
+    /// Processes queued updates that are ready to be committed.
     virtual void trigger() = 0;
   };
-  typedef boost::intrusive_ptr<GroupCommitInterface> GroupCommitInterfacePtr;
+
+  /// Smart pointer to GroupCommitInterface
+  typedef std::shared_ptr<GroupCommitInterface> GroupCommitInterfacePtr;
+
+  /// @}
 }
 
 #endif // HYPERSPACE_GROUPCOMMITINTERFACE_H

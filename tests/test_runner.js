@@ -188,7 +188,7 @@ function prepare_target(testName, files) {
 
 function clean_target() {
     system("..\\hypertable.service.exe --kill-servers");
-    files_delete(["*.txt", "*.xml", "*.out", "*.output.*", "*.stdout", "*.stderr", "*.golden", "*.cfg", "*.spec", "*.gz", "*.tsv", "*.dat", "*.hql"]);
+    files_delete(["*.txt", "*.xml", "*.out", "*.tmp", "*.output.*", "*.stdout", "*.stderr", "*.golden", "*.cfg", "*.spec", "*.gz", "*.tsv", "*.dat", "*.hql"]);
     system("rd /S /Q test");
     system("rd /S /Q hypertable");
     system("rd /S /Q hyperspace");
@@ -283,6 +283,11 @@ function access_group_hints_file_test(logfile, testName) {
     return run_target(logfile, testName);
 }
 
+function AccessGroupSpec_test(logfile, testName) {
+    prepare_target(testName, ["AccessGroupSpec_test.golden"]);
+    return run_target(logfile, testName);
+}
+
 function async_api_test(logfile, testName) {
     prepare_target(testName, ["asyncApiTest.golden"]);
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
@@ -336,6 +341,11 @@ function comm_datagram_test(logfile, testName) {
     return status;
 }
 
+function ColumnFamilySpec_test(logfile, testName) {
+    prepare_target(testName, ["ColumnFamilySpec_test.golden"]);
+    return run_target(logfile, testName);
+}
+
 function comm_reverse_request_test(logfile, testName) {
     prepare_target(testName, ["commTestReverseRequest.golden", "datafile.txt"]);
     return run_target(logfile, testName);
@@ -371,7 +381,7 @@ function commit_log_test(logfile, testName) {
 
 function compressor_test(logfile, testName) {
     var status = 1;
-    prepare_target(testName, ["good-schema-1.xml"]);
+    prepare_target(testName, ["test-schemas.xml"]);
     var args = ["bmz", "lzo", "zlib", "quicklz", "none"];
     for (var n in args) {
         status = run_target(logfile, testName, args[n], true);
@@ -553,7 +563,7 @@ function mutator_nolog_sync_test(logfile, testName) {
 
 function name_id_mapper_test(logfile, testName) {
    prepare_target(testName, ["name_id_mapper_test.cfg"]);
-   return run_target(logfile, testName);
+   return run_target(logfile, testName, "--config=./name_id_mapper_test.cfg");
 
 }
 
@@ -564,8 +574,9 @@ function op_dependency_test(logfile, testName) {
 
 function op_test_driver(logfile, testName) {
     file_copy(solutionDir + "\\sed.exe", targetDir);
-    prepare_target(testName, ["balance_plan_authority_test.golden"]);
+    prepare_target(testName, ["*.golden"]);
     run_servers("--no-hypertable --no-rangeserver --no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
+
     var status = run_target(logfile, testName, "initialize --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
     if (status != 0) {
         clean_target();
@@ -606,7 +617,22 @@ function op_test_driver(logfile, testName) {
         clean_target();
         return status;
     }
-    status = run_target(logfile, testName, "balance_plan_authority --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
+    status = run_target(logfile, testName, "balance_plan_authority --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "toggle_table_maintenance --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir, true);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+    status = run_target(logfile, testName, "recreate_index_tables --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
+    if (status != 0) {
+        clean_target();
+        return status;
+    }
+
     files_delete(["sed.exe"]);
     return status;
 }
@@ -669,7 +695,7 @@ function scanner_abrupt_end_test(logfile, testName) {
 }
 
 function schema_test(logfile, testName) {
-    prepare_target(testName, ["*-schema-*.xml", "schemaTest.golden"]);
+    prepare_target(testName, ["test-schemas.xml", "Schema_test.golden"]);
     return run_target(logfile, testName);
 }
 
@@ -690,6 +716,7 @@ function unique_test(logfile, testName) {
 var all_tests = new ActiveXObject("Scripting.Dictionary");
 all_tests.add("access_group_hints_file_test", access_group_hints_file_test);
 all_tests.add("accessgroup_garbage_tracker_test", run_target);
+all_tests.add("AccessGroupSpec_test", AccessGroupSpec_test);
 all_tests.add("async_api_test", async_api_test);
 all_tests.add("bdb_fs_test", bdb_fs_test);
 all_tests.add("bloom_filter_test", run_target);
@@ -698,6 +725,7 @@ all_tests.add("cellstore_scanner_delete_test", cellstore_scanner_delete_test);
 all_tests.add("cellstore_scanner_test", cellstore_scanner_test);
 //FIXME all_tests.add("cellstore64_test", cellstore64_test);
 all_tests.add("client_test", client_test);
+all_tests.add("ColumnFamilySpec_test", ColumnFamilySpec_test);
 all_tests.add("comm_datagram_test", comm_datagram_test);
 all_tests.add("comm_reverse_request_test", comm_reverse_request_test);
 all_tests.add("comm_test", comm_test);

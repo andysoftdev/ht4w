@@ -35,7 +35,9 @@
 #include "OperationRecover.h"
 #include "OperationRecoverRanges.h"
 #include "OperationRecoveryBlocker.h"
+#include "OperationRecreateIndexTables.h"
 #include "OperationSetState.h"
+#include "OperationToggleTableMaintenance.h"
 #include "RangeServerConnection.h"
 #include "BalancePlanAuthority.h"
 #include "SystemState.h"
@@ -44,7 +46,7 @@ using namespace Hypertable;
 using namespace Hypertable::MetaLog;
 
 uint16_t DefinitionMaster::version() {
-  return 2;
+  return 3;
 }
 
 const char *DefinitionMaster::name() {
@@ -140,6 +142,10 @@ Entity *DefinitionMaster::create(const EntityHeader &header) {
       operation = new OperationCompact(m_context, header);
     else if (header.type == EntityType::OPERATION_SET)
       operation = new OperationSetState(m_context, header);
+    else if (header.type == EntityType::OPERATION_TOGGLE_TABLE_MAINTENANCE)
+      operation = new OperationToggleTableMaintenance(m_context, header);
+    else if (header.type == EntityType::OPERATION_RECREATE_INDEX_TABLES)
+      operation = new OperationRecreateIndexTables(m_context, header);
     else if (header.type == EntityType::SYSTEM_STATE)
       return new SystemState(header);
   }

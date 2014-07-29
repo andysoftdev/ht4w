@@ -7,10 +7,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="schemaTest.cc">
+    <ClCompile Include="..\..\..\stdafx.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\stdafx.cc">
+    <ClCompile Include="Schema_test.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\stdafx.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandCopyFromLocal.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandCopyToLocal.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandExists.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandLength.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandMkdirs.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandRemove.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandRmdir.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandShutdown.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fsclient.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\hypertable.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CommandCopyFromLocal.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandCopyToLocal.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandExists.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandLength.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandMkdirs.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandRemove.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandRmdir.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandShutdown.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

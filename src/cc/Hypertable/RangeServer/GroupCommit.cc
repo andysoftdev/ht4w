@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -18,50 +18,53 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
-#include "Common/Config.h"
-
+#include <Common/Compat.h>
 #include "GroupCommit.h"
-#include "RangeServer.h"
 
+#include <Hypertable/RangeServer/RangeServer.h>
+#include <Hypertable/RangeServer/UpdateRecTable.h>
+#include <Hypertable/RangeServer/UpdateRequest.h>
+
+#include <Common/Config.h>
 
 using namespace Hypertable;
 using namespace Hypertable::Config;
 
-GroupCommit::GroupCommit(RangeServer *range_server) : m_range_server(range_server), m_counter(0) {
+GroupCommit::GroupCommit(RangeServer *range_server) : m_range_server(range_server) {
 
   m_commit_interval = get_i32("Hypertable.RangeServer.CommitInterval");
 
 }
 
 
-void GroupCommit::add(EventPtr &event, SchemaPtr &schema, const TableIdentifier *table,
-                      uint32_t count, StaticBuffer &buffer, uint32_t flags) {
+void
+GroupCommit::add(EventPtr &event, uint64_t cluster_id, SchemaPtr &schema,
+                 const TableIdentifier *table, uint32_t count,
+                 StaticBuffer &buffer, uint32_t flags) {
   ScopedLock lock(m_mutex);
-  TableUpdateMap::iterator iter;
   UpdateRequest *request = new UpdateRequest();
-  boost::xtime expire_time = event->expiration_time();
+  boost::xtime expire_time = event->deadline();
+  ClusterTableIdPair key = std::make_pair(cluster_id, *table);
+
+  key.second.id = m_flyweight_strings.get(table->id);
 
   request->buffer = buffer;
   request->count = count;
   request->event = event;
 
-  if ((iter = m_table_map.find(*table)) == m_table_map.end()) {
-    TableIdentifier tid;
+  auto iter = m_table_map.find(key);
+  if (iter == m_table_map.end()) {
 
-    tid.generation = table->generation;
-    tid.id = m_flyweight_strings.get(table->id);
-
-    TableUpdate *tu = new TableUpdate();
-    tu->id = tid;
+    UpdateRecTable *tu = new UpdateRecTable();
+    tu->cluster_id = cluster_id;
+    tu->id = key.second;
     tu->commit_interval = schema->get_group_commit_interval();
     tu->commit_iteration = (tu->commit_interval+(m_commit_interval-1)) / m_commit_interval;
     tu->total_count = count;
     tu->total_buffer_size = buffer.size;
     tu->expire_time = expire_time;
     tu->requests.push_back(request);
-
-    m_table_map[tid] = tu;
+    m_table_map[key] = tu;
     return;
   }
 
@@ -76,7 +79,7 @@ void GroupCommit::add(EventPtr &event, SchemaPtr &schema, const TableIdentifier 
 
 void GroupCommit::trigger() {
   ScopedLock lock(m_mutex);
-  std::vector<TableUpdate *> updates;
+  std::vector<UpdateRecTable *> updates;
   boost::xtime expire_time;
 
   // Clear to Jan 1, 1970
@@ -84,7 +87,7 @@ void GroupCommit::trigger() {
 
   m_counter++;
 
-  TableUpdateMap::iterator iter = m_table_map.begin();
+  auto iter = m_table_map.begin();
   while (iter != m_table_map.end()) {
     if ((m_counter % (*iter).second->commit_iteration) == 0) {
       if (iter->second->expire_time.sec > expire_time.sec)

@@ -22,8 +22,8 @@ project(HYPERTABLE)
 # Hypertable version components
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
-set(VERSION_MICRO "7")
-set(VERSION_PATCH "19")
+set(VERSION_MICRO "8")
+set(VERSION_PATCH "0")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
@@ -294,17 +294,19 @@ install(PROGRAMS bin/jrun DESTINATION bin)
 # Copy Thrift files
 if (THRIFT_SOURCE_DIR)
   message(STATUS "Copying PHP files into installation")
-  file(GLOB PHPFILES ${THRIFT_SOURCE_DIR}/lib/php/src/*.php)
+  file(GLOB PHPFILES ${HYPERTABLE_SOURCE_DIR}/src/php/*.php)
   install(FILES ${PHPFILES} DESTINATION lib/php)
-  install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/php/src/protocol
-		    ${THRIFT_SOURCE_DIR}/lib/php/src/server
-		    ${THRIFT_SOURCE_DIR}/lib/php/src/transport
+  install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/php/lib/Thrift
           DESTINATION lib/php USE_SOURCE_PERMISSIONS)
   message(STATUS "Copying Perl files into installation")
   file(GLOB PERLFILES ${THRIFT_SOURCE_DIR}/lib/perl/lib/*.pm)
   install(FILES ${PERLFILES} DESTINATION lib/perl)
   install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/perl/lib/Thrift
           DESTINATION lib/perl USE_SOURCE_PERMISSIONS)
+  file(GLOB RUBYFILES ${THRIFT_SOURCE_DIR}/lib/rb/lib/*.rb)
+  install(FILES ${RUBYFILES} DESTINATION lib/rb)
+  install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/rb/lib/thrift
+          DESTINATION lib/rb USE_SOURCE_PERMISSIONS)
 endif ()
 
 # Copy C++ Thrift files

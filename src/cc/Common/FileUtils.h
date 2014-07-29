@@ -86,7 +86,7 @@ namespace Hypertable {
      * @param contents The string contents that are written to the file
      * @return Number of bytes written, or -1 on error
      */
-    static ssize_t write(const String &fname, String &contents);
+    static ssize_t write(const String &fname, const std::string &contents);
 
     /** Writes a memory buffer to a file descriptor
      *
@@ -96,6 +96,16 @@ namespace Hypertable {
      * @return Number of bytes written, or -1 on error
      */
     static ssize_t write(int fd, const void *vptr, size_t n);
+
+    /** Writes a string to a file descriptor
+     *
+     * @param fd Open file handle
+     * @param str String to write to file
+     * @return Number of bytes written, or -1 on error
+     */
+    static ssize_t write(int fd, const std::string &str) {
+      return write(fd, str.c_str(), str.length());
+    }
 
     /** Atomically writes data from multiple buffers to a file descriptor
      *
@@ -174,6 +184,9 @@ namespace Hypertable {
     static ssize_t write(const String &fname, String &contents);
     static ssize_t write(HANDLE fd, const void *vptr, size_t n);
     static ssize_t write(int fd, const void *vptr, size_t n);
+    static ssize_t write(int fd, const std::string &str) {
+      return write(fd, str.c_str(), str.length());
+    }
 
 #endif
 

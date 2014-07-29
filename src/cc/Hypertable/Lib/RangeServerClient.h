@@ -20,7 +20,7 @@
  */
 
 /** @file
- * Declarations for RangeServerClient
+ * Declarations for RangeServerClient.
  * This file contains declarations for RangeServerClient, a client interface class
  * to the RangeServer.
  */
@@ -28,33 +28,32 @@
 #ifndef HYPERTABLE_RANGESERVERCLIENT_H
 #define HYPERTABLE_RANGESERVERCLIENT_H
 
+#include <Common/InetAddr.h>
+#include <Common/StaticBuffer.h>
+#include <Common/ReferenceCount.h>
+
+#include <AsyncComm/Comm.h>
+#include <AsyncComm/CommBuf.h>
+#include <AsyncComm/DispatchHandler.h>
+
+#include <Hypertable/Lib/RangeServerProtocol.h>
+#include <Hypertable/Lib/RangeState.h>
+#include <Hypertable/Lib/Types.h>
+#include <Hypertable/Lib/StatsRangeServer.h>
+#include <Hypertable/Lib/RangeRecoveryPlan.h>
+
 #include <boost/intrusive_ptr.hpp>
 
 #include <map>
 
-#include "Common/InetAddr.h"
-#include "Common/StaticBuffer.h"
-#include "Common/ReferenceCount.h"
-
-#include "AsyncComm/Comm.h"
-#include "AsyncComm/CommBuf.h"
-#include "AsyncComm/DispatchHandler.h"
-
-#include "RangeServerProtocol.h"
-#include "RangeState.h"
-#include "Types.h"
-#include "StatsRangeServer.h"
-#include "RangeRecoveryPlan.h"
-
 namespace Hypertable {
-
-  /** @addtogroup libHypertable
-   * @{
-   */
 
   class ScanBlock;
 
-  /** Client proxy interface to RangeServer.
+  /// @addtogroup libHypertable
+  /// @{
+
+  /** %Client interface to RangeServer.
    * This class provides a client interface to the RangeServer.  It has methods,
    * both synchronous and asynchronous, that carry out %RangeServer operations.
    */
@@ -152,59 +151,17 @@ namespace Hypertable {
      * variable lenght ByteString records back-to-back.  This method takes
      * ownership of the data buffer.
      * @param addr address of RangeServer
+     * @param cluster_id Originating cluster ID
      * @param table table identifier
      * @param count number of key/value pairs in buffer
      * @param buffer buffer holding key/value pairs
      * @param flags update flags
      * @param handler response handler
      */
-    void update(const CommAddress &addr, const TableIdentifier &table,
-                uint32_t count, StaticBuffer &buffer, uint32_t flags,
+    void update(const CommAddress &addr, uint64_t cluster_id,
+                const TableIdentifier &table, uint32_t count,
+                StaticBuffer &buffer, uint32_t flags,
                 DispatchHandler *handler);
-
-    /** Issues an "update" request asynchronously with timer.  The data
-     * argument holds a sequence of key/value pairs.  Each key/value pair
-     * is encoded as two variable lenght ByteString records back-to-back.
-     * This method takes ownership of the data buffer.
-     * @param addr address of RangeServer
-     * @param table table identifier
-     * @param count number of key/value pairs in buffer
-     * @param buffer buffer holding key/value pairs
-     * @param flags update flags
-     * @param handler response handler
-     * @param timer timer
-     */
-    void update(const CommAddress &addr, const TableIdentifier &table,
-                uint32_t count, StaticBuffer &buffer, uint32_t flags,
-                DispatchHandler *handler, Timer &timer);
-
-    /** Issues an "update" request.  The data argument holds a sequence of
-     * key/value pairs.  Each key/value pair is encoded as two variable lenght
-     * ByteString records back-to-back.  This method takes ownership of the
-     * data buffer.
-     * @param addr address of RangeServer
-     * @param table table identifier
-     * @param count number of key/value pairs in buffer
-     * @param buffer buffer holding key/value pairs
-     * @param flags update flags
-     */
-    void update(const CommAddress &addr, const TableIdentifier &table,
-                uint32_t count, StaticBuffer &buffer, uint32_t flags);
-
-    /** Issues a synchronous "update" request with timer.  The data argument
-     * holds a sequence of key/value pairs.  Each key/value pair is encoded
-     * as two variable lenght ByteString records back-to-back.  This method
-     * takes ownership of the data buffer.
-     * @param addr address of RangeServer
-     * @param table table identifier
-     * @param count number of key/value pairs in buffer
-     * @param buffer buffer holding key/value pairs
-     * @param flags update flags
-     * @param timer timer
-     */
-    void update(const CommAddress &addr, const TableIdentifier &table,
-                uint32_t count, StaticBuffer &buffer, uint32_t flags,
-                Timer &timer);
 
     /** Issues a "create scanner" request asynchronously.
      * @param addr address of RangeServer
@@ -371,19 +328,23 @@ namespace Hypertable {
 
     /** Issues a "commit_log_sync" request asynchronously.
      * @param addr address of RangeServer
+     * @param cluster_id Originating cluster ID
      * @param table_id table for which commit log sync is needed
      * @param handler response handler
      */
-    void commit_log_sync(const CommAddress &addr, const TableIdentifier &table_id,
+    void commit_log_sync(const CommAddress &addr, uint64_t cluster_id,
+                         const TableIdentifier &table_id,
                          DispatchHandler *handler);
 
     /** Issues a "commit_log_sync" request asynchronously with timer.
      * @param addr address of RangeServer
+     * @param cluster_id Originating cluster ID
      * @param table_id table for which commit log sync is needed
      * @param handler response handler
      * @param timer timer
      */
-    void commit_log_sync(const CommAddress &addr, const TableIdentifier &table_id,
+    void commit_log_sync(const CommAddress &addr, uint64_t cluster_id,
+                         const TableIdentifier &table_id,
                          DispatchHandler *handler, Timer &timer);
 
     /** Issues a "status" request.  This call blocks until it receives a
@@ -594,13 +555,26 @@ namespace Hypertable {
     void set_state(const CommAddress &addr, std::vector<SystemVariable::Spec> &specs,
                    uint64_t generation, DispatchHandler *handler, Timer &timer);
 
+    /// Issues an asynchronous RangeServer::table_maintenance_enable().
+    /// @param addr Address of RangeServer
+    /// @param table %Table identifier
+    /// @param handler Dispatch handler for asynchronous callback
+    void table_maintenance_enable(const CommAddress &addr,
+                                  const TableIdentifier &table,
+                                  DispatchHandler *handler);
+
+    /// Issues an asynchronous RangeServer::table_maintenance_disable() request.
+    /// @param addr Address of RangeServer
+    /// @param table %Table identifier
+    /// @param handler Dispatch handler for asynchronous callback
+    void table_maintenance_disable(const CommAddress &addr,
+                                   const TableIdentifier &table,
+                                   DispatchHandler *handler);
+
   private:
     void do_load_range(const CommAddress &addr, const TableIdentifier &table,
                        const RangeSpec &range, const RangeState &range_state,
 		       bool needs_compaction, uint32_t timeout_ms);
-    void do_update(const CommAddress &addr, const TableIdentifier &table,
-                   uint32_t count, StaticBuffer &buffer, uint32_t flags,
-                   uint32_t timeout_ms);
     void do_create_scanner(const CommAddress &addr,
                            const TableIdentifier &table, const RangeSpec &range,
                            const ScanSpec &scan_spec, ScanBlock &scan_block,
@@ -629,7 +603,7 @@ namespace Hypertable {
   /// Smart pointer to RangeServerClient
   typedef boost::intrusive_ptr<RangeServerClient> RangeServerClientPtr;
 
-  /** @}*/
+  /// @}
 
 } // namespace Hypertable
 

@@ -28,11 +28,13 @@
 #ifndef HYPERTABLE_METALOGENTITYRANGE_H
 #define HYPERTABLE_METALOGENTITYRANGE_H
 
-#include "Hypertable/Lib/MetaLogEntity.h"
-#include "Hypertable/Lib/RangeState.h"
-#include "Hypertable/Lib/Types.h"
+#include <Hypertable/RangeServer/MetaLogEntityTypes.h>
 
-#include "MetaLogEntityTypes.h"
+#include <Hypertable/Lib/MetaLogEntity.h>
+#include <Hypertable/Lib/RangeState.h>
+#include <Hypertable/Lib/Types.h>
+
+#include <boost/thread/condition.hpp>
 
 namespace Hypertable {
 
@@ -299,6 +301,9 @@ namespace Hypertable {
     static bool encountered_upgrade;
 
   private:
+
+    /// Condition variable for signalling state change
+    boost::condition m_cond;
 
     /// %Table identifier
     TableIdentifierManaged m_table;

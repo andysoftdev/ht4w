@@ -48,6 +48,14 @@ using namespace boost::filesystem;
 
 string System::install_dir;
 string System::exe_name;
+
+#if !defined(__sun__) && !defined(_WIN32)
+
+long System::tm_gmtoff;
+string System::tm_zone;
+
+#endif
+
 bool   System::ms_initialized = false;
 Mutex  System::ms_mutex;
 boost::mt19937 System::ms_rng;
@@ -99,6 +107,15 @@ void System::_init(const String &install_directory) {
 
   // initialize logging system
   Logger::initialize(exe_name);
+}
+
+void System::initialize_tm(struct tm *tmval) {
+  memset(tmval, 0, sizeof(struct tm));
+  tmval->tm_isdst = -1;
+#if !defined(__sun__) && !defined(_WIN32)
+  tmval->tm_gmtoff = System::tm_gmtoff;
+  tmval->tm_zone = (char *)System::tm_zone.c_str();
+#endif
 }
 
 int32_t System::get_processor_count() {

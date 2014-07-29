@@ -44,8 +44,9 @@
     <ClCompile Include="BlockCompressionCodecQuicklz.cc" />
     <ClCompile Include="BlockCompressionCodecSnappy.cc" />
     <ClCompile Include="BlockCompressionCodecZlib.cc" />
-    <ClCompile Include="BlockCompressionHeader.cc" />
-    <ClCompile Include="BlockCompressionHeaderCommitLog.cc" />
+    <ClCompile Include="BlockHeader.cc" />
+    <ClCompile Include="BlockHeaderCellStore.cc" />
+    <ClCompile Include="BlockHeaderCommitLog.cc" />
     <ClCompile Include="bmz\bmz.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -66,8 +67,9 @@
     <ClInclude Include="BlockCompressionCodecQuicklz.h" />
     <ClInclude Include="BlockCompressionCodecSnappy.h" />
     <ClInclude Include="BlockCompressionCodecZlib.h" />
-    <ClInclude Include="BlockCompressionHeader.h" />
-    <ClInclude Include="BlockCompressionHeaderCommitLog.h" />
+    <ClInclude Include="BlockHeader.h" />
+    <ClInclude Include="BlockHeaderCellStore.h" />
+    <ClInclude Include="BlockHeaderCommitLog.h" />
     <ClInclude Include="bmz\bmz-internal.h" />
     <ClInclude Include="bmz\bmz.h" />
     <ClInclude Include="CompressorFactory.h" />

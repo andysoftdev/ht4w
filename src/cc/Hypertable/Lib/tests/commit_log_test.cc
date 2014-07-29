@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/* -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -35,7 +35,7 @@
 #include "Hypertable/Lib/CommitLog.h"
 #include "Hypertable/Lib/CommitLogReader.h"
 
-#include "DfsBroker/Lib/Client.h"
+#include "FsBroker/Lib/Client.h"
 
 #ifdef _WIN32
 #define srandom srand
@@ -56,13 +56,13 @@ namespace {
     }
   };
 
-  typedef Meta::list<MyPolicy, DfsClientPolicy, DefaultCommPolicy> Policies;
+  typedef Meta::list<MyPolicy, FsClientPolicy, DefaultCommPolicy> Policies;
 
-  void test1(DfsBroker::ClientPtr dfs_client);
-  void test_link(DfsBroker::ClientPtr dfs_client);
+  //void test1(FsBroker::Client *fs_client);
+  void test_link(FsBroker::Client *fs_client);
   void write_entries(CommitLog *log, int num_entries, uint64_t *sump,
                      CommitLogBase *link_log);
-  void read_entries(DfsBroker::ClientPtr dfs_client, CommitLogReader *log_reader,
+  void read_entries(FsBroker::Client *fs_client, CommitLogReader *log_reader,
                     uint64_t *sump);
 }
 
@@ -73,23 +73,23 @@ int main(int argc, char **argv) {
 
     Comm *comm = Comm::instance();
     ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
-    int timeout = has("dfs-timeout") ? get_i32("dfs-timeout") : 180000;
+    int timeout = has("fs-timeout") ? get_i32("fs-timeout") : 180000;
 
     /**
-     * connect to DFS broker
+     * connect to FS broker
      */
-    InetAddr addr(get_str("dfs-host"), get_i16("dfs-port"));
-    DfsBroker::ClientPtr dfs = new DfsBroker::Client(conn_mgr, addr, timeout);
+    InetAddr addr(get_str("fs-host"), get_i16("fs-port"));
+    FsBroker::ClientPtr fs = new FsBroker::Client(conn_mgr, addr, timeout);
 
-    if (!dfs->wait_for_connection(10000)) {
-      HT_ERROR("Unable to connect to DFS Broker, exiting...");
+    if (!fs->wait_for_connection(10000)) {
+      HT_ERROR("Unable to connect to FS Broker, exiting...");
       exit(1);
     }
 
     srandom(1);
 
-    test1(dfs);
-    test_link(dfs.get());
+    //test1(fs);
+    test_link(fs.get());
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
@@ -102,7 +102,8 @@ int main(int argc, char **argv) {
 
 namespace {
 
-  void test1(DfsBroker::ClientPtr dfs_client) {
+#if 0
+  void test1(FsBroker::Client *fs_client) {
     String log_dir = "/hypertable/test_log";
     String fname;
     CommitLog *log;
@@ -111,14 +112,14 @@ namespace {
     uint64_t sum_read = 0;
 
     // Remove /hypertable/test_log
-    dfs_client->rmdir(log_dir);
+    fs_client->rmdir(log_dir);
 
     fname = log_dir + "/c";
 
     // Create /hypertable/test_log/c
-    dfs_client->mkdirs(fname);
+    fs_client->mkdirs(fname);
 
-    FilesystemPtr fs = dfs_client;
+    FilesystemPtr fs = fs_client;
 
     log = new CommitLog(fs, fname, properties);
 
@@ -130,30 +131,31 @@ namespace {
 
     log_reader = new CommitLogReader(fs, fname);
 
-    read_entries(dfs_client, log_reader, &sum_read);
+    read_entries(fs_client, log_reader, &sum_read);
 
     delete log_reader;
 
     HT_ASSERT(sum_read == sum_written);
   }
+#endif
 
-  void test_link(DfsBroker::ClientPtr dfs_client) {
+  void test_link(FsBroker::Client *fs_client) {
     String log_dir = "/hypertable/test_log";
     String fname;
     CommitLog *log;
     CommitLogReaderPtr log_reader_ptr;
     uint64_t sum_written = 0;
     uint64_t sum_read = 0;
-    FilesystemPtr fs = dfs_client;
+    FilesystemPtr fs = fs_client;
 
     // Remove /hypertable/test_log
-    dfs_client->rmdir(log_dir);
+    fs_client->rmdir(log_dir);
 
     // Create log directories
-    dfs_client->mkdirs(log_dir + "/a");
-    dfs_client->mkdirs(log_dir + "/b");
-    dfs_client->mkdirs(log_dir + "/c");
-    dfs_client->mkdirs(log_dir + "/d");
+    fs_client->mkdirs(log_dir + "/a");
+    fs_client->mkdirs(log_dir + "/b");
+    fs_client->mkdirs(log_dir + "/c");
+    fs_client->mkdirs(log_dir + "/d");
 
     /**
      * Create log "c"
@@ -164,7 +166,7 @@ namespace {
     delete log;
 
     log_reader_ptr = new CommitLogReader(fs, fname);
-    read_entries(dfs_client, log_reader_ptr.get(), &sum_read);
+    read_entries(fs_client, log_reader_ptr.get(), &sum_read);
 
     /**
      * Create log "b" and link in log "c"
@@ -191,13 +193,13 @@ namespace {
     // Open "b", read it, and link it into "a"
     fname = log_dir + "/b";
     log_reader_ptr = new CommitLogReader(fs, fname);
-    read_entries(dfs_client, log_reader_ptr.get(), &sum_read);
+    read_entries(fs_client, log_reader_ptr.get(), &sum_read);
     write_entries(log, 20, &sum_written, log_reader_ptr.get());
 
     // Open "d", read it, and link it into "a"
     fname = log_dir + "/d";
     log_reader_ptr = new CommitLogReader(fs, fname);
-    read_entries(dfs_client, log_reader_ptr.get(), &sum_read);
+    read_entries(fs_client, log_reader_ptr.get(), &sum_read);
     write_entries(log, 20, &sum_written, log_reader_ptr.get());
 
     delete log;
@@ -205,7 +207,7 @@ namespace {
     sum_read = 0;
     fname = log_dir + "/a";
     log_reader_ptr = new CommitLogReader(fs, fname);
-    read_entries(dfs_client, log_reader_ptr.get(), &sum_read);
+    read_entries(fs_client, log_reader_ptr.get(), &sum_read);
 
     HT_ASSERT(sum_read == sum_written);
   }
@@ -227,7 +229,7 @@ namespace {
       revision = log->get_timestamp();
 
       if (i == link_point) {
-        if ((error = log->link_log(link_log)) != Error::OK)
+        if ((error = log->link_log(0, link_log)) != Error::OK)
           HT_THROW(error, "Problem writing to log file");
       }
       else {
@@ -241,20 +243,20 @@ namespace {
         dbuf.ptr = dbuf.base + (4*limit);
         dbuf.own = false;
 
-        if ((error = log->write(dbuf, revision)) != Error::OK)
+        if ((error = log->write(0, dbuf, revision)) != Error::OK)
           HT_THROW(error, "Problem writing to log file");
       }
     }
   }
 
   void
-  read_entries(DfsBroker::ClientPtr dfs_client, CommitLogReader *log_reader,
+  read_entries(FsBroker::Client *fs_client, CommitLogReader *log_reader,
                uint64_t *sump) {
     const uint8_t *block;
     size_t block_len;
     uint32_t *iptr;
     size_t icount;
-    BlockCompressionHeaderCommitLog header;
+    BlockHeaderCommitLog header;
 
     while (log_reader->next(&block, &block_len, &header)) {
       assert((block_len % 4) == 0);

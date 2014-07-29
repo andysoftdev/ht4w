@@ -232,6 +232,21 @@
     <ClCompile Include="RS_METRICS\ServerMetrics.cc">
       <Filter>Source Files\RS_METRICS</Filter>
     </ClCompile>
+    <ClCompile Include="AccessGroupSpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ClusterId.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColumnFamilySpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IndexTables.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableParts.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">
@@ -524,6 +539,24 @@
     </ClInclude>
     <ClInclude Include="RS_METRICS\ServerMetrics.h">
       <Filter>Source Files\RS_METRICS</Filter>
+    </ClInclude>
+    <ClInclude Include="AccessGroupSpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellPredicate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClusterId.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColumnFamilySpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexTables.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableParts.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -91,7 +91,7 @@
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -109,7 +109,7 @@
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -130,7 +130,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -156,7 +156,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -200,6 +200,7 @@
     <ClCompile Include="ProcessUtils.cc" />
     <ClCompile Include="Properties.cc" />
     <ClCompile Include="Random.cc" />
+    <ClCompile Include="Regex.cc" />
     <ClCompile Include="SecurityUtils.cc" />
     <ClCompile Include="ServerLaunchEvent.cc" />
     <ClCompile Include="StatsSerializable.cc" />
@@ -218,6 +219,7 @@
     <ClCompile Include="Version.cc" />
     <ClCompile Include="winapi_strerror.cc" />
     <ClCompile Include="WordStream.cc" />
+    <ClCompile Include="XmlParser.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h" />
@@ -264,8 +266,10 @@
     <ClInclude Include="Properties.h" />
     <ClInclude Include="Random.h" />
     <ClInclude Include="ReferenceCount.h" />
+    <ClInclude Include="Regex.h" />
     <ClInclude Include="ScopeGuard.h" />
     <ClInclude Include="SecurityUtils.h" />
+    <ClInclude Include="Serializable.h" />
     <ClInclude Include="serialization-c.h" />
     <ClInclude Include="Serialization.h" />
     <ClInclude Include="ServerLauncher.h" />
@@ -296,6 +300,7 @@
     <ClInclude Include="Usage.h" />
     <ClInclude Include="version.h" />
     <ClInclude Include="WordStream.h" />
+    <ClInclude Include="XmlParser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

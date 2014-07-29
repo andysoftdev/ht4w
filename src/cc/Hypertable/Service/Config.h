@@ -31,7 +31,7 @@
 namespace Hypertable { namespace Config {
 
   // config options
-  extern const char* cfg_dfsbroker;
+  extern const char* cfg_fsbroker;
   extern const char* cfg_hyperspace;
   extern const char* cfg_hypertable;
   extern const char* cfg_rangeserver;

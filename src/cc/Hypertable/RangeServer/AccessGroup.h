@@ -19,6 +19,11 @@
  * 02110-1301, USA.
  */
 
+/// @file
+/// Declarations for AccessGroup.
+/// This file contains declarations for AccessGroup, a class for providing data
+/// management and queries over an access group of a range.
+
 #ifndef HYPERTABLE_ACCESSGROUP_H
 #define HYPERTABLE_ACCESSGROUP_H
 
@@ -26,7 +31,6 @@
 #include <Hypertable/RangeServer/CellCacheManager.h>
 #include <Hypertable/RangeServer/CellStore.h>
 #include <Hypertable/RangeServer/CellStoreInfo.h>
-#include <Hypertable/RangeServer/CellStoreTrailerV6.h>
 #include <Hypertable/RangeServer/LiveFileTracker.h>
 #include <Hypertable/RangeServer/MaintenanceFlag.h>
 
@@ -49,9 +53,8 @@
 
 namespace Hypertable {
 
-  /** @addtogroup RangeServer
-   * @{
-   */
+  /// @addtogroup RangeServer
+  /// @{
 
   class AccessGroup : public CellList {
 
@@ -124,7 +127,7 @@ namespace Hypertable {
     };
 
     AccessGroup(const TableIdentifier *identifier, SchemaPtr &schema,
-                Schema::AccessGroup *ag, const RangeSpec *range,
+                AccessGroupSpec *ag_spec, const RangeSpec *range,
                 const Hints *hints=0);
 
     virtual void add(const Key &key, const ByteString value);
@@ -142,7 +145,7 @@ namespace Hypertable {
      */
     void populate_cellstore_index_pseudo_table_scanner(CellListScannerBuffer *scanner);
 
-    void update_schema(SchemaPtr &schema_ptr, Schema::AccessGroup *ag);
+    void update_schema(SchemaPtr &schema, AccessGroupSpec *ag_spec);
 
     void lock() {
       m_mutex.lock();
@@ -256,7 +259,7 @@ namespace Hypertable {
     Mutex m_schema_mutex;
     Mutex m_outstanding_scanner_mutex;
     boost::condition m_outstanding_scanner_cond;
-    int32_t m_outstanding_scanner_count;
+    int32_t m_outstanding_scanner_count {};
     TableIdentifierManaged m_identifier;
     SchemaPtr m_schema;
     std::set<uint8_t> m_column_families;
@@ -270,29 +273,28 @@ namespace Hypertable {
     std::vector<CellStoreInfo> m_stores;
     PropertiesPtr m_cellstore_props;
     CellCacheManagerPtr m_cell_cache_manager;
-    uint32_t m_next_cs_id;
-    uint64_t m_disk_usage;
-    float m_compression_ratio;
-    int64_t m_earliest_cached_revision;
-    int64_t m_earliest_cached_revision_saved;
-    int64_t m_latest_stored_revision;
-    int64_t m_latest_stored_revision_hint;
+    uint32_t m_next_cs_id {};
+    uint64_t m_disk_usage {};
+    float m_compression_ratio {1.0};
+    int64_t m_earliest_cached_revision {TIMESTAMP_MAX};
+    int64_t m_earliest_cached_revision_saved {TIMESTAMP_MAX};
+    int64_t m_latest_stored_revision {TIMESTAMP_MIN};
+    int64_t m_latest_stored_revision_hint {TIMESTAMP_MIN};
     LiveFileTracker m_file_tracker;
     AccessGroupGarbageTracker m_garbage_tracker;
-    bool m_is_root;
-    bool m_in_memory;
-    bool m_recovering;
-    bool m_bloom_filter_disabled;
-    bool m_needs_merging;
-    bool m_end_merge;
-    bool m_dirty;
-    bool m_cellcache_needs_compaction;
+    bool m_is_root {};
+    bool m_in_memory {};
+    bool m_recovering {};
+    bool m_needs_merging {};
+    bool m_end_merge {};
+    bool m_dirty {};
+    bool m_cellcache_needs_compaction {};
   };
   typedef boost::intrusive_ptr<AccessGroup> AccessGroupPtr;
 
   std::ostream &operator<<(std::ostream &os, const AccessGroup::MaintenanceData &mdata);
 
-  /** @}*/
+  /// @}
 
 } // namespace Hypertable
 

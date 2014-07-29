@@ -27,7 +27,7 @@
 #include "Common/Usage.h"
 
 #include "Hypertable/Lib/CompressorFactory.h"
-#include "Hypertable/Lib/BlockCompressionHeaderCommitLog.h"
+#include "Hypertable/Lib/BlockHeaderCommitLog.h"
 #include "Hypertable/Lib/Types.h"
 
 using namespace Hypertable;
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   DynamicBuffer output2(0);
   BlockCompressionCodec *compressor;
 
-  BlockCompressionHeaderCommitLog header(MAGIC, 0);
+  BlockHeaderCommitLog header(MAGIC, 0, 0);
 
   if (argc == 1 || !strcmp(argv[1], "--help"))
     Usage::dump_and_exit(usage);
@@ -70,9 +70,9 @@ int main(int argc, char **argv) {
   if (!compressor)
     return 1;
 
-  if ((input.base = (uint8_t *)FileUtils::file_to_buffer("./good-schema-1.xml",
+  if ((input.base = (uint8_t *)FileUtils::file_to_buffer("./test-schemas.xml",
       &len)) == 0) {
-    HT_ERROR("Problem loading './good-schema-1.xml'");
+    HT_ERROR("Problem loading './test-schemas.xml'");
     return 1;
   }
   input.ptr = input.base + len;

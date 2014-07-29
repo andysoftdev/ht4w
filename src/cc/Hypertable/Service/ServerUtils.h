@@ -33,7 +33,7 @@ namespace Hypertable {
   class ServerUtils {
   public:
     enum server_t {
-      dfsBroker = 0,
+      fsBroker = 0,
       hyperspaceMaster,
       hypertableMaster,
       rangeServer,
@@ -59,7 +59,7 @@ namespace Hypertable {
 
   private:
     enum {
-      firstServer = dfsBroker,
+      firstServer = fsBroker,
       lastServer = thriftBroker
     };
     typedef std::set<server_t> servers_t;
@@ -89,7 +89,7 @@ namespace Hypertable {
     static const String& server_name(server_t server);
     static bool check_metadata( );
 
-    static bool shutdown_dfsbroker(DWORD pid);
+    static bool shutdown_fsbroker(DWORD pid);
     static bool shutdown_hyperspace(DWORD pid);
     static bool shutdown_master(DWORD pid);
     static bool shutdown_rangeserver(DWORD pid);

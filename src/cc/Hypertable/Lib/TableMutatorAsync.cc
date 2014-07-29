@@ -28,6 +28,7 @@ extern "C" {
 #include "Common/Config.h"
 #include "Common/StringExt.h"
 
+#include "IndexTables.h"
 #include "Key.h"
 #include "TableMutatorAsync.h"
 #include "ResultCallback.h"
@@ -161,9 +162,9 @@ void TableMutatorAsync::wait_for_completion() {
 
 void
 TableMutatorAsync::update_with_index(Key &key, const void *value, 
-        uint32_t value_len, Schema::ColumnFamily *cf) {
+        uint32_t value_len, ColumnFamilySpec *cf) {
   HT_ASSERT(m_use_index == true);
-  HT_ASSERT(cf && (cf->has_index || cf->has_qualifier_index));
+  HT_ASSERT(cf && (cf->get_value_index() || cf->get_qualifier_index()));
 
   // indexed keys get an auto-assigned timestamp to make sure that the 
   // index key and the original key have identical timestamps
@@ -177,65 +178,17 @@ TableMutatorAsync::update_with_index(Key &key, const void *value,
   if (key.flag != FLAG_INSERT)
     return;
 
-  // now create the key for the index
-  KeySpec k;
-  k.timestamp = key.timestamp;
-  k.flag = key.flag;
-  k.column_family = "v1";
+  TableMutatorAsync *value_index_mutator = 0;
+  TableMutatorAsync *qualifier_index_mutator = 0;
 
-  // every \t in the original row key gets escaped
-  const char *row;
-  size_t rowlen;
-  LoadDataEscape lde, ldev;
-  lde.escape(key.row, key.row_len, &row, &rowlen);
+  if (cf->get_value_index())
+    value_index_mutator = m_index_mutator.get();
 
-  // in a normal (non-qualifier) index the format of the new row
-  // key is "value\trow"
-  //
-  // if value has a 0 byte then we also have to escape it
-  if (cf->has_index) {
-    size_t escaped_value_len;
-    const char *escaped_value;
-    ldev.escape((const char *)value, (size_t)value_len, &escaped_value, &escaped_value_len);
-    //std::cout << escaped_value << std::endl;
-    StaticBuffer sb(4 + escaped_value_len + rowlen + 1 + 1);
-    char *p = (char *)sb.base;
-    sprintf(p, "%d,", (int)key.column_family_code);
-    p     += strlen(p);
-    memcpy(p, escaped_value, escaped_value_len);
-    p     += escaped_value_len;
-    *p++  = '\t';
-    memcpy(p, row, rowlen);
-    p     += rowlen;
-    *p++  = '\0';
-    k.row = sb.base;
-    k.row_len = p - 1 - (const char *)sb.base; /* w/o the terminating zero */
+  if (cf->get_qualifier_index())
+    qualifier_index_mutator = m_qualifier_index_mutator.get();
 
-    // and insert it
-    m_index_mutator->set(k, 0, 0);
-  }
-
-  // in a qualifier index the format of the new row key is "qualifier\trow"
-  if (cf->has_qualifier_index) {
-    size_t qlen = key.column_qualifier ? strlen(key.column_qualifier) : 0;
-    StaticBuffer sb(4 + qlen + rowlen + 1 + 1);
-    char *p = (char *)sb.base;
-    sprintf(p, "%d,", (int)key.column_family_code);
-    p     += strlen(p);
-    if (qlen) {
-      memcpy(p, key.column_qualifier, qlen);
-      p   += qlen;
-    }
-    *p++  = '\t';
-    memcpy(p, row, rowlen);
-    p     += rowlen;
-    *p++  = '\0';
-    k.row = sb.base;
-    k.row_len = p - 1 - (const char *)sb.base; /* w/o the terminating zero */
-
-    // and insert it
-    m_qualifier_index_mutator->set(k, 0, 0);
-  }
+  IndexTables::add(key, key.flag, value, value_len,
+                   value_index_mutator, qualifier_index_mutator);
 }
 
 void
@@ -243,7 +196,7 @@ TableMutatorAsync::set(const KeySpec &key, const void *value,
         uint32_t value_len) {
   {
     ScopedLock lock(m_member_mutex);
-    Schema::ColumnFamily *cf = 0;
+    ColumnFamilySpec *cf = 0;
 
     try {
       key.sanity_check();
@@ -254,7 +207,7 @@ TableMutatorAsync::set(const KeySpec &key, const void *value,
       // if there's an index: buffer the key and update the index
       full_key.row_len = key.row_len;
       if (key.flag == FLAG_INSERT && m_use_index && 
-          cf && (cf->has_index || cf->has_qualifier_index)) {
+          cf && (cf->get_value_index() || cf->get_qualifier_index())) {
         update_with_index(full_key, value, value_len, cf);
       }
       else {
@@ -346,7 +299,7 @@ TableMutatorAsync::set_cells(Cells::const_iterator it,
         Cells::const_iterator end) {
   {
     ScopedLock lock(m_member_mutex);
-    Schema::ColumnFamily *cf = 0;
+    ColumnFamilySpec *cf = 0;
 
     try {
       for (; it != end; ++it) {
@@ -373,7 +326,7 @@ TableMutatorAsync::set_cells(Cells::const_iterator it,
   
         // if there's an index: buffer the key and update the index
         if (cell.flag == FLAG_INSERT && m_use_index 
-            && cf && (cf->has_index || cf->has_qualifier_index)) {
+            && cf && (cf->get_value_index() || cf->get_qualifier_index())) {
           update_with_index(full_key, cell.value, cell.value_len, cf);
         }
         else {
@@ -403,7 +356,7 @@ void TableMutatorAsync::set_delete(const KeySpec &key) {
 
   {
     ScopedLock lock(m_member_mutex);
-    Schema::ColumnFamily *cf = 0;
+    ColumnFamilySpec *cf = 0;
 
     try {
       key.sanity_check();
@@ -419,7 +372,7 @@ void TableMutatorAsync::set_delete(const KeySpec &key) {
       }
   
       // if there's an index: buffer the key and update the index
-      if (m_use_index && cf && (cf->has_index || cf->has_qualifier_index)) {
+      if (m_use_index && cf && (cf->get_value_index() || cf->get_qualifier_index())) {
         update_with_index(full_key, 0, 0, cf);
       }
       else {
@@ -445,8 +398,8 @@ void TableMutatorAsync::set_delete(const KeySpec &key) {
 void
 TableMutatorAsync::to_full_key(const void *row, const char *column_family, 
         const void *column_qualifier, int64_t timestamp, int64_t revision, 
-        uint8_t flag, Key &full_key, Schema::ColumnFamily **pcf) {
-  Schema::ColumnFamily *cf;
+        uint8_t flag, Key &full_key, ColumnFamilySpec **pcf) {
+  ColumnFamilySpec *cf;
 
   if (flag > FLAG_DELETE_ROW) {
     if (!column_family)
@@ -467,7 +420,7 @@ TableMutatorAsync::to_full_key(const void *row, const char *column_family,
         HT_THROWF(Error::BAD_KEY, "Bad column family '%s'", column_family);
       }
     }
-    full_key.column_family_code = (uint8_t)cf->id;
+    full_key.column_family_code = (uint8_t)cf->get_id();
   }
   else {
     full_key.column_family_code = 0;
@@ -475,7 +428,14 @@ TableMutatorAsync::to_full_key(const void *row, const char *column_family,
   }
 
   full_key.row = (const char *)row;
-  full_key.column_qualifier = (const char *)column_qualifier;
+  if (column_qualifier) {
+    full_key.column_qualifier = (const char *)column_qualifier;
+    full_key.column_qualifier_len = strlen((const char *)column_qualifier);
+  }
+  else {
+    full_key.column_qualifier = "";
+    full_key.column_qualifier_len = 0;
+  }
   full_key.timestamp = timestamp;
   full_key.revision = revision;
   full_key.flag = flag;

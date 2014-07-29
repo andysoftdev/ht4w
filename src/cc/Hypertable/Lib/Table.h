@@ -58,11 +58,10 @@ namespace Hypertable {
   public:
 
     enum {
-      OPEN_FLAG_BYPASS_TABLE_CACHE           = 0x01,
-      OPEN_FLAG_REFRESH_TABLE_CACHE          = 0x02,
-      OPEN_FLAG_NO_AUTO_TABLE_REFRESH        = 0x04,
-
-      SCANNER_FLAG_IGNORE_INDEX              = 0x01
+      OPEN_FLAG_BYPASS_TABLE_CACHE = 0x01,
+      OPEN_FLAG_REFRESH_TABLE_CACHE = 0x02,
+      OPEN_FLAG_NO_AUTO_TABLE_REFRESH = 0x04,
+      SCANNER_FLAG_IGNORE_INDEX = 0x01
     };
 
     enum {
@@ -183,10 +182,10 @@ namespace Hypertable {
     /** returns true if this table requires a index table */
     bool needs_index_table() {
       ScopedLock lock(m_mutex);
-      foreach_ht (Schema::ColumnFamily *cf, m_schema->get_column_families()) {
-        if (cf->deleted)
+      for (auto cf : m_schema->get_column_families()) {
+        if (cf->get_deleted())
           continue;
-        if (cf->has_index)
+        if (cf->get_value_index())
           return true;
       }
       return false;
@@ -195,10 +194,10 @@ namespace Hypertable {
     /** returns true if this table requires a qualifier index table */
     bool needs_qualifier_index_table() {
       ScopedLock lock(m_mutex);
-      foreach_ht (Schema::ColumnFamily *cf, m_schema->get_column_families()) {
-        if (cf->deleted)
+      for (auto cf : m_schema->get_column_families()) {
+        if (cf->get_deleted())
           continue;
-        if (cf->has_qualifier_index)
+        if (cf->get_qualifier_index())
           return true;
       }
       return false;

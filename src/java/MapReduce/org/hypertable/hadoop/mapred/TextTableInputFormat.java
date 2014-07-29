@@ -170,14 +170,14 @@ implements org.apache.hadoop.mapred.InputFormat<Text, Text>, JobConfigurable {
     int offset = str.indexOf("=^");
     if (offset != -1) {
       cp.column_family = str.substring(0, offset).trim();
-      cp.operation = ColumnPredicateOperation.PREFIX_MATCH;
+      cp.operation = ColumnPredicateOperation.PREFIX_MATCH.getValue();
       cp.value = str.substring(offset + 2).trim();
     }
     else {
       offset = str.indexOf("=");
       if (offset != -1) {
         cp.column_family = str.substring(0, offset).trim();
-        cp.operation = ColumnPredicateOperation.EXACT_MATCH;
+        cp.operation = ColumnPredicateOperation.EXACT_MATCH.getValue();
         cp.value = str.substring(offset + 1).trim();
       }
       else
@@ -394,10 +394,10 @@ implements org.apache.hadoop.mapred.InputFormat<Text, Text>, JobConfigurable {
         if (framesize == 0)
           framesize = job.getInt(THRIFT_FRAMESIZE2, 0);
         if (framesize != 0)
-          m_client = ThriftClient.create("localhost", 38080, 1600000,
+          m_client = ThriftClient.create("localhost", 15867, 1600000,
                   true, framesize);
         else
-          m_client = ThriftClient.create("localhost", 38080);
+          m_client = ThriftClient.create("localhost", 15867);
       }
       return new HypertableRecordReader(m_client, m_namespace, m_tablename,
               scan_spec, m_include_timestamps, m_no_escape);
@@ -423,10 +423,10 @@ implements org.apache.hadoop.mapred.InputFormat<Text, Text>, JobConfigurable {
         if (framesize == 0)
           framesize = job.getInt(THRIFT_FRAMESIZE2, 0);
         if (framesize != 0)
-          m_client = ThriftClient.create("localhost", 38080, 1600000,
+          m_client = ThriftClient.create("localhost", 15867, 1600000,
                   true, framesize);
         else
-          m_client = ThriftClient.create("localhost", 38080);
+          m_client = ThriftClient.create("localhost", 15867);
       }
 
       String tablename = job.get(TABLE);
@@ -476,10 +476,6 @@ implements org.apache.hadoop.mapred.InputFormat<Text, Text>, JobConfigurable {
       throw new IOException(e.getMessage());
     }
     catch (TException e) {
-      e.printStackTrace();
-      throw new IOException(e.getMessage());
-    }
-    catch (ClientException e) {
       e.printStackTrace();
       throw new IOException(e.getMessage());
     }

@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -38,6 +38,8 @@
 #include "AsyncComm/ReactorFactory.h"
 #include "AsyncComm/ReactorRunner.h"
 
+#include <Hypertable/Lib/ClusterId.h>
+
 #include "Config.h"
 #include "ConnectionHandler.h"
 #include "Global.h"
@@ -53,7 +55,7 @@ using namespace Hypertable;
 using namespace Config;
 using namespace std;
 
-typedef Meta::list<RangeServerPolicy, DfsClientPolicy, HyperspaceClientPolicy,
+typedef Meta::list<RangeServerPolicy, FsClientPolicy, HyperspaceClientPolicy,
         MasterClientPolicy, DefaultServerPolicy> Policies;
 
 int main(int argc, char **argv) {
@@ -107,8 +109,12 @@ int main(int argc, char **argv) {
     server_launch_event.set_event();
     #endif
 
-    RangeServerPtr range_server= new RangeServer(properties,
-        conn_manager, app_queue, Global::hyperspace);
+    // Initialize cluster ID from Hyperspace, enabling ClusterId::get()
+    ClusterId cluster_id(Global::hyperspace);
+    
+    RangeServerPtr range_server
+      = std::make_shared<RangeServer>(properties, conn_manager, app_queue,
+                                      Global::hyperspace);
 
     app_queue->join();
 

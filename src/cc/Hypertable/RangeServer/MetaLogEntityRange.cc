@@ -79,22 +79,26 @@ int MetaLogEntityRange::get_state() {
 void MetaLogEntityRange::set_state_bits(uint8_t bits) {
   ScopedLock lock(m_mutex);
   m_state.state |= bits;
+  m_cond.notify_all();
 }
 
 void MetaLogEntityRange::clear_state_bits(uint8_t bits) {
   ScopedLock lock(m_mutex);
   m_state.state &= ~bits;
+  m_cond.notify_all();
 }
 
 void MetaLogEntityRange::set_state(uint8_t state, const String &source) {
   ScopedLock lock(m_mutex);
   m_state.state = state;
   m_state.set_source(source);
+  m_cond.notify_all();
 }
 
 void MetaLogEntityRange::clear_state() {
   ScopedLock lock(m_mutex);
   m_state.clear();
+  m_cond.notify_all();
 }
 
 uint64_t MetaLogEntityRange::get_soft_limit() {

@@ -34,12 +34,6 @@
     <ClCompile Include="BlockCompressionCodecZlib.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BlockCompressionHeader.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockCompressionHeaderCommitLog.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CompressorFactory.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -57,6 +51,15 @@
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\quicklz\quicklz.cc">
       <Filter>Source Files\quicklz</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockHeader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockHeaderCellStore.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockHeaderCommitLog.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -76,12 +79,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="BlockCompressionCodecZlib.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionHeader.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockCompressionHeaderCommitLog.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="CompressorFactory.h">
@@ -107,6 +104,15 @@
     </ClInclude>
     <ClInclude Include="..\..\ThirdParty\quicklz\quicklz.h">
       <Filter>Source Files\quicklz</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockHeader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockHeaderCellStore.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockHeaderCommitLog.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

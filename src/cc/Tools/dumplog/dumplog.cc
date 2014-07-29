@@ -19,27 +19,28 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include <cstdlib>
-#include <iostream>
+#include <Common/Compat.h>
+#include <Common/Error.h>
+#include <Common/InetAddr.h>
+#include <Common/Logger.h>
+#include <Common/Init.h>
+#include <Common/Usage.h>
 
-#include "Common/Error.h"
-#include "Common/InetAddr.h"
-#include "Common/Logger.h"
-#include "Common/Init.h"
-#include "Common/Usage.h"
+#include <AsyncComm/Comm.h>
+#include <AsyncComm/ConnectionManager.h>
+#include <AsyncComm/ReactorFactory.h>
 
-#include "AsyncComm/Comm.h"
-#include "AsyncComm/ConnectionManager.h"
-#include "AsyncComm/ReactorFactory.h"
+#include <FsBroker/Lib/Config.h>
+#include <FsBroker/Lib/Client.h>
 
-#include "DfsBroker/Lib/Config.h"
-#include "DfsBroker/Lib/Client.h"
-
-#include "Hypertable/Lib/CommitLog.h"
-#include "Hypertable/Lib/CommitLogReader.h"
+#include <Hypertable/Lib/CommitLog.h>
+#include <Hypertable/Lib/CommitLogReader.h>
+#include <Hypertable/Lib/Types.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+
+#include <cstdlib>
+#include <iostream>
 
 using namespace Hypertable;
 using namespace Config;
@@ -67,13 +68,13 @@ struct AppPolicy : Config::Policy {
   }
 };
 
-typedef Meta::list<AppPolicy, DfsClientPolicy, DefaultCommPolicy> Policies;
+typedef Meta::list<AppPolicy, FsClientPolicy, DefaultCommPolicy> Policies;
 
-void display_log(DfsBroker::Client *dfs_client, const String &prefix,
+void display_log(FsBroker::Client *dfs_client, const String &prefix,
     CommitLogReader *log_reader, bool display_values);
-void display_log_block_summary(DfsBroker::Client *dfs_client,
+void display_log_block_summary(FsBroker::Client *dfs_client,
     const String &prefix, CommitLogReader *log_reader);
-void display_log_valid_links(DfsBroker::Client *dfs_client,
+void display_log_valid_links(FsBroker::Client *dfs_client,
     const String &prefix, CommitLogReader *log_reader);
 
 } // local namespace
@@ -94,16 +95,16 @@ int main(int argc, char **argv) {
     /**
      * Check for and connect to commit log DFS broker
      */
-    DfsBroker::Client *dfs_client;
+    FsBroker::Client *dfs_client;
 
     if (log_host.length()) {
       int log_port = get_i16("log-port");
       InetAddr addr(log_host, log_port);
 
-      dfs_client = new DfsBroker::Client(conn_manager_ptr, addr, timeout);
+      dfs_client = new FsBroker::Client(conn_manager_ptr, addr, timeout);
     }
     else {
-      dfs_client = new DfsBroker::Client(conn_manager_ptr, properties);
+      dfs_client = new FsBroker::Client(conn_manager_ptr, properties);
     }
 
     if (!dfs_client->wait_for_connection(timeout)) {
@@ -138,9 +139,9 @@ int main(int argc, char **argv) {
 namespace {
 
   void
-  display_log(DfsBroker::Client *dfs_client, const String &prefix,
+  display_log(FsBroker::Client *dfs_client, const String &prefix,
               CommitLogReader *log_reader, bool display_values) {
-    BlockCompressionHeaderCommitLog header;
+    BlockHeaderCommitLog header;
     const uint8_t *base;
     size_t len;
     const uint8_t *ptr, *end;
@@ -190,15 +191,17 @@ namespace {
 
 
   void
-  display_log_block_summary(DfsBroker::Client *dfs_client, const String &prefix,
+  display_log_block_summary(FsBroker::Client *dfs_client, const String &prefix,
       CommitLogReader *log_reader) {
     CommitLogBlockInfo binfo;
-    BlockCompressionHeaderCommitLog header;
+    BlockHeaderCommitLog header;
 
     while (log_reader->next_raw_block(&binfo, &header)) {
 
       HT_ASSERT(header.check_magic(CommitLog::MAGIC_DATA));
 
+      printf("%s/%s\tcluster_id\t%llu\n",
+             binfo.log_dir, binfo.file_fragment, (Llu)header.get_cluster_id());
       printf("%s/%s\trevision\t%llu\n",
              binfo.log_dir, binfo.file_fragment, (Llu)header.get_revision());
       printf("%s/%s\tstart-offset\t%llu\n",
@@ -225,9 +228,9 @@ namespace {
   }
 
   void
-  display_log_valid_links(DfsBroker::Client *dfs_client, const String &prefix,
+  display_log_valid_links(FsBroker::Client *dfs_client, const String &prefix,
                           CommitLogReader *log_reader) {
-    BlockCompressionHeaderCommitLog header;
+    BlockHeaderCommitLog header;
     const uint8_t *base;
     size_t len;
     StringSet linked_logs;

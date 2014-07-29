@@ -29,6 +29,7 @@
 
 #include <Common/Logger.h>
 #include <Common/StringExt.h>
+#include <Common/Time.h>
 
 #include <boost/tokenizer.hpp>
 

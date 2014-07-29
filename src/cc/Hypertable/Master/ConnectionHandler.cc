@@ -52,6 +52,7 @@
 #include "OperationProcessor.h"
 #include "OperationMoveRange.h"
 #include "OperationRecover.h"
+#include "OperationRecreateIndexTables.h"
 #include "OperationRegisterServer.h"
 #include "OperationRelinquishAcknowledge.h"
 #include "OperationRenameTable.h"
@@ -130,12 +131,14 @@ void ConnectionHandler::handle(EventPtr &event) {
         return;
       case MasterProtocol::COMMAND_MOVE_RANGE:
         operation = new OperationMoveRange(m_context, event);
-        if (!m_context->reference_manager->add(operation)) {
+        if (!m_context->add_move_operation(operation.get())) {
           HT_INFOF("Skipping %s because already in progress",
                   operation->label().c_str());
           send_error_response(event, Error::MASTER_OPERATION_IN_PROGRESS, "");
           return;
         }
+        // Add to reference manager
+        m_context->reference_manager->add(operation);
         HT_MAYBE_FAIL("connection-handler-move-range");
         m_context->op->add_operation(operation);
         return;
@@ -166,6 +169,9 @@ void ConnectionHandler::handle(EventPtr &event) {
         break;
       case MasterProtocol::COMMAND_DROP_NAMESPACE:
         operation = new OperationDropNamespace(m_context, event);
+        break;
+      case MasterProtocol::COMMAND_RECREATE_INDEX_TABLES:
+        operation = new OperationRecreateIndexTables(m_context, event);
         break;
 
       case MasterProtocol::COMMAND_FETCH_RESULT:

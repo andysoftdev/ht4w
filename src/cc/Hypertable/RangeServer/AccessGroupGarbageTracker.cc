@@ -40,36 +40,31 @@ using namespace Config;
 using namespace std;
 
 AccessGroupGarbageTracker::AccessGroupGarbageTracker(PropertiesPtr &props,
-               CellCacheManagerPtr &cell_cache_manager, Schema::AccessGroup *ag)
-  : m_cell_cache_manager(cell_cache_manager), m_elapsed_target(0),
-    m_elapsed_target_minimum(0),  m_stored_deletes(0), m_stored_expirable(0),
-    m_last_collection_disk_usage(0), m_current_disk_usage(0), m_accum_data_target(0),
-    m_accum_data_target_minimum(0), m_min_ttl(0), m_have_max_versions(false),
-    m_in_memory(false) 
-{
+               CellCacheManagerPtr &cell_cache_manager, AccessGroupSpec *ag_spec)
+  : m_cell_cache_manager(cell_cache_manager) {
   SubProperties cfg(props, "Hypertable.RangeServer.");
   m_garbage_threshold 
     = cfg.get_i32("AccessGroup.GarbageThreshold.Percentage") / 100.0;
   m_accum_data_target = cfg.get_i64("Range.SplitSize") / 10;
   m_accum_data_target_minimum = m_accum_data_target / 2;
   m_last_collection_time = time(0);
-  update_schema(ag);
+  update_schema(ag_spec);
 }
 
 
-void AccessGroupGarbageTracker::update_schema(Schema::AccessGroup *ag) {
+void AccessGroupGarbageTracker::update_schema(AccessGroupSpec *ag_spec) {
   ScopedLock lock(m_mutex);
   m_have_max_versions = false;
   m_min_ttl = 0;
-  m_in_memory = ag->in_memory;
-  foreach_ht(Schema::ColumnFamily *cf, ag->columns) {
-    if (cf->max_versions > 0)
+  m_in_memory = ag_spec->get_option_in_memory();
+  for (auto cf_spec : ag_spec->columns()) {
+    if (cf_spec->get_option_max_versions() > 0)
       m_have_max_versions = true;
-    if (cf->ttl > 0) {
+    if (cf_spec->get_option_ttl() > 0) {
       if (m_min_ttl == 0)
-        m_min_ttl = (time_t)cf->ttl;
-      else if (cf->ttl < m_min_ttl)
-        m_min_ttl = cf->ttl;
+        m_min_ttl = (time_t)cf_spec->get_option_ttl();
+      else if (cf_spec->get_option_ttl() < m_min_ttl)
+        m_min_ttl = cf_spec->get_option_ttl();
     }
   }
   m_elapsed_target_minimum = m_elapsed_target = m_min_ttl/10;
@@ -83,7 +78,7 @@ AccessGroupGarbageTracker::update_cellstore_info(vector<CellStoreInfo> &stores,
   m_stored_deletes = 0;
   m_stored_expirable = 0;
   m_current_disk_usage = 0;
-  for each(auto csi in stores) {
+  for (auto csi : stores) {
     m_stored_expirable += csi.expirable_data();
     m_stored_deletes += csi.delete_count();
     m_current_disk_usage += csi.cs->disk_usage() / csi.cs->compression_ratio();
@@ -147,7 +142,7 @@ AccessGroupGarbageTracker::adjust_targets(time_t now, double total,
     return;
 
   // Recompute DATA target
-  bool have_garbage = m_have_max_versions || compute_delete_count() > 0;
+  bool have_garbage {m_have_max_versions || compute_delete_count() > 0};
   if (have_garbage && check_deletes != gc_needed) {
     if (garbage_ratio > 0) {
       int64_t new_accum_data_target =
@@ -196,14 +191,14 @@ int64_t AccessGroupGarbageTracker::memory_accumulated_since_collection() {
 }
 
 int64_t AccessGroupGarbageTracker::total_accumulated_since_collection() {
-  int64_t accum = memory_accumulated_since_collection();
+  int64_t accum {memory_accumulated_since_collection()};
   if (m_current_disk_usage > m_last_collection_disk_usage)
     accum += m_current_disk_usage - m_last_collection_disk_usage;
   return accum;
 }
 
 int64_t AccessGroupGarbageTracker::compute_delete_count() {
-  int64_t delete_count = m_stored_deletes;
+  int64_t delete_count {static_cast<int64_t>(m_stored_deletes)};
   if (m_cell_cache_manager->immutable_cache())
     delete_count += m_cell_cache_manager->immutable_cache()->delete_count();
   else
@@ -219,11 +214,11 @@ bool AccessGroupGarbageTracker::check_needed_deletes() {
 }
 
 bool AccessGroupGarbageTracker::check_needed_ttl(time_t now) {
-  int64_t memory_accum = memory_accumulated_since_collection();
-  int64_t total_size = m_current_disk_usage + memory_accum;
+  int64_t memory_accum {memory_accumulated_since_collection()};
+  int64_t total_size {m_current_disk_usage + memory_accum};
   double possible_garbage = m_stored_expirable + memory_accum;
   double possible_garbage_ratio = possible_garbage / total_size;
-  time_t elapsed = now - m_last_collection_time;
+  time_t elapsed {now - m_last_collection_time};
   if (m_min_ttl > 0 && possible_garbage_ratio >= m_garbage_threshold &&
       elapsed >= m_elapsed_target)
     return true;

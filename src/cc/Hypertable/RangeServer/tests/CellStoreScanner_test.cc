@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -33,14 +33,14 @@
 
 #include "AsyncComm/ConnectionManager.h"
 
-#include "DfsBroker/Lib/Client.h"
+#include "FsBroker/Lib/Client.h"
 
 #include "Hypertable/Lib/Key.h"
 #include "Hypertable/Lib/Schema.h"
 #include "Hypertable/Lib/SerializedKey.h"
 
 #include "../CellStoreFactory.h"
-#include "../CellStoreV6.h"
+#include "../CellStoreV7.h"
 #include "../Global.h"
 
 #include <cstdlib>
@@ -569,7 +569,7 @@ int main(int argc, char **argv) {
   try {
     struct sockaddr_in addr;
     ConnectionManagerPtr conn_mgr;
-    DfsBroker::ClientPtr client;
+    FsBroker::ClientPtr client;
     CellStorePtr cs;
     std::ofstream out("CellStoreScanner_test.output");
     size_t wordi=0;
@@ -598,15 +598,15 @@ int main(int argc, char **argv) {
     System::initialize(System::locate_install_dir(argv[0]));
     ReactorFactory::initialize(2);
 
-    uint16_t port = Config::properties->get_i16("DfsBroker.Port");
+    uint16_t port = Config::properties->get_i16("FsBroker.Port");
 
     InetAddr::initialize(&addr, "localhost", port);
 
     conn_mgr = new ConnectionManager();
-    Global::dfs = new DfsBroker::Client(conn_mgr, addr, 15000);
+    Global::dfs = new FsBroker::Client(conn_mgr, addr, 15000);
 
     // force broker client to be destroyed before connection manager
-    client = (DfsBroker::Client *)Global::dfs.get();
+    client = (FsBroker::Client *)Global::dfs.get();
 
     if (!client->wait_for_connection(15000)) {
       HT_ERROR("Unable to connect to DFS");
@@ -622,16 +622,11 @@ int main(int argc, char **argv) {
 
     String csname = testdir + "/cs0";
     PropertiesPtr cs_props = new Properties();
-    Schema::parse_bloom_filter("rows+cols", cs_props);
+    AccessGroupOptions::parse_bloom_filter("rows+cols", cs_props);
 
-    SchemaPtr schema = Schema::new_instance(schema_str, strlen(schema_str));
+    SchemaPtr schema = Schema::new_instance(schema_str);
 
-    if (!schema->is_valid()) {
-      HT_ERRORF("Schema Parse Error: %s", schema->get_error_string());
-      exit(1);
-    }
-
-    cs = new CellStoreV6(Global::dfs.get(), schema.get());
+    cs = new CellStoreV7(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 0, cs_props, &table_id));
     cs->set_replaced_files(replaced_files_write);
 
@@ -1435,9 +1430,9 @@ int main(int argc, char **argv) {
 
     csname = testdir + "/cs1";
     cs_props = new Properties();
-    cs_props->set("blocksize", (uint32_t)10000);
+    cs_props->set("blocksize", (int32_t)10000);
     cs_props->set("compressor", String("none"));
-    cs = new CellStoreV6(Global::dfs.get(), schema.get());
+    cs = new CellStoreV7(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 0, cs_props, &table_id));
     // should not coalesce and be in a separate block from trailer
     replaced_files_write.push_back("1/hypertable/tables/0/1/default/qyoNKN5rd__dbHKv/cs0");
@@ -1544,13 +1539,9 @@ int main(int argc, char **argv) {
     csname = testdir + "/cs2";
     cs_props = new Properties();
 
-    schema = Schema::new_instance(schema2_str, strlen(schema2_str));
-    if (!schema->is_valid()) {
-      HT_ERRORF("Schema Parse Error: %s", schema->get_error_string());
-      exit(1);
-    }
+    schema = Schema::new_instance(schema2_str);
 
-    cs = new CellStoreV6(Global::dfs.get(), schema.get());
+    cs = new CellStoreV7(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 0, cs_props, &table_id));
     // should coalesce and be in 2 blocks, with the 2nd block also containing the trailer
     replaced_files_write.push_back("7/hypertable/tables/0/1/default/qyoNKN5rd__dbHKv/cs0");
@@ -1601,13 +1592,10 @@ int main(int argc, char **argv) {
     out << "[issue1017]\n";
     csname = testdir + "/cs3";
     cs_props = new Properties();
-    Schema::parse_bloom_filter("rows", cs_props);
-    schema = Schema::new_instance(schema_str, strlen(schema_str));
-    if (!schema->is_valid()) {
-      HT_ERRORF("Schema Parse Error: %s", schema->get_error_string());
-      exit(1);
-    }
-    cs = new CellStoreV6(Global::dfs.get(), schema.get());
+    AccessGroupOptions::parse_bloom_filter("rows", cs_props);
+    schema = Schema::new_instance(schema_str);
+
+    cs = new CellStoreV7(Global::dfs.get(), schema.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 735, cs_props, &table_id));
     strcpy((char *)rowbuf, "the only row");
     value = "Dummy value";

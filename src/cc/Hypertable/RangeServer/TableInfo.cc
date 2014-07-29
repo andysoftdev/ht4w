@@ -32,9 +32,10 @@
 using namespace std;
 using namespace Hypertable;
 
-
-TableInfo::TableInfo(const TableIdentifier *identifier, SchemaPtr &schema)
-    : m_identifier(*identifier), m_schema(schema) {
+TableInfo::TableInfo(const TableIdentifier *identifier, SchemaPtr &schema,
+                     bool maintenance_disabled)
+  : m_identifier(*identifier), m_schema(schema),
+    m_maintenance_disabled(maintenance_disabled) {
 }
 
 
@@ -278,7 +279,9 @@ void TableInfo::update_schema(SchemaPtr &schema) {
   ScopedLock lock(m_mutex);
 
   if (schema->get_generation() < m_schema->get_generation())
-    HT_THROW(Error::RANGESERVER_GENERATION_MISMATCH, "");
+    HT_THROWF(Error::RANGESERVER_GENERATION_MISMATCH,
+              "Updated schema generation %lld < current schema generation %lld",
+              (Lld)schema->get_generation(), (Lld)m_schema->get_generation());
 
   for each(auto &range_info in m_active_set)
     range_info.range->update_schema(schema);

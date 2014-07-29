@@ -271,36 +271,51 @@ void DefaultPolicy::init_options() {
         "QFS meta server")
     ("Qfs.MetaServer.Port", i16()->default_value(20000), "Port number for QFS "
         "meta server")
-    ("DfsBroker.DisableFileRemoval", boo()->default_value(false),
+    ("DfsBroker.Local.DirectIO", boo(),
+        "DEPRECATED: renamed to FsBroker.Local.DirectIO")
+    ("DfsBroker.Local.Port", i16(),
+        "DEPRECATED: renamed to FsBroker.Local.Port")
+    ("DfsBroker.Local.Root", str(), "DEPRECATED: renamed to FsBroker.Local.Root")
+    ("DfsBroker.Local.Workers", i32(),
+        "DEPRECATED: renamed to FsBroker.Local.Workers")
+    ("DfsBroker.Local.Reactors", i32(),
+        "DEPRECATED: renamed to FsBroker.Local.Reactors")
+    ("DfsBroker.Host", str(), "DEPRECATED: renamed to FsBroker.Host")
+    ("DfsBroker.Port", i16(), "DEPRECATED: renamed to FsBroker.Port")
+    ("DfsBroker.Timeout", i32(), "DEPRECATED: renamed to FsBroker.Timeout")
+    ("FsBroker.DisableFileRemoval", boo()->default_value(false),
         "Rename files with .deleted extension instead of removing (for testing)")
-    ("DfsBroker.Local.DirectIO", boo()->default_value(false),
+    ("FsBroker.Local.DirectIO", boo()->default_value(false),
         "Read and write files using direct i/o")
-    ("DfsBroker.Local.Port", i16()->default_value(38030),
+    ("FsBroker.Local.Port", i16()->default_value(15863),
         "Port number on which to listen (read by LocalBroker only)")
-    ("DfsBroker.Local.Root", str(), "Root of file and directory "
+    ("FsBroker.Local.Root", str(), "Root of file and directory "
         "hierarchy for local broker (if relative path, then is relative to "
         "the Hypertable data directory root)")
-    ("DfsBroker.Local.Workers", i32()->default_value(20),
+    ("FsBroker.Local.Workers", i32()->default_value(20),
         "Number of local broker worker threads created")
-    ("DfsBroker.Local.Reactors", i32(),
+    ("FsBroker.Local.Reactors", i32(),
         "Number of local broker communication reactor threads created")
 
- #ifdef _WIN32
+#ifdef _WIN32
 
-    ("DfsBroker.Local.Embedded", boo()->default_value(false),
+    ("DfsBroker.Local.Embedded", boo(),
+        "DEPRECATED: renamed to FsBroker.Local.Embedded")
+
+    ("FsBroker.Local.Embedded", boo()->default_value(false),
         "If true the hypertable master and range server use the embedded local filesystem,"
         "otherwise they use the DFS broker specified")
-    ("DfsBroker.Local.Embedded.AsyncIO", boo()->default_value(true),
+    ("FsBroker.Local.Embedded.AsyncIO", boo()->default_value(true),
         "Indicates whether the embedded local filesystem uses asynchronous i/o or not.")
 
 #endif
 
-    ("DfsBroker.Host", str()->default_value("localhost"),
-        "Host on which the DFS broker is running (read by clients only)")
-    ("DfsBroker.Port", i16()->default_value(38030),
-        "Port number on which DFS broker is listening (read by clients only)")
-    ("DfsBroker.Timeout", i32(), "Length of time, "
-        "in milliseconds, to wait before timing out DFS Broker requests. This "
+    ("FsBroker.Host", str()->default_value("localhost"),
+        "Host on which the FS broker is running (read by clients only)")
+    ("FsBroker.Port", i16()->default_value(15863),
+        "Port number on which FS broker is listening (read by clients only)")
+    ("FsBroker.Timeout", i32(), "Length of time, "
+        "in milliseconds, to wait before timing out FS Broker requests. This "
         "takes precedence over Hypertable.Request.Timeout")
     ("Hyperspace.Timeout", i32()->default_value(30000), "Timeout (millisec) "
         "for hyperspace requests (preferred to Hypertable.Request.Timeout")
@@ -315,9 +330,9 @@ void DefaultPolicy::init_options() {
     ("Hyperspace.LogGc.MaxUnusedLogs", i32()->default_value(200), "Number of unused BerkeleyDB "
         " to keep around in case of lagging replicas")
     ("Hyperspace.Replica.Host", strs(), "Hostname of Hyperspace replica")
-    ("Hyperspace.Replica.Port", i16()->default_value(38040),
+    ("Hyperspace.Replica.Port", i16()->default_value(15861),
         "Port number on which Hyperspace is or should be listening for requests")
-    ("Hyperspace.Replica.Replication.Port", i16()->default_value(38041),
+    ("Hyperspace.Replica.Replication.Port", i16()->default_value(15862),
         "Hyperspace replication port ")
     ("Hyperspace.Replica.Replication.Timeout", i32()->default_value(10000),
         "Hyperspace replication master dies if it doesn't receive replication acknowledgement "
@@ -378,7 +393,7 @@ void DefaultPolicy::init_options() {
         "Size of range location cache in number of entries")
     ("Hypertable.Master.Host", str(),
         "Host on which Hypertable Master is running")
-    ("Hypertable.Master.Port", i16()->default_value(38050),
+    ("Hypertable.Master.Port", i16()->default_value(15864),
         "Port number on which Hypertable Master is or should be listening")
     ("Hypertable.Master.Workers", i32()->default_value(100),
         "Number of Hypertable Master worker threads created")
@@ -424,7 +439,7 @@ void DefaultPolicy::init_options() {
     ("Hypertable.RangeServer.MemoryLimit.EnsureUnused", i64(), "Amount of unused physical memory")
     ("Hypertable.RangeServer.MemoryLimit.EnsureUnused.Percentage", i32(),
      "Amount of unused physical memory specified as percentage of physical RAM")
-    ("Hypertable.RangeServer.Port", i16()->default_value(38060),
+    ("Hypertable.RangeServer.Port", i16()->default_value(15865),
         "Port number on which range servers are or should be listening")
     ("Hypertable.RangeServer.AccessGroup.CellCache.PageSize",
      i32()->default_value(512*KiB), "Page size for CellCache pool allocator")
@@ -489,9 +504,7 @@ void DefaultPolicy::init_options() {
         "Host of DFS Broker to use for Commit Log")
     ("Hypertable.RangeServer.CommitLog.DfsBroker.Port", i16(),
         "Port of DFS Broker to use for Commit Log")
-    ("Hypertable.RangeServer.CommitLog.FragmentRemoval.RangeReferenceRequired", boo()->default_value(true),
-        "Only remove linked log fragments if they're part of a transfer log referenced by a range")
-        
+
 #ifdef _WIN32
 
     ("Hypertable.RangeServer.CommitLog.DfsBroker.Local.Embedded", boo()->default_value(false),
@@ -499,6 +512,8 @@ void DefaultPolicy::init_options() {
 
 #endif
 
+    ("Hypertable.RangeServer.CommitLog.FragmentRemoval.RangeReferenceRequired", boo()->default_value(true),
+        "Only remove linked log fragments if they're part of a transfer log referenced by a range")
     ("Hypertable.RangeServer.CommitLog.PruneThreshold.Min", i64()->default_value(1*G),
         "Lower threshold for amount of outstanding commit log before pruning")
     ("Hypertable.RangeServer.CommitLog.PruneThreshold.Max", i64(),
@@ -560,7 +575,7 @@ void DefaultPolicy::init_options() {
     ("Hypertable.RangeServer.ProxyName", str()->default_value(""),
         "Use this value for the proxy name (if set) instead of reading from run dir.")
     ("ThriftBroker.Timeout", i32(), "Timeout (ms) for thrift broker")
-    ("ThriftBroker.Port", i16()->default_value(38080), "Port number for "
+    ("ThriftBroker.Port", i16()->default_value(15867), "Port number for "
         "thrift broker")
     ("ThriftBroker.Future.Capacity", i32()->default_value(50*M), "Capacity "
         "of result queue (in bytes) for Future objects")
@@ -579,7 +594,7 @@ void DefaultPolicy::init_options() {
 
     ("Hypertable.Service.Name", str()->default_value("Hypertable"), "Service name")
     ("Hypertable.Service.DisplayName", str()->default_value("Hypertable Database Service"), "Service display name")
-    ("Hypertable.Service.DfsBroker", boo()->default_value(true), "Include DFS broker")
+    ("Hypertable.Service.FsBroker", boo()->default_value(true), "Include FS broker")
     ("Hypertable.Service.HyperspaceMaster", boo()->default_value(true), "Include hyperspace master")
     ("Hypertable.Service.HypertableMaster", boo()->default_value(true), "Include hypertable master")
     ("Hypertable.Service.RangeServer", boo()->default_value(true), "Include range server")
@@ -675,6 +690,7 @@ void parse_args(int argc, char *argv[]) {
   int num_prop_expanded = 0;
   PROP_EXPAND_ENVIRONMENT_STRINGS("Hypertable.DataDirectory")
   PROP_EXPAND_ENVIRONMENT_STRINGS("DfsBroker.Local.Root")
+  PROP_EXPAND_ENVIRONMENT_STRINGS("FsBroker.Local.Root")
   PROP_EXPAND_ENVIRONMENT_STRINGS("Hyperspace.Replica.Dir")
   PROP_EXPAND_ENVIRONMENT_STRINGS("Hypertable.Directory")
   PROP_EXPAND_ENVIRONMENT_STRINGS("Hypertable.RangeServer.Monitoring.DataDirectories")

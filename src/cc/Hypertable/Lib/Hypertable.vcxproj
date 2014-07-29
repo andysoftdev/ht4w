@@ -25,10 +25,13 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="AccessGroupSpec.cc" />
     <ClCompile Include="ApacheLogParser.cc" />
     <ClCompile Include="BalancePlan.cc" />
     <ClCompile Include="Cell.cc" />
     <ClCompile Include="Client.cc" />
+    <ClCompile Include="ClusterId.cc" />
+    <ClCompile Include="ColumnFamilySpec.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="DataGenerator.cc" />
     <ClCompile Include="EventHandlerMasterChange.cc" />
@@ -38,6 +41,7 @@
     <ClCompile Include="HqlCommandInterpreter.cc" />
     <ClCompile Include="HqlHelpText.cc" />
     <ClCompile Include="HqlInterpreter.cc" />
+    <ClCompile Include="IndexTables.cc" />
     <ClCompile Include="IntervalScannerAsync.cc" />
     <ClCompile Include="Key.cc" />
     <ClCompile Include="KeySpec.cc" />
@@ -92,6 +96,7 @@
     <ClCompile Include="TableMutatorIntervalHandler.cc" />
     <ClCompile Include="TableMutatorShared.cc" />
     <ClCompile Include="TableMutatorSyncDispatchHandler.cc" />
+    <ClCompile Include="TableParts.cc" />
     <ClCompile Include="TableScanner.cc" />
     <ClCompile Include="TableScannerAsync.cc" />
     <ClCompile Include="TableScannerDispatchHandler.cc" />
@@ -100,12 +105,16 @@
     <ClCompile Include="Types.cc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AccessGroupSpec.h" />
     <ClInclude Include="ApacheLogParser.h" />
     <ClInclude Include="BalancePlan.h" />
     <ClInclude Include="Cell.h" />
+    <ClInclude Include="CellPredicate.h" />
     <ClInclude Include="Cells.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="ClientObject.h" />
+    <ClInclude Include="ClusterId.h" />
+    <ClInclude Include="ColumnFamilySpec.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="DataGenerator.h" />
     <ClInclude Include="DataGeneratorColumn.h" />
@@ -122,6 +131,7 @@
     <ClInclude Include="HqlParser.h" />
     <ClInclude Include="IndexMutatorCallback.h" />
     <ClInclude Include="IndexScannerCallback.h" />
+    <ClInclude Include="IndexTables.h" />
     <ClInclude Include="IntervalScannerAsync.h" />
     <ClInclude Include="Key.h" />
     <ClInclude Include="KeySpec.h" />
@@ -189,6 +199,7 @@
     <ClInclude Include="TableMutatorQueue.h" />
     <ClInclude Include="TableMutatorShared.h" />
     <ClInclude Include="TableMutatorSyncDispatchHandler.h" />
+    <ClInclude Include="TableParts.h" />
     <ClInclude Include="TableScanner.h" />
     <ClInclude Include="TableScannerAsync.h" />
     <ClInclude Include="TableScannerDispatchHandler.h" />
@@ -269,7 +280,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
@@ -287,7 +298,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
@@ -307,7 +318,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -332,7 +343,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>

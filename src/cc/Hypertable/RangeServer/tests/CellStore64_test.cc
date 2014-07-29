@@ -32,14 +32,14 @@
 
 #include "AsyncComm/ConnectionManager.h"
 
-#include "DfsBroker/Lib/Client.h"
+#include "FsBroker/Lib/Client.h"
 
 #include "Hypertable/Lib/Key.h"
 #include "Hypertable/Lib/Schema.h"
 #include "Hypertable/Lib/SerializedKey.h"
 
 #include "../CellStoreFactory.h"
-#include "../CellStoreV6.h"
+#include "../CellStoreV7.h"
 #include "../Global.h"
 
 #include <cstdlib>
@@ -48,8 +48,8 @@ using namespace Hypertable;
 using namespace std;
 
 namespace {
-  const uint16_t DEFAULT_DFSBROKER_PORT = 38030;
-  const char *schema_str =
+  const uint16_t DEFAULT_DFSBROKER_PORT = 15863;
+  String schema_str =
   "<Schema>\n"
   "  <AccessGroup name=\"default\">\n"
   "    <ColumnFamily id=\"1\">\n"
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
   try {
     struct sockaddr_in addr;
     ConnectionManagerPtr conn_mgr;
-    DfsBroker::ClientPtr client;
+    FsBroker::ClientPtr client;
     CellStorePtr cs;
     DynamicBuffer key_buf;
     char *ptr, *value_data;
@@ -92,13 +92,14 @@ int main(int argc, char **argv) {
 
     ReactorFactory::initialize(2);
 
-    InetAddr::initialize(&addr, "localhost", DEFAULT_DFSBROKER_PORT);
+    InetAddr::initialize(&addr, "localhost",
+                         Config::properties->get_i16("FsBroker.Port"));
 
     conn_mgr = new ConnectionManager();
-    Global::dfs = new DfsBroker::Client(conn_mgr, addr, 15000);
+    Global::dfs = new FsBroker::Client(conn_mgr, addr, 15000);
 
     // force broker client to be destroyed before connection manager
-    client = (DfsBroker::Client *)Global::dfs.get();
+    client = (FsBroker::Client *)Global::dfs.get();
 
     if (!client->wait_for_connection(15000)) {
       HT_ERROR("Unable to connect to DFS");
@@ -116,7 +117,7 @@ int main(int argc, char **argv) {
     Config::properties->set("Hypertable.RangeServer.CellStore.DefaultCompressor", String("none"));
     Config::properties->set("Hypertable.RangeServer.CellStore.DefaultBlockSize", 4*1024*1024);
 
-    cs = new CellStoreV6(Global::dfs.get());
+    cs = new CellStoreV7(Global::dfs.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 4096, Config::properties, &table_id));
 
     // setup value
@@ -156,11 +157,8 @@ int main(int argc, char **argv) {
 
     std::ofstream out(output_file.c_str(), ios_base::out|ios_base::app);
 
-    SchemaPtr schema = Schema::new_instance(schema_str, strlen(schema_str));
-    if (!schema->is_valid()) {
-      HT_ERRORF("Schema Parse Error: %s", schema->get_error_string());
-      exit(1);
-    }
+    SchemaPtr schema = Schema::new_instance(schema_str);
+    schema->validate();
 
     RangeSpec range_spec;
     range_spec.start_row = "";

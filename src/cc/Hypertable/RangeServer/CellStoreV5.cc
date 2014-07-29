@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/* -*- c++ -*-
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -34,7 +34,7 @@
 
 #include "AsyncComm/Protocol.h"
 
-#include "Hypertable/Lib/BlockCompressionHeader.h"
+#include "Hypertable/Lib/BlockHeaderCellStore.h"
 #include "Hypertable/Lib/CompressorFactory.h"
 #include "Hypertable/Lib/Key.h"
 #include "Hypertable/Lib/Schema.h"
@@ -55,6 +55,7 @@ using namespace Hypertable;
 
 namespace {
   const uint32_t MAX_APPENDS_OUTSTANDING = 3;
+  const uint16_t BLOCK_HEADER_FORMAT = 0;
 }
 
 
@@ -147,7 +148,7 @@ namespace {
 void
 CellStoreV5::create(const char *fname, size_t max_entries,
                     PropertiesPtr &props, const TableIdentifier *table_id) {
-  int64_t blocksize = props->get("blocksize", uint32_t(0));
+  int64_t blocksize = props->get("blocksize", 0);
   String compressor = props->get("compressor", String());
 
   m_key_compressor = new KeyCompressorPrefix();
@@ -163,7 +164,7 @@ CellStoreV5::create(const char *fname, size_t max_entries,
                                  ".DefaultCompressor");
   if (!props->has("bloom-filter-mode")) {
     // probably not called from AccessGroup
-    Schema::parse_bloom_filter(Config::get_str("Hypertable.RangeServer"
+    AccessGroupOptions::parse_bloom_filter(Config::get_str("Hypertable.RangeServer"
         ".CellStore.DefaultBloomFilter"), props);
   }
 
@@ -186,14 +187,14 @@ CellStoreV5::create(const char *fname, size_t max_entries,
 
   // set up the "column_ttl" vector
   HT_ASSERT(m_schema);
-  Schema::ColumnFamilies &column_families = m_schema->get_column_families();
-  for (size_t i=0; i<column_families.size(); i++) {
-    if (column_families[i]->ttl) {
+  ColumnFamilySpecs &column_family_specs = m_schema->get_column_families();
+  for (size_t i=0; i<column_family_specs.size(); i++) {
+    if (column_family_specs[i]->get_option_ttl()) {
       if (m_column_ttl == 0) {
         m_column_ttl = new int64_t[256];
         memset(m_column_ttl, 0, 256*8);
       }
-      m_column_ttl[ column_families[i]->id ] = column_families[i]->ttl * 1000000000LL;
+      m_column_ttl[ column_family_specs[i]->get_id() ] = column_family_specs[i]->get_option_ttl() * 1000000000LL;
     }
   }
 
@@ -291,7 +292,7 @@ void CellStoreV5::load_replaced_files() {
     len = m_filesys->pread(m_fd, buf.ptr, amount, m_trailer.replaced_files_offset, second_try);
 
     if (len != amount)
-      HT_THROWF(Error::DFSBROKER_IO_ERROR, "Error loading replaced files for "
+      HT_THROWF(Error::FSBROKER_IO_ERROR, "Error loading replaced files for "
                 "CellStore '%s' : tried to read %lld but only got %lld",
                 m_filename.c_str(), (Lld)amount, (Lld)len);
     /** inflate replaced files **/
@@ -365,7 +366,7 @@ void CellStoreV5::load_bloom_filter() {
     }
 
     if (len != m_bloom_filter->total_size())
-      HT_THROWF(Error::DFSBROKER_IO_ERROR, "Problem loading bloomfilter for"
+      HT_THROWF(Error::FSBROKER_IO_ERROR, "Problem loading bloomfilter for"
                 "CellStore '%s' : tried to read %lld but only got %lld",
                 m_filename.c_str(), (Lld)m_bloom_filter->total_size(), (Lld)len);
 
@@ -422,7 +423,7 @@ void CellStoreV5::add(const Key &key, const ByteString value) {
   }
 
   if (m_buffer.fill() > (size_t)m_uncompressed_blocksize) {
-    BlockCompressionHeader header(DATA_BLOCK_MAGIC);
+    BlockHeaderCellStore header(BLOCK_HEADER_FORMAT, DATA_BLOCK_MAGIC);
 
     m_index_builder.add_entry(m_key_compressor, m_offset);
 
@@ -439,10 +440,10 @@ void CellStoreV5::add(const Key &key, const ByteString value) {
       if (!m_sync_handler.wait_for_reply(event_ptr)) {
         if (event_ptr->type == Event::MESSAGE)
           HT_THROWF(Hypertable::Protocol::response_code(event_ptr),
-             "Problem writing to DFS file '%s' : %s", m_filename.c_str(),
+             "Problem writing to FS file '%s' : %s", m_filename.c_str(),
              Hypertable::Protocol::string_format_message(event_ptr).c_str());
         HT_THROWF(event_ptr->error,
-                  "Problem writing to DFS file '%s'", m_filename.c_str());
+                  "Problem writing to FS file '%s'", m_filename.c_str());
       }
       m_outstanding_appends--;
     }
@@ -457,7 +458,7 @@ void CellStoreV5::add(const Key &key, const ByteString value) {
 
     try { m_filesys->append(m_fd, send_buf, 0, &m_sync_handler); }
     catch (Exception &e) {
-      HT_THROW2F(e.code(), e, "Problem writing to DFS file '%s'",
+      HT_THROW2F(e.code(), e, "Problem writing to FS file '%s'",
                  m_filename.c_str());
     }
     m_outstanding_appends++;
@@ -530,7 +531,7 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
   int64_t index_memory = 0;
 
   if (m_buffer.fill() > 0) {
-    BlockCompressionHeader header(DATA_BLOCK_MAGIC);
+    BlockHeaderCellStore header(BLOCK_HEADER_FORMAT, DATA_BLOCK_MAGIC);
 
     m_index_builder.add_entry(m_key_compressor, m_offset);
 
@@ -581,7 +582,7 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
    * Write fixed index
    */
   {
-    BlockCompressionHeader header(INDEX_FIXED_BLOCK_MAGIC);
+    BlockHeaderCellStore header(BLOCK_HEADER_FORMAT, INDEX_FIXED_BLOCK_MAGIC);
     m_compressor->deflate(m_index_builder.fixed_buf(), zbuf, header, HT_DIRECT_IO_ALIGNMENT);
   }
 
@@ -601,7 +602,7 @@ void CellStoreV5::finalize(TableIdentifier *table_identifier) {
    * Write variable index
    */
   {
-    BlockCompressionHeader header(INDEX_VARIABLE_BLOCK_MAGIC);
+    BlockHeaderCellStore header(BLOCK_HEADER_FORMAT, INDEX_VARIABLE_BLOCK_MAGIC);
     m_trailer.var_index_offset = m_offset;
     m_compressor->deflate(m_index_builder.variable_buf(), zbuf, header, HT_DIRECT_IO_ALIGNMENT);
   }
@@ -869,7 +870,7 @@ void CellStoreV5::load_block_index() {
   int64_t amount, index_amount;
   int64_t len = 0;
   BlockCompressionCodecPtr compressor;
-  BlockCompressionHeader header;
+  BlockHeaderCellStore header(BLOCK_HEADER_FORMAT);
   SerializedKey key;
   bool inflating_fixed=true;
   bool second_try = false;
@@ -889,7 +890,7 @@ void CellStoreV5::load_block_index() {
     len = m_filesys->pread(m_fd, buf.ptr, amount, m_trailer.fix_index_offset, second_try);
 
     if (len != amount)
-      HT_THROWF(Error::DFSBROKER_IO_ERROR, "Error loading index for "
+      HT_THROWF(Error::FSBROKER_IO_ERROR, "Error loading index for "
                 "CellStore '%s' : tried to read %lld but only got %lld",
                 m_filename.c_str(), (Lld)amount, (Lld)len);
     /** inflate fixed index **/
@@ -978,7 +979,7 @@ bool CellStoreV5::may_contain(ScanContextPtr &scan_context) {
         memcpy(rowcol.get(), scan_context->start_row.c_str(), rowlen + 1);
 
         foreach_ht(const char *col, scan_context->spec->columns) {
-          uint8_t column_family_id = schema->get_column_family(col)->id;
+          uint8_t column_family_id = schema->get_column_family(col)->get_id();
           rowcol[rowlen + 1] = column_family_id;
 
           if (may_contain(rowcol.get(), rowlen + 2))
@@ -1016,4 +1017,9 @@ void CellStoreV5::display_block_info() {
     m_index_map64.display();
   else
     m_index_map32.display();
+}
+
+
+uint16_t CellStoreV5::block_header_format() {
+  return BLOCK_HEADER_FORMAT;
 }

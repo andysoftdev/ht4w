@@ -113,7 +113,7 @@ implements org.apache.hadoop.mapred.InputFormat<BytesWritable, Row>, JobConfigur
     private Row m_value;
     private ByteBuffer m_row = null;
     private BytesWritable m_key = null;
-    private SerializedCellsReader m_reader = new SerializedCellsReader(null);
+    private SerializedCellsReader m_reader = new SerializedCellsReader();
 
     private boolean m_eos = false;
 
@@ -140,10 +140,6 @@ implements org.apache.hadoop.mapred.InputFormat<BytesWritable, Row>, JobConfigur
         throw new IOException(e.getMessage());
       }
       catch (TException e) {
-        e.printStackTrace();
-        throw new IOException(e.getMessage());
-      }
-      catch (ClientException e) {
         e.printStackTrace();
         throw new IOException(e.getMessage());
       }
@@ -208,10 +204,6 @@ implements org.apache.hadoop.mapred.InputFormat<BytesWritable, Row>, JobConfigur
         e.printStackTrace();
         throw new IOException(e.getMessage());
       }
-      catch (ClientException e) {
-        e.printStackTrace();
-        throw new IOException(e.getMessage());
-      }
       return true;
     }
 
@@ -237,10 +229,10 @@ implements org.apache.hadoop.mapred.InputFormat<BytesWritable, Row>, JobConfigur
         if (framesize == 0)
           framesize = job.getInt(THRIFT_FRAMESIZE2, 0);
         if (framesize != 0)
-          m_client = ThriftClient.create("localhost", 38080, 1600000,
+          m_client = ThriftClient.create("localhost", 15867, 1600000,
                   true, framesize);
         else
-          m_client = ThriftClient.create("localhost", 38080);
+          m_client = ThriftClient.create("localhost", 15867);
       }
       return new HypertableRecordReader(m_client, m_namespace, m_tablename,
               scan_spec);
@@ -263,10 +255,10 @@ implements org.apache.hadoop.mapred.InputFormat<BytesWritable, Row>, JobConfigur
         if (framesize == 0)
           framesize = job.getInt(THRIFT_FRAMESIZE2, 0);
         if (framesize != 0)
-          m_client = ThriftClient.create("localhost", 38080, 1600000,
+          m_client = ThriftClient.create("localhost", 15867, 1600000,
                   true, framesize);
         else
-          m_client = ThriftClient.create("localhost", 38080);
+          m_client = ThriftClient.create("localhost", 15867);
       }
 
       String namespace, tablename;
@@ -306,10 +298,6 @@ implements org.apache.hadoop.mapred.InputFormat<BytesWritable, Row>, JobConfigur
       throw new IOException(e.getMessage());
     }
     catch (TException e) {
-      e.printStackTrace();
-      throw new IOException(e.getMessage());
-    }
-    catch (ClientException e) {
       e.printStackTrace();
       throw new IOException(e.getMessage());
     }

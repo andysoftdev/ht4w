@@ -17,13 +17,12 @@
 # 02110-1301, USA.
 #
 
-add_subdirectory(dfsclient)
+add_subdirectory(fsclient)
 add_subdirectory(dumplog)
 add_subdirectory(generate_error_code_doc)
 add_subdirectory(hyperspace)
 add_subdirectory(hypertable)
 add_subdirectory(master_client)
-add_subdirectory(merge_diff)
 add_subdirectory(metalog_dump)
 add_subdirectory(prepend_md5)
 add_subdirectory(prune_tsv)

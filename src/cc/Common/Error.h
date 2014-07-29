@@ -110,6 +110,10 @@ namespace Hypertable {
       INVALID_OPERATION                            = 57,
       UNSUPPORTED_OPERATION                        = 58,
       COLUMN_FAMILY_NOT_FOUND                      = 59,
+      NOTHING_TO_DO                                = 60,
+      INCOMPATIBLE_OPTIONS                         = 61,
+      BAD_VALUE                                    = 62,
+      SCHEMA_GENERATION_MISMATCH                   = 63,
 
       CONFIG_BAD_ARGUMENT                          = 1001,
       CONFIG_BAD_CFG_FILE                          = 1002,
@@ -133,14 +137,14 @@ namespace Hypertable {
       COMM_BAD_HEADER                              = 0x0001000F,
       COMM_INVALID_PROXY                           = 0x00010010,
 
-      DFSBROKER_BAD_FILE_HANDLE                    = 0x00020001,
-      DFSBROKER_IO_ERROR                           = 0x00020002,
-      DFSBROKER_FILE_NOT_FOUND                     = 0x00020003,
-      DFSBROKER_BAD_FILENAME                       = 0x00020004,
-      DFSBROKER_PERMISSION_DENIED                  = 0x00020005,
-      DFSBROKER_INVALID_ARGUMENT                   = 0x00020006,
-      DFSBROKER_INVALID_CONFIG                     = 0x00020007,
-      DFSBROKER_EOF                                = 0x00020008,
+      FSBROKER_BAD_FILE_HANDLE                    = 0x00020001,
+      FSBROKER_IO_ERROR                           = 0x00020002,
+      FSBROKER_FILE_NOT_FOUND                     = 0x00020003,
+      FSBROKER_BAD_FILENAME                       = 0x00020004,
+      FSBROKER_PERMISSION_DENIED                  = 0x00020005,
+      FSBROKER_INVALID_ARGUMENT                   = 0x00020006,
+      FSBROKER_INVALID_CONFIG                     = 0x00020007,
+      FSBROKER_EOF                                = 0x00020008,
 
       HYPERSPACE_IO_ERROR                          = 0x00030001,
       HYPERSPACE_CREATE_FAILED                     = 0x00030002,
@@ -239,6 +243,7 @@ namespace Hypertable {
       RANGESERVER_RANGE_NOT_YET_RELINQUISHED       = 0x00050023,
     
       HQL_BAD_LOAD_FILE_FORMAT                     = 0x00060001,
+      HQL_BAD_COMMAND                              = 0x00060002,
 
       METALOG_ERROR                                = 0x00070000,
       METALOG_VERSION_MISMATCH                     = 0x00070001,

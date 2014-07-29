@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -31,11 +31,6 @@ extern "C" {
 #include <time.h>
 }
 
-#ifdef _WIN32
-#define BOOST_IOSTREAMS_USE_DEPRECATED
-#define BOOST_IOSTREAMS_WINDOWS
-#endif
-
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
@@ -63,7 +58,7 @@ extern "C" {
 #include "TableSplit.h"
 #include "Types.h"
 
-#include "DfsBroker/Lib/FileDevice.h"
+#include "FsBroker/Lib/FileDevice.h"
 
 using namespace std;
 using namespace Hypertable;
@@ -157,14 +152,10 @@ cmd_show_create_table(NamespacePtr &ns, ParserState &state,
                       HqlInterpreter::Callback &cb) {
   if (!ns)
     HT_THROW(Error::BAD_NAMESPACE, "Null namespace");
-  String out_str;
-  String schema_str = ns->get_schema_str(state.table_name, true);
-  SchemaPtr schema = Schema::new_instance(schema_str.c_str(),
-                                          schema_str.length());
-  if (!schema->is_valid())
-    HT_THROW(Error::BAD_SCHEMA, schema->get_error_string());
-
-  schema->render_hql_create_table(state.table_name, out_str);
+  string schema_str = ns->get_schema_str(state.table_name, true);
+  SchemaPtr schema = Schema::new_instance(schema_str);
+  string out_str = schema->render_hql(state.table_name);
+  out_str += ";\n";
   cb.on_return(out_str);
   cb.on_finish();
 }
@@ -173,83 +164,7 @@ cmd_show_create_table(NamespacePtr &ns, ParserState &state,
 void
 cmd_create_table(NamespacePtr &ns, ParserState &state,
                  HqlInterpreter::Callback &cb) {
-  if (!ns)
-    HT_THROW(Error::BAD_NAMESPACE, "Null namespace");
-  String schema_str;
-  SchemaPtr schema;
-  bool need_default_ag = false;
-
-  if (!state.clone_table_name.empty()) {
-    schema_str = ns->get_schema_str(state.clone_table_name, true);
-    schema = Schema::new_instance(schema_str.c_str(), schema_str.size());
-    schema_str.clear();
-    schema->render(schema_str);
-    ns->create_table(state.table_name, schema_str.c_str());
-  }
-  else {
-    schema = new Schema();
-    schema->validate_compressor(state.table_compressor);
-    schema->set_compressor(state.table_compressor);
-    schema->set_group_commit_interval(state.group_commit_interval);
-
-    foreach_ht(Schema::AccessGroup *ag, state.ag_list) {
-      schema->validate_compressor(ag->compressor);
-      schema->validate_bloom_filter(ag->bloom_filter);
-      if (state.table_in_memory)
-        ag->in_memory = true;
-      if (state.table_blocksize != 0 && ag->blocksize == 0)
-        ag->blocksize = state.table_blocksize;
-      if (state.table_replication != -1 && ag->replication == -1)
-        ag->replication = (::int16_t)state.table_replication;
-      schema->add_access_group(ag);
-    }
-
-    if (state.ag_map.find("default") == state.ag_map.end())
-      need_default_ag = true;
-
-    foreach_ht(Schema::ColumnFamily *cf, state.cf_list) {
-      if (cf->ag == "") {
-        cf->ag = "default";
-        if (need_default_ag) {
-          Schema::AccessGroup *ag = new Schema::AccessGroup();
-          ag->name = "default";
-          if (state.table_in_memory)
-            ag->in_memory = true;
-          if (state.table_blocksize != 0 && ag->blocksize == 0)
-            ag->blocksize = state.table_blocksize;
-          if (state.table_replication != -1 && ag->replication == -1)
-            ag->replication = (::int16_t)state.table_replication;
-          schema->add_access_group(ag);
-          need_default_ag = false;
-        }
-      }
-      if (cf->ttl == 0 && state.ttl != 0)
-        cf->ttl = state.ttl;
-      if (cf->max_versions == 0 && state.max_versions != 0)
-        cf->max_versions = state.max_versions;
-      if (cf->counter) {
-        if (cf->max_versions)
-          HT_THROWF(Error::HQL_PARSE_ERROR,
-                    "Incompatible options (COUNTER & MAX_VERSIONS) specified for column '%s'",
-                    cf->name.c_str());
-        if (cf->time_order_desc_set && cf->time_order_desc)
-          HT_THROWF(Error::HQL_PARSE_ERROR,
-                    "Incompatible options (COUNTER & TIME_ORDER DESC) specified for column '%s'",
-                    cf->name.c_str());
-      }
-      if (!cf->time_order_desc_set) {
-        cf->time_order_desc = state.time_order_desc;
-        cf->time_order_desc_set = true;
-      }
-      schema->add_column_family(cf);
-    }
-
-    if (!schema->is_valid())
-      HT_THROW(Error::HQL_PARSE_ERROR, schema->get_error_string());
-
-    schema->render(schema_str);
-    ns->create_table(state.table_name, schema_str.c_str());
-  }
+  ns->create_table(state.table_name, state.create_schema);
   cb.on_finish();
 }
 
@@ -258,38 +173,7 @@ cmd_alter_table(NamespacePtr &ns, ParserState &state,
                  HqlInterpreter::Callback &cb) {
   if (!ns)
     HT_THROW(Error::BAD_NAMESPACE, "Null namespace");
-  String schema_str;
-  SchemaPtr schema = new Schema();
-  bool need_default_ag = false;
-
-  foreach_ht(Schema::AccessGroup *ag, state.ag_list)
-    schema->add_access_group(ag);
-
-  if (state.ag_map.find("default") == state.ag_map.end())
-    need_default_ag = true;
-
-  foreach_ht(Schema::ColumnFamily *cf, state.cf_list) {
-    if (cf->ag == "") {
-      cf->ag = "default";
-      if (need_default_ag) {
-        Schema::AccessGroup *ag = new Schema::AccessGroup();
-        ag->name = "default";
-        schema->add_access_group(ag);
-        need_default_ag = false;
-      }
-    }
-    schema->add_column_family(cf);
-  }
-
-  const char *error_str = schema->get_error_string();
-  if (error_str)
-    HT_THROW(Error::HQL_PARSE_ERROR, error_str);
-
-  ns->alter_table(state.table_name, schema);
-
-  /**
-   * Refresh the cached table
-   */
+  ns->alter_table(state.table_name, state.alter_schema);
   ns->refresh_table(state.table_name);
   cb.on_finish();
 }
@@ -316,7 +200,7 @@ cmd_describe_table(NamespacePtr &ns, ParserState &state,
 
 void
 cmd_select(NamespacePtr &ns, ConnectionManagerPtr &conn_manager,
-           DfsBroker::ClientPtr &dfs_client, ParserState &state, HqlInterpreter::Callback &cb) {
+           FsBroker::ClientPtr &fs_client, ParserState &state, HqlInterpreter::Callback &cb) {
   if (!ns)
     HT_THROW(Error::BAD_NAMESPACE, "Null namespace");
   TablePtr table;
@@ -324,7 +208,6 @@ cmd_select(NamespacePtr &ns, ConnectionManagerPtr &conn_manager,
   boost::iostreams::filtering_ostream fout;
   FILE *outf = cb.output;
   int out_fd = -1;
-  String dfs = "dfs://";
   String localfs = "file://";
   char fs = state.field_separator ? state.field_separator : '\t';
 
@@ -338,11 +221,15 @@ cmd_select(NamespacePtr &ns, ConnectionManagerPtr &conn_manager,
     if (boost::algorithm::ends_with(state.scan.outfile, ".gz"))
       fout.push(boost::iostreams::gzip_compressor());
 
-    if (boost::algorithm::starts_with(state.scan.outfile, dfs)) {
-      // init Dfs client if not done yet
-      if (!dfs_client)
-        dfs_client = new DfsBroker::Client(conn_manager, Config::properties);
-      fout.push(DfsBroker::FileSink(dfs_client, state.scan.outfile.substr(dfs.size())));
+    if (boost::algorithm::starts_with(state.scan.outfile, "dfs://") ||
+        boost::algorithm::starts_with(state.scan.outfile, "fs://")) {
+      // init Fs client if not done yet
+      if (!fs_client)
+        fs_client = new FsBroker::Client(conn_manager, Config::properties);
+      if (boost::algorithm::starts_with(state.scan.outfile, "dfs://"))
+        fout.push(FsBroker::FileSink(fs_client, state.scan.outfile.substr(6)));
+      else
+        fout.push(FsBroker::FileSink(fs_client, state.scan.outfile.substr(5)));
     }
     else if (boost::algorithm::starts_with(state.scan.outfile, localfs))
       fout.push(boost::iostreams::file_descriptor_sink(state.scan.outfile.substr(localfs.size())));
@@ -404,7 +291,7 @@ cmd_select(NamespacePtr &ns, ConnectionManagerPtr &conn_manager,
       else {
         nsec = cell.timestamp % 1000000000LL;
         unix_time = cell.timestamp / 1000000000LL;
-        gmtime_r(&unix_time, &tms);
+        localtime_r(&unix_time, &tms);
         fout << Hypertable::format("%d-%02d-%02d %02d:%02d:%02d.%09d%c", 
                         tms.tm_year + 1900, tms.tm_mon + 1, tms.tm_mday, 
                         tms.tm_hour, tms.tm_min, tms.tm_sec, nsec, fs);
@@ -476,7 +363,7 @@ cmd_select(NamespacePtr &ns, ConnectionManagerPtr &conn_manager,
 
 void
 cmd_dump_table(NamespacePtr &ns,
-               ConnectionManagerPtr &conn_manager, DfsBroker::ClientPtr &dfs_client,
+               ConnectionManagerPtr &conn_manager, FsBroker::ClientPtr &fs_client,
                ParserState &state, HqlInterpreter::Callback &cb) {
   if (!ns)
     HT_THROW(Error::BAD_NAMESPACE, "Null namespace");
@@ -484,7 +371,6 @@ cmd_dump_table(NamespacePtr &ns,
   boost::iostreams::filtering_ostream fout;
   FILE *outf = cb.output;
   int out_fd = -1;
-  String dfs = "dfs://";
   String localfs = "file://";
   char fs = state.field_separator ? state.field_separator : '\t';
 
@@ -498,11 +384,16 @@ cmd_dump_table(NamespacePtr &ns,
 
     if (boost::algorithm::ends_with(state.scan.outfile, ".gz"))
       fout.push(boost::iostreams::gzip_compressor());
-    if (boost::algorithm::starts_with(state.scan.outfile, dfs)) {
-      // init Dfs client if not done yet
-      if (!dfs_client)
-        dfs_client = new DfsBroker::Client(conn_manager, Config::properties);
-      fout.push(DfsBroker::FileSink(dfs_client, state.scan.outfile.substr(dfs.size())));
+  
+    if (boost::algorithm::starts_with(state.scan.outfile, "dfs://") ||
+        boost::algorithm::starts_with(state.scan.outfile, "fs://")) {
+      // init Fs client if not done yet
+      if (!fs_client)
+        fs_client = new FsBroker::Client(conn_manager, Config::properties);
+      if (boost::algorithm::starts_with(state.scan.outfile, "dfs://"))
+        fout.push(FsBroker::FileSink(fs_client, state.scan.outfile.substr(6)));
+      else
+        fout.push(FsBroker::FileSink(fs_client, state.scan.outfile.substr(5)));
     }
     else if (boost::algorithm::starts_with(state.scan.outfile, localfs))
       fout.push(boost::iostreams::file_descriptor_sink(state.scan.outfile.substr(localfs.size())));
@@ -593,7 +484,7 @@ cmd_dump_table(NamespacePtr &ns,
 void
 cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
               ConnectionManagerPtr &conn_manager, 
-              DfsBroker::ClientPtr &dfs_client,
+              FsBroker::ClientPtr &fs_client,
               ParserState &state, HqlInterpreter::Callback &cb) {
   if (!ns)
     HT_THROW(Error::BAD_NAMESPACE, "Null namespace");
@@ -640,11 +531,11 @@ cmd_load_data(NamespacePtr &ns, ::uint32_t mutator_flags,
   LoadDataSourcePtr lds;
   bool is_delete;
 
-  // init Dfs client if not done yet
-  if(state.input_file_src == DFS_FILE && !dfs_client)
-    dfs_client = new DfsBroker::Client(conn_manager, Config::properties);
+  // init Fs client if not done yet
+  if(state.input_file_src == DFS_FILE && !fs_client)
+    fs_client = new FsBroker::Client(conn_manager, Config::properties);
 
-  lds = LoadDataSourceFactory::create(dfs_client, state.input_file,
+  lds = LoadDataSourceFactory::create(fs_client, state.input_file,
                state.input_file_src, state.header_file, state.header_file_src,
                state.columns, state.timestamp_column, fs,
                state.row_uniquify_chars, state.load_flags);
@@ -925,6 +816,41 @@ cmd_set(Client *client, ParserState &state, HqlInterpreter::Callback &cb) {
   cb.on_finish();
 }
 
+void
+cmd_rebuild_indices(Client *client, NamespacePtr &ns, ParserState &state,
+                    HqlInterpreter::Callback &cb) {
+  if (!ns)
+    HT_THROW(Error::BAD_NAMESPACE, "Null namespace");
+
+  if (state.table_name.empty())
+    HT_THROW(Error::HQL_PARSE_ERROR, "Empty table name");
+
+  NamespacePtr working_ns = ns;
+  string table_basename = state.table_name;
+  size_t lastslash = state.table_name.find_last_of('/');
+  if (lastslash != string::npos) {
+    table_basename = state.table_name.substr(lastslash+1);
+    if (state.table_name[0] == '/') {
+      if (lastslash == 0)
+        working_ns = client->open_namespace("/");
+      else
+        working_ns =
+          client->open_namespace(state.table_name.substr(0, lastslash));
+    }
+    else
+      working_ns = client->open_namespace(state.table_name.substr(0, lastslash),
+                                          ns.get());
+  }
+
+  int8_t parts = state.flags ? static_cast<int8_t>(state.flags) : TableParts::ALL;
+  TableParts table_parts(parts);
+
+  working_ns->rebuild_indices(table_basename, table_parts);
+
+  cb.on_finish((TableMutator*)0);
+}
+
+
 void cmd_shutdown_master(Client *client, HqlInterpreter::Callback &cb) {
   client->shutdown();
   cb.on_finish();
@@ -940,7 +866,7 @@ void cmd_close(Client *client, HqlInterpreter::Callback &cb) {
 
 HqlInterpreter::HqlInterpreter(Client *client, ConnectionManagerPtr &conn_manager,
     bool immutable_namespace) : m_client(client), m_mutator_flags(0),
-    m_conn_manager(conn_manager), m_dfs_client(0), m_immutable_namespace(immutable_namespace) {
+    m_conn_manager(conn_manager), m_fs_client(0), m_immutable_namespace(immutable_namespace) {
   if (Config::properties->get_bool("Hypertable.HqlInterpreter.Mutator.NoLogSync"))
     m_mutator_flags = Table::MUTATOR_FLAG_NO_LOG_SYNC;
 
@@ -954,7 +880,7 @@ void HqlInterpreter::set_namespace(const String &ns) {
 }
 
 void HqlInterpreter::execute(const String &line, Callback &cb) {
-  ParserState state;
+  ParserState state(m_namespace.get());
   String stripped_line = line;
 
   boost::trim(stripped_line);
@@ -977,11 +903,11 @@ void HqlInterpreter::execute(const String &line, Callback &cb) {
     case COMMAND_DESCRIBE_TABLE:
       cmd_describe_table(m_namespace, state, cb);                  break;
     case COMMAND_SELECT:
-      cmd_select(m_namespace, m_conn_manager, m_dfs_client,
+      cmd_select(m_namespace, m_conn_manager, m_fs_client,
                  state, cb);                                       break;
     case COMMAND_LOAD_DATA:
       cmd_load_data(m_namespace, m_mutator_flags,
-                    m_conn_manager, m_dfs_client, state, cb);      break;
+                    m_conn_manager, m_fs_client, state, cb);      break;
     case COMMAND_INSERT:
       cmd_insert(m_namespace, state, cb);                          break;
     case COMMAND_DELETE:
@@ -997,7 +923,7 @@ void HqlInterpreter::execute(const String &line, Callback &cb) {
     case COMMAND_RENAME_TABLE:
       cmd_rename_table(m_namespace, state, cb);                    break;
     case COMMAND_DUMP_TABLE:
-      cmd_dump_table(m_namespace, m_conn_manager, m_dfs_client,
+      cmd_dump_table(m_namespace, m_conn_manager, m_fs_client,
                      state, cb);                                   break;
     case COMMAND_CLOSE:
       cmd_close(m_client, cb);                                     break;
@@ -1016,6 +942,8 @@ void HqlInterpreter::execute(const String &line, Callback &cb) {
       cmd_stop(m_client, state, cb);                               break;
     case COMMAND_SET:
       cmd_set(m_client, state, cb);                                break;
+    case COMMAND_REBUILD_INDICES:
+      cmd_rebuild_indices(m_client, m_namespace, state, cb);       break;
 
     default:
       HT_THROW(Error::HQL_PARSE_ERROR, String("unsupported command: ") + stripped_line);

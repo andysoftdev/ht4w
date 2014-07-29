@@ -43,6 +43,11 @@
 #include "Context.h"
 #include "Operation.h"
 
+#ifdef _WIN32
+#pragma warning( push, 1 )
+#pragma warning( disable : 4715 ) // not all control paths return a value
+#endif
+
 namespace Hypertable {
 
   /** @addtogroup Master
@@ -157,5 +162,9 @@ namespace Hypertable {
   /** @} */
 
 } // namespace Hypertable
+
+#ifdef _WIN32
+#pragma warning( pop )
+#endif
 
 #endif // HYPERTABLE_OPERATION_EPHEMERAL_H

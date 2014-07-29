@@ -265,9 +265,6 @@
     <ClCompile Include="MergeScannerAccessGroup.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UpdateThread.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MergeScannerRange.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -346,13 +343,31 @@
     <ClCompile Include="MetaLogEntityRemoveOkLogs.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TableSchemaCache.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RequestHandlerSetState.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ServerState.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CellStoreTrailerV7.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CellStoreV7.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HyperspaceTableCache.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LogReplayBarrier.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerTableMaintenanceDisable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestHandlerTableMaintenanceEnable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UpdatePipeline.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -669,9 +684,6 @@
     <ClInclude Include="MergeScannerAccessGroup.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="UpdateThread.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="MergeScannerRange.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -753,9 +765,6 @@
     <ClInclude Include="MetaLogEntityRemoveOkLogs.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="TableSchemaCache.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="LoadStatistics.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -763,6 +772,42 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ServerState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellStoreTrailerV7.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellStoreV7.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Context.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HyperspaceTableCache.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogReplayBarrier.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerTableMaintenanceDisable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestHandlerTableMaintenanceEnable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateContext.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdatePipeline.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateRecRange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateRecTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdateRequest.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

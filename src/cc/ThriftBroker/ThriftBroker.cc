@@ -62,21 +62,19 @@
 #endif
 
 #define THROW_TE(_code_, _str_) do { ThriftGen::ClientException te; \
-  te.code = _code_; te.message = _str_; \
+  te.code = _code_; \
+  te.message.append(Error::get_text(_code_)); \
+  te.message.append(" - "); \
+  te.message.append(_str_); \
   te.__isset.code = te.__isset.message = true; \
   throw te; \
-} while (0)
-
-#define THROW_(_code_) do { \
-  Hypertable::Exception e(_code_, __LINE__, HT_FUNC, __FILE__); \
-  std::ostringstream oss; oss << e; \
-  HT_ERROR_OUT << oss.str() << HT_END; \
-  THROW_TE(_code_, oss.str()); \
 } while (0)
 
 #define RETHROW(_expr_) catch (Hypertable::Exception &e) { \
   std::ostringstream oss;  oss << HT_FUNC << " " << _expr_ << ": "<< e; \
   HT_ERROR_OUT << oss.str() << HT_END; \
+  oss.str(""); \
+  oss << _expr_; \
   THROW_TE(e.code(), oss.str()); \
 }
 
@@ -254,6 +252,9 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
   if (tss.__isset.cell_offset)
     hss.cell_offset = tss.cell_offset;
 
+  if (tss.__isset.and_column_predicates)
+    hss.and_column_predicates = tss.and_column_predicates;
+
   // shallow copy
   foreach_ht(const ThriftGen::RowInterval &ri, tss.row_intervals)
     hss.row_intervals.push_back(Hypertable::RowInterval(ri.start_row.c_str(),
@@ -267,10 +268,13 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
   foreach_ht(const std::string &col, tss.columns)
     hss.columns.push_back(col.c_str());
 
-  foreach_ht(const ThriftGen::ColumnPredicate &cp, tss.column_predicates)
+  foreach_ht(const ThriftGen::ColumnPredicate &cp, tss.column_predicates) {
+    HT_INFOF("%s:%s %s", cp.column_family.c_str(), cp.column_qualifier.c_str(),
+             cp.__isset.value ? cp.value.c_str() : "");
     hss.column_predicates.push_back(Hypertable::ColumnPredicate(
-        cp.column_family.c_str(), cp.operation, 
-                cp.__isset.value ? cp.value.c_str() : 0));
+     cp.column_family.c_str(), cp.column_qualifier.c_str(), cp.operation, 
+     cp.__isset.value ? cp.value.c_str() : 0));
+  }
 }
 
 void
@@ -506,6 +510,197 @@ void convert_table_split(const Hypertable::TableSplit &hsplit,
 
 }
 
+bool convert_column_family_options(const Hypertable::ColumnFamilyOptions &hoptions,
+                                   ThriftGen::ColumnFamilyOptions &toptions) {
+  bool ret = false;
+  if (hoptions.is_set_max_versions()) {
+    toptions.__set_max_versions(hoptions.get_max_versions());
+    ret = true;
+  }
+  if (hoptions.is_set_ttl()) {
+    toptions.__set_ttl(hoptions.get_ttl());
+    ret = true;
+  }
+  if (hoptions.is_set_time_order_desc()) {
+    toptions.__set_time_order_desc(hoptions.get_time_order_desc());
+    ret = true;
+  }
+  if (hoptions.is_set_counter()) {
+    toptions.__set_counter(hoptions.get_counter());
+    ret = true;
+  }
+  return ret;
+}
+
+void convert_column_family_options(const ThriftGen::ColumnFamilyOptions &toptions,
+                                   Hypertable::ColumnFamilyOptions &hoptions) {
+  if (toptions.__isset.max_versions)
+    hoptions.set_max_versions(toptions.max_versions);
+  if (toptions.__isset.ttl)
+    hoptions.set_ttl(toptions.ttl);
+  if (toptions.__isset.time_order_desc)
+    hoptions.set_time_order_desc(toptions.time_order_desc);
+  if (toptions.__isset.counter)
+    hoptions.set_counter(toptions.counter);
+}
+
+bool convert_access_group_options(const Hypertable::AccessGroupOptions &hoptions,
+                                  ThriftGen::AccessGroupOptions &toptions) {
+  bool ret = false;
+  if (hoptions.is_set_in_memory()) {
+    toptions.__set_in_memory(hoptions.get_in_memory());
+    ret = true;
+  }
+  if (hoptions.is_set_replication()) {
+    toptions.__set_replication(hoptions.get_replication());
+    ret = true;
+  }
+  if (hoptions.is_set_blocksize()) {
+    toptions.__set_blocksize(hoptions.get_blocksize());
+    ret = true;
+  }
+  if (hoptions.is_set_compressor()) {
+    toptions.__set_compressor(hoptions.get_compressor());
+    ret = true;
+  }
+  if (hoptions.is_set_bloom_filter()) {
+    toptions.__set_bloom_filter(hoptions.get_bloom_filter());
+    ret = true;
+  }
+  return ret;
+}
+
+void convert_access_group_options(const ThriftGen::AccessGroupOptions &toptions,
+                                  Hypertable::AccessGroupOptions &hoptions) {
+  if (toptions.__isset.in_memory)
+    hoptions.set_in_memory(toptions.in_memory);
+  if (toptions.__isset.replication)
+    hoptions.set_replication(toptions.replication);
+  if (toptions.__isset.blocksize)
+    hoptions.set_blocksize(toptions.blocksize);
+  if (toptions.__isset.compressor)
+    hoptions.set_compressor(toptions.compressor);
+  if (toptions.__isset.bloom_filter)
+    hoptions.set_bloom_filter(toptions.bloom_filter);
+}
+
+
+void convert_schema(const Hypertable::SchemaPtr &hschema,
+                    ThriftGen::Schema &tschema) {
+
+  if (hschema->get_generation())
+    tschema.__set_generation(hschema->get_generation());
+
+  tschema.__set_version(hschema->get_version());
+  
+  if (hschema->get_group_commit_interval())
+    tschema.__set_group_commit_interval(hschema->get_group_commit_interval());
+
+  for (auto ag_spec : hschema->get_access_groups()) {
+    ThriftGen::AccessGroupSpec tag;
+    tag.name = ag_spec->get_name();
+    tag.__set_generation(ag_spec->get_generation());
+    if (convert_access_group_options(ag_spec->options(), tag.options))
+      tag.__isset.options = true;      
+    if (convert_column_family_options(ag_spec->defaults(), tag.defaults))
+      tag.__isset.defaults = true;
+    tschema.access_groups[ag_spec->get_name()] = tag;
+    tschema.__isset.access_groups = true;
+  }
+
+  for (auto cf_spec : hschema->get_column_families()) {
+    ThriftGen::ColumnFamilySpec tcf;
+    tcf.name = cf_spec->get_name();
+    tcf.access_group = cf_spec->get_access_group();
+    tcf.deleted = cf_spec->get_deleted();
+    if (cf_spec->get_generation())
+      tcf.__set_generation(cf_spec->get_generation());
+    if (cf_spec->get_id())
+      tcf.__set_id(cf_spec->get_id());
+    tcf.value_index = cf_spec->get_value_index();
+    tcf.qualifier_index = cf_spec->get_qualifier_index();
+    if (convert_column_family_options(cf_spec->options(), tcf.options))
+      tcf.__isset.options = true;
+    tschema.column_families[cf_spec->get_name()] = tcf;
+    tschema.__isset.column_families = true;
+  }
+
+  if (convert_access_group_options(hschema->access_group_defaults(),
+                                   tschema.access_group_defaults))
+      tschema.__isset.access_group_defaults = true;
+
+  if (convert_column_family_options(hschema->column_family_defaults(),
+                                    tschema.column_family_defaults))
+      tschema.__isset.column_family_defaults = true;
+
+}
+
+void convert_schema(const ThriftGen::Schema &tschema,
+                    Hypertable::SchemaPtr &hschema) {
+
+  if (tschema.__isset.generation)
+    hschema->set_generation(tschema.generation);
+
+  hschema->set_version(tschema.version);
+  
+  hschema->set_group_commit_interval(tschema.group_commit_interval);
+
+  convert_access_group_options(tschema.access_group_defaults,
+                               hschema->access_group_defaults());
+
+  convert_column_family_options(tschema.column_family_defaults,
+                                hschema->column_family_defaults());
+
+  bool need_default = true;
+  unordered_map<string, Hypertable::AccessGroupSpec *> ag_map;
+  for (auto & entry : tschema.access_groups) {
+    if (entry.second.name == "default")
+      need_default = false;
+    Hypertable::AccessGroupSpec *ag = new Hypertable::AccessGroupSpec(entry.second.name);
+    if (entry.second.__isset.generation)
+      ag->set_generation(entry.second.generation);
+    ag_map[entry.second.name] = ag;
+    Hypertable::AccessGroupOptions ag_options;
+    convert_access_group_options(entry.second.options, ag_options);
+    ag->merge_options(ag_options);
+    Hypertable::ColumnFamilyOptions cf_defaults;
+    convert_column_family_options(entry.second.defaults, cf_defaults);
+    ag->merge_defaults(cf_defaults);
+  }
+  if (need_default)
+    ag_map["default"] = new Hypertable::AccessGroupSpec("default");
+
+  for (auto & entry : tschema.column_families) {
+    Hypertable::ColumnFamilySpec *cf = new Hypertable::ColumnFamilySpec();
+    cf->set_name(entry.second.name);
+    if (entry.second.access_group.empty())
+      cf->set_access_group("default");
+    else
+      cf->set_access_group(entry.second.access_group);
+    cf->set_deleted(entry.second.deleted);
+    if (entry.second.__isset.generation)
+      cf->set_generation(entry.second.generation);
+    if (entry.second.__isset.id)
+      cf->set_id(entry.second.id);
+    cf->set_value_index(entry.second.value_index);
+    cf->set_qualifier_index(entry.second.qualifier_index);
+    Hypertable::ColumnFamilyOptions cf_options;
+    convert_column_family_options(entry.second.options, cf_options);
+    cf->merge_options(cf_options);
+    // Add column family to corresponding schema
+    auto iter = ag_map.find(cf->get_access_group());
+    if (iter == ag_map.end())
+      HT_THROWF(Error::BAD_SCHEMA,
+                "Undefined access group '%s' referenced by column '%s'",
+                cf->get_access_group().c_str(), cf->get_name().c_str());
+    iter->second->add_column(cf);
+  }
+
+  // Add access groups to schema
+  for (auto & entry : ag_map)
+    hschema->add_access_group(entry.second);
+
+}
 
 class ServerHandler;
 
@@ -574,6 +769,51 @@ public:
       HT_WARNF("Destroying ServerHandler for remote peer %s with %d objects in map",
                m_remote_peer.c_str(),
                (int)m_object_map.size());
+    // Clear reference map.  Force each object to be destroyed individually and
+    // catch and log exceptions.
+    for (auto entry : m_reference_map) {
+      try {
+        entry.second = nullptr;
+      }
+      catch (Exception &e) {
+        HT_ERROR_OUT << e << HT_END;
+      }
+    }
+    try {
+      m_reference_map.clear();
+    }
+    catch (Exception &) {
+    }
+    // Clear object map.  Force each object to be destroyed individually and
+    // catch and log exceptions.
+    for (auto entry : m_object_map) {
+      try {
+        entry.second = nullptr;
+      }
+      catch (Exception &e) {
+        HT_ERROR_OUT << e << HT_END;
+      }
+    }
+    try {
+      m_object_map.clear();
+    }
+    catch (Exception &) {
+    }
+    // Clear cached object map.  Force each object to be destroyed individually
+    // and catch and log exceptions.
+    for (auto entry : m_cached_object_map) {
+      try {
+        entry.second = nullptr;
+      }
+      catch (Exception &e) {
+        HT_ERROR_OUT << e << HT_END;
+      }
+    }
+    try {
+      m_cached_object_map.clear();
+    }
+    catch (Exception &) {
+    }
   }
 
   const String& remote_peer() const {
@@ -657,39 +897,31 @@ public:
   }
 
   virtual void table_create(const ThriftGen::Namespace ns, const String &table,
-          const String &schema) {
-    LOG_API_START("namespace=" << ns << " table=" << table << " schema="
-            << schema);
+                            const ThriftGen::Schema &schema) {
+    LOG_API_START("namespace=" << ns << " table=" << table);
 
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
-      namespace_ptr->create_table(table, schema);
-    } RETHROW("namespace=" << ns << " table="<< table <<" schema="<< schema)
+      Hypertable::SchemaPtr hschema = new Hypertable::Schema();
+      convert_schema(schema, hschema);
+      namespace_ptr->create_table(table, hschema);
+    } RETHROW("namespace=" << ns << " table="<< table)
 
     LOG_API_FINISH;
-  }
-
-  virtual void create_table(const ThriftGen::Namespace ns, const String &table,
-          const String &schema) {
-    table_create(ns, table, schema);
   }
 
   virtual void table_alter(const ThriftGen::Namespace ns, const String &table,
-          const String &schema) {
-    LOG_API_START("namespace=" << ns << " table=" << table << " schema="
-            << schema);
+                           const ThriftGen::Schema &schema) {
+    LOG_API_START("namespace=" << ns << " table=" << table);
 
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
-      namespace_ptr->alter_table(table, schema);
-    } RETHROW("namespace=" << ns << " table="<< table <<" schema="<< schema)
+      Hypertable::SchemaPtr hschema = new Hypertable::Schema();
+      convert_schema(schema, hschema);
+      namespace_ptr->alter_table(table, hschema);
+    } RETHROW("namespace=" << ns << " table="<< table)
 
     LOG_API_FINISH;
-  }
-
-  virtual void alter_table(const ThriftGen::Namespace ns, const String &table,
-          const String &schema) {
-    table_alter(ns, table, schema);
   }
 
   virtual Scanner scanner_open(const ThriftGen::Namespace ns,
@@ -769,7 +1001,7 @@ public:
 
     try {
       get_scanner_async(scanner)->cancel();
-    } RETHROW(" scanner=" << scanner)
+    } RETHROW("scanner=" << scanner)
 
     LOG_API_FINISH_E(" cancelled");
   }
@@ -874,7 +1106,7 @@ public:
     try {
       TableScanner *scanner = get_scanner(scanner_id);
       _next_row(result, scanner);
-    } RETHROW(" result.size=" << result.size())
+    } RETHROW("result.size=" << result.size())
     LOG_API_FINISH_E(" result.size="<< result.size());
   }
 
@@ -1069,7 +1301,7 @@ public:
 
     try {
       _offer_cell(ns, table, mutate_spec, cell);
-    } RETHROW(" namespace=" << ns << " table=" << table
+    } RETHROW("namespace=" << ns << " table=" << table
             << " mutate_spec.appname="<< mutate_spec.appname)
     LOG_API_FINISH_E(" cell="<< cell);
   }
@@ -1088,7 +1320,7 @@ public:
     try {
       _offer_cells(ns, table, mutate_spec, cells);
       LOG_API("mutate_spec.appname=" << mutate_spec.appname << " done");
-    } RETHROW(" namespace=" << ns << " table=" << table
+    } RETHROW("namespace=" << ns << " table=" << table
             << " mutate_spec.appname=" << mutate_spec.appname)
     LOG_API_FINISH_E(" cells.size=" << cells.size());
   }
@@ -1292,7 +1524,7 @@ public:
     LOG_API_START("future="<< ff);
     try {
       remove_future(ff);
-    } RETHROW(" future=" << ff)
+    } RETHROW("future=" << ff)
     LOG_API_FINISH;
   }
 
@@ -1302,10 +1534,10 @@ public:
 
   virtual ThriftGen::Namespace namespace_open(const String &ns) {
     ThriftGen::Namespace id;
-    LOG_API_START("namespace name=" << ns);
+    LOG_API_START("namespace =" << ns);
     try {
       id = get_cached_object_id( m_context.client->open_namespace(ns) );
-    } RETHROW(" namespace name" << ns)
+    } RETHROW("namespace " << ns)
     LOG_API_FINISH_E(" id=" << id);
     return id;
   }
@@ -1322,7 +1554,7 @@ public:
     try {
       id = get_object_id(_open_mutator_async(ns, table, ff, flags));
       add_reference(id, ff);
-    } RETHROW(" namespace=" << ns << " table=" << table << " future="
+    } RETHROW("namespace=" << ns << " table=" << table << " future="
             << ff << " flags=" << flags)
     LOG_API_FINISH_E(" mutator=" << id);
     return id;
@@ -1342,7 +1574,7 @@ public:
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
       TablePtr t = namespace_ptr->open_table(table);
       id =  get_object_id(t->create_mutator(0, flags, flush_interval));
-    } RETHROW(" namespace=" << ns << "table=" << table << " flags="
+    } RETHROW("namespace=" << ns << "table=" << table << " flags="
             << flags << " flush_interval=" << flush_interval)
     LOG_API_FINISH_E(" async_mutator=" << id);
     return id;
@@ -1357,7 +1589,7 @@ public:
     LOG_API_START("mutator="<< mutator);
     try {
       get_mutator(mutator)->flush();
-    } RETHROW(" mutator=" << mutator)
+    } RETHROW("mutator=" << mutator)
     LOG_API_FINISH_E(" done");
   }
 
@@ -1369,7 +1601,7 @@ public:
     LOG_API_START("mutator="<< mutator);
     try {
       get_mutator_async(mutator)->flush();
-    } RETHROW(" mutator=" << mutator)
+    } RETHROW("mutator=" << mutator)
     LOG_API_FINISH_E(" done");
   }
 
@@ -1382,7 +1614,7 @@ public:
     try {
       flush_mutator(mutator);
       remove_mutator(mutator);
-    } RETHROW(" mutator=" << mutator)
+    } RETHROW("mutator=" << mutator)
     LOG_API_FINISH;
   }
 
@@ -1395,7 +1627,7 @@ public:
 
     try {
       get_mutator_async(mutator)->cancel();
-    } RETHROW(" mutator="<< mutator)
+    } RETHROW("mutator="<< mutator)
 
     LOG_API_FINISH_E(" cancelled");
   }
@@ -1410,7 +1642,7 @@ public:
       flush_mutator_async(mutator);
       remove_mutator(mutator);
       remove_references(mutator);
-    } RETHROW(" mutator" << mutator)
+    } RETHROW("mutator" << mutator)
     LOG_API_FINISH;
   }
 
@@ -1432,7 +1664,7 @@ public:
     LOG_API_START("mutator=" << mutator << " cell=" << cell);
     try {
       _set_cell(mutator, cell);
-    } RETHROW(" mutator=" << mutator << " cell=" << cell)
+    } RETHROW("mutator=" << mutator << " cell=" << cell)
     LOG_API_FINISH;
   }
 
@@ -1441,7 +1673,7 @@ public:
     LOG_API_START("mutator=" << mutator << " cell.size=" << cells.size());
     try {
       _set_cells(mutator, cells);
-    } RETHROW(" mutator=" << mutator << " cell.size=" << cells.size())
+    } RETHROW("mutator=" << mutator << " cell.size=" << cells.size())
     LOG_API_FINISH;
   }
 
@@ -1452,7 +1684,7 @@ public:
             << cell.size());
     try {
       _set_cell(mutator, cell);
-    } RETHROW(" mutator="<< mutator <<" cell_as_array.size="<< cell.size());
+    } RETHROW("mutator="<< mutator <<" cell_as_array.size="<< cell.size());
     LOG_API_FINISH;
   }
 
@@ -1471,7 +1703,7 @@ public:
       get_mutator(mutator)->set_cells(cb.get());
       if (flush || reader.flush())
         get_mutator(mutator)->flush();
-    } RETHROW(" mutator="<< mutator <<" cell.size="<< cells.size())
+    } RETHROW("mutator="<< mutator <<" cell.size="<< cells.size())
 
     LOG_API_FINISH;
   }
@@ -1486,7 +1718,8 @@ public:
       convert_cell(cell, hcell);
       cb.add(hcell, false);
       mutator->set_cells(cb.get());
-    } RETHROW(" ns=" << ns << " table=" << table << " cell=" << cell);
+      mutator->flush();
+    } RETHROW("ns=" << ns << " table=" << table << " cell=" << cell);
     LOG_API_FINISH;
   }
 
@@ -1499,7 +1732,8 @@ public:
       Hypertable::Cells hcells;
       convert_cells(cells, hcells);
       mutator->set_cells(hcells);
-    } RETHROW(" ns=" << ns << " table=" << table <<" cell.size="
+      mutator->flush();
+    } RETHROW("ns=" << ns << " table=" << table <<" cell.size="
             << cells.size());
     LOG_API_FINISH;
   }
@@ -1514,7 +1748,8 @@ public:
       Hypertable::Cells hcells;      
       convert_cells(cells, hcells);
       mutator->set_cells(hcells);
-    } RETHROW(" ns="<< ns <<" table=" << table<<" cell.size="<< cells.size());
+      mutator->flush();
+    } RETHROW("ns="<< ns <<" table=" << table<<" cell.size="<< cells.size());
     LOG_API_FINISH;
   }
 
@@ -1531,7 +1766,8 @@ public:
       convert_cell(cell, hcell);
       cb.add(hcell, false);
       mutator->set_cells(cb.get());
-    } RETHROW(" ns=" << ns << " table=" << table << " cell_as_array.size="
+      mutator->flush();
+    } RETHROW("ns=" << ns << " table=" << table << " cell_as_array.size="
             << cell.size());
     LOG_API_FINISH;
   }
@@ -1551,7 +1787,8 @@ public:
         cb.add(hcell, false);
       }
       mutator->set_cells(cb.get());
-    } RETHROW(" ns=" << ns << " table=" << table << " cell_serialized.size="
+      mutator->flush();
+    } RETHROW("ns=" << ns << " table=" << table << " cell_serialized.size="
             << cells.size() << " flush=" << flush);
 
     LOG_API_FINISH;
@@ -1562,7 +1799,7 @@ public:
     LOG_API_START("mutator=" << mutator << " cells.size=" << cells.size());
     try {
       _set_cells_async(mutator, cells);
-    } RETHROW(" mutator=" << mutator << " cells.size=" << cells.size())
+    } RETHROW("mutator=" << mutator << " cells.size=" << cells.size())
     LOG_API_FINISH;
   }
 
@@ -1576,7 +1813,7 @@ public:
     LOG_API_START("mutator=" << mutator <<" cell=" << cell);
     try {
       _set_cell_async(mutator, cell);
-    } RETHROW(" mutator=" << mutator << " cell=" << cell);
+    } RETHROW("mutator=" << mutator << " cell=" << cell);
     LOG_API_FINISH;
   }
 
@@ -1590,7 +1827,7 @@ public:
     LOG_API_START("mutator=" << mutator << " cells.size=" << cells.size());
     try {
       _set_cells_async(mutator, cells);
-    } RETHROW(" mutator=" << mutator << " cells.size=" << cells.size())
+    } RETHROW("mutator=" << mutator << " cells.size=" << cells.size())
     LOG_API_FINISH;
   }
 
@@ -1606,7 +1843,7 @@ public:
            << cell.size());
     try {
       _set_cell_async(mutator, cell);
-    } RETHROW(" mutator=" << mutator << " cell_as_array.size=" << cell.size())
+    } RETHROW("mutator=" << mutator << " cell_as_array.size=" << cell.size())
     LOG_API_FINISH;
   }
 
@@ -1633,7 +1870,7 @@ public:
       if (flush || reader.flush() || mutator_ptr->needs_flush())
         mutator_ptr->flush();
 
-    } RETHROW(" mutator=" << mutator << " cells.size=" << cells.size());
+    } RETHROW("mutator=" << mutator << " cells.size=" << cells.size());
     LOG_API_FINISH;
   }
 
@@ -1648,7 +1885,7 @@ public:
     LOG_API_START("namespace=" << ns);
     try {
       exists = m_context.client->exists_namespace(ns);
-    } RETHROW(" namespace=" << ns)
+    } RETHROW("namespace=" << ns)
     LOG_API_FINISH_E(" exists=" << exists);
     return exists;
   }
@@ -1664,7 +1901,7 @@ public:
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
       exists = namespace_ptr->exists_table(table);
-    } RETHROW(" namespace=" << ns << " table="<< table)
+    } RETHROW("namespace=" << ns << " table="<< table)
     LOG_API_FINISH_E(" exists=" << exists);
     return exists;
   }
@@ -1680,7 +1917,7 @@ public:
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
       result = namespace_ptr->get_table_id(table);
-    } RETHROW(" namespace=" << ns << " table="<< table)
+    } RETHROW("namespace=" << ns << " table="<< table)
     LOG_API_FINISH_E(" id=" << result);
   }
 
@@ -1695,7 +1932,7 @@ public:
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
       result = namespace_ptr->get_schema_str(table);
-    } RETHROW(" namespace=" << ns << " table=" << table)
+    } RETHROW("namespace=" << ns << " table=" << table)
     LOG_API_FINISH_E(" schema=" << result);
   }
 
@@ -1710,7 +1947,7 @@ public:
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
       result = namespace_ptr->get_schema_str(table, true);
-    } RETHROW(" namespace=" << ns << " table=" << table)
+    } RETHROW("namespace=" << ns << " table=" << table)
     LOG_API_FINISH_E(" schema=" << result);
   }
 
@@ -1725,46 +1962,9 @@ public:
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
       Hypertable::SchemaPtr schema = namespace_ptr->get_schema(table);
-      if (schema) {
-        Hypertable::Schema::AccessGroups ags = schema->get_access_groups();
-        foreach_ht(Hypertable::Schema::AccessGroup *ag, ags) {
-          ThriftGen::AccessGroup t_ag;
-
-          t_ag.name = ag->name;
-          t_ag.in_memory = ag->in_memory;
-          t_ag.blocksize = (int32_t)ag->blocksize;
-          t_ag.compressor = ag->compressor;
-          t_ag.bloom_filter = ag->bloom_filter;
-
-          foreach_ht(Hypertable::Schema::ColumnFamily *cf, ag->columns) {
-            ThriftGen::ColumnFamily t_cf;
-            t_cf.name = cf->name;
-            t_cf.ag = cf->ag;
-            t_cf.max_versions = cf->max_versions;
-            t_cf.ttl = (String) ctime(&(cf->ttl));
-            t_cf.__isset.name = true;
-            t_cf.__isset.ag = true;
-            t_cf.__isset.max_versions = true;
-            t_cf.__isset.ttl = true;
-
-            // store this cf in the access group
-            t_ag.columns.push_back(t_cf);
-            // store this cf in the cf map
-            result.column_families[t_cf.name] = t_cf;
-          }
-          t_ag.__isset.name = true;
-          t_ag.__isset.in_memory = true;
-          t_ag.__isset.blocksize = true;
-          t_ag.__isset.compressor = true;
-          t_ag.__isset.bloom_filter = true;
-          t_ag.__isset.columns = true;
-          // push this access group into the map
-          result.access_groups[t_ag.name] = t_ag;
-        }
-        result.__isset.access_groups = true;
-        result.__isset.column_families = true;
-      }
-    } RETHROW(" namespace=" << ns << " table="<< table)
+      if (schema)
+        convert_schema(schema, result);
+    } RETHROW("namespace=" << ns << " table="<< table)
     LOG_API_FINISH;
   }
 
@@ -1786,7 +1986,7 @@ public:
           tables.push_back(listing[ii].name);
 
     }
-    RETHROW(" namespace=" << ns)
+    RETHROW("namespace=" << ns)
     LOG_API_FINISH_E(" tables.size=" << tables.size());
   }
 
@@ -1805,7 +2005,7 @@ public:
         _return.push_back(entry);
       }
     }
-    RETHROW(" namespace=" << ns)
+    RETHROW("namespace=" << ns)
 
     LOG_API_FINISH_E(" listing.size=" << _return.size());
   }
@@ -1830,7 +2030,7 @@ public:
         _return.push_back(tsplit);
       }
     }
-    RETHROW(" namespace=" << ns << " table=" << table)
+    RETHROW("namespace=" << ns << " table=" << table)
 
     LOG_API_FINISH_E(" splits.size=" << splits.size());
   }
@@ -1845,7 +2045,7 @@ public:
     try {
       m_context.client->drop_namespace(ns, NULL, if_exists);
     }
-    RETHROW(" namespace=" << ns << " if_exists=" << if_exists)
+    RETHROW("namespace=" << ns << " if_exists=" << if_exists)
     LOG_API_FINISH;
   }
 
@@ -1861,7 +2061,7 @@ public:
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
       namespace_ptr->rename_table(table, new_table_name);
     }
-    RETHROW(" namespace=" << ns << " table=" << table << " new_table_name="
+    RETHROW("namespace=" << ns << " table=" << table << " new_table_name="
             << new_table_name << " done")
     LOG_API_FINISH;
   }

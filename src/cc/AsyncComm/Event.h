@@ -154,15 +154,14 @@ namespace Hypertable {
       }
     }
 
-    /** Expiration time of request message from which this Event was
-     * initialized.
-     * @return Absolute expiration time
+    /** Deadline for request.
+     * @return Absolute deadline
      */
-    boost::xtime expiration_time() {
-      boost::xtime expire_time;
-      boost::xtime_get(&expire_time, boost::TIME_UTC_);
-      expire_time.sec += header.timeout_ms/1000;
-      return expire_time;
+    boost::xtime deadline() {
+      boost::xtime dl;
+      boost::xtime_get(&dl, boost::TIME_UTC_);
+      dl.sec += header.timeout_ms/1000;
+      return dl;
     }
 
     /** Type of event.  Can take one of values CONNECTION_ESTABLISHED,
@@ -219,7 +218,7 @@ namespace Hypertable {
     /** Generates a one-line string representation of the event.  For example:
      * <pre>
      *   Event: type=MESSAGE id=2 gid=0 header_len=16 total_len=20 \
-     *   from=127.0.0.1:38040 ...
+     *   from=127.0.0.1:15861 ...
      * </pre>
      */
     String to_str() const;

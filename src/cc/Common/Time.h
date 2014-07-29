@@ -142,6 +142,7 @@ namespace Hypertable {
    * Returns the current time in nanoseconds as a 64bit number
    */
   int64_t get_ts64();
+  boost::xtime get_xtime();
 
   /** Prints the current time as seconds and nanoseconds, delimited by '.' */
   std::ostream &hires_ts(std::ostream &);
@@ -149,8 +150,14 @@ namespace Hypertable {
   /** Prints the current date in the format YYYY-MM-DD hh:mm:ss.nnnn */
   std::ostream &hires_ts_date(std::ostream &);
 
-#if defined(__sun__) || defined(_WIN32)
+#if defined(__sun__)
   time_t timegm(struct tm *t);
+#endif
+
+#if defined(_WIN32)
+  time_t timegm(struct tm *t);
+  time_t _mktime(struct tm *t);
+  void localtime_r(const time_t* time, tm* t);
 #endif
 
   /** @} */

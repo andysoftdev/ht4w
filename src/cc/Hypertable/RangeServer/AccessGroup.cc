@@ -1,5 +1,5 @@
-/* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,6 +19,11 @@
  * 02110-1301, USA.
  */
 
+/// @file
+/// Definitions for AccessGroup.
+/// This file contains definitions for AccessGroup, a class for providing data
+/// management and queries over an access group of a range.
+
 #include <Common/Compat.h>
 #include "AccessGroup.h"
 
@@ -26,7 +31,7 @@
 #include <Hypertable/RangeServer/CellCacheScanner.h>
 #include <Hypertable/RangeServer/CellStoreFactory.h>
 #include <Hypertable/RangeServer/CellStoreReleaseCallback.h>
-#include <Hypertable/RangeServer/CellStoreV6.h>
+#include <Hypertable/RangeServer/CellStoreV7.h>
 #include <Hypertable/RangeServer/Config.h>
 #include <Hypertable/RangeServer/Global.h>
 #include <Hypertable/RangeServer/MaintenanceFlag.h>
@@ -49,20 +54,13 @@
 using namespace Hypertable;
 
 AccessGroup::AccessGroup(const TableIdentifier *identifier,
-                         SchemaPtr &schema, Schema::AccessGroup *ag,
+                         SchemaPtr &schema, AccessGroupSpec *ag_spec,
                          const RangeSpec *range, const Hints *hints)
-  : m_identifier(*identifier), m_schema(schema), m_name(ag->name),
-    m_cell_cache_manager(new CellCacheManager()),
-    m_file_tracker(identifier, schema, range, ag->name),
-    m_garbage_tracker(Config::properties, m_cell_cache_manager, ag),
-    m_outstanding_scanner_count(0), m_next_cs_id(0), m_disk_usage(0),
-    m_is_root(false), m_compression_ratio(1.0),
-    m_earliest_cached_revision(TIMESTAMP_MAX), m_earliest_cached_revision_saved(TIMESTAMP_MAX),
-    m_latest_stored_revision(TIMESTAMP_MIN), m_latest_stored_revision_hint(TIMESTAMP_MIN),
-    m_in_memory(false), m_recovering(m_recovering),
-    m_bloom_filter_disabled(false), m_needs_merging(false), m_end_merge(false),
-    m_dirty(false), m_cellcache_needs_compaction(false)
-{
+  : m_identifier(*identifier), m_schema(schema), m_name(ag_spec->get_name()),
+    m_cell_cache_manager {new CellCacheManager()},
+    m_file_tracker(identifier, schema, range, ag_spec->get_name()),
+    m_garbage_tracker(Config::properties, m_cell_cache_manager, ag_spec) {
+
   m_table_name = m_identifier.id;
   m_start_row = range->start_row;
   m_end_row = range->end_row;
@@ -71,29 +69,14 @@ AccessGroup::AccessGroup(const TableIdentifier *identifier,
 
   range_dir_initialize();
 
-  foreach_ht(Schema::ColumnFamily *cf, ag->columns)
-    m_column_families.insert(cf->id);
+  for (auto cf_spec : ag_spec->columns())
+    m_column_families.insert(cf_spec->get_id());
 
   m_is_root = (m_identifier.is_metadata() && *range->start_row == 0
                && !strcmp(range->end_row, Key::END_ROOT_ROW));
-  m_in_memory = ag->in_memory;
+  m_in_memory = ag_spec->get_option_in_memory();
 
-  m_cellstore_props = new Properties();
-  m_cellstore_props->set("compressor", ag->compressor.size() ?
-      ag->compressor : schema->get_compressor());
-  m_cellstore_props->set("blocksize", ag->blocksize);
-  if (ag->replication != -1)
-    m_cellstore_props->set("replication", (int32_t)ag->replication);
-
-  if (ag->bloom_filter.size())
-    Schema::parse_bloom_filter(ag->bloom_filter, m_cellstore_props);
-  else {
-    assert(Config::properties); // requires Config::init* first
-    Schema::parse_bloom_filter(Config::get_str("Hypertable.RangeServer"
-        ".CellStore.DefaultBloomFilter"), m_cellstore_props);
-  }
-  m_bloom_filter_disabled = BLOOM_FILTER_DISABLED ==
-      m_cellstore_props->get<BloomFilterMode>("bloom-filter-mode");
+  update_schema(schema, ag_spec);
 
   // Restore state from hints
   if (hints) {
@@ -112,26 +95,44 @@ AccessGroup::AccessGroup(const TableIdentifier *identifier,
  * number than the existing schema.
  */
 void AccessGroup::update_schema(SchemaPtr &schema,
-                                Schema::AccessGroup *ag) {
+                                AccessGroupSpec *ag_spec) {
   ScopedLock lock(m_schema_mutex);
   std::set<uint8_t>::iterator iter;
 
-  if (schema->get_generation() > m_schema->get_generation()) {
+  if (!m_cellstore_props ||
+      schema->get_generation() > m_schema->get_generation()) {
 
-    m_garbage_tracker.update_schema(ag);
+    m_garbage_tracker.update_schema(ag_spec);
 
-    foreach_ht(Schema::ColumnFamily *cf, ag->columns) {
-      if((iter = m_column_families.find(cf->id)) == m_column_families.end()) {
+    m_cellstore_props = new Properties();
+    m_cellstore_props->set("compressor", ag_spec->get_option_compressor());
+    m_cellstore_props->set("blocksize", ag_spec->get_option_blocksize());
+    if (ag_spec->get_option_replication() != -1)
+      m_cellstore_props->set("replication",
+                             (int32_t)ag_spec->get_option_replication());
+
+    if (!ag_spec->get_option_bloom_filter().empty())
+      AccessGroupOptions::parse_bloom_filter(ag_spec->get_option_bloom_filter(),
+                                             m_cellstore_props);
+    else {
+      assert(Config::properties); // requires Config::init* first
+      AccessGroupOptions::parse_bloom_filter(
+        Config::get_str("Hypertable.RangeServer.CellStore.DefaultBloomFilter"),
+        m_cellstore_props);
+    }
+
+    for (auto cf_spec : ag_spec->columns()) {
+      iter = m_column_families.find(cf_spec->get_id());
+      if (iter == m_column_families.end()) {
         // Add new column families
-        if(cf->deleted == false ) {
-          m_column_families.insert(cf->id);
-        }
+        if (!cf_spec->get_deleted())
+          m_column_families.insert(cf_spec->get_id());
       }
       else {
         // Delete existing cfs
-        if (cf->deleted == true) {
+        if (cf_spec->get_deleted())
           m_column_families.erase(iter);
-        }
+
         // TODO: In future other types of updates
         // such as alter table modify etc will go in here
       }
@@ -561,10 +562,15 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
   }
 
   String cs_file;
+  PropertiesPtr cellstore_props;
+  {
+    ScopedLock lock(m_schema_mutex);
+    cellstore_props = m_cellstore_props;
+  }
 
   try {
     time_t now = time(0);
-    int64_t max_num_entries = 0;
+    int64_t max_num_entries {};
 
     {
       ScopedLock lock(m_mutex);
@@ -603,7 +609,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
         }
       }
 
-      cellstore = new CellStoreV6(Global::dfs.get(), m_schema.get());
+      cellstore = new CellStoreV7(Global::dfs.get(), m_schema.get());
 
       max_num_entries = m_cell_cache_manager->immutable_items();
 
@@ -630,7 +636,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
         for (size_t i=merge_offset; i<merge_offset+merge_length; i++) {
           HT_ASSERT(m_stores[i].cs);
           mscanner->add_scanner(m_stores[i].cs->create_scanner(scan_context));
-          int divisor = (boost::any_cast<uint32_t>(m_stores[i].cs->get_trailer()->get("flags")) & CellStoreTrailerV6::SPLIT) ? 2: 1;
+          int divisor = (boost::any_cast<uint32_t>(m_stores[i].cs->get_trailer()->get("flags")) & CellStoreTrailerV7::SPLIT) ? 2: 1;
           max_num_entries += (boost::any_cast<int64_t>
               (m_stores[i].cs->get_trailer()->get("total_entries")))/divisor;
         }
@@ -644,7 +650,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
         for (size_t i=0; i<m_stores.size(); i++) {
           HT_ASSERT(m_stores[i].cs);
           mscanner->add_scanner(m_stores[i].cs->create_scanner(scan_context));
-          int divisor = (boost::any_cast<uint32_t>(m_stores[i].cs->get_trailer()->get("flags")) & CellStoreTrailerV6::SPLIT) ? 2: 1;
+          int divisor = (boost::any_cast<uint32_t>(m_stores[i].cs->get_trailer()->get("flags")) & CellStoreTrailerV7::SPLIT) ? 2: 1;
           max_num_entries += (boost::any_cast<int64_t>
               (m_stores[i].cs->get_trailer()->get("total_entries")))/divisor;
         }
@@ -655,7 +661,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       }
     }
 
-    cellstore->create(cs_file.c_str(), max_num_entries, m_cellstore_props, &m_identifier);
+    cellstore->create(cs_file.c_str(), max_num_entries, cellstore_props, &m_identifier);
 
     while (scanner->get(key, value)) {
       cellstore->add(key, value);
@@ -666,7 +672,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
 
     m_garbage_tracker.adjust_targets(now, mscanner);
 
-    CellStoreTrailerV6 *trailer = dynamic_cast<CellStoreTrailerV6 *>(cellstore->get_trailer());
+    CellStoreTrailerV7 *trailer = dynamic_cast<CellStoreTrailerV7 *>(cellstore->get_trailer());
 
     if (major)
       HT_ASSERT(mscanner);
@@ -675,7 +681,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       trailer->flags |= CellStoreTrailerV6::MAJOR_COMPACTION;
 
     if (maintenance_flags & MaintenanceFlag::SPLIT)
-      trailer->flags |= CellStoreTrailerV6::SPLIT;
+      trailer->flags |= CellStoreTrailerV7::SPLIT;
 
     cellstore->finalize(&m_identifier);
 
@@ -814,7 +820,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
         try {
           Global::dfs->remove(cs_file);
         }
-        catch (Hypertable::Exception &e) {
+        catch (Hypertable::Exception &) {
         }
       }
       HT_ERROR_OUT << m_full_name << " " << e << HT_END;
@@ -975,7 +981,7 @@ AccessGroup::shrink(String &split_row, bool drop_high, Hints *hints) {
 
     m_recovering = false;
   }
-  catch (Exception &e) {
+  catch (Exception &) {
     m_recovering = false;
     m_cell_cache_manager->install_new_active_cache(old_cell_cache);
     m_earliest_cached_revision = m_earliest_cached_revision_saved;
@@ -1203,7 +1209,7 @@ void AccessGroup::sort_cellstores_by_timestamp() {
 
 void AccessGroup::dump_keys(std::ofstream &out) {
   ScopedLock lock(m_mutex);
-  Schema::ColumnFamily *cf;
+  ColumnFamilySpec *cf_spec;
   const char *family;
   KeySet keys;
 
@@ -1214,8 +1220,8 @@ void AccessGroup::dump_keys(std::ofstream &out) {
 
   for (KeySet::iterator iter = keys.begin();
        iter != keys.end(); ++iter) {
-    if ((cf = m_schema->get_column_family((*iter).column_family_code, true)))
-      family = cf->name.c_str();
+    if ((cf_spec = m_schema->get_column_family((*iter).column_family_code, true)))
+      family = cf_spec->get_name().c_str();
     else
       family = "UNKNOWN";
     out << (*iter).row << " " << family;

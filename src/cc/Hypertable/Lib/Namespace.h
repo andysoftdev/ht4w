@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -22,32 +22,37 @@
 #ifndef HYPERTABLE_NAMESPACE_H
 #define HYPERTABLE_NAMESPACE_H
 
+#include <Hypertable/Lib/ClientObject.h>
+#include <Hypertable/Lib/MasterClient.h>
+#include <Hypertable/Lib/NameIdMapper.h>
+#include <Hypertable/Lib/NamespaceListing.h>
+#include <Hypertable/Lib/Table.h>
+#include <Hypertable/Lib/TableCache.h>
+#include <Hypertable/Lib/TableMutator.h>
+#include <Hypertable/Lib/TableParts.h>
+#include <Hypertable/Lib/TableScanner.h>
+#include <Hypertable/Lib/TableScannerAsync.h>
+#include <Hypertable/Lib/TableSplit.h>
+
+#include <Hyperspace/Session.h>
+
+#include <AsyncComm/ApplicationQueueInterface.h>
+#include <AsyncComm/ConnectionManager.h>
+
+#include <Common/Mutex.h>
+#include <Common/ReferenceCount.h>
+#include <Common/String.h>
+
 #include <boost/tokenizer.hpp>
-
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
-#include "Common/String.h"
-
-#include "AsyncComm/ApplicationQueueInterface.h"
-#include "AsyncComm/ConnectionManager.h"
-#include "Hyperspace/Session.h"
-
-#include "ClientObject.h"
-#include "MasterClient.h"
-#include "NameIdMapper.h"
-#include "TableCache.h"
-#include "Table.h"
-#include "TableScanner.h"
-#include "TableScannerAsync.h"
-#include "TableSplit.h"
-#include "TableMutator.h"
-#include "NamespaceListing.h"
 
 namespace Hypertable {
 
   class Comm;
   class HqlInterpreter;
   class Client;
+
+  /// @addtogroup libHypertable
+  /// @{
 
   class Namespace : public ClientObject {
   public:
@@ -90,8 +95,8 @@ namespace Hypertable {
 
     /** Creates a table.
      *
-     * The schema parameter is a string that contains an XML-style
-     * schema specification.  The best way to learn the syntax
+     * The <code>schema_str</code> parameter is a string that contains an
+     * XML-style schema specification.  The best way to learn the syntax
      * of this specification format is to create tables with HQL
      * in the command interpreter and then run DESCRIBE TABLE to
      * see what the XML specification looks like.  For example,
@@ -131,9 +136,11 @@ namespace Hypertable {
      * @endverbatim
      *
      * @param name name of the table
-     * @param schema schema definition for the table
+     * @param schema_str schema definition for the table
      */
-    void create_table(const String &name, const String &schema);
+    void create_table(const String &name, const String &schema_str);
+
+    void create_table(const String &name, SchemaPtr &schema);
 
     /** Alter table schema.
      * @param table_name Name of table to alter
@@ -141,6 +148,7 @@ namespace Hypertable {
      */
     void alter_table(const String &table_name, SchemaPtr &schema);
 
+#if 0
     /**
      * Alters column families within a table.  The schema parameter
      * contains an XML-style schema difference and supports a
@@ -181,9 +189,10 @@ namespace Hypertable {
      * </pre>
      *
      * @param table_name Name of the table to alter
-     * @param schema desired alterations represented as schema
+     * @param schema_str desired alterations represented as schema
      */
-    void alter_table(const String &table_name, const String &schema);
+#endif
+    void alter_table(const String &table_name, const String &schema_str);
 
     /**
      * Opens a table
@@ -260,6 +269,15 @@ namespace Hypertable {
      */
     void drop_table(const String &name, bool if_exists);
 
+    /// Rebuild a table's indices.
+    /// Rebuilds the indices for table <code>table_name</code> by carrying out a
+    /// <i>recreate index tables</i> master operation an then re-populating the
+    /// index tables by scanning the primary table with the
+    /// <i>rebuild_indices</i> member of ScanSpec set.
+    /// @param table_name Name of table for which indices are to be rebuilt
+    /// @param table_parts Controls which indices to rebuild
+    void rebuild_indices(const std::string &table_name, TableParts table_parts);
+
     /**
      * Returns a list of existing table names
      *
@@ -313,6 +331,8 @@ namespace Hypertable {
   };
 
   typedef intrusive_ptr<Namespace> NamespacePtr;
+
+  /// @}
 
 } // namespace Hypertable
 

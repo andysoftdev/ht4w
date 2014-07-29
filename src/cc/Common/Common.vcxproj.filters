@@ -106,6 +106,12 @@
     <ClCompile Include="TimeWindow.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Regex.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="XmlParser.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h">
@@ -334,6 +340,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TimeWindow.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Regex.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Serializable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XmlParser.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

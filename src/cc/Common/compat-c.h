@@ -87,13 +87,15 @@
 
 #ifdef _WIN32
 
-#pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
 #pragma warning( disable : 4003 ) // not enough actual parameters for macro
-#pragma warning( disable : 4996 ) // the POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name
+#pragma warning( disable : 4065 ) // switch statement contains 'default' but no 'case' labels
 #pragma warning( disable : 4244 ) // conversion from 'x' to 'y', possible loss of data
 #pragma warning( disable : 4267 ) // 'initializing' : conversion from 'x' to 'y', possible loss of data
 #pragma warning( disable : 4309 ) // '=' : truncation of constant value
+#pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
 #pragma warning( disable : 4396 ) // the inline specifier cannot be used when a friend declaration refers to a specialization of a function template
+#pragma warning( disable : 4800 ) // 'int' : forcing value to bool 'true' or 'false' (performance warning)
+#pragma warning( disable : 4996 ) // the POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name
 
 #define _WIN32_WINNT 0x0502 // Windows Server 2003 SP1, Windows XP SP2
 #define NOMINMAX
@@ -167,10 +169,6 @@ char* ctime_r( const time_t *time, char (&buffer)[size] ) {
   return buffer;
 }
 
-inline void localtime_r(const ::time_t* time, ::tm* t) {
-  localtime_s(t, time);
-}
-
 inline uint8_t* valloc(size_t size) {
   return (uint8_t*) VirtualAlloc(0, size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 }
@@ -221,6 +219,7 @@ const char* winapi_strerror( DWORD err );
 #define getpid _getpid
 #define atoll _atoi64
 #define SLEEP Sleep
+#define mktime _mktime
 
 #undef ERROR
 
