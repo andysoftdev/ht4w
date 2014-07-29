@@ -27,10 +27,10 @@
 // version macros for detecting header/library mismatch
 #define HT_VERSION_MAJOR        0
 #define HT_VERSION_MINOR        9
-#define HT_VERSION_MICRO        7
-#define HT_VERSION_PATCH        19
+#define HT_VERSION_MICRO        8
+#define HT_VERSION_PATCH        0
 #define HT_VERSION_MISC_SUFFIX  ""
-#define HT_VERSION_STRING       "0.9.7.19"
+#define HT_VERSION_STRING       "0.9.8.0"
 
 namespace Hypertable {
   extern const int version_major;
