@@ -452,6 +452,8 @@ void AccessGroup::load_cellstore(CellStorePtr &cellstore) {
   int64_t total_index_entries = 0;
   recompute_compression_ratio(&total_index_entries);
   m_file_tracker.add_live_noupdate(cellstore->get_filename(), total_index_entries);
+
+  cellstore->purge_indexes();
 }
 
 void AccessGroup::measure_garbage(double *total, double *garbage) {
