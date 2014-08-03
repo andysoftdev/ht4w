@@ -275,7 +275,7 @@ void TableMutatorAsyncScatterBuffer::send(uint32_t flags) {
         send_rec.offset = send_buffer->key_offsets[i];
         send_vec.push_back(send_rec);
       }
-      sort(send_vec.begin(), send_vec.end());
+      std::stable_sort(send_vec.begin(), send_vec.end());
 
       ptr = send_buffer->pending_updates.base;
 
