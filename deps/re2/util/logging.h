@@ -81,7 +81,7 @@ class LogMessageFatal : public LogMessage {
     : LogMessage(file, line) { }
 #ifdef _WIN32
 #pragma warning(push)
-#pragma disable(4722) // 'LogMessageFatal::~LogMessageFatal' : destructor never returns, potential memory leak
+#pragma warning(disable: 4722) // 'LogMessageFatal::~LogMessageFatal' : destructor never returns, potential memory leak
 #endif
   ~LogMessageFatal() {
     Flush();

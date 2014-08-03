@@ -13,10 +13,6 @@
 #include <string>
 #ifndef _WIN32
 #include <pthread.h>
-#else
-#define strtoll _strtoi64
-#define strtoull _strtoui64
-#define strtof (float)strtod
 #endif
 #include <errno.h>
 #include "util/atomicops.h"
@@ -33,15 +29,15 @@ namespace re2 {
 static const int kMaxArgs = 16;
 static const int kVecSize = 1+kMaxArgs;
 
-const VariadicFunction2<bool, const StringPiece&, const RE2&, RE2::Arg, RE2::FullMatchN> RE2::FullMatch;
-const VariadicFunction2<bool, const StringPiece&, const RE2&, RE2::Arg, RE2::PartialMatchN> RE2::PartialMatch;
-const VariadicFunction2<bool, StringPiece*, const RE2&, RE2::Arg, RE2::ConsumeN> RE2::Consume;
-const VariadicFunction2<bool, StringPiece*, const RE2&, RE2::Arg, RE2::FindAndConsumeN> RE2::FindAndConsume;
+const VariadicFunction2<bool, const StringPiece&, const RE2&, RE2::Arg, RE2::FullMatchN> RE2::FullMatch = {};
+const VariadicFunction2<bool, const StringPiece&, const RE2&, RE2::Arg, RE2::PartialMatchN> RE2::PartialMatch = {};
+const VariadicFunction2<bool, StringPiece*, const RE2&, RE2::Arg, RE2::ConsumeN> RE2::Consume = {};
+const VariadicFunction2<bool, StringPiece*, const RE2&, RE2::Arg, RE2::FindAndConsumeN> RE2::FindAndConsume = {};
 
 // This will trigger LNK2005 error in MSVC.
 #ifndef _WIN32
 const int RE2::Options::kDefaultMaxMem;  // initialized in re2.h
-#endif  // COMPILER_MSVC
+#endif
 
 RE2::Options::Options(RE2::CannedOptions opt)
   : encoding_(opt == RE2::Latin1 ? EncodingLatin1 : EncodingUTF8),
@@ -51,6 +47,7 @@ RE2::Options::Options(RE2::CannedOptions opt)
     max_mem_(kDefaultMaxMem),
     literal_(false),
     never_nl_(false),
+    dot_nl_(false),
     never_capture_(false),
     case_sensitive_(true),
     perl_classes_(false),
@@ -157,6 +154,9 @@ int RE2::Options::ParseFlags() const {
 
   if (never_nl())
     flags |= Regexp::NeverNL;
+
+  if (dot_nl())
+    flags |= Regexp::DotNL;
 
   if (never_capture())
     flags |= Regexp::NeverCapture;
