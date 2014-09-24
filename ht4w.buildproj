@@ -56,6 +56,12 @@
 		<HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
 	</PropertyGroup>
 
+	<!-- Check for maven -->
+	<PropertyGroup>
+		<HasMaven>false</HasMaven>
+		<HasMaven Condition="Exists('$(MAVEN_HOME)\bin\mvn.cmd')">true</HasMaven>
+	</PropertyGroup>
+
 	<!-- Check for ant -->
 	<PropertyGroup>
 		<HasAnt>false</HasAnt>
@@ -120,9 +126,9 @@
 	<!-- Build Java thrift client -->
 	<Target Name="BuildJavaThriftClient">
 		<Exec
-			Command='"$(ANT_HOME)"\bin\ant dist -Dversion=$(Version) -Dvisualstudioversion=$(VisualStudioVersion)'
+			Command='"build-java-lib.bat $(Version) $(VisualStudioVersion)"'
 			ContinueOnError="false"
-			Condition="$(HasAnt) == true" />
+			Condition="$(HasMaven) == true And $(HasAnt) == true" />
 	</Target>
 
 	<!-- Make master -->
@@ -175,7 +181,7 @@
 			Files="@(MasterLibsFiles)" 
 			ZipFileName="$(MasterLibs)"
 			WorkingDirectory="dist\$(VisualStudioVersion)\libs\"
-			Condition="$(HasAnt) == true And Exists('dist\$(VisualStudioVersion)\libs\java\hypertable-$(Version).jar')" />
+			Condition="$(HasMaven) == true And $(HasAnt) == true And Exists('dist\$(VisualStudioVersion)\libs\java\hypertable-$(Version).jar')" />
 	</Target>
 	
 	<!-- Make msi -->
@@ -211,9 +217,9 @@
 			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
 			ContinueOnError="false" />
 		<Exec
-			Command='"$(ANT_HOME)"\bin\ant clean -Dversion=$(Version) -Dvisualstudioversion=$(VisualStudioVersion)'
+			Command='"clean-java-lib.bat $(Version) $(VisualStudioVersion)"'
 			ContinueOnError="false"
-			Condition="$(HasAnt) == true" />
+			Condition="$(HasMaven) == true And $(HasAnt) == true" />
 	</Target>
 
 	<!-- Deletes the master files -->

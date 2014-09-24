@@ -41,7 +41,9 @@
     <ClCompile Include="IOHandlerAccept.cc" />
     <ClCompile Include="IOHandlerData.cc" />
     <ClCompile Include="IOHandlerDatagram.cc" />
+    <ClCompile Include="IOHandlerRaw.cc" />
     <ClCompile Include="IOOP.cc" />
+    <ClCompile Include="PollEvent.cc" />
     <ClCompile Include="Protocol.cc" />
     <ClCompile Include="ProxyMap.cc" />
     <ClCompile Include="Reactor.cc" />
@@ -71,10 +73,13 @@
     <ClInclude Include="IOHandlerAccept.h" />
     <ClInclude Include="IOHandlerData.h" />
     <ClInclude Include="IOHandlerDatagram.h" />
+    <ClInclude Include="IOHandlerRaw.h" />
     <ClInclude Include="IOOP.h" />
+    <ClInclude Include="PollEvent.h" />
     <ClInclude Include="PollTimeout.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="ProxyMap.h" />
+    <ClInclude Include="RawSocketHandler.h" />
     <ClInclude Include="Reactor.h" />
     <ClInclude Include="ReactorFactory.h" />
     <ClInclude Include="ReactorRunner.h" />

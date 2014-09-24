@@ -514,16 +514,19 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       if (!m_cellcache_needs_compaction)
         break;
       HT_INFOF("Starting InMemory Compaction of %s", m_full_name.c_str());
+      Global::load_statistics->increment_compactions_minor();
     }
     else if (MaintenanceFlag::major_compaction(maintenance_flags) ||
              MaintenanceFlag::move_compaction(maintenance_flags)) {
       if ((m_cell_cache_manager->immutable_cache_empty()) &&
           m_stores.size() <= (size_t)1 &&
           (!MaintenanceFlag::split(maintenance_flags) &&
-           !MaintenanceFlag::move_compaction(maintenance_flags)))
+           !MaintenanceFlag::move_compaction(maintenance_flags) &&
+           !MaintenanceFlag::gc_compaction(maintenance_flags)))
         break;
       major = true;
       HT_INFOF("Starting Major Compaction of %s", m_full_name.c_str());
+      Global::load_statistics->increment_compactions_major();
     }
     else {
       if (MaintenanceFlag::merging_compaction(maintenance_flags)) {
@@ -533,6 +536,7 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
         m_end_merge = (merge_offset + merge_length) == m_stores.size();
         HT_INFOF("Starting Merging Compaction of %s (end_merge=%s)",
                  m_full_name.c_str(), m_end_merge ? "true" : "false");
+        Global::load_statistics->increment_compactions_merging();
         if (merge_length == m_stores.size())
           major = true;
         else {
@@ -544,12 +548,14 @@ void AccessGroup::run_compaction(int maintenance_flags, Hints *hints) {
       else if (MaintenanceFlag::gc_compaction(maintenance_flags)) {
         gc = true;
         HT_INFOF("Starting GC Compaction of %s", m_full_name.c_str());
+        Global::load_statistics->increment_compactions_gc();
       }
       else {
         if (m_cell_cache_manager->immutable_cache_empty())
           break;
         minor = true;
         HT_INFOF("Starting Minor Compaction of %s", m_full_name.c_str());
+        Global::load_statistics->increment_compactions_minor();
       }
     }
     abort_loop = false;

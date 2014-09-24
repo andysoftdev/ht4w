@@ -37,6 +37,7 @@
     <ClCompile Include="GcWorker.cc" />
     <ClCompile Include="LoadBalancer.cc" />
     <ClCompile Include="MetaLogDefinitionMaster.cc" />
+    <ClCompile Include="MetricsHandler.cc" />
     <ClCompile Include="Monitoring.cc" />
     <ClCompile Include="Operation.cc" />
     <ClCompile Include="OperationAlterTable.cc" />
@@ -91,6 +92,7 @@
     <ClInclude Include="GcWorker.h" />
     <ClInclude Include="LoadBalancer.h" />
     <ClInclude Include="MetaLogDefinitionMaster.h" />
+    <ClInclude Include="MetricsHandler.h" />
     <ClInclude Include="Monitoring.h" />
     <ClInclude Include="NotificationMessage.h" />
     <ClInclude Include="Operation.h" />

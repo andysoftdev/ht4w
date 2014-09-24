@@ -248,6 +248,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="MetricsHandler.cc" />
     <ClCompile Include="SerializedCellsReader.cc" />
     <ClCompile Include="SerializedCellsWriter.cc" />
     <ClCompile Include="ThriftHelper.cc" />
@@ -261,6 +262,7 @@
     <ClInclude Include="gen-cpp\HqlService.h" />
     <ClInclude Include="gen-cpp\Hql_constants.h" />
     <ClInclude Include="gen-cpp\Hql_types.h" />
+    <ClInclude Include="MetricsHandler.h" />
     <ClInclude Include="SerializedCellsFlag.h" />
     <ClInclude Include="SerializedCellsReader.h" />
     <ClInclude Include="SerializedCellsWriter.h" />

@@ -5,12 +5,11 @@
   <property name="name" value="hypertable"/>
   <property name="final.name" value="${name}-${version}"/>
   <property name="examples.name" value="${name}-${version}-examples"/>
-  <property name="year" value="2013"/>
+  <property name="year" value="2014"/>
 
-  <property name="thriftsrc.dir" value="${basedir}/src/java/ThriftClient"/>
-  <property name="gensrc.dir" value="${basedir}/src/gen-java"/>
   <property name="src.lib.dir" value="${basedir}/lib"/>
-  <property name="examples.dir" value="${basedir}/examples/java"/>
+  <property name="thriftsrc.dir" value="${basedir}/java/hypertable-common/src/main/java"/>
+  <property name="examples.dir" value="${basedir}/java/hypertable-examples/src/main/java"/>
 
   <property name="contrib.dir" value="${basedir}/contrib"/>
   <property name="lib.dir" value="${basedir}/lib"/>
@@ -71,11 +70,8 @@
   </target>
 
   <target name="compile" depends="prepare" description="Standard compile">
-    <javac target="1.5" srcdir='${gensrc.dir}' destdir='${build.classes}'
-           deprecation='yes' debug='true' includeantruntime='false'>
-      <classpath refid='project.classpath'/>
-    </javac>
-    <javac target="1.5" srcdir='${thriftsrc.dir}' destdir='${build.classes}'
+    <javac target="1.5" srcdir='${thriftsrc.dir}' excludes="**/Common/MetricsProcess.java,**/FsBroker/**,**/hadoop/**"
+           destdir='${build.classes}'
            deprecation='yes' debug='true' includeantruntime='false'>
       <classpath refid='project.classpath'/>
     </javac>

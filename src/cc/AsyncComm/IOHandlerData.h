@@ -247,9 +247,9 @@ namespace Hypertable {
      */
     virtual bool handle_event(port_event_t *event, time_t arrival_time=0);
 #elif defined(_WIN32)
-	bool async_recv(void* buf, size_t len);
+    bool async_recv(void* buf, size_t len);
     bool async_recv_header() {
-		return async_recv(m_message_header_ptr, m_message_header_remaining);
+      return async_recv(m_message_header_ptr, m_message_header_remaining);
     }
     virtual bool handle_event(IOOP *event, time_t arival_time=0);
 #else

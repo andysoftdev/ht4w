@@ -72,17 +72,6 @@ namespace Hypertable {
     friend class ReactorFactory;
 
   public:
-  
-#ifndef _WIN32
-
-    /** Poll interest abstraction constants.
-     */
-    enum PollInterest {
-      READ_READY  = 0x01, /**< Read ready polling interest */
-      WRITE_READY = 0x02  /**< Write ready polling interest */
-    };
-    
-#endif
 
     /** Constructor.
      * Initializes polling interface and creates interrupt socket.

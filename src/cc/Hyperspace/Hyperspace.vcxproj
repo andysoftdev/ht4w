@@ -34,6 +34,7 @@
     <ClCompile Include="HsClientState.cc" />
     <ClCompile Include="HsCommandInterpreter.cc" />
     <ClCompile Include="HsHelpText.cc" />
+    <ClCompile Include="MetricsHandler.cc" />
     <ClCompile Include="Protocol.cc" />
     <ClCompile Include="Session.cc" />
   </ItemGroup>
@@ -52,6 +53,7 @@
     <ClInclude Include="HsHelpText.h" />
     <ClInclude Include="HsParser.h" />
     <ClInclude Include="LockSequencer.h" />
+    <ClInclude Include="MetricsHandler.h" />
     <ClInclude Include="Notification.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="Session.h" />

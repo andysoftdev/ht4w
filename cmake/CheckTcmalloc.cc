@@ -32,6 +32,6 @@ int main() {
             "header: %s\nlibrary: %s\n", TC_VERSION_STRING, version);
     return 1;
   }
-  printf("%d.%d%s\n", major, minor, patch);
+  printf("%d.%d%s", major, minor, patch);
   return 0;
 }

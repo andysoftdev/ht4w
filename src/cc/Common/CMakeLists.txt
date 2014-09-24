@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2014 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -23,6 +23,7 @@ set(DST_DIR "${HYPERTABLE_BINARY_DIR}/src/cc/Common")
 set(Common_SRCS
 Checksum.cc
 Config.cc
+Cronolog.cc
 Crontab.cc
 DiscreteRandomGenerator.cc
 DiscreteRandomGeneratorFactory.cc
@@ -32,13 +33,17 @@ Escaper.cc
 FailureInducer.cc
 FileUtils.cc
 Filesystem.cc
+HostSpecification.cc
 InetAddr.cc
 InteractiveCommand.cc
 Logger.cc
+MetricsCollectorGanglia.cc
+MetricsProcess.cc
 MurmurHash.cc
 Properties.cc
 Random.cc
 Regex.cc
+SleepWakeNotifier.cc
 String.cc
 System.cc
 SystemInfo.cc
@@ -78,6 +83,11 @@ target_link_libraries(exception_test HyperCommon)
 
 add_executable(escaper_test tests/escaper_test.cc)
 target_link_libraries(escaper_test HyperCommon)
+
+add_executable(HostSpecification_test tests/HostSpecification_test.cc)
+target_link_libraries(HostSpecification_test HyperCommon)
+configure_file(${SRC_DIR}/tests/HostSpecification_test.golden
+               ${DST_DIR}/HostSpecification_test.golden)
 
 add_executable(logging_test tests/logging_test.cc)
 target_link_libraries(logging_test HyperCommon)
@@ -171,6 +181,7 @@ configure_file(${SRC_DIR}/tests/failure_inducer_test.golden
 
 add_test(Common-Exception exception_test)
 add_test(Common-Exception escaper_test)
+add_test(Common-HostSpecification HostSpecification_test)
 add_test(Common-Logging logging_test)
 add_test(Common-Serialization sertest)
 add_test(Common-ScopeGuard scope_guard_test)
@@ -199,7 +210,7 @@ add_test(Common-BloomFilter bloom_filter_test)
 add_test(Common-Hash hash_test)
 
 if (NOT HT_COMPONENT_INSTALL)
-  file(GLOB HEADERS *.h)
+  file(GLOB HEADERS *.h metrics)
 
   install(FILES ${HEADERS} ${VERSION_H} DESTINATION include/Common)
 

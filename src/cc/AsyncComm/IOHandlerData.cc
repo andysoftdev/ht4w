@@ -546,8 +546,6 @@ bool IOHandlerData::handle_event(struct kevent *event, time_t arrival_time) {
   ImplementMe;
 #endif
 
-
-
 #else
 
 bool IOHandlerData::async_recv(void* buf, size_t len) {
@@ -822,7 +820,7 @@ bool IOHandlerData::handle_write_readiness() {
 
     //HT_INFO("about to remove poll interest");
     if (m_send_queue.empty()) {
-      if ((error = remove_poll_interest(Reactor::WRITE_READY)) != Error::OK) {
+      if ((error = remove_poll_interest(PollEvent::WRITE)) != Error::OK) {
         if (m_error == Error::OK)
           m_error = error;
         return true;
@@ -885,12 +883,12 @@ int IOHandlerData::send_message(CommBufPtr &cbp, uint32_t timeout_ms,
 #ifndef _WIN32
 
   if (initially_empty && !m_send_queue.empty()) {
-    error = add_poll_interest(Reactor::WRITE_READY);
+    error = add_poll_interest(PollEvent::WRITE);
     if (error)
       HT_ERRORF("Adding Write interest failed; error=%u", (unsigned)error);
   }
   else if (!initially_empty && m_send_queue.empty()) {
-    error = remove_poll_interest(Reactor::WRITE_READY);
+    error = remove_poll_interest(PollEvent::WRITE);
     if (error)
       HT_INFOF("Removing Write interest failed; error=%u", (unsigned)error);
   }

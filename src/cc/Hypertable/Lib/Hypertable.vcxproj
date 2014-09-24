@@ -63,6 +63,7 @@
     <ClCompile Include="NameIdMapper.cc" />
     <ClCompile Include="Namespace.cc" />
     <ClCompile Include="NamespaceCache.cc" />
+    <ClCompile Include="ProfileDataScanner.cc" />
     <ClCompile Include="PseudoTables.cc" />
     <ClCompile Include="RangeLocator.cc" />
     <ClCompile Include="RangeMoveSpec.cc" />
@@ -156,6 +157,7 @@
     <ClInclude Include="Namespace.h" />
     <ClInclude Include="NamespaceCache.h" />
     <ClInclude Include="NamespaceListing.h" />
+    <ClInclude Include="ProfileDataScanner.h" />
     <ClInclude Include="PseudoTables.h" />
     <ClInclude Include="RangeLocationInfo.h" />
     <ClInclude Include="RangeLocator.h" />

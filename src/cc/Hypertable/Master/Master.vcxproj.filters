@@ -148,6 +148,9 @@
     <ClCompile Include="OperationToggleTableMaintenance.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MetricsHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -328,6 +331,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="OperationToggleTableMaintenance.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetricsHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

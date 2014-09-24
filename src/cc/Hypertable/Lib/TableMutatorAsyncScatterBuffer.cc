@@ -41,6 +41,8 @@
 
 #include <poll.h>
 
+#include <algorithm>
+
 using namespace Hypertable;
 
 TableMutatorAsyncScatterBuffer::TableMutatorAsyncScatterBuffer(Comm *comm,

@@ -183,6 +183,7 @@
     </ClCompile>
     <ClCompile Include="Checksum.cc" />
     <ClCompile Include="Config.cc" />
+    <ClCompile Include="Cronolog.cc" />
     <ClCompile Include="Crontab.cc" />
     <ClCompile Include="DiscreteRandomGenerator.cc" />
     <ClCompile Include="DiscreteRandomGeneratorFactory.cc" />
@@ -192,10 +193,13 @@
     <ClCompile Include="FailureInducer.cc" />
     <ClCompile Include="Filesystem.cc" />
     <ClCompile Include="FileUtils.cc" />
+    <ClCompile Include="HostSpecification.cc" />
     <ClCompile Include="InetAddr.cc" />
     <ClCompile Include="InteractiveCommand.cc" />
     <ClCompile Include="Logger.cc" />
     <ClCompile Include="md5.cc" />
+    <ClCompile Include="MetricsCollectorGanglia.cc" />
+    <ClCompile Include="MetricsProcess.cc" />
     <ClCompile Include="MurmurHash.cc" />
     <ClCompile Include="ProcessUtils.cc" />
     <ClCompile Include="Properties.cc" />
@@ -203,6 +207,7 @@
     <ClCompile Include="Regex.cc" />
     <ClCompile Include="SecurityUtils.cc" />
     <ClCompile Include="ServerLaunchEvent.cc" />
+    <ClCompile Include="SleepWakeNotifier.cc" />
     <ClCompile Include="StatsSerializable.cc" />
     <ClCompile Include="StatsSystem.cc" />
     <ClCompile Include="String.cc" />
@@ -234,6 +239,7 @@
     <ClInclude Include="compat-c.h" />
     <ClInclude Include="Compat.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Cronolog.h" />
     <ClInclude Include="Crontab.h" />
     <ClInclude Include="CstrHashMap.h" />
     <ClInclude Include="CstrHashTraits.h" />
@@ -250,6 +256,7 @@
     <ClInclude Include="FileUtils.h" />
     <ClInclude Include="FixedStream.h" />
     <ClInclude Include="FlyweightString.h" />
+    <ClInclude Include="HostSpecification.h" />
     <ClInclude Include="HRTimer.h" />
     <ClInclude Include="InetAddr.h" />
     <ClInclude Include="Init.h" />
@@ -257,6 +264,10 @@
     <ClInclude Include="Logger.h" />
     <ClInclude Include="md5.h" />
     <ClInclude Include="Meta.h" />
+    <ClInclude Include="Metrics.h" />
+    <ClInclude Include="MetricsCollector.h" />
+    <ClInclude Include="MetricsCollectorGanglia.h" />
+    <ClInclude Include="MetricsProcess.h" />
     <ClInclude Include="MurmurHash.h" />
     <ClInclude Include="Mutex.h" />
     <ClInclude Include="PageArena.h" />
@@ -274,6 +285,7 @@
     <ClInclude Include="Serialization.h" />
     <ClInclude Include="ServerLauncher.h" />
     <ClInclude Include="ServerLaunchEvent.h" />
+    <ClInclude Include="SleepWakeNotifier.h" />
     <ClInclude Include="SockAddrMap.h" />
     <ClInclude Include="SpiritParser.h" />
     <ClInclude Include="StaticBuffer.h" />
@@ -301,6 +313,9 @@
     <ClInclude Include="version.h" />
     <ClInclude Include="WordStream.h" />
     <ClInclude Include="XmlParser.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="metrics" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

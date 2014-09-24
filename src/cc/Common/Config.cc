@@ -230,6 +230,8 @@ void DefaultPolicy::init_options() {
         "Number of client worker threads created")
     ("Hypertable.Connection.Retry.Interval", i32()->default_value(10000),
         "Average time, in milliseconds, between connection retry atempts")
+    ("Hypertable.Metrics.Ganglia.Port", i16()->default_value(15860),
+        "UDP Port on which Hypertable gmond python extension module listens for metrics")
     ("Hypertable.LoadMetrics.Interval", i32()->default_value(3600), "Period of "
         "time, in seconds, between writing metrics to sys/RS_METRICS")
     ("Hypertable.Request.Timeout", i32()->default_value(600000), "Length of "
@@ -581,7 +583,7 @@ void DefaultPolicy::init_options() {
         "thrift broker")
     ("ThriftBroker.Future.Capacity", i32()->default_value(50*M), "Capacity "
         "of result queue (in bytes) for Future objects")
-    ("ThriftBroker.NextThreshold", i32()->default_value(128*K), "Total size  "
+    ("ThriftBroker.NextThreshold", i32()->default_value(512*K), "Total size  "
         "threshold for (size of cell data) for thrift broker next calls")
     ("ThriftBroker.API.Logging", boo()->default_value(false), "Enable or "
         "disable Thrift API logging")
@@ -591,6 +593,10 @@ void DefaultPolicy::init_options() {
         "worker threads for thrift broker")
     ("ThriftBroker.Hyperspace.Session.Reconnect", boo()->default_value(true),
         "ThriftBroker will reconnect to Hyperspace on session expiry")
+    ("ThriftBroker.SlowQueryLog.Enable", boo()->default_value(true),
+        "Enable slow query logging")
+    ("ThriftBroker.SlowQueryLog.LatencyThreshold", i32()->default_value(10000),
+        "Latency threshold above which a query is considered slow")
 
  #ifdef _WIN32
 

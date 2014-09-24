@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -58,6 +58,13 @@ void HandlerMap::insert_handler(IOHandlerDatagram *handler) {
   HT_ASSERT(m_datagram_handler_map.find(handler->get_local_address())
             == m_datagram_handler_map.end());
   m_datagram_handler_map[handler->get_local_address()] = handler;
+}
+
+void HandlerMap::insert_handler(IOHandlerRaw *handler) {
+  ScopedRecLock lock(m_mutex);
+  HT_ASSERT(m_raw_handler_map.find(handler->get_address())
+            == m_raw_handler_map.end());
+  m_raw_handler_map[handler->get_address()] = handler;
 }
 
 
@@ -121,6 +128,24 @@ int HandlerMap::checkout_handler(const CommAddress &addr,
   return Error::OK;
 }
 
+int HandlerMap::checkout_handler(const CommAddress &addr,
+                                 IOHandlerRaw **handler) {
+  ScopedRecLock lock(m_mutex);
+
+  if ((*handler = lookup_raw_handler(addr.inet)) == 0)
+    return Error::COMM_NOT_CONNECTED;
+
+  HT_ASSERT(!(*handler)->is_decomissioned());
+
+#ifndef _WIN32
+  (*handler)->increment_reference_count();
+#else
+  (*handler)->increment_reference_count(this);
+#endif
+
+  return Error::OK;
+}
+
 #ifdef _WIN32
 
 void HandlerMap::increment_reference_count(IOHandler *handler) {
@@ -171,6 +196,7 @@ int HandlerMap::remove_handler_unlocked(IOHandler *handler) {
   SockAddrMap<IOHandlerAccept *>::iterator aiter;
   SockAddrMap<IOHandlerData *>::iterator diter;
   SockAddrMap<IOHandlerDatagram *>::iterator dgiter;
+  SockAddrMap<IOHandlerRaw *>::iterator riter;
   InetAddr local_addr = handler->get_local_address();
   InetAddr remote_addr;
   int error;
@@ -197,6 +223,11 @@ int HandlerMap::remove_handler_unlocked(IOHandler *handler) {
     HT_ASSERT(handler == aiter->second);
     m_accept_handler_map.erase(aiter);
   }
+  else if ((riter = m_raw_handler_map.find(remote_addr))
+           != m_raw_handler_map.end()) {
+    HT_ASSERT(handler == riter->second);
+    m_raw_handler_map.erase(riter);
+  }
   else
     return Error::COMM_NOT_CONNECTED;
   return Error::OK;
@@ -221,6 +252,7 @@ void HandlerMap::decomission_all() {
   SockAddrMap<IOHandlerAccept *>::iterator aiter;
   SockAddrMap<IOHandlerData *>::iterator diter;
   SockAddrMap<IOHandlerDatagram *>::iterator dgiter;
+  SockAddrMap<IOHandlerRaw *>::iterator riter;
 
   // IOHandlerData 
   for (diter = m_data_handler_map.begin(); diter != m_data_handler_map.end(); ++diter) {
@@ -244,6 +276,15 @@ void HandlerMap::decomission_all() {
     aiter->second->decomission();
   }
   m_accept_handler_map.clear();
+
+  // IOHandlerRaw
+  for (riter = m_raw_handler_map.begin();
+       riter != m_raw_handler_map.end(); ++riter) {
+    m_decomissioned_handlers.insert(riter->second);
+    riter->second->decomission();
+  }
+  m_raw_handler_map.clear();
+
 }
 
 bool HandlerMap::destroy_ok(IOHandler *handler) {
@@ -446,6 +487,13 @@ IOHandlerData *HandlerMap::lookup_data_handler(const InetAddr &addr) {
 IOHandlerDatagram *HandlerMap::lookup_datagram_handler(const InetAddr &addr) {
   SockAddrMap<IOHandlerDatagram *>::iterator iter = m_datagram_handler_map.find(addr);
   if (iter != m_datagram_handler_map.end())
+    return iter->second;
+  return 0;
+}
+
+IOHandlerRaw *HandlerMap::lookup_raw_handler(const InetAddr &addr) {
+  SockAddrMap<IOHandlerRaw *>::iterator iter = m_raw_handler_map.find(addr);
+  if (iter != m_raw_handler_map.end())
     return iter->second;
   return 0;
 }

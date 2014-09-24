@@ -112,6 +112,21 @@
     <ClCompile Include="XmlParser.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Cronolog.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HostSpecification.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetricsCollectorGanglia.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetricsProcess.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SleepWakeNotifier.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h">
@@ -351,5 +366,31 @@
     <ClInclude Include="XmlParser.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Cronolog.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HostSpecification.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Metrics.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetricsCollector.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetricsCollectorGanglia.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetricsProcess.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SleepWakeNotifier.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="metrics">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

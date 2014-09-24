@@ -43,6 +43,9 @@
     <ClCompile Include="gen-cpp\HqlService.cpp">
       <Filter>Source Files\gen-cpp</Filter>
     </ClCompile>
+    <ClCompile Include="MetricsHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -80,6 +83,9 @@
     </ClInclude>
     <ClInclude Include="gen-cpp\HqlService.h">
       <Filter>Source Files\gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="MetricsHandler.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

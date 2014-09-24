@@ -72,6 +72,12 @@ HT_INSTALL_LIBS(lib ${BOOST_LIBS} ${Thrift_LIBS}
                 ${Jemalloc_LIBRARIES} ${Ceph_LIBRARIES} ${RE2_LIBRARIES}
                 ${EDITLINE_LIBRARIES})
 
+# Apple specific
+if (APPLE)
+   install(FILES "/System/Library/Frameworks/CoreFoundation.framework/Versions/Current/CoreFoundation" DESTINATION lib)
+   install(FILES "/System/Library/Frameworks/IOKit.framework/Versions/Current/IOKit" DESTINATION lib)
+endif ()
+
 if (NOT PACKAGE_THRIFTBROKER)
   HT_INSTALL_LIBS(lib ${BDB_LIBRARIES} ${RRD_LIBRARIES})
 endif ()
@@ -116,6 +122,9 @@ string(REPLACE " " ";" Thrift_LIB_DEPENDENCIES_LIST ${Thrift_LIB_DEPENDENCIES})
 foreach(thrift_dep ${Thrift_LIB_DEPENDENCIES_LIST})
   HT_INSTALL_LIBS(lib ${thrift_dep})
 endforeach ()
+
+# Install libssh
+HT_INSTALL_LIBS(lib ${Libssh_LIBRARIES})
 
 # copy cronolog to the /bin directory
 install(PROGRAMS "${CRONOLOG_DIR}/cronolog" DESTINATION

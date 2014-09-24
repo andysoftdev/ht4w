@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 export HT_HOME=$(cd `dirname "$0"`/.. && pwd)
 
-declare -a Distros=('cdh3' 'cdh4');
+declare -a Distros=('apache1' 'apache2' 'cdh3' 'cdh4' 'hdp2');
 
 usage() {
   echo ""
@@ -37,23 +37,30 @@ if [ -z $DISTRO ]; then
     exit 1;
 fi
 
+\rm -f $HT_HOME/lib/java/*.jar
+\cp -f $HT_HOME/lib/java/common/*.jar $HT_HOME/lib/java
+\cp -f $HT_HOME/lib/java/$DISTRO/*.jar $HT_HOME/lib/java
 
-# Remove existing distro files
-for distro in ${Distros[@]}; do
+if [ $DISTRO == "cdh4" ] || [ $DISTRO == "ibmbi3" ]; then
+    \cp $HT_HOME/lib/java/apache2/hypertable-*.jar $HT_HOME/lib/java
+    \cp $HT_HOME/lib/java/specific/guava-11.0.2.jar $HT_HOME/lib/java
+    \cp $HT_HOME/lib/java/specific/protobuf-java-2.4.0a.jar $HT_HOME/lib/java
+elif [ $DISTRO == "hdp2" ]; then
+    \cp $HT_HOME/lib/java/apache2/*.jar $HT_HOME/lib/java
+    \cp $HT_HOME/lib/java/specific/guava-11.0.2.jar $HT_HOME/lib/java
+    \cp $HT_HOME/lib/java/specific/protobuf-java-2.5.0.jar $HT_HOME/lib/java
+elif [ $DISTRO == "apache2" ]; then
+    \cp $HT_HOME/lib/java/specific/guava-11.0.2.jar $HT_HOME/lib/java
+    \cp $HT_HOME/lib/java/specific/protobuf-java-2.5.0.jar $HT_HOME/lib/java
+fi
 
-    if [ ! -d $HT_HOME/lib/java/$distro ]; then
-        echo "$HT_HOME/lib/java/$distro does not exist, exiting..."
-        exit 1
-    fi
-
-    cd $HT_HOME/lib/java/$distro
-    for jar in `ls -1`; do
-        \rm -f $HT_HOME/lib/java/$jar
-    done 
-
-done
-
-\cp -f $HT_HOME/lib/java/$DISTRO/* $HT_HOME/lib/java
+# Setup symlinks
+pushd .
+cd $HT_HOME/lib/java
+\ln -sf hypertable-[0-9]* hypertable.jar
+\ln -sf hypertable-examples-* hypertable-examples.jar
+\ln -sf libthrift-* libthrift.jar
+popd
 
 echo $DISTRO > $HT_HOME/conf/hadoop-distro
 

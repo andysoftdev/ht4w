@@ -23,7 +23,7 @@ project(HYPERTABLE)
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
 set(VERSION_MICRO "8")
-set(VERSION_PATCH "0")
+set(VERSION_PATCH "1")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
@@ -152,9 +152,10 @@ find_package(Hoard)
 find_package(Mapr)
 find_package(Qfs)
 find_package(Ceph)
-find_package(Ant REQUIRED)
+find_package(Maven REQUIRED)
 find_package(JNI)
 find_package(LibEvent REQUIRED)
+find_package(Libssh REQUIRED)
 find_package(Thrift REQUIRED)
 find_package(RubyThrift)
 find_package(PHP5Thrift)
@@ -220,6 +221,10 @@ elseif (ADDRESS_SANITIZER)
   MESSAGE (FATAL_ERROR "ADDRESS_SANITIZER can only be used in conjunction with LLVM")
 endif ()
 
+if (APPLE)
+   SET (CMAKE_EXE_LINKER_FLAGS "-framework IOKit -framework CoreFoundation")
+endif ()
+
 # include directories
 include_directories(src/cc ${HYPERTABLE_BINARY_DIR}/src/cc
     ${ZLIB_INCLUDE_DIR} ${Boost_INCLUDE_DIRS}
@@ -256,9 +261,15 @@ include(DocHelper)
 
 # sub-project directories
 add_subdirectory(src)
+add_subdirectory(java)
 add_subdirectory(examples)
 add_subdirectory(contrib)
 add_subdirectory(tests/integration)
+
+# Maven Repository
+if (NOT MAVEN_REPOSITORY)
+   SET (MAVEN_REPOSITORY "~/.m2/repository")
+endif ()
 
 # Java stuff
 if (NOT SKIP_JAVA_BUILD)
@@ -272,22 +283,6 @@ configure_file(bin/prerm.in prerm @ONLY)
 file(GLOB CONFS conf/[^.]*)
 install(FILES ${CONFS} DESTINATION conf)
 install(PROGRAMS ${HYPERTABLE_BINARY_DIR}/ht DESTINATION bin)
-
-# common jars
-file(GLOB JARS lib/*.jar lib/*.txt)
-install(FILES ${JARS} DESTINATION lib/java)
-
-# cdh3 jars
-file(GLOB JARS lib/cdh3/*.jar)
-install(FILES ${JARS} DESTINATION lib/java/cdh3)
-install(FILES ${HYPERTABLE_BINARY_DIR}/java/cdh3/hypertable-${VERSION}.jar
-          DESTINATION lib/java/cdh3 OPTIONAL)
-
-# cdh4 jars
-file(GLOB JARS lib/cdh4/*.jar)
-install(FILES ${JARS} DESTINATION lib/java/cdh4)
-install(FILES ${HYPERTABLE_BINARY_DIR}/java/cdh4/hypertable-${VERSION}.jar
-          DESTINATION lib/java/cdh4 OPTIONAL)
 
 install(PROGRAMS bin/jrun DESTINATION bin)
 
@@ -303,6 +298,10 @@ if (THRIFT_SOURCE_DIR)
   install(FILES ${PERLFILES} DESTINATION lib/perl)
   install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/perl/lib/Thrift
           DESTINATION lib/perl USE_SOURCE_PERMISSIONS)
+  message(STATUS "Copying Python files into installation")
+  install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/py/src/
+          DESTINATION lib/py/thrift USE_SOURCE_PERMISSIONS)
+  message(STATUS "Copying Ruby files into installation")
   file(GLOB RUBYFILES ${THRIFT_SOURCE_DIR}/lib/rb/lib/*.rb)
   install(FILES ${RUBYFILES} DESTINATION lib/rb)
   install(DIRECTORY ${THRIFT_SOURCE_DIR}/lib/rb/lib/thrift
@@ -313,10 +312,6 @@ endif ()
 install(DIRECTORY ${Thrift_INCLUDE_DIR} DESTINATION include USE_SOURCE_PERMISSIONS)
 
 if (NOT HT_COMPONENT_INSTALL)
-  install(FILES ${HYPERTABLE_BINARY_DIR}/java/cdh3/hypertable-${VERSION}-examples.jar
-          DESTINATION lib/java/cdh3 OPTIONAL)
-  install(FILES ${HYPERTABLE_BINARY_DIR}/java/cdh4/hypertable-${VERSION}-examples.jar
-          DESTINATION lib/java/cdh4 OPTIONAL)
   file(GLOB SCRIPTS bin/*.sh)
   install(PROGRAMS ${SCRIPTS} DESTINATION bin)
   install(DIRECTORY examples/apache_log DESTINATION examples
