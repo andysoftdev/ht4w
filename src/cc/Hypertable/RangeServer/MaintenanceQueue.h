@@ -103,7 +103,7 @@ namespace Hypertable {
             ScopedLock lock(m_state.mutex);
             uint32_t inflight_level = lowest_inflight_level();
 
-            boost::xtime_get(&now, boost::TIME_UTC_);
+            now = get_xtime();
 
 	    // Block in the following circumstances:
 	    // 1. Queue is empty
@@ -126,7 +126,7 @@ namespace Hypertable {
                 m_state.cond.timed_wait(lock, next_work);
               }
               inflight_level = lowest_inflight_level();
-              boost::xtime_get(&now, boost::TIME_UTC_);
+              now = get_xtime();
             }
 
             task = m_state.queue.top();
@@ -166,7 +166,7 @@ namespace Hypertable {
                 HT_INFOF("Maintenance Task '%s' aborted, will retry in %u "
                          "milliseconds ...", task->description().c_str(),
                         task->get_retry_delay());
-                boost::xtime_get(&task->start_time, boost::TIME_UTC_);
+                task->start_time = get_xtime();
                 task->start_time.sec += task->get_retry_delay() / 1000;
                 m_state.queue.push(task);
                 HT_ASSERT(m_state.inflight_levels[task->level] > 0);
