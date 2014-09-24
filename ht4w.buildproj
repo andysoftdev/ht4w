@@ -59,7 +59,7 @@
 	<!-- Check for maven -->
 	<PropertyGroup>
 		<HasMaven>false</HasMaven>
-		<HasMaven Condition="Exists('$(MAVEN_HOME)\bin\mvn.cmd')">true</HasMaven>
+		<HasMaven Condition="Exists('$(MAVEN_HOME)\bin\mvn.bat')">true</HasMaven>
 	</PropertyGroup>
 
 	<!-- Check for ant -->
@@ -126,7 +126,7 @@
 	<!-- Build Java thrift client -->
 	<Target Name="BuildJavaThriftClient">
 		<Exec
-			Command='"build-java-lib.bat $(Version) $(VisualStudioVersion)"'
+			Command='build-java-lib.cmd $(Version) $(VisualStudioVersion)'
 			ContinueOnError="false"
 			Condition="$(HasMaven) == true And $(HasAnt) == true" />
 	</Target>
@@ -217,7 +217,7 @@
 			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
 			ContinueOnError="false" />
 		<Exec
-			Command='"clean-java-lib.bat $(Version) $(VisualStudioVersion)"'
+			Command='clean-java-lib.cmd $(Version) $(VisualStudioVersion)'
 			ContinueOnError="false"
 			Condition="$(HasMaven) == true And $(HasAnt) == true" />
 	</Target>
