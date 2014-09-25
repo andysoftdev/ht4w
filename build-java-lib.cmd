@@ -13,13 +13,13 @@ for /f "delims=" %%i in ('dir /s /b /a-d "pom.xml.in"') do (
 
 @set MAVEN_OPTS=-Xmx512m -XX:MaxPermSize=128m
 @call "%MAVEN_HOME%\bin\mvn" -U -Dmaven.test.skip=true -Pcdh3 package
-xcopy /Y hypertable\target\hypertable-0.9.8.0-cdh3.jar ..\dist\%2\libs\java\
+xcopy /Y hypertable\target\hypertable-%1-cdh3.jar ..\dist\%2\libs\java\
 
 @call "%MAVEN_HOME%\bin\mvn" -U -Dmaven.test.skip=true -Papache1 package
-xcopy /Y hypertable\target\hypertable-0.9.8.0-apache1.jar ..\dist\%2\libs\java\
+xcopy /Y hypertable\target\hypertable-%1-apache1.jar ..\dist\%2\libs\java\
 
 @call "%MAVEN_HOME%\bin\mvn" -U -Dmaven.test.skip=true -Papache2 package
-xcopy /Y hypertable\target\hypertable-0.9.8.0-apache2.jar ..\dist\%2\libs\java\
+xcopy /Y hypertable\target\hypertable-%1-apache2.jar ..\dist\%2\libs\java\
 
 del /Q /s "pom.xml" > nul
 del /Q /s "hypertable\target" > nul
