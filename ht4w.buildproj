@@ -131,8 +131,24 @@
 			Condition="$(HasMaven) == true And $(HasAnt) == true" />
 	</Target>
 
+  <!-- Make master libs -->
+  <Target Name="MakeMasterLibs"
+			Condition="$(HasMSBuildCommunityTasks) == true" >
+
+    <ItemGroup>
+      <MasterLibsFiles Include="dist\$(VisualStudioVersion)\libs\java\*.*" />
+    </ItemGroup>
+
+    <Zip
+			Files="@(MasterLibsFiles)"
+			ZipFileName="$(MasterLibs)"
+			WorkingDirectory="dist\$(VisualStudioVersion)\libs\"
+			Condition="$(HasMaven) == true And $(HasAnt) == true And Exists('dist\$(VisualStudioVersion)\libs\java\hypertable-$(Version).jar')" />
+  </Target>
+
 	<!-- Make master -->
 	<Target Name="MakeMaster"
+      DependsOnTargets="MasterLibsFiles"
 			Condition="$(HasMSBuildCommunityTasks) == true" >
 
 		<ItemGroup>
