@@ -423,6 +423,9 @@ int main(int argc, char **argv) {
     delete rmctx;
     delete context->response_manager;
 
+    if (has("pidfile"))
+      FileUtils::unlink(get_str("pidfile"));
+
     context = 0;
 
     HT_NOTICE("Exiting master");

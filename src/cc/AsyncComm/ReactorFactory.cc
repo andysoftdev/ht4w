@@ -93,7 +93,8 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
       System::os_info().version_minor < 5)
     use_poll = true;
 #elif !defined(_WIN32)
-  if (Config::properties->get_bool("Comm.UsePoll") == true)
+  if (Config::properties->has("Comm.UsePoll") &&
+      Config::properties->get_bool("Comm.UsePoll"))
     use_poll = true;
 #endif
 

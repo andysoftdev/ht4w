@@ -66,6 +66,8 @@ ssize_t FileUtils::read(const String &fname, String &contents) {
     contents.append(buf, len);
     delete [] buf;
   }
+  else
+    len = -1;
   return (ssize_t)len;
 }
 

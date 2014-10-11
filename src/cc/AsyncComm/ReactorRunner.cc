@@ -79,7 +79,10 @@ void ReactorRunner::operator()() {
 
   HT_EXPECT(Config::properties, Error::FAILED_EXPECTATION);
 
-  uint32_t dispatch_delay = Config::properties->get_i32("Comm.DispatchDelay");
+  uint32_t dispatch_delay {};
+
+  if (Config::properties->has("Comm.DispatchDelay"))
+    dispatch_delay = Config::properties->get_i32("Comm.DispatchDelay");
 
 #ifndef _WIN32
 

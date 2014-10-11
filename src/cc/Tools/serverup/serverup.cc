@@ -255,7 +255,7 @@ namespace {
         HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
       String pidstr;
       String pid_file = System::install_dir + "/run/Hypertable.Master.pid";
-      if (FileUtils::read(pid_file, pidstr) <= 0)
+      if (FileUtils::read(pid_file, pidstr) < 0)
         HT_THROW(Error::REQUEST_TIMEOUT, "connecting to master");
       pid_t pid = (pid_t)strtoul(pidstr.c_str(), 0, 0);
       if (pid <= 0)

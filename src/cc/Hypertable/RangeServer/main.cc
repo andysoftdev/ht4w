@@ -121,6 +121,9 @@ int main(int argc, char **argv) {
     IndexUpdaterFactory::close();
 
     range_server = 0;
+    if (has("pidfile"))
+      FileUtils::unlink(get_str("pidfile"));
+
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

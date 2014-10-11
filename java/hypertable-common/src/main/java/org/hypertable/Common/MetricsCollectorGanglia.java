@@ -48,13 +48,13 @@ public class MetricsCollectorGanglia implements MetricsCollector {
   /** Constructor.
    * Creates a datagram send socket and connects it to the Ganglia hypertable
    * extension listen port.  Initializes mPrefix to
-   * "hypertable." + <code>component</code> + ".".
+   * "ht." + <code>component</code> + ".".
    * @param component Hypertable component ("fsbroker", "hyperspace, "master",
    * "rangeserver", or "thriftbroker")
    * @param port Ganglia collection port
    */
-  public MetricsCollectorGanglia(String component, short port) {
-    mPrefix = "hypertable." + component + ".";
+  public MetricsCollectorGanglia(String component, int port) {
+    mPrefix = "ht." + component + ".";
     mPort = port;
 
     try {
@@ -183,14 +183,14 @@ public class MetricsCollectorGanglia implements MetricsCollector {
 
   }
 
-  /** Metric name prefix ("hypertable." + component + ".") */
+  /** Metric name prefix ("ht." + component + ".") */
   private String mPrefix;
 
   /** Host address (localhost) of Ganglia gmond to connect to */
   private InetAddress mAddr;
 
   /** Ganglia hypertable extension listen port */
-  private short mPort;
+  private int mPort;
 
   /** Flag indicating if socket is connected */
   private boolean mConnected = false;
