@@ -148,7 +148,7 @@
 
 	<!-- Make master -->
 	<Target Name="MakeMaster"
-      DependsOnTargets="MasterLibsFiles"
+      DependsOnTargets="MakeMasterLibs"
 			Condition="$(HasMSBuildCommunityTasks) == true" >
 
 		<ItemGroup>
