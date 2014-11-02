@@ -38,7 +38,6 @@
 #include <Hypertable/RangeServer/MaintenanceTaskCompaction.h>
 #include <Hypertable/RangeServer/MaintenanceTaskRelinquish.h>
 #include <Hypertable/RangeServer/MaintenanceTaskSplit.h>
-#include <Hypertable/RangeServer/MergeScanner.h>
 #include <Hypertable/RangeServer/MergeScannerRange.h>
 #include <Hypertable/RangeServer/MetaLogDefinitionRangeServer.h>
 #include <Hypertable/RangeServer/MetaLogEntityRange.h>
@@ -110,9 +109,8 @@ RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_mgr,
   : m_props(props), m_conn_manager(conn_mgr),
     m_app_queue(app_queue), m_hyperspace(hyperspace) {
 
-  int16_t ganglia_port = props->get_i16("Hypertable.Metrics.Ganglia.Port");
   m_ganglia_collector =
-    std::make_shared<MetricsCollectorGanglia>("rangeserver", ganglia_port);
+    std::make_shared<MetricsCollectorGanglia>("rangeserver", props);
 
   m_context = std::make_shared<Context>();
   m_context->props = props;
@@ -1437,7 +1435,7 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
   String errmsg;
   TableInfoPtr table_info;
   RangePtr range;
-  CellListScannerPtr scanner;
+  MergeScannerRangePtr scanner;
   bool more = true;
   uint32_t id = 0;
   SchemaPtr schema;
@@ -1445,8 +1443,8 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
   ProfileDataScanner profile_data;
   bool decrement_needed=false;
 
-  HT_DEBUG_OUT <<"Creating scanner:\n"<< *table << *range_spec
-               << *scan_spec << HT_END;
+  //HT_DEBUG_OUT <<"Creating scanner:\n"<< *table << *range_spec
+  //<< *scan_spec << HT_END;
 
   if (!m_log_replay_barrier->wait(cb->event()->deadline(), table, range_spec))
     return;
@@ -1518,7 +1516,7 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
           HT_ERRORF("Problem sending OK response - %s", Error::get_text(error));
         range->decrement_scan_counter();
         Locker<LoadStatistics> lock(*Global::load_statistics);
-        Global::load_statistics->add_scan_data(1, cell_count, ext_len);
+        Global::load_statistics->add_cached_scan_data(1, cell_count, ext_len);
         return;
       }
     }
@@ -1527,32 +1525,30 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
                                scan_spec, range_spec, schema, &columns);
     scan_ctx->timeout_ms = cb->event()->header.timeout_ms;
 
-    scanner = range->create_scanner(scan_ctx);
+    range->create_scanner(scan_ctx, scanner);
 
     range->decrement_scan_counter();
     decrement_needed = false;
 
-    uint64_t cells_scanned, cells_returned, bytes_scanned, bytes_returned;
     uint32_t cell_count {};
 
     more = FillScanBlock(scanner, rbuf, &cell_count, m_scanner_buffer_size);
 
-    MergeScanner *mscanner = dynamic_cast<MergeScanner*>(scanner.get());
+    profile_data.cells_scanned = scanner->get_input_cells();
+    profile_data.cells_returned = scanner->get_output_cells();
+    profile_data.bytes_scanned = scanner->get_input_bytes();
+    profile_data.bytes_returned = scanner->get_output_bytes();
+    profile_data.disk_read = scanner->get_disk_read();
 
-    assert(mscanner);
-
-    mscanner->get_io_accounting_data(&bytes_scanned, &bytes_returned,
-                                     &cells_scanned, &cells_returned);
-    profile_data.cells_scanned = cells_scanned;
-    profile_data.cells_returned = cells_returned;
-    profile_data.bytes_scanned = bytes_scanned;
-    profile_data.bytes_returned = bytes_returned;
-    profile_data.disk_read = mscanner->get_disk_read();
+    int64_t output_cells = scanner->get_output_cells();
 
     {
       Locker<LoadStatistics> lock(*Global::load_statistics);
-      Global::load_statistics->add_scan_data(1, profile_data.cells_scanned,
-                                             profile_data.bytes_scanned);
+      Global::load_statistics->add_scan_data(1,
+                                             profile_data.cells_scanned,
+                                             profile_data.cells_returned,
+                                             profile_data.bytes_scanned,
+                                             profile_data.bytes_returned);
       range->add_read_data(profile_data.cells_scanned,
                            profile_data.cells_returned,
                            profile_data.bytes_scanned,
@@ -1560,13 +1556,12 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
                            profile_data.disk_read);
     }
 
-    MergeScannerRange *rscan=dynamic_cast<MergeScannerRange *>(scanner.get());
-    int skipped_rows = rscan ? rscan->get_skipped_rows() : 0;
-    int skipped_cells = rscan ? rscan->get_skipped_cells() : 0;
+    int skipped_rows = scanner->get_skipped_rows();
+    int skipped_cells = scanner->get_skipped_cells();
 
     if (more) {
       scan_ctx->deep_copy_specs();
-      id = Global::scanner_map.put(scanner, range, table, profile_data);
+      id = m_scanner_map.put(scanner, range, table, profile_data);
     }
     else {
       id = 0;
@@ -1577,7 +1572,8 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
 
     if (table->is_metadata())
       HT_INFOF("Successfully created scanner (id=%u) on table '%s', returning "
-               "%lld k/v pairs, more=%lld", id, table->id, (Lld)cells_returned, (Lld) more);
+               "%lld k/v pairs, more=%lld", id, table->id,
+               (Lld)output_cells, (Lld) more);
 
     /**
      *  Send back data
@@ -1625,7 +1621,7 @@ RangeServer::create_scanner(ResponseCallbackCreateScanner *cb,
 void
 RangeServer::destroy_scanner(ResponseCallback *cb, uint32_t scanner_id) {
   HT_DEBUGF("destroying scanner id=%u", scanner_id);
-  Global::scanner_map.remove(scanner_id);
+  m_scanner_map.remove(scanner_id);
   cb->response_ok();
 }
 
@@ -1634,7 +1630,7 @@ RangeServer::fetch_scanblock(ResponseCallbackFetchScanblock *cb,
         uint32_t scanner_id) {
   String errmsg;
   int error = Error::OK;
-  CellListScannerPtr scanner;
+  MergeScannerRangePtr scanner;
   RangePtr range;
   bool more = true;
   DynamicBuffer rbuf;
@@ -1648,7 +1644,7 @@ RangeServer::fetch_scanblock(ResponseCallbackFetchScanblock *cb,
 
   try {
 
-    if (!Global::scanner_map.get(scanner_id, scanner, range, scanner_table, &profile_data_before))
+    if (!m_scanner_map.get(scanner_id, scanner, range, scanner_table, &profile_data_before))
       HT_THROW(Error::RANGESERVER_INVALID_SCANNER_ID,
                format("scanner ID %d", scanner_id));
 
@@ -1661,36 +1657,31 @@ RangeServer::fetch_scanblock(ResponseCallbackFetchScanblock *cb,
 
     // verify schema
     if (schema->get_generation() != scanner_table.generation) {
-      Global::scanner_map.remove(scanner_id);
+      m_scanner_map.remove(scanner_id);
       HT_THROWF(Error::RANGESERVER_GENERATION_MISMATCH,
                "RangeServer Schema generation for table '%s' is %lld but "
                 "scanner has generation %lld", scanner_table.id,
                 (Lld)schema->get_generation(), (Lld)scanner_table.generation);
     }
 
-    uint64_t cells_scanned, cells_returned, bytes_scanned, bytes_returned;
     uint32_t cell_count {};
 
     more = FillScanBlock(scanner, rbuf, &cell_count, m_scanner_buffer_size);
 
-    MergeScanner *mscanner = dynamic_cast<MergeScanner*>(scanner.get());
+    profile_data.cells_scanned = scanner->get_input_cells();
+    profile_data.cells_returned = scanner->get_output_cells();
+    profile_data.bytes_scanned = scanner->get_input_bytes();
+    profile_data.bytes_returned = scanner->get_output_bytes();
+    profile_data.disk_read = scanner->get_disk_read();
 
-    assert(mscanner);
-
-    mscanner->get_io_accounting_data(&bytes_scanned, &bytes_returned,
-                                     &cells_scanned, &cells_returned);
-    profile_data.cells_scanned = cells_scanned;
-    profile_data.cells_returned = cells_returned;
-    profile_data.bytes_scanned = bytes_scanned;
-    profile_data.bytes_returned = bytes_returned;
-    profile_data.disk_read = mscanner->get_disk_read();
+    int64_t output_cells = scanner->get_output_cells();
 
     if (!more) {
-      Global::scanner_map.remove(scanner_id);
+      m_scanner_map.remove(scanner_id);
       scanner.reset();
     }
     else
-      Global::scanner_map.update_profile_data(scanner_id, profile_data);
+      m_scanner_map.update_profile_data(scanner_id, profile_data);
 
     profile_data -= profile_data_before;
 
@@ -1698,8 +1689,11 @@ RangeServer::fetch_scanblock(ResponseCallbackFetchScanblock *cb,
 
     {
       Locker<LoadStatistics> lock(*Global::load_statistics);
-      Global::load_statistics->add_scan_data(0, profile_data.cells_scanned,
-                                             profile_data.bytes_scanned);
+      Global::load_statistics->add_scan_data(0,
+                                             profile_data.cells_scanned,
+                                             profile_data.cells_returned,
+                                             profile_data.bytes_scanned,
+                                             profile_data.bytes_returned);
       range->add_read_data(profile_data.cells_scanned,
                            profile_data.cells_returned,
                            profile_data.bytes_scanned,
@@ -1719,7 +1713,7 @@ RangeServer::fetch_scanblock(ResponseCallbackFetchScanblock *cb,
         HT_ERRORF("Problem sending OK response - %s", Error::get_text(error));
 
       HT_DEBUGF("Successfully fetched %u bytes (%lld k/v pairs) of scan data",
-                ext.size-4, (Lld)cells_returned);
+                ext.size-4, (Lld)output_cells);
     }
 
   }
@@ -2483,7 +2477,7 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb,
   m_loadavg_accum += m_stats->system.loadavg_stat.loadavg[0];
   m_page_in_accum += m_stats->system.swap_stat.page_in;
   m_page_out_accum += m_stats->system.swap_stat.page_out;
-  m_load_factors.bytes_scanned += load_stats.scan_bytes;
+  m_load_factors.bytes_scanned += load_stats.bytes_scanned;
   m_load_factors.bytes_written += load_stats.update_bytes;
   m_metric_samples++;
 
@@ -2491,8 +2485,8 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb,
   m_stats->set_version(version_string());
   m_stats->timestamp = timestamp;
   m_stats->scan_count = load_stats.scan_count;
-  m_stats->scanned_cells = load_stats.scan_cells;
-  m_stats->scanned_bytes = load_stats.scan_bytes;
+  m_stats->scanned_cells = load_stats.cells_scanned;
+  m_stats->scanned_bytes = load_stats.bytes_scanned;
   m_stats->update_count = load_stats.update_count;
   m_stats->updated_cells = load_stats.update_cells;
   m_stats->updated_bytes = load_stats.update_bytes;
@@ -2502,25 +2496,22 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb,
   m_stats->cpu_sys = m_stats->system.cpu_stat.sys;
   m_stats->live = m_log_replay_barrier->user_complete();
 
+  uint64_t previous_query_cache_accesses = m_stats->query_cache_accesses;
+  uint64_t previous_query_cache_hits = m_stats->query_cache_hits;
+  uint64_t previous_block_cache_accesses = m_stats->block_cache_accesses;
+  uint64_t previous_block_cache_hits = m_stats->block_cache_hits;
+
   if (m_query_cache)
     m_query_cache->get_stats(&m_stats->query_cache_max_memory,
                              &m_stats->query_cache_available_memory,
                              &m_stats->query_cache_accesses,
                              &m_stats->query_cache_hits);
 
-  if (Global::block_cache) {
+  if (Global::block_cache)
     Global::block_cache->get_stats(&m_stats->block_cache_max_memory,
                                    &m_stats->block_cache_available_memory,
                                    &m_stats->block_cache_accesses,
                                    &m_stats->block_cache_hits);
-  }
-  else {
-    m_stats->block_cache_max_memory = 0;
-    m_stats->block_cache_available_memory = 0;
-    m_stats->block_cache_accesses = 0;
-    m_stats->block_cache_hits = 0;
-  }
-
 
   TableMutatorPtr mutator;
   if (now > m_next_metrics_update) {
@@ -2646,36 +2637,10 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb,
 
   // collect outstanding scanner count and compute server cellstore total
   m_stats->file_count = 0;
-  Global::scanner_map.get_counts(&m_stats->scanner_count, table_scanner_count_map);
+  m_scanner_map.get_counts(&m_stats->scanner_count, table_scanner_count_map);
   for (size_t i=0; i<m_stats->tables.size(); i++) {
     m_stats->tables[i].scanner_count = table_scanner_count_map[m_stats->tables[i].table_id.c_str()];
     m_stats->file_count += m_stats->tables[i].file_count;
-  }
-
-  if (m_query_cache) {
-    m_query_cache->get_stats(&m_stats->query_cache_max_memory,
-                             &m_stats->query_cache_available_memory,
-                             &m_stats->query_cache_accesses,
-                             &m_stats->query_cache_hits);
-  }
-  else {
-    m_stats->query_cache_max_memory = 0;
-    m_stats->query_cache_available_memory = 0;
-    m_stats->query_cache_accesses = 0;
-    m_stats->query_cache_hits = 0;
-  }
-
-  if (Global::block_cache) {
-    Global::block_cache->get_stats(&m_stats->block_cache_max_memory,
-                                   &m_stats->block_cache_available_memory,
-                                   &m_stats->block_cache_accesses,
-                                   &m_stats->block_cache_hits);
-  }
-  else {
-    m_stats->block_cache_max_memory = 0;
-    m_stats->block_cache_available_memory = 0;
-    m_stats->block_cache_accesses = 0;
-    m_stats->block_cache_hits = 0;
   }
 
   /**
@@ -2735,13 +2700,33 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb,
   m_metrics_process.collect(timestamp, m_ganglia_collector.get());
 
   m_ganglia_collector->update("scans",
-                            (float)load_stats.scan_count / period_seconds);
+                              (float)load_stats.scan_count / period_seconds);
   m_ganglia_collector->update("updates",
-                            (float)load_stats.update_count / period_seconds);
-  m_ganglia_collector->update("cellsRead",
-                            (float)load_stats.scan_cells / period_seconds);
+                              (float)load_stats.update_count / period_seconds);
+  m_ganglia_collector->update("cellsScanned",
+                              (float)load_stats.cells_scanned / period_seconds);
+  if (load_stats.cells_scanned > 0)
+    m_ganglia_collector->update("cellsScanYield",
+                                ((float)load_stats.cells_returned /
+                                 (float)load_stats.cells_scanned) * 100.0);
+  m_ganglia_collector->update("cellsReturned",
+                              (float)(load_stats.cells_returned +
+                                      load_stats.cached_cells_returned)
+                              / period_seconds);
   m_ganglia_collector->update("cellsWritten",
-                            (float)load_stats.update_cells / period_seconds);
+                              (float)load_stats.update_cells / period_seconds);
+  m_ganglia_collector->update("bytesScanned",
+                              (float)load_stats.bytes_scanned / period_seconds);
+  if (load_stats.bytes_scanned > 0)
+    m_ganglia_collector->update("bytesScanYield",
+                                ((float)load_stats.bytes_returned /
+                                 (float)load_stats.bytes_scanned) * 100.0);
+  m_ganglia_collector->update("bytesReturned",
+                              (float)(load_stats.bytes_returned +
+                                      load_stats.cached_bytes_returned)
+                              / period_seconds);
+  m_ganglia_collector->update("bytesWritten",
+                            (float)load_stats.update_bytes / period_seconds);
 
   m_ganglia_collector->update("compactions.major", load_stats.compactions_major);
   m_ganglia_collector->update("compactions.minor", load_stats.compactions_minor);
@@ -2757,9 +2742,15 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb,
   m_ganglia_collector->update("memory.tracked",
                             (float)m_stats->tracked_memory / 1000000000.0);
 
-  if (m_stats->block_cache_accesses)
+  HT_ASSERT(previous_block_cache_accesses <= m_stats->block_cache_accesses &&
+            previous_block_cache_hits <= m_stats->block_cache_hits);
+  uint64_t block_cache_accesses = m_stats->block_cache_accesses - previous_block_cache_accesses;
+  uint64_t block_cache_hits = m_stats->block_cache_hits - previous_block_cache_hits;
+
+  if (block_cache_accesses)
     m_ganglia_collector->update("blockCache.hitRate",
-                              (int32_t)(m_stats->block_cache_hits/m_stats->block_cache_accesses));
+                                (int32_t)((block_cache_hits*100) 
+                                          / block_cache_accesses));
   else
     m_ganglia_collector->update("blockCache.hitRate", (int32_t)0);
   m_ganglia_collector->update("blockCache.memory",
@@ -2769,9 +2760,15 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb,
   m_ganglia_collector->update("blockCache.fill",
                             (float)block_cache_fill / 1000000000.0);
 
-  if (m_stats->query_cache_accesses)
+  HT_ASSERT(previous_query_cache_accesses <= m_stats->query_cache_accesses &&
+            previous_query_cache_hits <= m_stats->query_cache_hits);
+  uint64_t query_cache_accesses = m_stats->query_cache_accesses - previous_query_cache_accesses;
+  uint64_t query_cache_hits = m_stats->query_cache_hits - previous_query_cache_hits;
+
+  if (query_cache_accesses)
     m_ganglia_collector->update("queryCache.hitRate",
-                              (int32_t)(m_stats->query_cache_hits/m_stats->query_cache_accesses));
+                                (int32_t)((query_cache_hits*100) /
+                                          query_cache_accesses));
   else
     m_ganglia_collector->update("queryCache.hitRate", (int32_t)0);
   m_ganglia_collector->update("queryCache.memory",
@@ -2780,6 +2777,8 @@ void RangeServer::get_statistics(ResponseCallbackGetStatistics *cb,
     m_stats->query_cache_available_memory;
   m_ganglia_collector->update("queryCache.fill",
                             (float)query_cache_fill / 1000000000.0);
+
+  m_ganglia_collector->update("requestBacklog",(int32_t)m_app_queue->backlog());
 
   try {
     m_ganglia_collector->publish();
@@ -3655,7 +3654,7 @@ void RangeServer::do_maintenance() {
     boost::xtime now;
 
     // Purge expired scanners
-    Global::scanner_map.purge_expired(m_scanner_ttl);
+    m_scanner_map.purge_expired(m_scanner_ttl);
 
     // Set Low Memory mode
     bool low_memory_mode = m_timer_handler->low_memory_mode();

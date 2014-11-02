@@ -100,6 +100,33 @@ namespace {
 
 #ifndef _WIN32
 
+  const string longest_common_prefix(vector<string> &completions) {
+    if (completions.empty())
+      return "";
+    else if (completions.size() == 1)
+      return completions[0];
+
+    char ch, memo;
+    size_t idx = 0;
+    while (true) {
+      memo = '\0';
+      size_t i;
+      for (i=0; i<completions.size(); i++) {
+        if (completions[i].length() == idx)
+          break;
+        ch = completions[i].at(idx);
+        if (memo == '\0')
+          memo = ch;
+        else if (ch != memo)
+          break;
+      }
+      if (i < completions.size())
+        return completions[0].substr(0, idx);
+      idx++;
+    }
+    return "";
+  }
+
   unsigned char complete(EditLine *el, int ch) {
     struct dirent *dp;
     const wchar_t *ptr;
@@ -139,6 +166,11 @@ namespace {
       directory.append("/");
       prefix.append(buf+1);
     }
+    else if (buf[0] == '~') {
+      directory.append(buf, bptr-buf);
+      FileUtils::expand_tilde(directory);
+      prefix.append(bptr+1);
+    }
     else {
       if (buf[0] != '/')
         directory.append("./");
@@ -159,8 +191,9 @@ namespace {
           completions.push_back(completion);
         }
       }
-      if (completions.size() == 1) {
-        mbstowcs(dir, completions[0].c_str(), sizeof(dir) / sizeof(*dir));
+      string longest_prefix = longest_common_prefix(completions);
+      if (!longest_prefix.empty()) {
+        mbstowcs(dir, longest_prefix.c_str(), sizeof(dir) / sizeof(*dir));
         if (el_winsertstr(el, dir) == -1)
           res = CC_ERROR;
         else

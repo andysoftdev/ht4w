@@ -34,11 +34,13 @@
 #include <AsyncComm/PollEvent.h>
 
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <set>
 
 #include <fcntl.h>
 #include <poll.h>
+#include <sys/ioctl.h>
 
 using namespace Hypertable;
 using namespace std;
@@ -199,13 +201,16 @@ bool SshSocketHandler::handle(int sd, int events) {
         socklen_t sockerr_len = sizeof(sockerr);
         if (getsockopt(m_sd, SOL_SOCKET, SO_ERROR, &sockerr, &sockerr_len) < 0) {
           m_error = string("getsockopt(SO_ERROR) failed (") + strerror(errno) + ")";
+	  m_cond.notify_all();
           return false;
         }
         if (sockerr) {
           m_error = string("connect() completion error (") + strerror(errno) + ")";
+	  m_cond.notify_all();
           return false;
         }
       }
+      m_poll_interest = PollEvent::READ;
       m_state = STATE_CREATE_SESSION;
 
     case (STATE_CREATE_SESSION):
@@ -214,10 +219,19 @@ bool SshSocketHandler::handle(int sd, int events) {
 
         HT_ASSERT(m_ssh_session);
 
+        char *home = getenv("HOME");
+        if (home == nullptr)
+          HT_FATAL("Environment variable HOME is not set");
+        string ssh_dir(home);
+        ssh_dir.append("/.ssh");
+        ssh_options_set(m_ssh_session, SSH_OPTIONS_SSH_DIR, ssh_dir.c_str());
+
         int verbosity = SSH_LOG_PROTOCOL;
-        ssh_options_set(m_ssh_session, SSH_OPTIONS_HOST, m_hostname.c_str());
         ssh_options_set(m_ssh_session, SSH_OPTIONS_LOG_VERBOSITY, &verbosity);
+
+        ssh_options_set(m_ssh_session, SSH_OPTIONS_HOST, m_hostname.c_str());
         ssh_options_set(m_ssh_session, SSH_OPTIONS_FD, &m_sd);
+
         ssh_set_blocking(m_ssh_session, 0);
 
         // set callbacks
@@ -232,6 +246,7 @@ bool SshSocketHandler::handle(int sd, int events) {
         rc = ssh_set_callbacks(m_ssh_session, &m_callbacks);
         if (rc == SSH_ERROR) {
           m_error = string("ssh_set_callbacks() failed - ") + ssh_get_error(m_ssh_session);
+	  m_cond.notify_all();
           return false;
         }
 
@@ -242,12 +257,14 @@ bool SshSocketHandler::handle(int sd, int events) {
         }
         if (rc == SSH_ERROR) {
           m_error = string("ssh_connect() failed - ") + ssh_get_error(m_ssh_session);
+	  m_cond.notify_all();
           return false;
         }
         else if (rc == SSH_AGAIN) {
+          if (socket_has_data())
+            continue;
           m_state = STATE_COMPLETE_CONNECTION;
-          m_poll_interest = PollEvent::WRITE;
-          return true;
+          break;
         }
       }
 
@@ -255,20 +272,24 @@ bool SshSocketHandler::handle(int sd, int events) {
       rc = ssh_connect(m_ssh_session);
       if (rc == SSH_AGAIN) {
         m_poll_interest = PollEvent::READ;
-        return true;
+        if (socket_has_data())
+          continue;
+        break;
       }
       else if (rc == SSH_ERROR) {
         m_error = string("ssh_connect() failed - ") + ssh_get_error(m_ssh_session);
+        m_cond.notify_all();
         return false;
       }
       HT_ASSERT(rc == SSH_OK);
       m_state = STATE_VERIFY_KNOWNHOST;
 
     case (STATE_VERIFY_KNOWNHOST):
-      if (!verify_knownhost())
+      if (!verify_knownhost()) {
+        m_cond.notify_all();
         return false;
+      }
       m_state = STATE_AUTHENTICATE;
-      m_poll_interest = PollEvent::WRITE;
 
     case (STATE_AUTHENTICATE):
       rc = ssh_userauth_publickey_auto(m_ssh_session, nullptr, nullptr);
@@ -279,7 +300,9 @@ bool SshSocketHandler::handle(int sd, int events) {
       }
       else if (rc == SSH_AUTH_AGAIN) {
         m_poll_interest = PollEvent::READ;
-        return true;
+        if (socket_has_data())
+          continue;
+        break;
       }
       else if (rc == SSH_AUTH_DENIED) {
         m_error = string("publickey authentication denied");
@@ -289,14 +312,17 @@ bool SshSocketHandler::handle(int sd, int events) {
 
       HT_ASSERT(rc == SSH_AUTH_SUCCESS);
       m_state = STATE_CONNECTED;
-      m_poll_interest = 0;
+      m_poll_interest = PollEvent::READ;
       m_cond.notify_all();
       break;
 
     case (STATE_COMPLETE_CHANNEL_SESSION_OPEN):
       rc = ssh_channel_open_session(m_channel);
-      if (rc == SSH_AGAIN)
+      if (rc == SSH_AGAIN) {
+        if (socket_has_data())
+          continue;
         break;
+      }
       else if (rc == SSH_ERROR) {
         ssh_channel_free(m_channel);
         m_channel = 0;
@@ -306,12 +332,15 @@ bool SshSocketHandler::handle(int sd, int events) {
       }
       HT_ASSERT(rc == SSH_OK);
       m_state = STATE_CHANNEL_REQUEST_EXEC;
-      m_poll_interest = PollEvent::WRITE;
 
     case (STATE_CHANNEL_REQUEST_EXEC):
       rc = ssh_channel_request_exec(m_channel, m_command.c_str());
-      if (rc == SSH_AGAIN)
+      m_poll_interest = PollEvent::READ;
+      if (rc == SSH_AGAIN) {
+        if (socket_has_data())
+          continue;
         break;
+      }
       else if (rc == SSH_ERROR) {
         m_error = string("ssh_request_exec() failed - ") + ssh_get_error(m_ssh_session);
         ssh_channel_close(m_channel);
@@ -322,8 +351,6 @@ bool SshSocketHandler::handle(int sd, int events) {
       }
       HT_ASSERT(rc == SSH_OK);
       m_state = STATE_CHANNEL_REQUEST_READ;
-      m_poll_interest = PollEvent::READ;
-      break;
       
     case (STATE_CHANNEL_REQUEST_READ):
 
@@ -336,7 +363,8 @@ bool SshSocketHandler::handle(int sd, int events) {
                                       m_stdout_buffer.ptr,
                                       m_stdout_buffer.remain(),
                                       0);
-        if (nbytes < 0) {
+
+        if (nbytes == SSH_ERROR) {
           m_error = string("ssh_channel_read() failed - ") + ssh_get_error(m_ssh_session);
           ssh_channel_close(m_channel);
           ssh_channel_free(m_channel);
@@ -344,6 +372,15 @@ bool SshSocketHandler::handle(int sd, int events) {
           m_cond.notify_all();
           return false;
         }
+        else if (nbytes == SSH_EOF) {
+          m_channel_is_eof = true;
+          break;
+        }
+        else if (nbytes <= 0)
+          break;
+
+        if (nbytes > 0 && *m_stdout_buffer.ptr == 0)
+          continue;
 
         if (m_terminal_output)
           write_to_stdout((const char *)m_stdout_buffer.ptr, nbytes);
@@ -353,8 +390,6 @@ bool SshSocketHandler::handle(int sd, int events) {
           m_stdout_collector.add(m_stdout_buffer);
           m_stdout_buffer = SshOutputCollector::Buffer();
         }
-        else
-          break;
       }
 
       while (true) {
@@ -366,7 +401,8 @@ bool SshSocketHandler::handle(int sd, int events) {
                                       m_stderr_buffer.ptr,
                                       m_stderr_buffer.remain(),
                                       1);
-        if (nbytes < 0) {
+
+        if (nbytes == SSH_ERROR) {
           m_error = string("ssh_channel_read() failed - ") + ssh_get_error(m_ssh_session);
           ssh_channel_close(m_channel);
           ssh_channel_free(m_channel);
@@ -374,6 +410,15 @@ bool SshSocketHandler::handle(int sd, int events) {
           m_cond.notify_all();
           return false;
         }
+        else if (nbytes == SSH_EOF) {
+          m_channel_is_eof = true;
+          break;
+        }
+        else if (nbytes <= 0)
+          break;
+
+        if (nbytes > 0 && *m_stderr_buffer.ptr == 0)
+          continue;
 
         if (m_terminal_output)
           write_to_stderr((const char *)m_stderr_buffer.ptr, nbytes);
@@ -383,14 +428,16 @@ bool SshSocketHandler::handle(int sd, int events) {
           m_stderr_collector.add(m_stderr_buffer);
           m_stderr_buffer = SshOutputCollector::Buffer();
         }
-        else
-          break;
       }
 
-      if (ssh_channel_is_eof(m_channel)) {
+      if (m_channel_is_eof || ssh_channel_is_eof(m_channel)) {
         int exit_status = ssh_channel_get_exit_status(m_channel);
 	// If ssh_channel_get_exit_status() returns -1 and the exit status has not yet
 	/// been set, then we need to read again to get the exit status
+        if (ms_debug_enabled)
+          HT_INFOF("At EOF (%s exit_status=%d, status_is_set=%s)",
+                   m_hostname.c_str(), exit_status,
+                   m_command_exit_status_is_set ? "true" : "false");
 	if (exit_status == -1 && !m_command_exit_status_is_set)
           break;
 	if (!m_command_exit_status_is_set) {
@@ -420,8 +467,8 @@ bool SshSocketHandler::handle(int sd, int events) {
   }
 
   if (ms_debug_enabled)
-    HT_DEBUGF("Leaving handler (%s events=%s, state=%s)", m_hostname.c_str(),
-              PollEvent::to_string(events).c_str(), state_str(m_state));
+    HT_INFOF("Leaving handler (%s poll_interest=%s, state=%s)", m_hostname.c_str(),
+             PollEvent::to_string(m_poll_interest).c_str(), state_str(m_state));
   
   return true;
 }
@@ -473,7 +520,7 @@ void SshSocketHandler::global_request_callback(ssh_session session, ssh_message 
 void SshSocketHandler::set_exit_status(int exit_status) {
   m_command_exit_status = exit_status;
   m_command_exit_status_is_set = true;
-  m_cond.notify_all();
+  m_channel_is_eof = true;
 }
 
 bool SshSocketHandler::wait_for_connection(chrono::system_clock::time_point deadline) {
@@ -495,6 +542,7 @@ bool SshSocketHandler::issue_command(const std::string &command) {
   m_command_exit_status_is_set = false;
 
   m_channel = ssh_channel_new(m_ssh_session);
+  m_channel_is_eof = false;
   HT_ASSERT(m_channel);
 
   ssh_channel_set_blocking(m_channel, 0);
@@ -510,18 +558,23 @@ bool SshSocketHandler::issue_command(const std::string &command) {
     return false;
   }
 
-  rc = ssh_channel_open_session(m_channel);
-  if (rc == SSH_AGAIN) {
-    m_state = STATE_COMPLETE_CHANNEL_SESSION_OPEN;
-    m_poll_interest = PollEvent::READ;
-    return true;
-  }
-  else if (rc == SSH_ERROR) {
-    ssh_channel_free(m_channel);
-    m_channel = 0;
-    m_error = string("ssh_channel_open_session() failed - ") + ssh_get_error(m_ssh_session);
-    m_state = STATE_CONNECTED;
-    return false;
+  while (true) {
+    rc = ssh_channel_open_session(m_channel);
+    if (rc == SSH_AGAIN) {
+      m_state = STATE_COMPLETE_CHANNEL_SESSION_OPEN;
+      m_poll_interest = PollEvent::READ;
+      if (socket_has_data())
+        continue;
+      return true;
+    }
+    else if (rc == SSH_ERROR) {
+      ssh_channel_free(m_channel);
+      m_channel = 0;
+      m_error = string("ssh_channel_open_session() failed - ") + ssh_get_error(m_ssh_session);
+      m_state = STATE_CONNECTED;
+      return false;
+    }
+    break;
   }
 
   HT_ASSERT(rc == SSH_OK);
@@ -581,6 +634,7 @@ void SshSocketHandler::set_terminal_output(bool val) {
       cout << "\n";
     else
       m_line_prefix_needed_stdout = false;
+    cout << flush;
   }
 
   // Send stderr collected so far to output stream
@@ -602,6 +656,7 @@ void SshSocketHandler::set_terminal_output(bool val) {
       cerr << "\n";
     else
       m_line_prefix_needed_stderr = false;
+    cerr << flush;
   }
 }
 
@@ -657,7 +712,7 @@ bool SshSocketHandler::verify_knownhost() {
     return false;
 
   case SSH_SERVER_FOUND_OTHER:
-    m_error = "wrong key type found";
+    m_error = "Key mis-match with one in known_hosts";
     free(hash);
     return false;
 
@@ -737,3 +792,9 @@ void SshSocketHandler::write_to_stderr(const char *output, size_t len) {
   cerr << flush;
 }
 
+
+bool SshSocketHandler::socket_has_data() {
+  int count;
+  ioctl(m_sd, FIONREAD, &count);
+  return count != 0;
+}

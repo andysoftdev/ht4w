@@ -58,17 +58,18 @@ extern "C" {
 using namespace Hypertable;
 using namespace std;
 
-ssize_t FileUtils::read(const String &fname, String &contents) {
+std::mutex FileUtils::ms_mutex;
+
+bool FileUtils::read(const String &fname, String &contents) {
   size_t len = 0;
   String str;
   char *buf = file_to_buffer(fname, &len);
   if (buf != 0) {
     contents.append(buf, len);
     delete [] buf;
+    return true;
   }
-  else
-    len = -1;
-  return (ssize_t)len;
+  return false;
 }
 
 String FileUtils::file_to_string(const String &fname) {
@@ -722,14 +723,17 @@ void FileUtils::add_trailing_slash(String &path) {
 
 
 bool FileUtils::expand_tilde(String &fname) {
-  struct passwd pbuf;
-  struct passwd *prbuf;
-  char buf[256];
 
   if (fname[0] != '~')
     return false;
 
-  if (fname[1] == '/') {
+  lock_guard<mutex> lock(ms_mutex);
+
+  struct passwd pbuf;
+  struct passwd *prbuf;
+  char buf[256];
+
+  if (fname.length() == 1 || fname[1] == '/') {
     if (getpwuid_r(getuid() , &pbuf, buf, 256, &prbuf) != 0 || prbuf == 0)
       return false;
     fname = (String)pbuf.pw_dir + fname.substr(1);

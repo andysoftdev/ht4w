@@ -85,7 +85,6 @@
     <ClCompile Include="MaintenanceTaskRelinquish.cc" />
     <ClCompile Include="MaintenanceTaskSplit.cc" />
     <ClCompile Include="MaintenanceTaskWorkQueue.cc" />
-    <ClCompile Include="MergeScanner.cc" />
     <ClCompile Include="MergeScannerAccessGroup.cc" />
     <ClCompile Include="MergeScannerRange.cc" />
     <ClCompile Include="MetadataNormal.cc" />
@@ -223,7 +222,6 @@
     <ClInclude Include="MaintenanceTaskSplit.h" />
     <ClInclude Include="MaintenanceTaskWorkQueue.h" />
     <ClInclude Include="MemoryTracker.h" />
-    <ClInclude Include="MergeScanner.h" />
     <ClInclude Include="MergeScannerAccessGroup.h" />
     <ClInclude Include="MergeScannerRange.h" />
     <ClInclude Include="Metadata.h" />

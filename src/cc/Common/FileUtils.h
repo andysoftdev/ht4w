@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2014 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -24,8 +24,8 @@
  * Helper/Utility functions for accessing files and the file system.
  */
 
-#ifndef HYPERTABLE_FILEUTILS_H
-#define HYPERTABLE_FILEUTILS_H
+#ifndef Common_FileUtils_h
+#define Common_FileUtils_h
 
 extern "C" {
 #include <dirent.h>
@@ -35,6 +35,7 @@ extern "C" {
 
 #include "Common/String.h"
 
+#include <mutex>
 #include <vector>
 
 namespace Hypertable {
@@ -56,9 +57,9 @@ namespace Hypertable {
      *
      * @param fname The file name
      * @param contents A reference to a String which will receive the data
-     * @return The number of bytes read, or -1 on error (and sets errno)
+     * @return <i>true</i> on success, <i>false</i> on error
      */
-    static ssize_t read(const String &fname, String &contents);
+    static bool read(const String &fname, String &contents);
 
     /** Reads data from a file descriptor into a buffer
      *
@@ -176,7 +177,7 @@ namespace Hypertable {
 
 #else
 
-    static ssize_t read(const String &fname, String &contents);
+    static bool read(const String &fname, String &contents);
     static ssize_t read(HANDLE fd, void *vptr, size_t n);
     static ssize_t read(int fd, void *vptr, size_t n);
     static ssize_t pread(HANDLE fd, void *vptr, size_t n, uint64_t offset);
@@ -291,11 +292,14 @@ namespace Hypertable {
     static int munmap(void *addr, size_t);
 
 #endif
+
+    /// Mutex for protecting thread-unsafe glibc library function calls
+    static std::mutex ms_mutex;
   };
 
   /** @} */
 
 }
 
-#endif // HYPERTABLE_FILEUTILS_H
+#endif // Common_FileUtils_h
 

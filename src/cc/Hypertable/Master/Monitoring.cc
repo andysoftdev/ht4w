@@ -823,7 +823,7 @@ void Monitoring::run_rrdtool(std::vector<String> &command) {
     
 #ifndef _WIN32
 
-  String cmd = "rrdtool";
+  String cmd = "env LD_LIBRARY_PATH= DYLD_LIBRARY_PATH= rrdtool";
 
   foreach_ht (const String &s, command) {
     cmd += " \"";

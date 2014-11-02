@@ -149,6 +149,8 @@ void Cronolog::roll(time_t now) {
 
 #ifndef _WIN32
 
+    ::unlink(m_name.c_str());
+    
     if (symlink(archive.c_str(), m_name.c_str()) < 0)
       HT_FATALF("symlink(%s, %s) failure - %s", archive.c_str(), m_name.c_str(),
                 strerror(errno));

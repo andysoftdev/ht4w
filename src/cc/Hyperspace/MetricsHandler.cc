@@ -47,8 +47,7 @@ namespace {
 
 
 MetricsHandler::MetricsHandler(PropertiesPtr &props) {
-  int16_t port = props->get_i16("Hypertable.Metrics.Ganglia.Port");
-  m_ganglia_collector = std::make_shared<MetricsCollectorGanglia>("hyperspace", port);
+  m_ganglia_collector = std::make_shared<MetricsCollectorGanglia>("hyperspace", props);
   m_collection_interval = props->get_i32("Hypertable.Monitoring.Interval");
   m_last_timestamp = Hypertable::get_ts64();
   {
@@ -82,11 +81,8 @@ void MetricsHandler::handle(Hypertable::EventPtr &event) {
 
     int64_t elapsed_secs = (timestamp - m_last_timestamp) / 1000000000LL;
 
-    {
-      lock_guard<mutex> lock(m_mutex);
-      m_ganglia_collector->update("requests", m_requests.rate(elapsed_secs));
-      m_requests.reset();
-    }
+    m_ganglia_collector->update("requests", m_requests.rate(elapsed_secs));
+    m_requests.reset();
 
     try {
       m_ganglia_collector->publish();

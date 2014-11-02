@@ -56,15 +56,11 @@ public class MetricsHandler implements DispatchHandler {
    * @param props %Properties object
    */
   public MetricsHandler(Comm comm, Properties props) {
-    String str;
 
-    str = props.getProperty("Hypertable.Metrics.Ganglia.Port", "15860");
-    int port = Integer.parseInt(str);
-
-    mMetricsCollectorGanglia = new MetricsCollectorGanglia("fsbroker", port);
+    mMetricsCollectorGanglia = new MetricsCollectorGanglia("fsbroker", props);
     mMetricsCollectorGanglia.update("type", "hadoop");
 
-    str = props.getProperty("Hypertable.Monitoring.Interval", "30000");
+    String str = props.getProperty("Hypertable.Monitoring.Interval", "30000");
     mCollectionInterval = Integer.parseInt(str);
 
     mComm = comm;
@@ -94,11 +90,11 @@ public class MetricsHandler implements DispatchHandler {
       mMetricsCollectorGanglia.update("type", "hadoop");
       synchronized (this) {
         mMetricsCollectorGanglia.update("errors", mErrors);
-        double sps = (double)mSyncs / (double)elapsed_seconds;
-        mMetricsCollectorGanglia.update("syncs", sps);
-        int avgSyncLatency = (mSyncs > 0) ? mSyncLatency/mSyncs : 0;
-        mMetricsCollectorGanglia.update("syncLatency", avgSyncLatency);
         if (elapsed_millis > 0) {
+          double sps = (double)mSyncs / (double)elapsed_seconds;
+          mMetricsCollectorGanglia.update("syncs", sps);
+          int avgSyncLatency = (mSyncs > 0) ? mSyncLatency/mSyncs : 0;
+          mMetricsCollectorGanglia.update("syncLatency", avgSyncLatency);
           long mbps = (mBytesRead / 1000000) / elapsed_seconds;
           mMetricsCollectorGanglia.update("readThroughput", (int)mbps);
           mbps = (mBytesWritten / 1000000) / elapsed_seconds;
@@ -187,6 +183,6 @@ public class MetricsHandler implements DispatchHandler {
   private int mSyncs = 0;
 
   /** Error count since last metrics collection */
-  private long mErrors = 0;
+  private int mErrors = 0;
 
 }

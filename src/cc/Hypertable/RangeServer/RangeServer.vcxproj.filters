@@ -130,9 +130,6 @@
     <ClCompile Include="MaintenanceTaskSplit.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MergeScanner.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MetadataNormal.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -520,9 +517,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MemoryTracker.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MergeScanner.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Metadata.h">
