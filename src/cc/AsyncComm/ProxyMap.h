@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -26,8 +26,8 @@
  * addresses.
  */
 
-#ifndef HYPERTABLE_PROXYMAP_H
-#define HYPERTABLE_PROXYMAP_H
+#ifndef AsyncComm_PROXYMAP_H
+#define AsyncComm_PROXYMAP_H
 
 #include <AsyncComm/CommBuf.h>
 
@@ -222,4 +222,4 @@ namespace Hypertable {
   /** @}*/
 }
 
-#endif // HYPERTABLE_PROXYMAP_H
+#endif // AsyncComm_PROXYMAP_H

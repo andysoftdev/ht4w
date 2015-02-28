@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -41,6 +41,7 @@ extern "C" {
 #include "LoadBalancer.h"
 
 using namespace Hypertable;
+using namespace std;
 
 OperationGatherStatistics::OperationGatherStatistics(ContextPtr &context)
   : OperationEphemeral(context, MetaLog::EntityType::OPERATION_GATHER_STATISTICS) {
@@ -143,7 +144,7 @@ void OperationGatherStatistics::execute() {
 
       if (m_context->system_state->auto_set(SystemVariable::READONLY,
                                             readonly_mode, message))
-        m_context->op->add_operation(new OperationSetState(m_context));
+        m_context->op->add_operation(make_shared<OperationSetState>(m_context));
       else {
         // This isn't necessary in above block because OperationSetState does it
         std::vector<NotificationMessage> notifications;

@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,7 +28,6 @@
 
 #include "Hypertable/Lib/CompressorFactory.h"
 #include "Hypertable/Lib/BlockHeaderCommitLog.h"
-#include "Hypertable/Lib/Types.h"
 
 using namespace Hypertable;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -22,7 +22,7 @@
 /// @file
 /// Crontab class for periodic events.
 /// The Crontab class is used to track the timing of a periodic event.
-/// This is used i.e. in the Hypertable.Master to schedule LoadBalancer events.
+/// This is used i.e. in the htMaster to schedule LoadBalancer events.
 
 #include <Common/Compat.h>
 #include "Crontab.h"

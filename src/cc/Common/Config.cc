@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -205,10 +205,12 @@ void DefaultPolicy::init_options() {
         "Logging level: debug, info, notice, warn, error, crit, alert, fatal")
     ("config", str()->default_value(default_config), "Configuration file.\n")
     ("induce-failure", str(), "Arguments for inducing failure")
+    ("timeout,t", i32(), "System wide timeout in milliseconds")
     ;
   alias("logging-level", "Hypertable.Logging.Level");
   alias("verbose", "Hypertable.Verbose");
   alias("silent", "Hypertable.Silent");
+  alias("timeout", "Hypertable.Request.Timeout");
 
   // pre boost 1.35 doesn't support allow_unregistered, so we have to have the
   // full cfg definition here, which might not be a bad thing.
@@ -487,6 +489,8 @@ void DefaultPolicy::init_options() {
         "Minimum size of block cache")
     ("Hypertable.RangeServer.BlockCache.MaxMemory", i64()->default_value(-1),
         "Maximum (target) size of block cache")
+    ("Hypertable.RangeServer.QueryCache.EnableMutexStatistics",
+     boo()->default_value(true), "Enable query cache mutex statistics")
     ("Hypertable.RangeServer.QueryCache.MaxMemory", i64()->default_value(50*M),
         "Maximum size of query cache")
     ("Hypertable.RangeServer.Range.RowSize.Unlimited", boo()->default_value(false),
@@ -582,6 +586,8 @@ void DefaultPolicy::init_options() {
     ("Hypertable.RangeServer.ProxyName", str()->default_value(""),
         "Use this value for the proxy name (if set) instead of reading from run dir.")
     ("ThriftBroker.Timeout", i32(), "Timeout (ms) for thrift broker")
+    ("ThriftBroker.Host", str()->default_value("localhost"),
+     "Host on which the ThriftBroker is running (read by clients only)")
     ("ThriftBroker.Port", i16()->default_value(15867), "Port number for "
         "thrift broker")
     ("ThriftBroker.Future.Capacity", i32()->default_value(50*M), "Capacity "
@@ -596,7 +602,7 @@ void DefaultPolicy::init_options() {
         "worker threads for thrift broker")
     ("ThriftBroker.Hyperspace.Session.Reconnect", boo()->default_value(true),
         "ThriftBroker will reconnect to Hyperspace on session expiry")
-    ("ThriftBroker.SlowQueryLog.Enable", boo()->default_value(false),
+    ("ThriftBroker.SlowQueryLog.Enable", boo()->default_value(true),
         "Enable slow query logging")
     ("ThriftBroker.SlowQueryLog.LatencyThreshold", i32()->default_value(10000),
         "Latency threshold above which a query is considered slow")

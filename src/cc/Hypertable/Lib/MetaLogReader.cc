@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -55,7 +55,7 @@ Reader::Reader(FilesystemPtr &fs, DefinitionPtr &definition, int flags) :
 
 
 Reader::Reader(FilesystemPtr &fs, DefinitionPtr &definition,
-	       const String &path, int flags) :
+	       const string &path, int flags) :
   m_fs(fs), m_definition(definition), m_flags(flags), m_version(0) {
 
   // Setup FS path name
@@ -118,8 +118,8 @@ namespace {
 
 void Reader::verify_backup(int32_t file_num) {
 
-  String fname = m_path + "/" + file_num;
-  String backup_filename = m_backup_path + "/" + file_num;
+  string fname = m_path + "/" + file_num;
+  string backup_filename = m_backup_path + "/" + file_num;
 
   if (!FileUtils::exists(backup_filename))
     return;
@@ -135,7 +135,7 @@ void Reader::verify_backup(int32_t file_num) {
 }
 
 
-void Reader::load_file(const String &fname) {
+void Reader::load_file(const string &fname) {
   int64_t file_length = m_fs->length(fname);
   int fd = m_fs->open_buffered(fname, 0, READAHEAD_BUFSZ, OUTSTANDING_READS);
   bool found_recover_entry = false;
@@ -182,7 +182,7 @@ void Reader::load_file(const String &fname) {
         continue;
       }
 
-      EntityPtr entity = m_definition->create(header);
+      EntityPtr entity(m_definition->create(header));
 
       buf.clear();
       buf.ensure(header.length);

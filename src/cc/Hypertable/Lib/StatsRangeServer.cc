@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -18,17 +18,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
-#include "Common/Serialization.h"
+#include <Common/Compat.h>
 
-#include "KeySpec.h"
 #include "StatsRangeServer.h"
 #ifdef _WIN32
 #include "Common/Config.h"
 #include "Common/Path.h"
 #endif
 
+#include <Hypertable/Lib/KeySpec.h>
+
+#include <Common/Serialization.h>
+
+#include <string>
+
 using namespace Hypertable;
+using namespace std;
 
 namespace {
   enum Group {
@@ -43,7 +48,7 @@ StatsRangeServer::StatsRangeServer() : StatsSerializable(RANGE_SERVER, 1), times
 
 StatsRangeServer::StatsRangeServer(PropertiesPtr &props) : StatsSerializable(RANGE_SERVER, 1), timestamp(TIMESTAMP_MIN) {
   const char *base, *ptr;
-  String datadirs = props->get_str("Hypertable.RangeServer.Monitoring.DataDirectories");
+  string datadirs = props->get_str("Hypertable.RangeServer.Monitoring.DataDirectories");
 
 #ifdef _WIN32
   boost::trim(datadirs);
@@ -57,7 +62,7 @@ StatsRangeServer::StatsRangeServer(PropertiesPtr &props) : StatsSerializable(RAN
   }
 #endif
 
-  String dir;
+  string dir;
   std::vector<String> dirs;
 
   boost::trim_if(datadirs, boost::is_any_of(" \t\"'"));

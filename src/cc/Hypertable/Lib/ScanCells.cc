@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -24,6 +24,7 @@
 #include <Hypertable/Lib/ScanCells.h>
 
 using namespace Hypertable;
+using namespace Hypertable::Lib;
 
 bool ScanCells::add(EventPtr &event, int *scanner_id) {
   ScanBlockPtr scanblock = std::make_shared<ScanBlock>();
@@ -39,7 +40,7 @@ bool ScanCells::add(EventPtr &event, int *scanner_id) {
 }
 
 bool
-ScanCells::load(SchemaPtr &schema, const String &end_row, bool end_inclusive,
+ScanCells::load(SchemaPtr &schema, const string &end_row, bool end_inclusive,
 		ScanLimitState *limit_state, CstrSet &rowset,
 		int64_t *bytes_scanned, Key *lastkey) {
   SerializedKey serkey;

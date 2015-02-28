@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -38,9 +38,7 @@ using namespace std;
 
 
 CellCache::CellCache()
-  : m_cell_map(std::less<const SerializedKey>(), Alloc(m_arena)),
-    m_deletes(0), m_collisions(0), m_key_bytes(0), m_value_bytes(0),
-    m_have_counter_deletes(false) {
+  : m_cell_map(std::less<const SerializedKey>(), Alloc(m_arena)) {
   assert(Config::properties); // requires Config::init* first
   m_arena.set_page_size((size_t)
       Config::get_i32("Hypertable.RangeServer.AccessGroup.CellCache.PageSize"));

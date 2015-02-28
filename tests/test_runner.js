@@ -652,18 +652,6 @@ function properties_test(logfile, testName) {
     return status;
 }
 
-function random_read_test(logfile, testName) {
-    run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
-    var status = system("random_write_test.exe --total-bytes=250000 --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
-    if (status == 0) {
-        status = run_target(logfile, testName, "--total-bytes=250000 --config=./hypertable.cfg --Hypertable.DataDirectory=" + targetDir);
-    }
-    else {
-        clean_target();
-    }
-    return status;
-}
-
 function row_delete_test(logfile, testName) {
     run_servers("--no-thriftbroker --Hypertable.DataDirectory=" + targetDir);
     return run_target(logfile, testName, "34587");
@@ -767,7 +755,6 @@ all_tests.add("pagearena_test", run_target);
 all_tests.add("periodic_flush_test", periodic_flush_test);
 all_tests.add("properties_test", properties_test);
 all_tests.add("query_cache_test", run_target);
-all_tests.add("random_read_test", random_read_test);
 all_tests.add("rangeserver_serialize_test", run_target);
 all_tests.add("row_delete_test", row_delete_test);
 all_tests.add("scan_spec_test", run_target);

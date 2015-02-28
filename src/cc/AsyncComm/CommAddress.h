@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,8 +25,8 @@
  * for holding an arbitrary address type.
  */
 
-#ifndef HYPERTABLE_COMMADDRESS_H
-#define HYPERTABLE_COMMADDRESS_H
+#ifndef AsyncComm_COMMADDRESS_H
+#define AsyncComm_COMMADDRESS_H
 
 #include <Common/InetAddr.h>
 #include <Common/Logger.h>
@@ -213,4 +213,4 @@ namespace Hypertable {
   /** @}*/
 } // namespace Hypertable
 
-#endif // HYPERTABLE_COMMADDRESS_H
+#endif // AsyncComm_COMMADDRESS_H

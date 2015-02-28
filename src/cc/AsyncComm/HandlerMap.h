@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,19 +28,8 @@
 #ifndef AsyncComm_HandlerMap_h
 #define AsyncComm_HandlerMap_h
 
-#include <cassert>
 
 //#define HT_DISABLE_LOG_DEBUG
-
-#include <boost/thread/condition.hpp>
-
-#include "Common/Mutex.h"
-#include "Common/Error.h"
-#include "Common/Logger.h"
-#include "Common/ReferenceCount.h"
-#include "Common/SockAddrMap.h"
-#include "Common/Time.h"
-#include "Common/Timer.h"
 
 #include "CommAddress.h"
 #include "CommBuf.h"
@@ -48,6 +37,18 @@
 #include "IOHandlerDatagram.h"
 #include "IOHandlerRaw.h"
 #include "ProxyMap.h"
+
+#include <Common/Mutex.h>
+#include <Common/Error.h>
+#include <Common/Logger.h>
+#include <Common/SockAddrMap.h>
+#include <Common/Time.h>
+#include <Common/Timer.h>
+
+#include <boost/thread/condition.hpp>
+
+#include <cassert>
+#include <memory>
 
 namespace Hypertable {
 
@@ -66,7 +67,7 @@ namespace Hypertable {
    * accept sockets.  The Comm methods use this map to locate the I/O
    * handler for a given address.
    */
-  class HandlerMap : public ReferenceCount {
+  class HandlerMap {
 
   public:
 
@@ -158,6 +159,15 @@ namespace Hypertable {
      */
     int contains_data_handler(const CommAddress &addr);
 
+    /** Decrements the reference count of <code>handler</code>.
+     * The decrementing of a handler's reference count is done by this method
+     * with #m_mutex locked which avoids a race condition between checking
+     * out handlers and purging them.
+     * @param handler Pointer to I/O handler for which to decrement reference
+     * count
+     */
+    void decrement_reference_count(IOHandler *handler);
+
 #ifdef _WIN32
 
     /** Increments the reference count of <code>handler</code>.
@@ -170,15 +180,6 @@ namespace Hypertable {
     void increment_reference_count(IOHandler *handler);
 
 #endif
-
-    /** Decrements the reference count of <code>handler</code>.
-     * The decrementing of a handler's reference count is done by this method
-     * with #m_mutex locked which avoids a race condition between checking
-     * out handlers and purging them.
-     * @param handler Pointer to I/O handler for which to decrement reference
-     * count
-     */
-    void decrement_reference_count(IOHandler *handler);
 
     /** Sets an alias address for an existing TCP address in map.
      * RangeServers listen on a well-known port defined by the
@@ -455,7 +456,7 @@ namespace Hypertable {
   };
 
   /// Smart pointer to HandlerMap
-  typedef boost::intrusive_ptr<HandlerMap> HandlerMapPtr;
+  typedef std::shared_ptr<HandlerMap> HandlerMapPtr;
 
 #ifdef _WIN32
 

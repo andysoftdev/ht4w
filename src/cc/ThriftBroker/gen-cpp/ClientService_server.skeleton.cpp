@@ -642,6 +642,16 @@ class ClientServiceHandler : virtual public ClientServiceIf {
     printf("error_get_text\n");
   }
 
+  void status(Status& _return) {
+    // Your implementation goes here
+    printf("status\n");
+  }
+
+  void shutdown() {
+    // Your implementation goes here
+    printf("shutdown\n");
+  }
+
 };
 
 int main(int argc, char **argv) {

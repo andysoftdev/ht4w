@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -40,7 +40,7 @@ namespace Hypertable {
   private:
     TableIdentifierManaged m_table;
   };
-  typedef intrusive_ptr<DispatchHandlerOperationDropTable> DispatchHandlerOperationDropTablePtr;
+  typedef std::shared_ptr<DispatchHandlerOperationDropTable> DispatchHandlerOperationDropTablePtr;
 
 }
 

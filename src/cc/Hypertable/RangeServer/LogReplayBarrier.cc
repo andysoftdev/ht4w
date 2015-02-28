@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -100,17 +100,29 @@ bool LogReplayBarrier::wait_for_user(boost::xtime deadline) {
 
 bool
 LogReplayBarrier::wait(boost::xtime deadline,
-                      const TableIdentifier *table,
-                      const RangeSpec *range_spec) {
+                      const TableIdentifier &table,
+                      const RangeSpec &range_spec) {
   if (m_user_complete)
     return true;
-  if (table->is_metadata()) {
-    if (range_spec && !strcmp(range_spec->end_row, Key::END_ROOT_ROW))
+  if (table.is_metadata()) {
+    if (!strcmp(range_spec.end_row, Key::END_ROOT_ROW))
       return wait_for_root(deadline);
     else
       return wait_for_metadata(deadline);
   }
-  else if (table->is_system())
+  else if (table.is_system())
+    return wait_for_system(deadline);
+  return wait_for_user(deadline);
+}
+
+
+bool LogReplayBarrier::wait(boost::xtime deadline,
+                            const TableIdentifier &table) {
+  if (m_user_complete)
+    return true;
+  if (table.is_metadata())
+    return wait_for_metadata(deadline);
+  else if (table.is_system())
     return wait_for_system(deadline);
   return wait_for_user(deadline);
 }

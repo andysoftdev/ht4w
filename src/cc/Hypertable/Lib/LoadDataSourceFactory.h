@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -33,11 +33,11 @@ namespace Hypertable {
 
   public:
 
-    static LoadDataSource *create(FsBroker::ClientPtr &dfs_client,
-                                  const String &fname, const int src,
-                                  const String &header_fname, const int header_src,
+    static LoadDataSource *create(FsBroker::Lib::ClientPtr &dfs_client,
+                                  const std::string &fname, const int src,
+                                  const std::string &header_fname, const int header_src,
                                   const std::vector<String> &key_columns,
-                                  const String &timestamp_column,
+                                  const std::string &timestamp_column,
                                   char field_separator,
                                   int row_uniquify_chars,
                                   int load_flags

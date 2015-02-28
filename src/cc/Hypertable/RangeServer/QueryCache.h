@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <fstream>
 #include <set>
 
 namespace Hypertable {
@@ -95,8 +96,7 @@ namespace Hypertable {
     /// Initializes #m_max_memory and #m_avail_memory to
     /// <code>max_memory</code>.
     /// @param max_memory Maximum amount of memory to be used by the cache
-    QueryCache(uint64_t max_memory)
-      : m_max_memory(max_memory), m_avail_memory(max_memory) { }
+    QueryCache(uint64_t max_memory);
 
     /// Inserts a query result.
     /// If the size of the entry is greater than #m_max_memory, then the
@@ -104,7 +104,7 @@ namespace Hypertable {
     /// removed, if there was one.  Then room is created in the cache for the
     /// new entry by removing the oldest entries until enough space is
     /// available.  Finally, a new cache entry is created and inserted into the
-    /// cache.  This function also maintains the #m_available_memory value which
+    /// cache.  This function also maintains the #m_avail_memory value which
     /// represents how much room is available in the cache.  It is computed as
     /// #m_max_memory minus an approximation of how much space is taken up by
     /// the existing cache entries.
@@ -150,20 +150,33 @@ namespace Hypertable {
     /// Gets available memory.
     /// Returns #m_avail_memory
     /// @return Available memory
-    uint64_t available_memory() { ScopedLock lock(m_mutex); return m_avail_memory; }
+    uint64_t available_memory() {
+      std::lock_guard<MutexWithStatistics> lock(m_mutex);
+      return m_avail_memory;
+    }
 
     /// Gets memory used.
     /// Memory used is calculated as #m_max_memory minus #m_avail_memory.
     /// @return Memory used
-    uint64_t memory_used() { ScopedLock lock(m_mutex); return m_max_memory-m_avail_memory; }
+    uint64_t memory_used() {
+      std::lock_guard<MutexWithStatistics> lock(m_mutex);
+      return m_max_memory-m_avail_memory;
+    }
 
     /// Gets cache statistics.
     /// @param max_memoryp Address of variable to hold <i>max memory</i>.
     /// @param available_memoryp Address of variable to hold <i>available memory</i>.
     /// @param total_lookupsp Address of variable to hold <i>total lookups</i>.
     /// @param total_hitsp Address of variable to hold <i>total hits</i>.
+    /// @param total_waiters Address of variable to hold number of threads
+    /// waiting on the mutex
     void get_stats(uint64_t *max_memoryp, uint64_t *available_memoryp,
-                   uint64_t *total_lookupsp, uint64_t *total_hitsp);
+                   uint64_t *total_lookupsp, uint64_t *total_hitsp,
+                   int32_t *total_waiters);
+
+    /// Dumps keys to output file.
+    /// @param out Output file to dump keys to
+    void dump_keys(std::ofstream &out);
 
   private:
 
@@ -215,7 +228,7 @@ namespace Hypertable {
     typedef Cache::nth_index<2>::type InvalidateHashIndex;
 
     /// %Mutex to serialize member access
-    Mutex m_mutex;
+    MutexWithStatistics m_mutex;
 
     /// Internal cache data structure
     Cache m_cache;

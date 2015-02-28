@@ -121,6 +121,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -156,6 +158,8 @@ xcopy $(SolutionDir)conf\RS_METRICS.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul</Com
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -197,6 +201,8 @@ xcopy $(SolutionDir)conf\RS_METRICS.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul</Com
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -240,6 +246,8 @@ xcopy $(SolutionDir)conf\RS_METRICS.xml $(OutDir)conf\ /Q /R /Y /D &gt; nul</Com
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -26,8 +26,8 @@
  * header.
  */
 
-#ifndef HYPERTABLE_COMMHEADER_H
-#define HYPERTABLE_COMMHEADER_H
+#ifndef AsyncComm_COMMHEADER_H
+#define AsyncComm_COMMHEADER_H
 
 namespace Hypertable {
 
@@ -45,7 +45,7 @@ namespace Hypertable {
 
     static const size_t FIXED_LENGTH = 38;
 
-    /** Enumeration constants for bits in #flags field
+    /** Enumeration constants for bits in flags field
      */
     enum Flags {
       FLAGS_BIT_REQUEST          = 0x0001, //!< Request message
@@ -56,7 +56,7 @@ namespace Hypertable {
       FLAGS_BIT_PAYLOAD_CHECKSUM = 0x8000  //!< Payload checksumming is enabled
     };
 
-    /** Enumeration constants for #flags field bitmaks
+    /** Enumeration constants for flags field bitmaks
      */
     enum FlagMask {
       FLAGS_MASK_REQUEST          = 0xFFFE, //!< Request message bit
@@ -148,4 +148,4 @@ namespace Hypertable {
   /** @}*/
 }
 
-#endif // HYPERTABLE_COMMHEADER_H
+#endif // AsyncComm_COMMHEADER_H

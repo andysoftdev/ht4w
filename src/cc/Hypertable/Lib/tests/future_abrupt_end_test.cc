@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -91,25 +91,22 @@ int main(int argc, char **argv) {
 
   Config::init(0, 0);
 
+  #ifdef _WIN32
+
+  String cmd = "..\\hypertable.exe --config=./hypertable.cfg --batch -e \"drop table if exists LoadTest;create table LoadTest(Field);\" > nul";
+  HT_ASSERT(system(cmd.c_str()) == 0);
+
+  cmd = "..\\ht_load_generator.exe --config=./hypertable.cfg --spec-file=./data.spec --no-log-sync --parallel=4 --max-bytes=250000 update";
+  HT_ASSERT(system(cmd.c_str()) == 0);
+
+  #endif
+
   ReactorFactory::initialize(2);
   String format_str = (String)"%0" + format("%lulu", (unsigned long)key_size);
 
   try {
     hypertable_client_ptr = new Hypertable::Client(System::locate_install_dir(argv[0]), "./hypertable.cfg");
     namespace_ptr = hypertable_client_ptr->open_namespace("/");
-
-    #ifdef _WIN32
-
-    if (!namespace_ptr->exists_table("LoadTest")) {
-      HqlInterpreterPtr hql = hypertable_client_ptr->create_hql_interpreter(true);
-      hql->set_namespace( namespace_ptr->get_name() );
-      hql->execute("CREATE TABLE LoadTest (Field) COMPRESSOR=\"none\"");
-      String cmd = format("..\\load_generator --Hypertable.DataDirectory=\"%s\" --config=./hypertable.cfg  update --no-log-sync --parallel=10 --spec-file=./data.spec --max-bytes=250000", System::install_dir.c_str());
-      HT_ASSERT(system(cmd.c_str()) == 0);
-    }
-
-    #endif
-
     table_ptr = namespace_ptr->open_table("LoadTest");
     // Do asynchronous scan
     FuturePtr future_ptr = new Future(5000000);

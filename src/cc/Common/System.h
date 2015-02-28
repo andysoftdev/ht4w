@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -118,7 +118,7 @@ namespace Hypertable {
     /** The exe file name */
     static String exe_name;
 
-#if !defined(__sun__) && !defined(_WIN32)
+#ifndef _WIN32
 
     /// Seconds east of UTC
     static long tm_gmtoff;

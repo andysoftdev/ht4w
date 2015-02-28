@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -31,7 +31,10 @@
 
 #include "ClientObject.h"
 #include "ScanCells.h"
+
 namespace Hypertable {
+
+  using namespace Lib;
 
   class TableScannerAsync;
   class TableMutatorAsync;
@@ -90,7 +93,7 @@ namespace Hypertable {
      * @param error_msg
      * @param eos end of scan
      */
-    virtual void scan_error(TableScannerAsync *scanner, int error, const String &error_msg,
+    virtual void scan_error(TableScannerAsync *scanner, int error, const std::string &error_msg,
                             bool eos)=0;
 
     /**

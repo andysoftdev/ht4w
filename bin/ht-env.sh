@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This file is part of Hypertable.
 #
@@ -36,8 +36,8 @@ server_pidfile() {
     hyperspace)         echo $RUNTIME_ROOT/run/Hyperspace.pid;;
     dfsbroker)          echo $RUNTIME_ROOT/run/DfsBroker.*.pid | grep -v "*";;
     fsbroker)           echo $RUNTIME_ROOT/run/FsBroker.*.pid | grep -v "*";;
-    master)             echo $RUNTIME_ROOT/run/Hypertable.Master.pid;;
-    rangeserver)        echo $RUNTIME_ROOT/run/Hypertable.RangeServer.pid;;
+    master)             echo $RUNTIME_ROOT/run/Master.pid;;
+    rangeserver)        echo $RUNTIME_ROOT/run/RangeServer.pid;;
     thriftbroker)       echo $RUNTIME_ROOT/run/ThriftBroker*.pid | grep -v "*";;
     testclient)         echo $RUNTIME_ROOT/run/Hypertable.TestClient*.pid | grep -v "*";;
     testdispatcher)     echo $RUNTIME_ROOT/run/Hypertable.TestDispatcher.pid;;
@@ -107,7 +107,7 @@ show_success() {
 }
 
 check_server() {
-  $HYPERTABLE_HOME/bin/serverup --silent "$@" >& /dev/null
+  $HYPERTABLE_HOME/bin/ht serverup --silent "$@" >& /dev/null
 }
 
 wait_for_server() {
@@ -116,7 +116,7 @@ wait_for_server() {
   server_desc=$1; shift
   max_retries=${max_retries:-40}
   report_interval=${report_interval:-5}
-  address=`$HYPERTABLE_HOME/bin/serverup --display-address=true $server`
+  address=`$HYPERTABLE_HOME/bin/ht serverup --display-address=true $server`
 
   if [ "$address" ]; then
     address=" ($address)";
@@ -151,6 +151,68 @@ wait_for_server_up() {
 wait_for_server_shutdown() {
   wait_for_server "shutdown" "$@"
 }
+
+wait_for_ok() {
+  server=$1; shift
+  server_desc=$1; shift
+  max_retries=${max_retries:-40}
+  report_interval=${report_interval:-5}
+  retries=${retries:-0}
+
+  $HYPERTABLE_HOME/bin/ht-check-${server}.sh --silent "$@"
+  ret=$?
+  while [ $ret -ge 2 ] && [ $retries -lt $max_retries ]; do
+    sleep 1
+    let retries=retries+1
+    let report=retries%$report_interval
+    if [ $report == 0 ]; then
+        STATUS_TEXT=`$HYPERTABLE_HOME/bin/ht-check-${server}.sh "$@"`
+        ret=$?
+        if [ $ret -ge 2 ] && [[ $STATUS_TEXT == *"Server is coming up" ]] ; then
+           echo "Waiting for $server_desc to come up ..."
+        else
+           echo "$STATUS_TEXT"
+        fi
+    else
+        $HYPERTABLE_HOME/bin/ht-check-${server}.sh --silent "$@"
+        ret=$?
+    fi
+  done
+  $HYPERTABLE_HOME/bin/ht-check-${server}.sh "$@"
+  ret=$?
+  [ -s $startlog ] && cat $startlog
+  rm -f $startlog
+  return $ret
+}
+
+
+wait_for_critical() {
+  server=$1; shift
+  server_desc=$1; shift
+  max_retries=${max_retries:-40}
+  report_interval=${report_interval:-5}
+
+  retries=0
+  $HYPERTABLE_HOME/bin/ht-check-${server}.sh --silent "$@"
+  ret=$?
+  while [ $ret -ne 2 ] && [ $retries -lt $max_retries ]; do
+    let retries=retries+1
+    let report=retries%$report_interval
+    [ $report == 0 ] && echo "Waiting for $server_desc to shutdown ..."
+    sleep 1
+    $HYPERTABLE_HOME/bin/ht-check-${server}.sh --silent "$@"
+    ret=$?
+  done
+  if [ $ret -ne 2 ]; then
+    echo "ERROR: $server_desc did not shutdown"
+    check_pidfile `server_pidfile $server`
+    return 1
+  else
+    echo "Shutdown $server_desc complete"
+    return 0
+  fi
+}
+
 
 set_start_vars() {
   pidfile=$RUNTIME_ROOT/run/$1.pid

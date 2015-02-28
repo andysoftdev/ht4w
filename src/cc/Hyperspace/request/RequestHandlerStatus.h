@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -26,7 +26,6 @@
 #include "AsyncComm/Comm.h"
 #include "AsyncComm/Event.h"
 
-
 namespace Hyperspace {
   using namespace Hypertable;
 
@@ -34,14 +33,16 @@ namespace Hyperspace {
 
   class RequestHandlerStatus : public ApplicationHandler {
   public:
-  RequestHandlerStatus(Comm *comm, EventPtr &event)
-    : ApplicationHandler(event), m_comm(comm)
+  RequestHandlerStatus(Comm *comm, Master *master, EventPtr &event)
+    : ApplicationHandler(event), m_comm(comm), m_master(master)
     { }
 
     virtual void run();
 
   private:
     Comm *m_comm;
+    Master *m_master;
+
   };
 
 }

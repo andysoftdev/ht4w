@@ -5,6 +5,18 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Source Files\Request">
+      <UniqueIdentifier>{9dccb518-fecb-4de0-9745-7250c18bd028}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Response">
+      <UniqueIdentifier>{c6ad4c48-6607-479e-ac1f-2e209cd7b03f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Request\Handler">
+      <UniqueIdentifier>{95229eab-9266-4ddc-9a29-c08cff0d4a6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Response\Callback">
+      <UniqueIdentifier>{712793f9-7543-446a-a61a-54a98ec492f1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\stdafx.cc">
@@ -145,60 +157,6 @@
     <ClCompile Include="RangeServer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RequestHandlerCommitLogSync.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerCompact.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerCreateScanner.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerDestroyScanner.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerDoMaintenance.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerDropRange.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerDropTable.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerDump.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerFetchScanblock.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerGetStatistics.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerLoadRange.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerStatus.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerUpdate.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerUpdateSchema.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackCreateScanner.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackFetchScanblock.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackGetStatistics.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackUpdate.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ScanContext.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -220,13 +178,7 @@
     <ClCompile Include="GroupCommitTimerHandler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RequestHandlerGroupCommit.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="LoadMetricsRange.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerRelinquishRange.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MaintenanceTaskRelinquish.cc">
@@ -238,9 +190,6 @@
     <ClCompile Include="MetaLogEntityRange.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RequestHandlerWaitForMaintenance.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CellStoreTrailerV5.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -248,15 +197,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LocationInitializer.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerAcknowledgeLoad.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerHeapcheck.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerMetadataSync.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MergeScannerAccessGroup.cc">
@@ -275,9 +215,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="IndexUpdater.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerShutdown.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MetaLogEntityTaskAcknowledgeRelinquish.cc">
@@ -304,30 +241,6 @@
     <ClCompile Include="ReplayDispatchHandler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RequestHandlerDumpPseudoTable.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerPhantomCommitRanges.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerPhantomLoad.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerPhantomPrepareRanges.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerPhantomUpdate.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerReplayFragments.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackAcknowledgeLoad.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackPhantomUpdate.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RangeReplayBuffer.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -338,9 +251,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MetaLogEntityRemoveOkLogs.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerSetState.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ServerState.cc">
@@ -358,14 +268,116 @@
     <ClCompile Include="LogReplayBarrier.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RequestHandlerTableMaintenanceDisable.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerTableMaintenanceEnable.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="UpdatePipeline.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\AcknowledgeLoad.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\CommitLogSync.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Compact.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\CreateScanner.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\DestroyScanner.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\DoMaintenance.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\DropRange.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\DropTable.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Dump.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\DumpPseudoTable.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\FetchScanblock.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\GetStatistics.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\GroupCommit.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Heapcheck.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\LoadRange.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\MetadataSync.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\PhantomCommitRanges.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\PhantomLoad.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\PhantomPrepareRanges.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\PhantomUpdate.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\RelinquishRange.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\ReplayFragments.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\SetState.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Shutdown.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Status.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\TableMaintenanceDisable.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\TableMaintenanceEnable.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Update.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\UpdateSchema.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\WaitForMaintenance.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\AcknowledgeLoad.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\CreateScanner.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\GetStatistics.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\PhantomUpdate.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Status.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Update.cc">
+      <Filter>Source Files\Response\Callback</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -543,60 +555,6 @@
     <ClInclude Include="RangeSet.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerCommitLogSync.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerCompact.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerCreateScanner.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerDestroyScanner.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerDoMaintenance.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerDropRange.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerDropTable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerDump.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerFetchScanblock.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerGetStatistics.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerLoadRange.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerStatus.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerUpdate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerUpdateSchema.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackCreateScanner.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackFetchScanblock.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackGetStatistics.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackUpdate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="RSStats.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -624,13 +582,7 @@
     <ClInclude Include="GroupCommitTimerHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerGroupCommit.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="LoadMetricsRange.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerRelinquishRange.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MaintenanceTaskRelinquish.h">
@@ -645,9 +597,6 @@
     <ClInclude Include="RangeTransferInfo.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerWaitForMaintenance.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="CellStoreTrailerV5.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -657,19 +606,10 @@
     <ClInclude Include="LocationInitializer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerAcknowledgeLoad.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="LoadFactors.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerHeapcheck.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="CellStoreInfo.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerMetadataSync.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="CellStoreBlockIndexArray.h">
@@ -691,9 +631,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="IndexUpdater.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerShutdown.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MetaLogEntityTaskAcknowledgeRelinquish.h">
@@ -720,30 +657,6 @@
     <ClInclude Include="ReplayDispatchHandler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerDumpPseudoTable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerPhantomCommitRanges.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerPhantomLoad.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerPhantomPrepareRanges.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerPhantomUpdate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerReplayFragments.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackAcknowledgeLoad.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackPhantomUpdate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="MetaLogEntityTask.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -760,9 +673,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="LoadStatistics.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerSetState.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ServerState.h">
@@ -783,12 +693,6 @@
     <ClInclude Include="LogReplayBarrier.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RequestHandlerTableMaintenanceDisable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerTableMaintenanceEnable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="UpdateContext.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -802,6 +706,117 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="UpdateRequest.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\AcknowledgeLoad.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\CommitLogSync.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Compact.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\CreateScanner.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\DestroyScanner.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\DoMaintenance.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\DropRange.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\DropTable.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Dump.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\DumpPseudoTable.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\FetchScanblock.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\GetStatistics.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\GroupCommit.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Heapcheck.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\LoadRange.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\MetadataSync.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\PhantomCommitRanges.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\PhantomLoad.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\PhantomPrepareRanges.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\PhantomUpdate.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\RelinquishRange.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\ReplayFragments.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\SetState.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Shutdown.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Status.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\TableMaintenanceDisable.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\TableMaintenanceEnable.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Update.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\UpdateSchema.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\WaitForMaintenance.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\AcknowledgeLoad.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\CreateScanner.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\GetStatistics.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\PhantomUpdate.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Status.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Update.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="TransferLog.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

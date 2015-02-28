@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -114,7 +114,7 @@ namespace Hypertable {
 
   /** Strips enclosing quotes.
    * Inspects the first and last characters of the string defined by
-   * <code>input</code> and </code>input_len</code> and if they are either both
+   * <code>input</code> and <code>input_len</code> and if they are either both
    * single quotes or double quotes, it sets <code>output</code> and
    * <code>output_len</code> to contained between them.  Otherwise,
    * <code>*output</code> is set to <code>input</code> and

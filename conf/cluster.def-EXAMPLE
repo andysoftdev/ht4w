@@ -1,10 +1,10 @@
 INSTALL_PREFIX=/opt/hypertable
-HYPERTABLE_VERSION=0.9.8.4
-PACKAGE_FILE=/root/packages/hypertable-0.9.8.4-linux-x86_64.tar.gz
+HYPERTABLE_VERSION=0.9.8.5
+PACKAGE_FILE=/root/packages/hypertable-${HYPERTABLE_VERSION}-linux-x86_64.tar.gz
 FS=hadoop
 HADOOP_DISTRO=cdh4
 ORIGIN_CONFIG_FILE=/root/hypertable.cfg
-PROMPT_CLEAN=true
+PROMPT_DESTROY=true
 
 role: source test00
 role: master test[00-02]
@@ -13,4 +13,4 @@ role: slave  test[03-99] - test37
 role: thriftbroker
 role: spare
 
-include: "core.tasks"
+include: "$INSTALL_PREFIX/$HYPERTABLE_VERSION/conf/core.tasks"

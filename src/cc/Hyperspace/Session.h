@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -38,6 +38,7 @@
 #include <Common/DynamicBuffer.h>
 #include <Common/Properties.h>
 #include <Common/ReferenceCount.h>
+#include <Common/Status.h>
 #include <Common/String.h>
 #include <Common/Timer.h>
 
@@ -615,10 +616,11 @@ namespace Hyperspace {
 
     /** Check the status of the Hyperspace master server
      *
+     * @param status Reference to status object
      * @param timer maximum wait timer
      * @return Error::OK on if server is up and ok or error code on failure
      */
-    int status(Timer *timer=0);
+    int status(Status &status, Timer *timer=0);
 
     /** Waits for session state to change to STATE_SAFE.
      *

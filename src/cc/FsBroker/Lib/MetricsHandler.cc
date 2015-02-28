@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -37,13 +37,8 @@
 #include <mutex>
 
 using namespace Hypertable;
-using namespace FsBroker;
+using namespace Hypertable::FsBroker::Lib;
 using namespace std;
-
-namespace {
-  mutex g_mutex {};
-  Comm *g_comm {};
-}
 
 
 MetricsHandler::MetricsHandler(PropertiesPtr &props, const std::string &type)
@@ -51,28 +46,21 @@ MetricsHandler::MetricsHandler(PropertiesPtr &props, const std::string &type)
   m_ganglia_collector = std::make_shared<MetricsCollectorGanglia>("fsbroker", props);
   m_collection_interval = props->get_i32("Hypertable.Monitoring.Interval");
   m_last_timestamp = Hypertable::get_ts64();
-  {
-    lock_guard<mutex> lock(g_mutex);
-    int error;
-    g_comm = Comm::instance();
-    if ((error = g_comm->set_timer(m_collection_interval, this)) != Error::OK)
-      HT_FATALF("Problem setting timer - %s", Error::get_text(error));
-  }
+  m_comm = Comm::instance();
 }
 
-MetricsHandler::~MetricsHandler() {
-  lock_guard<mutex> lock(g_mutex);
-  g_comm->cancel_timer(this);
-  g_comm = 0;
+void MetricsHandler::start_collecting() {
+  int error;
+  if ((error = m_comm->set_timer(m_collection_interval, shared_from_this())) != Error::OK)
+    HT_FATALF("Problem setting timer - %s", Error::get_text(error));
 }
 
+void MetricsHandler::stop_collecting() {
+  m_comm->cancel_timer(shared_from_this());
+}
 
 void MetricsHandler::handle(Hypertable::EventPtr &event) {
-  lock_guard<mutex> lock(g_mutex);
   int error;
-
-  if (g_comm == 0)
-    return;
 
   if (event->type == Hypertable::Event::TIMER) {
 
@@ -114,7 +102,7 @@ void MetricsHandler::handle(Hypertable::EventPtr &event) {
       HT_INFOF("Problem publishing Ganglia metrics - %s", e.what());
     }
 
-    if ((error = g_comm->set_timer(m_collection_interval, this)) != Error::OK)
+    if ((error = m_comm->set_timer(m_collection_interval, shared_from_this())) != Error::OK)
       HT_FATALF("Problem setting timer - %s", Error::get_text(error));
 
   }

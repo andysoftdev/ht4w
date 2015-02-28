@@ -101,42 +101,42 @@
     <ClCompile Include="RangeServer.cc" />
     <ClCompile Include="ReplayBuffer.cc" />
     <ClCompile Include="ReplayDispatchHandler.cc" />
-    <ClCompile Include="RequestHandlerAcknowledgeLoad.cc" />
-    <ClCompile Include="RequestHandlerCommitLogSync.cc" />
-    <ClCompile Include="RequestHandlerCompact.cc" />
-    <ClCompile Include="RequestHandlerCreateScanner.cc" />
-    <ClCompile Include="RequestHandlerDestroyScanner.cc" />
-    <ClCompile Include="RequestHandlerDoMaintenance.cc" />
-    <ClCompile Include="RequestHandlerDropRange.cc" />
-    <ClCompile Include="RequestHandlerDropTable.cc" />
-    <ClCompile Include="RequestHandlerDump.cc" />
-    <ClCompile Include="RequestHandlerDumpPseudoTable.cc" />
-    <ClCompile Include="RequestHandlerFetchScanblock.cc" />
-    <ClCompile Include="RequestHandlerGetStatistics.cc" />
-    <ClCompile Include="RequestHandlerGroupCommit.cc" />
-    <ClCompile Include="RequestHandlerHeapcheck.cc" />
-    <ClCompile Include="RequestHandlerLoadRange.cc" />
-    <ClCompile Include="RequestHandlerMetadataSync.cc" />
-    <ClCompile Include="RequestHandlerPhantomCommitRanges.cc" />
-    <ClCompile Include="RequestHandlerPhantomLoad.cc" />
-    <ClCompile Include="RequestHandlerPhantomPrepareRanges.cc" />
-    <ClCompile Include="RequestHandlerPhantomUpdate.cc" />
-    <ClCompile Include="RequestHandlerRelinquishRange.cc" />
-    <ClCompile Include="RequestHandlerReplayFragments.cc" />
-    <ClCompile Include="RequestHandlerSetState.cc" />
-    <ClCompile Include="RequestHandlerShutdown.cc" />
-    <ClCompile Include="RequestHandlerStatus.cc" />
-    <ClCompile Include="RequestHandlerTableMaintenanceDisable.cc" />
-    <ClCompile Include="RequestHandlerTableMaintenanceEnable.cc" />
-    <ClCompile Include="RequestHandlerUpdate.cc" />
-    <ClCompile Include="RequestHandlerUpdateSchema.cc" />
-    <ClCompile Include="RequestHandlerWaitForMaintenance.cc" />
-    <ClCompile Include="ResponseCallbackAcknowledgeLoad.cc" />
-    <ClCompile Include="ResponseCallbackCreateScanner.cc" />
-    <ClCompile Include="ResponseCallbackFetchScanblock.cc" />
-    <ClCompile Include="ResponseCallbackGetStatistics.cc" />
-    <ClCompile Include="ResponseCallbackPhantomUpdate.cc" />
-    <ClCompile Include="ResponseCallbackUpdate.cc" />
+    <ClCompile Include="Request\Handler\AcknowledgeLoad.cc" />
+    <ClCompile Include="Request\Handler\CommitLogSync.cc" />
+    <ClCompile Include="Request\Handler\Compact.cc" />
+    <ClCompile Include="Request\Handler\CreateScanner.cc" />
+    <ClCompile Include="Request\Handler\DestroyScanner.cc" />
+    <ClCompile Include="Request\Handler\DoMaintenance.cc" />
+    <ClCompile Include="Request\Handler\DropRange.cc" />
+    <ClCompile Include="Request\Handler\DropTable.cc" />
+    <ClCompile Include="Request\Handler\Dump.cc" />
+    <ClCompile Include="Request\Handler\DumpPseudoTable.cc" />
+    <ClCompile Include="Request\Handler\FetchScanblock.cc" />
+    <ClCompile Include="Request\Handler\GetStatistics.cc" />
+    <ClCompile Include="Request\Handler\GroupCommit.cc" />
+    <ClCompile Include="Request\Handler\Heapcheck.cc" />
+    <ClCompile Include="Request\Handler\LoadRange.cc" />
+    <ClCompile Include="Request\Handler\MetadataSync.cc" />
+    <ClCompile Include="Request\Handler\PhantomCommitRanges.cc" />
+    <ClCompile Include="Request\Handler\PhantomLoad.cc" />
+    <ClCompile Include="Request\Handler\PhantomPrepareRanges.cc" />
+    <ClCompile Include="Request\Handler\PhantomUpdate.cc" />
+    <ClCompile Include="Request\Handler\RelinquishRange.cc" />
+    <ClCompile Include="Request\Handler\ReplayFragments.cc" />
+    <ClCompile Include="Request\Handler\SetState.cc" />
+    <ClCompile Include="Request\Handler\Shutdown.cc" />
+    <ClCompile Include="Request\Handler\Status.cc" />
+    <ClCompile Include="Request\Handler\TableMaintenanceDisable.cc" />
+    <ClCompile Include="Request\Handler\TableMaintenanceEnable.cc" />
+    <ClCompile Include="Request\Handler\Update.cc" />
+    <ClCompile Include="Request\Handler\UpdateSchema.cc" />
+    <ClCompile Include="Request\Handler\WaitForMaintenance.cc" />
+    <ClCompile Include="Response\Callback\AcknowledgeLoad.cc" />
+    <ClCompile Include="Response\Callback\CreateScanner.cc" />
+    <ClCompile Include="Response\Callback\GetStatistics.cc" />
+    <ClCompile Include="Response\Callback\PhantomUpdate.cc" />
+    <ClCompile Include="Response\Callback\Status.cc" />
+    <ClCompile Include="Response\Callback\Update.cc" />
     <ClCompile Include="ScanContext.cc" />
     <ClCompile Include="ScannerMap.cc" />
     <ClCompile Include="ServerState.cc" />
@@ -243,42 +243,42 @@
     <ClInclude Include="RangeTransferInfo.h" />
     <ClInclude Include="ReplayBuffer.h" />
     <ClInclude Include="ReplayDispatchHandler.h" />
-    <ClInclude Include="RequestHandlerAcknowledgeLoad.h" />
-    <ClInclude Include="RequestHandlerCommitLogSync.h" />
-    <ClInclude Include="RequestHandlerCompact.h" />
-    <ClInclude Include="RequestHandlerCreateScanner.h" />
-    <ClInclude Include="RequestHandlerDestroyScanner.h" />
-    <ClInclude Include="RequestHandlerDoMaintenance.h" />
-    <ClInclude Include="RequestHandlerDropRange.h" />
-    <ClInclude Include="RequestHandlerDropTable.h" />
-    <ClInclude Include="RequestHandlerDump.h" />
-    <ClInclude Include="RequestHandlerDumpPseudoTable.h" />
-    <ClInclude Include="RequestHandlerFetchScanblock.h" />
-    <ClInclude Include="RequestHandlerGetStatistics.h" />
-    <ClInclude Include="RequestHandlerGroupCommit.h" />
-    <ClInclude Include="RequestHandlerHeapcheck.h" />
-    <ClInclude Include="RequestHandlerLoadRange.h" />
-    <ClInclude Include="RequestHandlerMetadataSync.h" />
-    <ClInclude Include="RequestHandlerPhantomCommitRanges.h" />
-    <ClInclude Include="RequestHandlerPhantomLoad.h" />
-    <ClInclude Include="RequestHandlerPhantomPrepareRanges.h" />
-    <ClInclude Include="RequestHandlerPhantomUpdate.h" />
-    <ClInclude Include="RequestHandlerRelinquishRange.h" />
-    <ClInclude Include="RequestHandlerReplayFragments.h" />
-    <ClInclude Include="RequestHandlerSetState.h" />
-    <ClInclude Include="RequestHandlerShutdown.h" />
-    <ClInclude Include="RequestHandlerStatus.h" />
-    <ClInclude Include="RequestHandlerTableMaintenanceDisable.h" />
-    <ClInclude Include="RequestHandlerTableMaintenanceEnable.h" />
-    <ClInclude Include="RequestHandlerUpdate.h" />
-    <ClInclude Include="RequestHandlerUpdateSchema.h" />
-    <ClInclude Include="RequestHandlerWaitForMaintenance.h" />
-    <ClInclude Include="ResponseCallbackAcknowledgeLoad.h" />
-    <ClInclude Include="ResponseCallbackCreateScanner.h" />
-    <ClInclude Include="ResponseCallbackFetchScanblock.h" />
-    <ClInclude Include="ResponseCallbackGetStatistics.h" />
-    <ClInclude Include="ResponseCallbackPhantomUpdate.h" />
-    <ClInclude Include="ResponseCallbackUpdate.h" />
+    <ClInclude Include="Request\Handler\AcknowledgeLoad.h" />
+    <ClInclude Include="Request\Handler\CommitLogSync.h" />
+    <ClInclude Include="Request\Handler\Compact.h" />
+    <ClInclude Include="Request\Handler\CreateScanner.h" />
+    <ClInclude Include="Request\Handler\DestroyScanner.h" />
+    <ClInclude Include="Request\Handler\DoMaintenance.h" />
+    <ClInclude Include="Request\Handler\DropRange.h" />
+    <ClInclude Include="Request\Handler\DropTable.h" />
+    <ClInclude Include="Request\Handler\Dump.h" />
+    <ClInclude Include="Request\Handler\DumpPseudoTable.h" />
+    <ClInclude Include="Request\Handler\FetchScanblock.h" />
+    <ClInclude Include="Request\Handler\GetStatistics.h" />
+    <ClInclude Include="Request\Handler\GroupCommit.h" />
+    <ClInclude Include="Request\Handler\Heapcheck.h" />
+    <ClInclude Include="Request\Handler\LoadRange.h" />
+    <ClInclude Include="Request\Handler\MetadataSync.h" />
+    <ClInclude Include="Request\Handler\PhantomCommitRanges.h" />
+    <ClInclude Include="Request\Handler\PhantomLoad.h" />
+    <ClInclude Include="Request\Handler\PhantomPrepareRanges.h" />
+    <ClInclude Include="Request\Handler\PhantomUpdate.h" />
+    <ClInclude Include="Request\Handler\RelinquishRange.h" />
+    <ClInclude Include="Request\Handler\ReplayFragments.h" />
+    <ClInclude Include="Request\Handler\SetState.h" />
+    <ClInclude Include="Request\Handler\Shutdown.h" />
+    <ClInclude Include="Request\Handler\Status.h" />
+    <ClInclude Include="Request\Handler\TableMaintenanceDisable.h" />
+    <ClInclude Include="Request\Handler\TableMaintenanceEnable.h" />
+    <ClInclude Include="Request\Handler\Update.h" />
+    <ClInclude Include="Request\Handler\UpdateSchema.h" />
+    <ClInclude Include="Request\Handler\WaitForMaintenance.h" />
+    <ClInclude Include="Response\Callback\AcknowledgeLoad.h" />
+    <ClInclude Include="Response\Callback\CreateScanner.h" />
+    <ClInclude Include="Response\Callback\GetStatistics.h" />
+    <ClInclude Include="Response\Callback\PhantomUpdate.h" />
+    <ClInclude Include="Response\Callback\Status.h" />
+    <ClInclude Include="Response\Callback\Update.h" />
     <ClInclude Include="RSStats.h" />
     <ClInclude Include="ScanContext.h" />
     <ClInclude Include="ScannerMap.h" />
@@ -286,6 +286,7 @@
     <ClInclude Include="TableInfo.h" />
     <ClInclude Include="TableInfoMap.h" />
     <ClInclude Include="TimerHandler.h" />
+    <ClInclude Include="TransferLog.h" />
     <ClInclude Include="UpdateContext.h" />
     <ClInclude Include="UpdatePipeline.h" />
     <ClInclude Include="UpdateRecRange.h" />
@@ -367,6 +368,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -384,6 +387,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -407,6 +412,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -432,6 +439,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

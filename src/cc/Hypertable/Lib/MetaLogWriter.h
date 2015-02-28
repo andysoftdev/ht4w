@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -80,17 +80,17 @@ namespace Hypertable {
        * to  <code>path/next_id</code> and opens it for writing, setting
        * the #m_fd to the opened file descriptor.  The replication factor is
        * set to the <code>Hypertable.Metadata.Replication</code> property.  It
-       * then sets #m_backup_filename to #m_backup_path<code>/next_id</code> and
-       * opens it for writing (in the local filesystem), setting #m_backup_fd to
-       * the opened file descriptor.  It then writes the file header with a call
-       * to write_header() and persists <code>initial_entities</code>.  Finally,
-       * it writes a RecoverEntity.
+       * then sets #m_backup_filename to #m_backup_path + <code>\/next_id</code>
+       * and opens it for writing (in the local filesystem), setting
+       * #m_backup_fd to the opened file descriptor.  It then writes the file
+       * header with a call to write_header() and persists
+       * <code>initial_entities</code>.  Finally, it writes a RecoverEntity.
        * @param fs Smart pointer to Filesystem object
        * @param definition Smart pointer to Definition object
        * @param path %Path to %MetaLog directory
-       * @param initial_entites Initial set of entities to write into log
+       * @param initial_entities Initial set of entities to write into log
        */
-      Writer(FilesystemPtr &fs, DefinitionPtr &definition, const String &path,
+      Writer(FilesystemPtr &fs, DefinitionPtr &definition, const std::string &path,
              std::vector<EntityPtr> &initial_entities);
 
       /** Destructor.
@@ -113,7 +113,7 @@ namespace Hypertable {
        * #m_offset is incremented by the length of the serialized entity.
        * @param entity Pointer to entity to persist
        */
-      void record_state(Entity *entity);
+      void record_state(EntityPtr entity);
 
       /** Persists a vector of entities to the log.
        * This method is logically equivalent to calling
@@ -121,7 +121,7 @@ namespace Hypertable {
        * <code>entities</code>.
        * @param entities Reference to vector of entities to persist
        */
-      void record_state(std::vector<Entity *> &entities);
+      void record_state(std::vector<EntityPtr> &entities);
 
       /** Records the removal of an entity.
        * @anchor single_entity_record_removal
@@ -134,7 +134,7 @@ namespace Hypertable {
        * #m_offset is incremented by the length of the serialized entity.
        * @param entity Pointer to entity to remove
        */
-      void record_removal(Entity *entity);
+      void record_removal(EntityPtr entity);
 
       /** Records the removal of a vector of entities.
        * This method is logically equivalent to calling
@@ -142,7 +142,7 @@ namespace Hypertable {
        * <code>entities</code>.
        * @param entities Reference to vector of entities to remove
        */
-      void record_removal(std::vector<Entity *> &entities);
+      void record_removal(std::vector<EntityPtr> &entities);
 
       /// Global flag to force writer to skip writing EntityRecover (testing)
       static bool skip_recover_entry;
@@ -182,19 +182,19 @@ namespace Hypertable {
       DefinitionPtr m_definition;
 
       /// Path name of %MetaLog directory
-      String  m_path;
+      std::string  m_path;
 
       /// Full pathname of %MetaLog file open for writing
-      String  m_filename;
+      std::string  m_filename;
 
       /// File descriptor of %MetaLog file in FS
       int m_fd;
 
       /// Pathname of local log backup directory
-      String  m_backup_path;
+      std::string  m_backup_path;
 
       /// Pathname of local log backup file
-      String  m_backup_filename;
+      std::string  m_backup_filename;
 
       /// File descriptor of backup %MetaLog file in local filesystem
       int m_backup_fd;

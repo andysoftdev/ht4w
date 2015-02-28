@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -65,7 +65,7 @@ namespace Hypertable {
       return !(*this == other);
     }
 
-    String table_id;
+    std::string table_id;
     uint32_t range_count;
     uint32_t scanner_count;
     uint64_t cell_count;

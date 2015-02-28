@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -57,7 +57,7 @@ namespace Hypertable {
      * @param subject Command for which to return help text
      * @return Help text associated with command in <code>subject</code>
      */
-    static const char **get(const String &subject);
+    static const char **get(const std::string &subject);
 
     /** Installs help text for rsclient command interpreter.
      */

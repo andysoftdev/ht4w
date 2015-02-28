@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -48,7 +48,7 @@ XmlParser::XmlParser(const char *base, int len) : m_base(base), m_length(len) {
 }
 
 XmlParser::XmlParser(const char *base, int len,
-                     const initializer_list<std::string> &sub_parsers) :
+                     const std::initializer_list<std::string> &sub_parsers) :
   XmlParser(base, len) {
   m_sub_parsers = sub_parsers;
 }

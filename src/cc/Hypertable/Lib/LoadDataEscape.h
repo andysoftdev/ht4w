@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -33,7 +33,7 @@ namespace Hypertable {
     LoadDataEscape() : m_field_separator('\t') { }
     bool escape(const char *in_buf, size_t in_len, const char **out_bufp,
                 size_t *out_lenp);
-    bool escape(const char *in_buf, size_t in_len, String &out) {
+    bool escape(const char *in_buf, size_t in_len, std::string &out) {
       const char *out_buf;
       size_t out_len;
       bool rval = escape(in_buf, in_len, &out_buf, &out_len);

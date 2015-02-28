@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -283,6 +283,13 @@ bool substitute_variables(const string &input, string &output,
   const char *base = input.c_str();
   const char *ptr = strchr(base, '$');
   while (ptr) {
+    if (ptr > base && *(ptr-1) == '\\') {
+      ptr++;
+      translated_text.append(base, ptr-base);
+      base = ptr;
+      ptr = strchr(base, '$');
+      continue;
+    }
     translated_text.append(base, ptr-base);
     base = ptr;
     if (base[1] == '{') {

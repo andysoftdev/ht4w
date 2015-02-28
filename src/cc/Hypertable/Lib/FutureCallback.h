@@ -31,7 +31,6 @@ namespace Hypertable {
 
   class TableScannerAsync;
   class TableMutatorAsync;
-  class ScanSpec;
 
   class FutureCallback : public ResultCallback {
   public:

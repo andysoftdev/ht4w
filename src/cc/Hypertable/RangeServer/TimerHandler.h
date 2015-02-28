@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -40,7 +40,9 @@
 
 namespace Hypertable {
 
-  class RangeServer;
+  namespace Apps {
+    class RangeServer;
+  }
 
   /// @addtogroup RangeServer
   /// @{
@@ -68,7 +70,7 @@ namespace Hypertable {
     /// registers itself with the RangeServer with a call to
     /// RangeServer::register_timer, and then schedules a timer interrupt
     /// immediately.
-    TimerHandler(Comm *comm, RangeServer *range_server);
+    TimerHandler(Comm *comm, Apps::RangeServer *range_server);
 
     /// Start timer.
     /// This method sets a timer for 0 milliseconds in the future with itself
@@ -77,8 +79,7 @@ namespace Hypertable {
 
     /// %Timer event handler callback method.
     /// This method performs the following steps:
-    ///   -# If #m_shutdown is <i>true</i>, this method sets #m_shutdown_complete
-    ///      to <i>true</i>, signals #m_shutdown_cond, and returns immediately.
+    ///   -# If #m_shutdown is <i>true</i>, return.
     ///   -# If the application queue is paused, it will restart it in the
     ///      following cirucmstances:
     ///        - Low memory mode is in effect and the system is no longer low on
@@ -149,41 +150,28 @@ namespace Hypertable {
     /// the shutdown sequence.
     void shutdown();
 
-    /// Wait for shutdown to complete.
-    /// This method waits for #m_shutdown_complete to become <i>true</i>
-    /// indicating that the timer is no longer active (there are no
-    /// outstanding timer events).
-    void wait_for_shutdown() {
-      ScopedLock lock(m_mutex);
-      while (!m_shutdown_complete)
-        m_shutdown_cond.wait(lock);
-    }
-
   private:
 
     /// %Mutex for serializing access
     Mutex m_mutex;
 
-    /// Condition variable to signal shutdown complete
-    boost::condition m_shutdown_cond;
-
     /// Comm object
-    Comm *m_comm;
+    Comm *m_comm {};
 
     /// RangeServer
-    RangeServer *m_range_server;
+    Apps::RangeServer *m_range_server {};
 
     /// Application queue
     ApplicationQueuePtr m_app_queue;
 
     /// Query cache max size (Hypertable.RangeServer.QueryCache.MaxMemory)
-    int64_t m_query_cache_memory;
+    int64_t m_query_cache_memory {};
     
     /// Pause app queue if USER log exceeds this size
-    int64_t m_userlog_size_threshold;
+    int64_t m_userlog_size_threshold {};
 
     /// Generation of maintenance queue signalling application queue restart
-    int64_t m_restart_generation;
+    int64_t m_restart_generation {};
 
     /// Last time maintenance was scheduled
     boost::xtime m_last_schedule;
@@ -192,34 +180,31 @@ namespace Hypertable {
     boost::xtime m_pause_time;
 
     /// Timer interval
-    int32_t m_timer_interval;
+    int32_t m_timer_interval {};
 
     /// Current timer interval (set to 500 when app queue is paused)
-    int32_t m_current_interval;
+    int32_t m_current_interval {};
 
     /// Maximum time to keep application queue paused each time it is paused
-    int32_t m_max_app_queue_pause;
+    int32_t m_max_app_queue_pause {};
 
     /// Indicates that a shutdown is in progress
-    bool m_shutdown;
-
-    /// Shutdown has completed,
-    bool m_shutdown_complete;
+    bool m_shutdown {};
 
     /// An <i>immediate</i> maintenance timer has been scheduled
-    bool m_immediate_maintenance_scheduled;
+    bool m_immediate_maintenance_scheduled {};
 
     /// Application queue is paused
-    bool m_app_queue_paused;
+    bool m_app_queue_paused {};
 
     /// Moderate low memory mode
-    bool m_moderate_low_memory_mode;
+    bool m_moderate_low_memory_mode {};
 
     /// Low memory mode
-    bool m_low_memory_mode;
+    bool m_low_memory_mode {};
 
     /// A maintenance scheduling operation is outstanding
-    bool m_schedule_outstanding;
+    bool m_schedule_outstanding {};
 
     /// Pauses the application queue.
     /// Pauses the application queue, sets #m_app_queue_paused to <i>true</i>,
@@ -240,7 +225,7 @@ namespace Hypertable {
   };
 
   /// Smart pointer to TimerHandler
-  typedef boost::intrusive_ptr<TimerHandler> TimerHandlerPtr;
+  typedef std::shared_ptr<TimerHandler> TimerHandlerPtr;
 
   /// @}
 }

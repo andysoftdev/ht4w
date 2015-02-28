@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
 #
 
 # hypertable - command interpreter
-add_executable(check_integrity main.cc)
-target_link_libraries(check_integrity Hypertable)
+add_executable(ht_check_integrity check_integrity.cc)
+target_link_libraries(ht_check_integrity Hypertable)
 
-install (TARGETS check_integrity RUNTIME DESTINATION bin)
+install (TARGETS ht_check_integrity RUNTIME DESTINATION bin)

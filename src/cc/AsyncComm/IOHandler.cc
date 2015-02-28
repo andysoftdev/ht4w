@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -474,4 +474,3 @@ void IOHandler::display_event(IOOP *ioop) {
 }
 
 #endif
-

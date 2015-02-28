@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -54,12 +54,12 @@ using namespace std;
 /**
  *
  */
-LoadDataSourceFileDfs::LoadDataSourceFileDfs(FsBroker::ClientPtr &client,
-  const String &fname, const String &header_fname, int row_uniquify_chars, int load_flags)
+LoadDataSourceFileDfs::LoadDataSourceFileDfs(FsBroker::Lib::ClientPtr &client,
+  const string &fname, const string &header_fname, int row_uniquify_chars, int load_flags)
   : LoadDataSource(header_fname, row_uniquify_chars, load_flags), m_cur_offset(0) {
 
   HT_ASSERT(client);
-  m_source = new FsBroker::FileSource(client, fname);
+  m_source = new FsBroker::Lib::FileSource(client, fname);
 
   if (boost::algorithm::ends_with(fname, ".gz")) {
     m_fin.push(gzip_decompressor());

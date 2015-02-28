@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -67,6 +67,9 @@ namespace Hypertable {
     TableMutatorIntervalHandler(Comm *comm,ApplicationQueueInterface *app_queue,
 				TableMutatorShared *shared_mutator);
 
+    /// Starts interval timer
+    void start();
+
     /** Handles the timer interrupt.
      * If #active is <i>true</i> then a TableMutatorFlushHandler object will
      * get created and enqueued on #app_queue and then timer will be
@@ -122,7 +125,7 @@ namespace Hypertable {
   };
 
   /// Smart pointer to TableMutatorIntervalHandler
-  typedef intrusive_ptr<TableMutatorIntervalHandler>
+  typedef std::shared_ptr<TableMutatorIntervalHandler>
   TableMutatorIntervalHandlerPtr;
 
   /** @}*/

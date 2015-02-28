@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -26,8 +26,8 @@
  */
 
 
-#ifndef HYPERTABLE_REACTORFACTORY_H
-#define HYPERTABLE_REACTORFACTORY_H
+#ifndef AsyncComm_REACTORFACTORY_H
+#define AsyncComm_REACTORFACTORY_H
 
 #include <boost/random.hpp>
 #include <boost/random/uniform_01.hpp>
@@ -108,10 +108,13 @@ namespace Hypertable {
     /// Set to <i>true</i> if this process is acting as "Proxy Master"       
     static bool proxy_master;
 
+    /// Verbose mode
+    static bool verbose;
+
   private:
 
     /// Mutex to serialize calls to #initialize
-    static Mutex    ms_mutex;
+    static Mutex ms_mutex;
 
     /// Atomic integer used for round-robin assignment of reactors
     static atomic_t ms_next_reactor;
@@ -120,5 +123,5 @@ namespace Hypertable {
   /** @}*/
 }
 
-#endif // HYPERTABLE_REACTORFACTORY_H
+#endif // AsyncComm_REACTORFACTORY_H
 

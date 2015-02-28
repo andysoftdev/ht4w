@@ -1,5 +1,5 @@
 /* -*- C++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -37,7 +37,6 @@ void init_comm_options() {
   cmdline_desc().add_options()
     ("workers", i32(), "Number of worker threads")
     ("reactors", i32(), "Number of reactor threads")
-    ("timeout,t", i32(), "System wide timeout in milliseconds")
     ;
   alias("timeout", "Hypertable.Request.Timeout");
 }

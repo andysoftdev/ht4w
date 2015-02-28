@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -18,7 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
+
 #include <Common/Compat.h>
+
 #include "QfsBroker.h"
 
 #include <Common/Filesystem.h>
@@ -40,6 +42,7 @@ extern "C" {
 }
 
 using namespace Hypertable;
+using namespace Hypertable::FsBroker;
 using namespace KFS;
 
 std::atomic<int> QfsBroker::ms_next_fd {};
@@ -54,13 +57,15 @@ QfsBroker::QfsBroker(PropertiesPtr &cfg)
     m_port(cfg->get_i16("port")),
     m_client(KFS::Connect(m_host, m_port)) {
   m_metrics_handler = std::make_shared<MetricsHandler>(cfg, "qfs");
+  m_metrics_handler->start_collecting();
 }
 
 QfsBroker::~QfsBroker() {
+  m_metrics_handler->stop_collecting();
   delete m_client;
 }
 
-void QfsBroker::open(ResponseCallbackOpen *cb, const char *fname, uint32_t flags, uint32_t bufsz) {
+void QfsBroker::open(Response::Callback::Open *cb, const char *fname, uint32_t flags, uint32_t bufsz) {
   
   if (flags & Filesystem::OPEN_FLAG_VERIFY_CHECKSUM) {
     int status = m_client->VerifyDataChecksums(fname);
@@ -96,7 +101,7 @@ void QfsBroker::close(ResponseCallback *cb, uint32_t fd) {
     HT_ERRORF("Problem sending response for close(fd=%d) - %s", (int)fd, Error::get_text(error));
 }
 
-void QfsBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags, int32_t bufsz, int16_t replication, int64_t blksz) {
+void QfsBroker::create(Response::Callback::Open *cb, const char *fname, uint32_t flags, int32_t bufsz, int16_t replication, int64_t blksz) {
   int qfs_fd;
   if(flags & Filesystem::OPEN_FLAG_OVERWRITE) {
     qfs_fd = m_client->Open(fname, O_CREAT | O_TRUNC | O_RDWR);
@@ -141,7 +146,7 @@ void QfsBroker::seek(ResponseCallback *cb, uint32_t fd, uint64_t offset) {
     cb->response_ok();
 }
 
-void QfsBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
+void QfsBroker::read(Response::Callback::Read *cb, uint32_t fd, uint32_t amount) {
 
   OpenFileDataQfsPtr fdata;
   if (!m_open_file_map.get(fd, fdata)) {
@@ -155,6 +160,8 @@ void QfsBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
   StaticBuffer buf((size_t)amount, (size_t)HT_DIRECT_IO_ALIGNMENT);
   int len = m_client->Read(fdata->fd, reinterpret_cast<char*>(buf.base), amount);
   if(len<0) {
+    m_status_manager.set_read_status(Status::Code::CRITICAL,
+                                     KFS::ErrorCodeToStr(len));
     HT_ERRORF("read(fd=%d,qfsFd=%d,%lld) failure (%d) - %s", (int)fd,
               (int)fdata->fd, (Lld)amount, -len,
               KFS::ErrorCodeToStr(len).c_str());
@@ -167,7 +174,7 @@ void QfsBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
   }
 }
 
-void QfsBroker::append(ResponseCallbackAppend *cb, uint32_t fd, uint32_t amount, const void *data, bool flush) {
+void QfsBroker::append(Response::Callback::Append *cb, uint32_t fd, uint32_t amount, const void *data, bool flush) {
 
   OpenFileDataQfsPtr fdata;
   if (!m_open_file_map.get(fd, fdata)) {
@@ -179,6 +186,8 @@ void QfsBroker::append(ResponseCallbackAppend *cb, uint32_t fd, uint32_t amount,
   uint64_t offset = m_client->Tell(fdata->fd);
   ssize_t written = m_client->Write(fdata->fd, reinterpret_cast<const char*>(data), amount);
   if(written < 0) {
+    m_status_manager.set_write_status(Status::Code::CRITICAL,
+                                      KFS::ErrorCodeToStr(written));
     HT_ERRORF("append(fd=%d,qfsFd=%d,%lld,%s) failure (%d) - %s", (int)fd,
               (int)fdata->fd, (Lld)amount, flush ? "flush" : "",
               (int)-written, KFS::ErrorCodeToStr(written).c_str());
@@ -189,7 +198,9 @@ void QfsBroker::append(ResponseCallbackAppend *cb, uint32_t fd, uint32_t amount,
       int64_t start_time = get_ts64();
       int error = m_client->Sync(fdata->fd);
       m_metrics_handler->add_sync(get_ts64() - start_time);
-      if(error) {
+      if (error) {
+        m_status_manager.set_write_status(Status::Code::CRITICAL,
+                                          KFS::ErrorCodeToStr(error));
         HT_ERRORF("append(fd=%d,qfsFd=%d,%lld,%s) failure (%d) - %s", (int)fd,
                   (int)fdata->fd, (Lld)amount, flush ? "flush" : "",
                   (int)-written, KFS::ErrorCodeToStr(written).c_str());
@@ -211,7 +222,7 @@ void QfsBroker::remove(ResponseCallback *cb, const char *fname) {
   }
 }
 
-void QfsBroker::length(ResponseCallbackLength *cb, const char *fname, bool accurate)
+void QfsBroker::length(Response::Callback::Length *cb, const char *fname, bool accurate)
 {
   KfsFileAttr result;
   int err = m_client->Stat(fname, result);
@@ -223,7 +234,7 @@ void QfsBroker::length(ResponseCallbackLength *cb, const char *fname, bool accur
   }
 }
 
-void QfsBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
+void QfsBroker::pread(Response::Callback::Read *cb, uint32_t fd, uint64_t offset,
                       uint32_t amount, bool verify_checksum) {
 
   OpenFileDataQfsPtr fdata;
@@ -244,6 +255,8 @@ void QfsBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
   ssize_t status = m_client->PRead(fdata->fd, offset,
                                    reinterpret_cast<char*>(buf.base), amount);
   if(status < 0) {
+    m_status_manager.set_read_status(Status::Code::CRITICAL,
+                                     KFS::ErrorCodeToStr(status));
     HT_ERRORF("pread(fd=%d,qfsFd=%d,%lld,%lld) failure (%d) - %s", (int)fd,
               (int)fdata->fd, (Lld)offset, (Lld)amount, (int)-status,
               KFS::ErrorCodeToStr(status).c_str());
@@ -289,6 +302,8 @@ void QfsBroker::flush(ResponseCallback *cb, uint32_t fd) {
   int status = m_client->Sync(fdata->fd);
   m_metrics_handler->add_sync(get_ts64() - start_time);
   if(status < 0) {
+    m_status_manager.set_write_status(Status::Code::CRITICAL,
+                                      KFS::ErrorCodeToStr(status));
     HT_ERRORF("flush(fd=%d,qfsFd=%d) failure (%d) - %s", (int)fd,
               (int)fdata->fd, -status,
               KFS::ErrorCodeToStr(status).c_str());
@@ -298,7 +313,7 @@ void QfsBroker::flush(ResponseCallback *cb, uint32_t fd) {
     cb->response_ok();
 }
 
-void QfsBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
+void QfsBroker::readdir(Response::Callback::Readdir *cb, const char *dname) {
   std::vector<KfsFileAttr> result;
   std::vector<Filesystem::Dirent> listing;
   int err = m_client->ReaddirPlus(dname, result);
@@ -324,13 +339,7 @@ void QfsBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
   }
 }
 
-void QfsBroker::posix_readdir(ResponseCallbackPosixReaddir *cb,
-			      const char *dname) {
-  HT_ASSERT(!"posix_readdir() not yet implemented.");
-}
-
-
-void QfsBroker::exists(ResponseCallbackExists *cb, const char *fname) {
+void QfsBroker::exists(Response::Callback::Exists *cb, const char *fname) {
   cb->response(m_client->Exists(fname));
 }
 
@@ -349,8 +358,8 @@ void QfsBroker::debug(ResponseCallback *cb, int32_t command, StaticBuffer &seria
                                            command));
 }
 
-void QfsBroker::status(ResponseCallback *cb) {
-  cb->response_ok();
+void QfsBroker::status(Response::Callback::Status *cb) {
+  cb->response(m_status_manager.get());
 }
 
 void QfsBroker::shutdown(ResponseCallback *cb) {

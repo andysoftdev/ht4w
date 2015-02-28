@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -26,8 +26,8 @@
  * queue.
  */
 
-#ifndef HYPERTABLE_APPLICATIONHANDLER_H
-#define HYPERTABLE_APPLICATIONHANDLER_H
+#ifndef AsyncComm_APPLICATIONHANDLER_H
+#define AsyncComm_APPLICATIONHANDLER_H
 
 extern "C" {
 #include <time.h>
@@ -158,4 +158,4 @@ namespace Hypertable {
   /** @}*/
 } // namespace Hypertable
 
-#endif // HYPERTABLE_APPLICATIONHANDLER_H
+#endif // AsyncComm_APPLICATIONHANDLER_H

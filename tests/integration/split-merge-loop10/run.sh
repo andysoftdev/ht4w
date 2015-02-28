@@ -18,7 +18,7 @@ if [ ! -e Test4-data.txt ] ; then
   gzip -d Test4-data.txt.gz
 fi
 
-$HT_HOME/bin/start-test-servers.sh --clear --no-thriftbroker \
+$HT_HOME/bin/ht-start-test-servers.sh --clear --no-thriftbroker \
     --Hypertable.RangeServer.CellStore.TargetSize.Minimum=1500K \
     --Hypertable.RangeServer.Maintenance.MergingCompaction.Delay=0 \
     --Hypertable.RangeServer.Maintenance.Interval=100 \
@@ -37,7 +37,7 @@ for ((i=0; i<$ITERATIONS; i++)) ; do
 
     for ((j=1; j<=$TESTNUM; j++)) ; do
 
-        $HT_HOME/bin/ht ht_rsclient --test-mode --Hypertable.Mutator.ScatterBuffer.FlushLimit.PerServer=550K \
+        $HT_HOME/bin/ht ht_rangeserver --test-mode --Hypertable.Mutator.ScatterBuffer.FlushLimit.PerServer=550K \
             localhost < ${SOURCE_DIR}/Test${j}.cmd > Test${j}.output
         if [ $? != 0 ] ; then
             echo "Iteration ${i} of rsTest failed, exiting..."

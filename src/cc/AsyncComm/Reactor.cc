@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,7 +25,17 @@
  * to manage state for a polling thread.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include "IOHandlerData.h"
+#include "Reactor.h"
+#include "ReactorFactory.h"
+#include "ReactorRunner.h"
+
+#include <Common/Error.h>
+#include <Common/FileUtils.h>
+#include <Common/Logger.h>
+#include <Common/Time.h>
 
 #include <cassert>
 #include <cstdio>
@@ -47,34 +57,16 @@ extern "C" {
 #endif
 }
 
-#include "Common/Error.h"
-#include "Common/FileUtils.h"
-#include "Common/Logger.h"
-#include "Common/Time.h"
-
-#include "IOHandlerData.h"
-#include "Reactor.h"
-#include "ReactorFactory.h"
-#include "ReactorRunner.h"
-
 using namespace Hypertable;
 using namespace std;
 
-#ifndef _WIN32
-
-#else
+#ifdef _WIN32
 
 Mutex Reactor::m_mutex;
 RequestCache Reactor::m_request_cache;
 Reactor::TimerHeap Reactor::m_timer_heap;
 boost::xtime Reactor::m_next_wakeup;
 std::set<IOHandler *> Reactor::m_removed_handlers;
-
-#endif
-/**
- *
- */
-#ifdef _WIN32
 
 Reactor::Reactor() {
 }
@@ -192,21 +184,21 @@ Reactor::Reactor() : m_interrupt_in_progress(false) {
 
 void Reactor::handle_timeouts(PollTimeout &next_timeout) {
   vector<ExpireTimer> expired_timers;
-  EventPtr event_ptr;
-  boost::xtime     now, next_req_timeout;
+  EventPtr event;
+  boost::xtime now, next_req_timeout;
   ExpireTimer timer;
 
   while(true) {
     {
       ScopedLock lock(m_mutex);
-      IOHandler       *handler;
+      IOHandler *handler;
       DispatchHandler *dh;
 
       boost::xtime_get(&now, boost::TIME_UTC_);
 
-      while ((dh = m_request_cache.get_next_timeout(now, handler,
-                                                    &next_req_timeout)) != 0) {
-        Event *event = new Event(Event::ERROR, ((IOHandlerData *)handler)->get_address(), Error::REQUEST_TIMEOUT);
+      while (m_request_cache.get_next_timeout(now, handler, dh,
+                                              &next_req_timeout)) {
+        event = make_shared<Event>(Event::ERROR, ((IOHandlerData *)handler)->get_address(), Error::REQUEST_TIMEOUT);
         event->set_proxy(((IOHandlerData *)handler)->get_proxy());
         handler->deliver_event(event, dh);
       }
@@ -244,9 +236,9 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
      * Deliver timer events
      */
     for (size_t i=0; i<expired_timers.size(); i++) {
-      event_ptr = new Event(Event::TIMER, Error::OK);
+      event = make_shared<Event>(Event::TIMER, Error::OK);
       if (expired_timers[i].handler)
-        expired_timers[i].handler->handle(event_ptr);
+        expired_timers[i].handler->handle(event);
     }
 
     {
@@ -279,17 +271,7 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
  *
  */
 
-#ifdef _WIN32
-
-int Reactor::poll_loop_interrupt() {
-  if (!PostQueuedCompletionStatus(ReactorFactory::hIOCP, 0, 0, 0)) {
-    HT_ERRORF("PostQueuedCompletionStatus failed - %s",  winapi_strerror(GetLastError()));
-    return Error::COMM_SEND_ERROR;
-  }
-  return Error::OK;
-}
-
-#else
+#ifndef _WIN32
 
 int Reactor::poll_loop_interrupt() {
 
@@ -362,21 +344,23 @@ int Reactor::poll_loop_interrupt() {
   return Error::OK;
 }
 
+#else
+
+int Reactor::poll_loop_interrupt() {
+  if (!PostQueuedCompletionStatus(ReactorFactory::hIOCP, 0, 0, 0)) {
+    HT_ERRORF("PostQueuedCompletionStatus failed - %s",  winapi_strerror(GetLastError()));
+    return Error::COMM_SEND_ERROR;
+  }
+  return Error::OK;
+}
 
 #endif
-
 
 /**
  *
  */
 
-#ifdef _WIN32
-
-int Reactor::poll_loop_continue() {
-  return Error::OK;
-}
-
-#else
+#ifndef _WIN32
 
 int Reactor::poll_loop_continue() {
 
@@ -504,6 +488,12 @@ void Reactor::fetch_poll_array(std::vector<struct pollfd> &fdarray,
       handlers.push_back(m_polldata[i].handler);
     }
   }
+}
+
+#else
+
+int Reactor::poll_loop_continue() {
+  return Error::OK;
 }
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -67,11 +67,7 @@ namespace Hypertable {
 
       if ((m_fd = open(m_output_file, O_CREAT | O_TRUNC | O_RDWR, 0644))
           < 0) {
-#ifndef _WIN32
         HT_ERRORF("open(%s) failed - %s", m_output_file, strerror(errno));
-#else
-        HT_ERRORF("open(%s) failed - %s", m_output_file, winapi_strerror(::GetLastError()));
-#endif
         exit(1);
       }
 

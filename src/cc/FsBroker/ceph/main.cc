@@ -1,5 +1,5 @@
-/* -*- C++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,7 +17,20 @@
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include "CephBroker.h"
+
+#include <FsBroker/Lib/Config.h>
+#include <FsBroker/Lib/ConnectionHandlerFactory.h>
+
+#include <AsyncComm/ApplicationQueue.h>
+#include <AsyncComm/Comm.h>
+
+#include <Common/FileUtils.h>
+#include <Common/Init.h>
+#include <Common/Usage.h>
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -28,19 +41,8 @@ extern "C" {
 #include <unistd.h>
 }
 
-#include "Common/FileUtils.h"
-#include "Common/Init.h"
-#include "Common/Usage.h"
-
-#include "AsyncComm/ApplicationQueue.h"
-#include "AsyncComm/Comm.h"
-
-#include "FsBroker/Lib/Config.h"
-#include "FsBroker/Lib/ConnectionHandlerFactory.h"
-
-#include "CephBroker.h"
-
 using namespace Hypertable;
+using namespace Hypertable::FsBroker;
 using namespace Config;
 using namespace std;
 
@@ -80,12 +82,12 @@ int main (int argc, char **argv) {
       port = get_i16("FsBroker.Port");
 
     Comm *comm = Comm::instance();
-    ApplicationQueuePtr app_queue = new ApplicationQueue(worker_count);
+    ApplicationQueuePtr app_queue = make_shared<ApplicationQueue>(worker_count);
     HT_INFOF("attemping to create new CephBroker with address %s", properties->get_str("CephBroker.MonAddr").c_str());
     BrokerPtr broker = new CephBroker(properties);
     HT_INFO("Created CephBroker!");
     ConnectionHandlerFactoryPtr chfp =
-      new FsBroker::ConnectionHandlerFactory(comm, app_queue, broker);
+      make_shared<FsBroker::Lib::ConnectionHandlerFactory>(comm, app_queue, broker);
     InetAddr listen_addr(INADDR_ANY, port);
 
     comm->listen(listen_addr, chfp);

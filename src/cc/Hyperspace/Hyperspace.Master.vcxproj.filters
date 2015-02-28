@@ -136,6 +136,9 @@
     <ClCompile Include="request\RequestHandlerStatus.cc">
       <Filter>Source Files\requests</Filter>
     </ClCompile>
+    <ClCompile Include="response\ResponseCallbackStatus.cc">
+      <Filter>Source Files\responses</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BerkeleyDbFilesystem.h">
@@ -299,6 +302,9 @@
     </ClInclude>
     <ClInclude Include="request\RequestHandlerStatus.h">
       <Filter>Source Files\requests</Filter>
+    </ClInclude>
+    <ClInclude Include="response\ResponseCallbackStatus.h">
+      <Filter>Source Files\responses</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

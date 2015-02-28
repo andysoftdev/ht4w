@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2013 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,23 +19,23 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-
-#include "Common/Config.h"
-#include "Common/System.h"
-#include "Common/SystemInfo.h"
+#include <Common/Compat.h>
 
 #include "HandlerMap.h"
 #include "ReactorFactory.h"
 #include "ReactorRunner.h"
 
-using namespace Hypertable;
+#include <Common/Config.h>
+#include <Common/SystemInfo.h>
 
 #include <cassert>
 
 extern "C" {
 #include <signal.h>
 }
+
+using namespace Hypertable;
+using namespace std;
 
 std::vector<ReactorPtr> ReactorFactory::ms_reactors;
 boost::thread_group ReactorFactory::ms_threads;
@@ -49,6 +49,7 @@ bool         ReactorFactory::use_poll = false;
 HANDLE       ReactorFactory::hIOCP = 0;
 #endif
 bool         ReactorFactory::proxy_master = false;
+bool ReactorFactory::verbose {};
 
 /**
  */
@@ -58,7 +59,7 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
     return;
   ReactorPtr reactor;
   ReactorRunner rrunner;
-  ReactorRunner::handler_map = new HandlerMap();
+  ReactorRunner::handler_map = make_shared<HandlerMap>();
 
 #ifdef _WIN32
 
@@ -99,7 +100,7 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
 #endif
 
   for (uint16_t i=0; i<=reactor_count; i++) {
-    reactor = new Reactor();
+    reactor = make_shared<Reactor>();
     ms_reactors.push_back(reactor);
     rrunner.set_reactor(reactor);
     ms_threads.create_thread(rrunner);

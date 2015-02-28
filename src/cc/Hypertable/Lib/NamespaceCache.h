@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,7 +25,6 @@
 #include <Hypertable/Lib/TableCache.h>
 #include <Hypertable/Lib/Schema.h>
 #include <Hypertable/Lib/RangeLocator.h>
-#include <Hypertable/Lib/Types.h>
 #include <Hypertable/Lib/Namespace.h>
 
 #include <AsyncComm/ApplicationQueueInterface.h>
@@ -46,20 +45,20 @@ namespace Hypertable {
     NamespaceCache(PropertiesPtr &props, RangeLocatorPtr &range_locator,
                    ConnectionManagerPtr &conn_manager, Hyperspace::SessionPtr &hyperspace,
                    ApplicationQueueInterfacePtr &app_queue, NameIdMapperPtr &namemap,
-                   MasterClientPtr &master_client, TableCachePtr &table_cache,
+                   Lib::Master::ClientPtr &master_client, TableCachePtr &table_cache,
                    uint32_t default_timeout_ms, Client *client);
 
     /**
      * @param name namespace name
      * @return NULL if the namespace doesn't exist, ow return a pointer to the Namespace
      */
-    NamespacePtr get(const String &name);
+    NamespacePtr get(const std::string &name);
 
     /**
      * @param name
      * @return false if entry is not in cache
      */
-    bool remove(const String &name);
+    bool remove(const std::string &name);
 
   private:
     typedef std::unordered_map<String, NamespacePtr> NamespaceMap;
@@ -71,7 +70,7 @@ namespace Hypertable {
     Hyperspace::SessionPtr  m_hyperspace;
     ApplicationQueueInterfacePtr     m_app_queue;
     NameIdMapperPtr         m_namemap;
-    MasterClientPtr         m_master_client;
+    Lib::Master::ClientPtr m_master_client;
     TableCachePtr           m_table_cache;
     uint32_t                m_timeout_ms;
     Mutex                   m_mutex;

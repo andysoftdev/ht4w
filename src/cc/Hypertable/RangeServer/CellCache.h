@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -58,16 +58,12 @@ namespace Hypertable {
 
     /// Holds cache statistics.
     struct Statistics {
-      size_t size;
-      size_t deletes;
-      int64_t memory_used;
-      int64_t memory_allocated;
-      int64_t key_bytes;
-      int64_t value_bytes;
-
-      Statistics()
-        : size(0), deletes(0), memory_used(0),
-          memory_allocated(0), key_bytes(0),value_bytes(0) { }
+      size_t size {};
+      size_t deletes {};
+      int64_t memory_used {};
+      int64_t memory_allocated {};
+      int64_t key_bytes {};
+      int64_t value_bytes {};
     };
 
     CellCache();
@@ -169,11 +165,11 @@ namespace Hypertable {
     Mutex m_mutex;
     CellCacheArena m_arena;
     CellMap m_cell_map;
-    int32_t m_deletes;
-    int32_t m_collisions;
-    int64_t m_key_bytes;
-    int64_t m_value_bytes;
-    bool m_have_counter_deletes;
+    int32_t m_deletes {};
+    int32_t m_collisions {};
+    int64_t m_key_bytes {};
+    int64_t m_value_bytes {};
+    bool m_have_counter_deletes {};
 
   };
 

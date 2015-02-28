@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
   InetAddr::initialize(&addr, "localhost", DEFAULT_PORT);
 
   comm = Comm::instance();
-  conn_mgr = new ConnectionManager(comm);
+  conn_mgr = std::make_shared<ConnectionManager>(comm);
   conn_mgr->add(addr, 5, "testServer");
   if (!conn_mgr->wait_for_connection(addr, 30000)) {
     HT_ERROR("Connect error");

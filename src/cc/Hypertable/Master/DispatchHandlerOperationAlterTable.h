@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -41,7 +41,7 @@ namespace Hypertable {
     TableIdentifierManaged m_table;
     String m_schema;
   };
-  typedef intrusive_ptr<DispatchHandlerOperationAlterTable> DispatchHandlerOperationAlterTablePtr;
+  typedef std::shared_ptr<DispatchHandlerOperationAlterTable> DispatchHandlerOperationAlterTablePtr;
 
 }
 

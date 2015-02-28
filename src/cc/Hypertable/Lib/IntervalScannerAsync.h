@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -24,17 +24,19 @@
 
 #include <Hypertable/Lib/ProfileDataScanner.h>
 #include <Hypertable/Lib/RangeLocator.h>
-#include <Hypertable/Lib/RangeServerClient.h>
+#include <Hypertable/Lib/RangeServer/Client.h>
 #include <Hypertable/Lib/ScanBlock.h>
 #include <Hypertable/Lib/ScanCells.h>
+#include <Hypertable/Lib/TableIdentifier.h>
 #include <Hypertable/Lib/TableScannerDispatchHandler.h>
-#include <Hypertable/Lib/Types.h>
 
 #include <Common/Properties.h>
 #include <Common/ReferenceCount.h>
 #include <Common/StringExt.h>
 
 namespace Hypertable {
+
+  using namespace Lib;
 
   class Table;
   class TableScannerAsync;
@@ -93,19 +95,19 @@ namespace Hypertable {
     LocationCachePtr    m_loc_cache;
     ScanSpecBuilder     m_scan_spec_builder;
     ScanLimitState      m_scan_limit_state;
-    RangeServerClient   m_range_server;
+    Lib::RangeServer::Client m_range_server;
     TableIdentifierManaged m_table_identifier;
     /// Accumulated profile data
     ProfileDataScanner m_profile_data;
     bool                m_eos;
-    String              m_create_scanner_row;
+    std::string              m_create_scanner_row;
     RangeLocationInfo   m_range_info;
     RangeLocationInfo   m_next_range_info;
     bool                m_fetch_outstanding;
     bool                m_create_outstanding;
     EventPtr            m_create_event;
-    String              m_start_row;
-    String              m_end_row;
+    std::string              m_start_row;
+    std::string              m_end_row;
     bool                m_end_inclusive;
     uint32_t            m_timeout_ms;
     bool                m_current;

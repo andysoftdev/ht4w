@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -41,9 +41,9 @@ struct CstrHashTraits {
   typedef CharArena key_allocator;
 
   struct hasher {
-    typename HashT hash_fun;
+    typename HashT _hasher;
 
-    size_t operator()(const char *s) const { return hash_fun(s); }
+    size_t operator()(const char *s) const { return _hasher(s); }
   };
 
   struct key_equal {

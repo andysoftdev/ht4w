@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -22,7 +22,7 @@
  * This class efficiently allocates memory chunks from large memory pages.
  * This reduces the number of heap allocations, thus causing less heap
  * fragmentation and higher performance. The PageArena memory allocator can
- * not be used for STL classes - use @ref PageArenaAllocator instead.
+ * not be used for STL classes - use PageArenaAllocator instead.
  */
 
 #ifndef HYPERTABLE_PAGEARENA_H
@@ -104,6 +104,7 @@ class PageArena : boost::noncopyable {
   size_t m_used;        /** total number of bytes allocated by users */
   size_t m_page_limit;  /** capacity in bytes of an empty page */
   size_t m_page_size;   /** page size in number of bytes */
+  size_t m_pages;       /** number of pages allocated */
   size_t m_total;       /** total number of bytes occupied by pages */
   PageAllocatorT m_page_allocator;
 
@@ -155,6 +156,7 @@ class PageArena : boost::noncopyable {
     else // don't leak it
       m_cur_page = page;
 
+    ++m_pages;
     m_total += sz;
 
     return page;
@@ -186,7 +188,7 @@ class PageArena : boost::noncopyable {
   PageArena(size_t page_size = DEFAULT_PAGE_SIZE,
           const PageAllocatorT &alloc = PageAllocatorT())
     : m_cur_page(0), m_used(0), m_page_limit(0), m_page_size(page_size),
-      m_total(0), m_page_allocator(alloc), m_gappy_limit(0) {
+      m_pages(0), m_total(0), m_page_allocator(alloc), m_gappy_limit(0) {
     BOOST_STATIC_ASSERT(sizeof(CharT) == 1);
     HT_ASSERT(page_size > sizeof(Page));
   }
@@ -212,9 +214,9 @@ class PageArena : boost::noncopyable {
   /** Allocate sz bytes */
   CharT *alloc(size_t sz) {
     CharT *tiny;
-    m_used += sz;
     if ((tiny = m_tinybuf.alloc(sz)))
       return tiny;
+    m_used += sz;
     ensure_cur_page();
 
     if (m_gappy_limit >= sz) {
@@ -250,7 +252,6 @@ class PageArena : boost::noncopyable {
 
   /** Realloc for newsz bytes */
   CharT *realloc(void *p, size_t oldsz, size_t newsz) {
-    m_used += sz;
     HT_ASSERT(m_cur_page);
     // if we're the last one on the current page with enough space
     if ((char *)p + oldsz == m_cur_page->alloc_end
@@ -307,9 +308,9 @@ class PageArena : boost::noncopyable {
       m_page_allocator.deallocate(page);
     }
     m_page_allocator.freed(m_total);
-    m_total = m_used = 0;
+    m_pages = m_total = m_used = 0;
 
-    m_tinybuf.fill = 0;
+    m_tinybuf = TinyBuffer();
     m_gappy_pages.clear();
     m_gappy_limit = 0;
   }
@@ -319,23 +320,28 @@ class PageArena : boost::noncopyable {
     std::swap(m_cur_page, other.m_cur_page);
     std::swap(m_page_limit, other.m_page_limit);
     std::swap(m_page_size, other.m_page_size);
+    std::swap(m_pages, other.m_pages);
+    std::swap(m_total, other.m_total);
     std::swap(m_used, other.m_used);
     std::swap(m_tinybuf, other.m_tinybuf);
     std::swap(m_gappy_pages, other.m_gappy_pages);
     std::swap(m_gappy_limit, other.m_gappy_limit);
   }
 
-  /** Write allocator statistics to @ref out */
+ /// Write allocator statistics to output stream.
+ /// @param out Output stream
+ /// @return Output stream
   std::ostream& dump_stat(std::ostream& out) const {
-    out << "total=" << m_total << ", used=" << m_used
+    out << "pages=" << m_pages << ", total=" << m_total << ", used=" << m_used
         << "(" << m_used * 100. / m_total << "%)";
     return out;
   }
 
   /** Statistic accessors - returns used bytes */
-  size_t used() const { return m_used; }
+  size_t used() const { return m_used + m_tinybuf.fill; }
 
   /** Statistic accessors - returns number of allocated pages */
+  size_t pages() const { return m_pages; }
 
   /** Statistic accessors - returns total allocated size */
   size_t total() const { return m_total + TinyBuffer::SIZE; }

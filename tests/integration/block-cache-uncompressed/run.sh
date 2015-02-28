@@ -3,11 +3,11 @@
 HT_HOME=${INSTALL_DIR:-"$HOME/hypertable/current"}
 SCRIPT_DIR=`dirname $0`
 WRITE_SIZE=${WRITE_SIZE:-"20000000"}
-RS_PIDFILE=$HT_HOME/run/Hypertable.RangeServer.pid
+RS_PIDFILE=$HT_HOME/run/RangeServer.pid
 
-$HT_HOME/bin/start-test-servers.sh --clear --no-rangeserver
+$HT_HOME/bin/ht-start-test-servers.sh --clear --no-rangeserver
 
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS_PIDFILE \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=$RS_PIDFILE \
    --Hypertable.RangeServer.BlockCache.Compressed=false \
    --Hypertable.RangeServer.Maintenance.Interval=100 \
    --Hypertable.RangeServer.Range.SplitSize=400K 2>1 > rangeserver.output&
@@ -43,9 +43,9 @@ if [ $? != 0 ] ; then
   exit 1
 fi
 
-kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.pid`
-\rm -f $HT_HOME/run/Hypertable.RangeServer.pid
-$HT_HOME/bin/clean-database.sh
+kill -9 `cat $HT_HOME/run/RangeServer.pid`
+\rm -f $HT_HOME/run/RangeServer.pid
+$HT_HOME/bin/ht-destroy-database.sh
 
 exit 0
 

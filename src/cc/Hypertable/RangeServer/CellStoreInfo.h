@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -31,22 +31,22 @@ namespace Hypertable {
   public:
     CellStoreInfo(CellStore *csp) :
       cs(csp), shadow_cache_ecr(TIMESTAMP_MAX), shadow_cache_hits(0), bloom_filter_accesses(0),
-      bloom_filter_maybes(0), bloom_filter_fps(0), m_divisor(1) {
+      bloom_filter_maybes(0), bloom_filter_fps(0) {
       init_from_trailer();
     }
     CellStoreInfo(CellStorePtr &csp) :
       cs(csp), shadow_cache_ecr(TIMESTAMP_MAX), shadow_cache_hits(0), bloom_filter_accesses(0),
-      bloom_filter_maybes(0), bloom_filter_fps(0), m_divisor(1) {
+      bloom_filter_maybes(0), bloom_filter_fps(0) {
       init_from_trailer();
     }
     CellStoreInfo(CellStorePtr &csp, CellCachePtr &scp, int64_t ecr) :
       cs(csp), shadow_cache(scp), shadow_cache_ecr(ecr), shadow_cache_hits(0),
-      bloom_filter_accesses(0), bloom_filter_maybes(0), bloom_filter_fps(0), m_divisor(1) {
+      bloom_filter_accesses(0), bloom_filter_maybes(0), bloom_filter_fps(0)  {
       init_from_trailer();
     }
     CellStoreInfo() : cell_count(0), shadow_cache_ecr(TIMESTAMP_MAX),
                       shadow_cache_hits(0), bloom_filter_accesses(0),
-                      bloom_filter_maybes(0), bloom_filter_fps(0), m_divisor(1) { }
+                      bloom_filter_maybes(0), bloom_filter_fps(0) { }
 
     void init_from_trailer() {
 
@@ -109,7 +109,7 @@ namespace Hypertable {
     int64_t total_data;
 
   private:
-    int m_divisor;
+    int m_divisor {1};
   };
 
 } // namespace Hypertable

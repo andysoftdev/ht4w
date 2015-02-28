@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -32,7 +32,7 @@ void TableCallback::scan_ok(TableScannerAsync *scanner, ScanCellsPtr &cells) {
 }
 
 void TableCallback::scan_error(TableScannerAsync *scanner, int error,
-                               const String &error_msg, bool eos) {
+                               const string &error_msg, bool eos) {
   m_scanner->scan_error(error, error_msg);
 }
 

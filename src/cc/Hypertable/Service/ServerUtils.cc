@@ -34,8 +34,8 @@
 #include "Common/ServerLaunchEvent.h"
 #include "AsyncComm/ApplicationQueue.h"
 #include "FsBroker/Lib/Client.h"
-#include "Hypertable/Lib/RangeServerClient.h"
-#include "Hypertable/Lib/MasterClient.h"
+#include "Hypertable/Lib/RangeServer/Client.h"
+#include "Hypertable/Lib/Master/Client.h"
 
 using namespace Hypertable;
 
@@ -393,7 +393,7 @@ bool ServerUtils::shutdown_fsbroker(DWORD pid) {
     if (!pid)
       find(fsBroker, pids);
     {
-      FsBroker::ClientPtr client = new FsBroker::Client(host, port, Config::connection_timeout());
+      FsBroker::Lib::ClientPtr client = std::make_shared<FsBroker::Lib::Client>(host, port, Config::connection_timeout());
       HT_NOTICEF("Shutdown FS broker (%s)", InetAddr(host, port).format().c_str());
       DispatchHandlerSynchronizer sync_handler;
       client->shutdown(0, &sync_handler);
@@ -426,7 +426,7 @@ bool ServerUtils::shutdown_hyperspace(DWORD pid) {
       Strings replicas = Config::properties->get_strs("Hyperspace.Replica.Host");
       int port = Config::properties->get_i16("Hyperspace.Replica.Port");
       Comm* comm = Comm::instance();
-      ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
+      ConnectionManagerPtr conn_mgr = std::make_shared<ConnectionManager>(comm);
       Hyperspace::SessionPtr hyperspace = new Hyperspace::Session(comm, Config::properties);
 
       if (!hyperspace->wait_for_connection(Config::connection_timeout())) {
@@ -463,19 +463,19 @@ bool ServerUtils::shutdown_master(DWORD pid) {
       find(hypertableMaster, pids);
     {
       Comm* comm = Comm::instance();
-      ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
+      ConnectionManagerPtr conn_mgr = std::make_shared<ConnectionManager>(comm);
       Hyperspace::SessionPtr hyperspace = new Hyperspace::Session(comm, Config::properties);
 
       if (!hyperspace->wait_for_connection(Config::connection_timeout())) {
         conn_mgr->remove_all();
         HT_THROW(Error::REQUEST_TIMEOUT, "Unable to connect to hyperspace");
       }
-      ApplicationQueueInterfacePtr app_queue = new ApplicationQueue(1);
+      ApplicationQueueInterfacePtr app_queue = std::make_shared<ApplicationQueue>(1);
       String toplevel_dir = Config::properties->get_str("Hypertable.Directory");
       boost::trim_if(toplevel_dir, boost::is_any_of("/"));
       toplevel_dir = String("/") + toplevel_dir;
 
-      MasterClientPtr master = new MasterClient(conn_mgr, hyperspace, toplevel_dir, Config::connection_timeout(), app_queue);
+      Lib::Master::ClientPtr master = new Lib::Master::Client(conn_mgr, hyperspace, toplevel_dir, Config::connection_timeout(), app_queue, 0, 0);
       master->set_verbose_flag(Config::properties->get_bool("verbose"));
       if (!master->wait_for_connection(Config::connection_timeout())) {
         conn_mgr->remove_all();
@@ -514,14 +514,14 @@ bool ServerUtils::shutdown_rangeserver(DWORD pid) {
       find(rangeServer, pids);
     {
       Comm* comm = Comm::instance();
-      ConnectionManagerPtr conn_mgr = new ConnectionManager(comm);
+      ConnectionManagerPtr conn_mgr = std::make_shared<ConnectionManager>(comm);
       InetAddr addr(Config::properties->get_str("rs-host"), Config::properties->get_i16("rs-port"));
       conn_mgr->add(addr, Config::connection_timeout(), "Range Server");
       if (!conn_mgr->wait_for_connection(addr, Config::connection_timeout())) {
         conn_mgr->remove_all();
         HT_THROWF(Error::REQUEST_TIMEOUT, "Unable to connect to range server (%s)", addr.format().c_str());
       }
-      RangeServerClientPtr client = new RangeServerClient(comm, Config::connection_timeout());
+      Lib::RangeServer::ClientPtr client = std::make_shared<Lib::RangeServer::Client>(comm, Config::connection_timeout());
       HT_NOTICEF("Shutdown range server (%s)", addr.format().c_str());
       try {
         client->wait_for_maintenance(addr);

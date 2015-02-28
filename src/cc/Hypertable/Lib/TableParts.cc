@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,15 +25,38 @@
 /// set of table parts (i.e. PRIMARY, VALUE_INDEX, QUALIFIER_INDEX)
 
 #include <Common/Compat.h>
+
 #include "TableParts.h"
 
-using namespace Hypertable;
+#include <Common/Serialization.h>
 
-void TableParts::encode(uint8_t **bufp) const {
+using namespace Hypertable;
+using namespace std;
+
+uint8_t TableParts::encoding_version() const {
+  return 1;
+}
+
+size_t TableParts::encoded_length_internal() const {
+  return 1;
+}
+
+/// Serialized format is as follows:
+/// <table>
+///   <tr>
+///   <th>Encoding</th><th>Description</th>
+///   </tr>
+///   <tr>
+///   <td>1 byte</td><td>Bitmask of part bits</td>
+///   </tr>
+/// </table>
+void TableParts::encode_internal(uint8_t **bufp) const {
   Serialization::encode_i8(bufp, (uint8_t)m_parts);
 }
 
-void TableParts::decode(const uint8_t **bufp, size_t *remainp) {
+void TableParts::decode_internal(uint8_t version, const uint8_t **bufp,
+				 size_t *remainp) {
+  (void)version;
   m_parts = Serialization::decode_i8(bufp, remainp);
 }
 

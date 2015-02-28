@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -86,11 +86,11 @@ int main(int argc, char **argv) {
               System::install_dir.c_str());
 
     Comm *comm = Comm::instance();
-    ConnectionManagerPtr conn_manager = new ConnectionManager(comm);
+    ConnectionManagerPtr conn_manager = make_shared<ConnectionManager>(comm);
     Global::conn_manager = conn_manager;
 
     int worker_count = get_i32("Hypertable.RangeServer.Workers");
-    ApplicationQueuePtr app_queue = new ApplicationQueue(worker_count);
+    ApplicationQueuePtr app_queue = make_shared<ApplicationQueue>(worker_count);
 
     /**
      * Connect to Hyperspace
@@ -112,15 +112,16 @@ int main(int argc, char **argv) {
     // Initialize cluster ID from Hyperspace, enabling ClusterId::get()
     ClusterId cluster_id(Global::hyperspace);
     
-    RangeServerPtr range_server
-      = std::make_shared<RangeServer>(properties, conn_manager, app_queue,
-                                      Global::hyperspace);
+    Apps::RangeServerPtr range_server
+      = std::make_shared<Apps::RangeServer>(properties, conn_manager, app_queue,
+					    Global::hyperspace);
 
     app_queue->join();
 
     IndexUpdaterFactory::close();
 
     range_server = 0;
+
     if (has("pidfile"))
       FileUtils::unlink(get_str("pidfile"));
 

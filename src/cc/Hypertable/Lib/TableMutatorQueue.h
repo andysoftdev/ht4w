@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -80,7 +80,7 @@ namespace Hypertable {
     WorkQueue              m_work_queue;
   };
 
-  typedef boost::intrusive_ptr<TableMutatorQueue> TableMutatorQueuePtr;
+  typedef std::shared_ptr<TableMutatorQueue> TableMutatorQueuePtr;
 
 } // namespace Hypertable
 

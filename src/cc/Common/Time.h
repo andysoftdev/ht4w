@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -152,9 +152,7 @@ namespace Hypertable {
 
 #if defined(__sun__)
   time_t timegm(struct tm *t);
-#endif
-
-#if defined(_WIN32)
+#elif defined(_WIN32)
   time_t timegm(struct tm *t);
   time_t _mktime(struct tm *t);
   void localtime_r(const time_t* time, tm* t);

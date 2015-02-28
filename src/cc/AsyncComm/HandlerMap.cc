@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -146,6 +146,11 @@ int HandlerMap::checkout_handler(const CommAddress &addr,
   return Error::OK;
 }
 
+void HandlerMap::decrement_reference_count(IOHandler *handler) {
+  ScopedRecLock lock(m_mutex);
+  handler->decrement_reference_count();
+}
+
 #ifdef _WIN32
 
 void HandlerMap::increment_reference_count(IOHandler *handler) {
@@ -155,11 +160,6 @@ void HandlerMap::increment_reference_count(IOHandler *handler) {
 }
 
 #endif
-
-void HandlerMap::decrement_reference_count(IOHandler *handler) {
-  ScopedRecLock lock(m_mutex);
-  handler->decrement_reference_count();
-}
 
 int HandlerMap::contains_data_handler(const CommAddress &addr) {
   ScopedRecLock lock(m_mutex);

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -223,7 +223,7 @@ namespace Hypertable {
     /// and #m_current_disk_usage variables by summing the corresponding
     /// values from the cell stores in <code>stores</code>.  The disk
     /// usage is computed as the uncompressed disk usage.  If the access group
-    /// is <i>in memory<i>, then the disk usage is taken to be the logical
+    /// is <i>in memory</i>, then the disk usage is taken to be the logical
     /// size as reported by the cell cache manager. If
     /// <code>collection_performed</code> is set to <i>true</i>, then
     /// #m_last_collection_time is set to <code>t</code> and
@@ -241,7 +241,7 @@ namespace Hypertable {
     /// tracker state to the output stream <code>out</code>.  Each state
     /// variable is formatted as follows:
     /// <pre>
-    /// <label> '\t' <name> '\t' <value> '\n'
+    /// &lt;label&gt; '\\t' &lt;name&gt; '\\t' &lt;value&gt; '\\n'
     /// </pre>
     /// @param out Output stream on which to print state
     /// @param label String label to print at beginning of each line.
@@ -313,41 +313,41 @@ namespace Hypertable {
 
     /// Elapsed seconds required before signaling TTL GC likely needed
     /// (adaptive)
-    time_t m_elapsed_target;
+    time_t m_elapsed_target {};
 
     /// Minimum elapsed seconds required before signaling TTL GC likely needed
-    time_t m_elapsed_target_minimum;
+    time_t m_elapsed_target_minimum {};
 
     /// %Time of last garbage collection
-    time_t m_last_collection_time;
+    time_t m_last_collection_time {0};
 
     /// Number of delete records accumulated in cell stores
-    uint32_t m_stored_deletes;
+    uint32_t m_stored_deletes {};
 
     /// Amount of data accumulated in cell stores that could expire due to TTL
-    int64_t m_stored_expirable;
+    int64_t m_stored_expirable {};
 
     /// Disk usage at the time the last garbage collection was performed
-    int64_t m_last_collection_disk_usage;
+    int64_t m_last_collection_disk_usage {};
 
     /// Current disk usage, updated by update_cellstore_info()
-    int64_t m_current_disk_usage;
+    int64_t m_current_disk_usage {};
 
     /// Amount of data to accummulate before signaling GC likely needed
     /// (adaptive)
-    int64_t m_accum_data_target;
+    int64_t m_accum_data_target {};
 
     /// Minimum amount of data to accummulate before signaling GC likely needed
-    int64_t m_accum_data_target_minimum;
+    int64_t m_accum_data_target_minimum {};
 
     /// Minimum TTL found in access group schema
-    time_t m_min_ttl;
+    time_t m_min_ttl {};
 
     /// <i>true</i> if any column families have non-zero MAX_VERSIONS
-    bool m_have_max_versions;
+    bool m_have_max_versions {};
 
     /// <i>true</i> if access group is <i>in memory</i>
-    bool m_in_memory;
+    bool m_in_memory {};
   };
 
   /// @}

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,8 +17,8 @@
 # 02110-1301, USA.
 #
 
-# localBroker
-add_executable(localBroker main.cc LocalBroker.cc)
-target_link_libraries(localBroker HyperFsBroker ${MALLOC_LIBRARY})
+# htFsBrokerLocal
+add_executable(htFsBrokerLocal main.cc LocalBroker.cc)
+target_link_libraries(htFsBrokerLocal HyperFsBroker ${MALLOC_LIBRARY})
 
-install(TARGETS localBroker RUNTIME DESTINATION bin)
+install(TARGETS htFsBrokerLocal RUNTIME DESTINATION bin)

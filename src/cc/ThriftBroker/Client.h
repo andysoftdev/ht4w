@@ -1,5 +1,5 @@
-/** -*- C++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -17,8 +17,8 @@
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#ifndef HYPERTABLE_THRIFT_CLIENT_H
-#define HYPERTABLE_THRIFT_CLIENT_H
+#ifndef Hypertable_ThriftBroker_Client_h
+#define Hypertable_ThriftBroker_Client_h
 
 // Note: do NOT add any hypertable dependencies in this file
 #include <protocol/TBinaryProtocol.h>
@@ -27,7 +27,10 @@
 
 #include "gen-cpp/HqlService.h"
 
-namespace Hypertable { namespace Thrift {
+#include <memory>
+
+namespace Hypertable {
+namespace Thrift {
 
 using namespace apache::thrift;
 using namespace apache::thrift::protocol;
@@ -50,175 +53,174 @@ struct ClientHelper {
   }
 };
 
-/**
- * A client for the ThriftBroker
- */
+  /**
+   * A client for the ThriftBroker.
+   */
 class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
-public:
-  Client(const std::string &host, int port, int conn_timeout_ms = 30000, int timeout_ms = 600000,
-         bool open = true)
-    : ClientHelper(host, port, conn_timeout_ms, timeout_ms), HqlServiceClient(protocol),
-      m_do_close(false) {
-
-    if (open) {
-      transport->open();
-      m_do_close = true;
-    }
-  }
-
-  virtual ~Client() {
-    if (m_do_close) {
-      transport->close();
-      m_do_close = false;
-    }
-  }
-
-private:
-  bool m_do_close;
-};
-
-#if defined(_WIN32) && defined(HYPERTABLE_REFERENCECOUNT_H)
-
-#pragma warning( push, 3 )
-#pragma warning( disable : 4250 ) // inherits via dominance
-
-class ThriftClient : public Client, public ReferenceCount {
   public:
-    ThriftClient(const std::string &_host, int _port, int _conn_timeout_ms = 30000, int _timeout_ms = 600000, bool open = true) 
-    : Client(_host, _port, _conn_timeout_ms, _timeout_ms, open)
-    , host(_host), port(_port), conn_timeout_ms(_conn_timeout_ms), timeout_ms(_timeout_ms), locked(0), next_client(0) {
-      ::InitializeCriticalSection(&cs);
+  Client(const std::string &host, int port, int conn_timeout_ms = 30000, int timeout_ms = 600000,
+           bool open = true)
+    : ClientHelper(host, port, conn_timeout_ms, timeout_ms), HqlServiceClient(protocol),
+        m_do_close(false) {
+
+      if (open) {
+        transport->open();
+        m_do_close = true;
+      }
     }
 
-    virtual ~ThriftClient() {
-      client_pool.clear();
-      ::DeleteCriticalSection(&cs);
+    virtual ~Client() {
+      if (m_do_close) {
+        transport->close();
+        m_do_close = false;
+      }
     }
 
-    ThriftClient* clone() {
-      Lock lock( this );
-      return new ThriftClient(host, port, conn_timeout_ms, timeout_ms);
-    }
+  private:
+    bool m_do_close;
+  };
 
-    ThriftClient* get_pooled() {
-      Lock lock( this );
-      if (client_pool.size() < maxConnectionPoolSize) {
-        ClientPtr client = new ThriftClient(host, port, conn_timeout_ms, timeout_ms);
+#ifdef _WIN32
+
+  class ThriftClient;
+
+  typedef std::shared_ptr<ThriftClient> ThriftClientPtr;
+
+  class ThriftClient : public Client {
+    public:
+      ThriftClient(const std::string &_host, int _port, int _conn_timeout_ms = 30000, int _timeout_ms = 600000, bool open = true) 
+      : Client(_host, _port, _conn_timeout_ms, _timeout_ms, open)
+      , host(_host), port(_port), conn_timeout_ms(_conn_timeout_ms), timeout_ms(_timeout_ms), locked(0), next_client(0) {
+        ::InitializeCriticalSection(&cs);
+      }
+
+      virtual ~ThriftClient() {
+        client_pool.clear();
+        ::DeleteCriticalSection(&cs);
+      }
+
+      ThriftClientPtr clone() {
+        Lock lock( this );
+        return std::make_shared<ThriftClient>(host, port, conn_timeout_ms, timeout_ms);
+      }
+
+      ThriftClientPtr get_pooled() {
+        Lock lock( this );
+        if (client_pool.size() < maxConnectionPoolSize) {
+          ThriftClientPtr client = std::make_shared<ThriftClient>(host, port, conn_timeout_ms, timeout_ms);
+          client_pool.push_back(client);
+          return client;
+        }
+        while (client_pool.size() > maxConnectionPoolSize)
+          client_pool.erase(client_pool.begin());
+        next_client = next_client % client_pool.size();
+        for (int i = 0; i < (int)client_pool.size(); ++i) {
+          ThriftClientPtr client = client_pool[next_client];
+          next_client = (++next_client) % client_pool.size();
+          if (!client->is_locked())
+            return client;
+        }
+        ThriftClientPtr client = std::make_shared<ThriftClient>(host, port, conn_timeout_ms, timeout_ms);
         client_pool.push_back(client);
-        return client.get();
+        return client;
       }
-      while (client_pool.size() > maxConnectionPoolSize)
-        client_pool.erase(client_pool.begin());
-      next_client = next_client % client_pool.size();
-      for (int i = 0; i < (int)client_pool.size(); ++i) {
-        ClientPtr client = client_pool[next_client];
-        next_client = (++next_client) % client_pool.size();
-        if (!client->is_locked())
-          return client.get();
+
+      bool is_open() {
+        Lock lock( this );
+        return transport && transport->isOpen();
       }
-      ClientPtr client = new ThriftClient(host, port, conn_timeout_ms, timeout_ms);
-      client_pool.push_back(client);
-      return client.get();
-    }
 
-    bool is_open() {
-      Lock lock( this );
-      return transport && transport->isOpen();
-    }
+      inline bool is_locked() const {
+        return _InterlockedOr( const_cast<volatile long*>(&locked), 0 ) > 0;
+      }
 
-    inline bool is_locked() const {
-      return _InterlockedOr( const_cast<volatile long*>(&locked), 0 ) > 0;
-    }
+      void renew_nothrow() {
+        Lock lock( this );
+        try {
+          boost::shared_ptr<TSocket> _socket(new TSocket(host, port));
+          socket = _socket;
 
-    void renew_nothrow() {
-      Lock lock( this );
-      try {
-        boost::shared_ptr<TSocket> _socket(new TSocket(host, port));
-        socket = _socket;
+          boost::shared_ptr<TTransport> _transport(new TFramedTransport(socket));
+          transport = _transport;
 
-        boost::shared_ptr<TTransport> _transport(new TFramedTransport(socket));
-        transport = _transport;
+          boost::shared_ptr<TProtocol> _protocol(new TBinaryProtocol(transport));
+          protocol = piprot_ = poprot_ =  _protocol;
+          iprot_ = oprot_ = protocol.get();
 
-        boost::shared_ptr<TProtocol> _protocol(new TBinaryProtocol(transport));
-        protocol = piprot_ = poprot_ =  _protocol;
-        iprot_ = oprot_ = protocol.get();
+          socket->setConnTimeout(conn_timeout_ms);
+          socket->setSendTimeout(timeout_ms);
+          socket->setRecvTimeout(timeout_ms);
 
-        socket->setConnTimeout(conn_timeout_ms);
-        socket->setSendTimeout(timeout_ms);
-        socket->setRecvTimeout(timeout_ms);
-
-        if (transport) {
-          for (int retry = 0; true; ++retry) {
-            try {
-              transport->open();
-              break;
-            }
-            catch (apache::thrift::TException&) {
-              if (retry >= maxRetryConnect)
+          if (transport) {
+            for (int retry = 0; true; ++retry) {
+              try {
+                transport->open();
                 break;
-              Sleep(250);
+              }
+              catch (apache::thrift::TException&) {
+                if (retry >= maxRetryConnect)
+                  break;
+                Sleep(250);
+              }
             }
           }
         }
-      }
-      catch (...) {
-      }
-    }
-
-    class Lock {
-    public:
-
-      inline Lock(ThriftClient* _client)
-      : client(_client) {
-        client->lock();
+        catch (...) {
+        }
       }
 
-      inline ~Lock() {
-        client->unlock();
-      }
+      class Lock {
+      public:
+
+        inline Lock(ThriftClient* _client)
+        : client(_client) {
+          client->lock();
+        }
+
+        inline ~Lock() {
+          client->unlock();
+        }
+
+      private:
+
+        ThriftClient* client;
+      };
+      friend class Lock;
 
     private:
 
-      ThriftClient* client;
-    };
-    friend class Lock;
+      enum {
+        maxRetryConnect = 4,
+        maxConnectionPoolSize = 5
+      };
 
-  private:
+      typedef std::vector<ThriftClientPtr> client_pool_t;
 
-    enum {
-      maxRetryConnect = 4,
-      maxConnectionPoolSize = 5
-    };
+      inline void lock() {
+        ::EnterCriticalSection(&cs);
+        _InterlockedIncrement( &locked );
+      }
 
-    typedef ::boost::intrusive_ptr<ThriftClient> ClientPtr;
-    typedef std::vector<ClientPtr> client_pool_t;
+      inline void unlock( ) {
+         _InterlockedDecrement( &locked );
+        ::LeaveCriticalSection(&cs);
+      }
 
-    inline void lock() {
-      ::EnterCriticalSection(&cs);
-      _InterlockedIncrement( &locked );
-    }
-
-    inline void unlock( ) {
-       _InterlockedDecrement( &locked );
-      ::LeaveCriticalSection(&cs);
-    }
-
-    CRITICAL_SECTION cs;
-    volatile long locked;
-    std::string host;
-    int port;
-    int conn_timeout_ms;
-    int timeout_ms;
-    client_pool_t client_pool;
-    int next_client;
-};
-
-#pragma warning( pop )
-
-typedef ::boost::intrusive_ptr<ThriftClient> ClientPtr;
+      CRITICAL_SECTION cs;
+      volatile long locked;
+      std::string host;
+      int port;
+      int conn_timeout_ms;
+      int timeout_ms;
+      client_pool_t client_pool;
+      int next_client;
+  };
 
 #endif
 
+  /// Smart pointer to client
+  typedef std::shared_ptr<Client> ClientPtr;
+
 }} // namespace Hypertable::Thrift
 
-#endif /* HYPERTABLE_THRIFT_CLIENT_H */
+#endif // Hypertable_ThriftBroker_Client_h

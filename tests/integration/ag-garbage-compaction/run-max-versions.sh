@@ -2,16 +2,15 @@
 
 HT_HOME=${INSTALL_DIR:-"$HOME/hypertable/current"}
 HYPERTABLE_HOME=${HT_HOME}
-PIDFILE=$HT_HOME/run/Hypertable.RangeServer.pid
-HT_SHELL=$HT_HOME/bin/hypertable
+PIDFILE=$HT_HOME/run/RangeServer.pid
 HT_TEST_DFS=${HT_TEST_DFS:-local}
 SCRIPT_DIR=`dirname $0`
 
 . $HT_HOME/bin/ht-env.sh
 
-$HT_HOME/bin/start-test-servers.sh --no-rangeserver --no-thriftbroker --clear
+$HT_HOME/bin/ht-start-test-servers.sh --no-rangeserver --no-thriftbroker --clear
 
-$HT_HOME/bin/Hypertable.RangeServer --verbose --pidfile=$PIDFILE \
+$HT_HOME/bin/htRangeServer --verbose --pidfile=$PIDFILE \
     --Hypertable.RangeServer.Range.SplitSize=10000000 \
     --Hypertable.RangeServer.AccessGroup.GarbageThreshold.Percentage=20 \
     --Hypertable.RangeServer.Maintenance.Interval=100 \
@@ -19,7 +18,7 @@ $HT_HOME/bin/Hypertable.RangeServer --verbose --pidfile=$PIDFILE \
     --Hypertable.RangeServer.AccessGroup.MaxMemory=250000 \
     $@ > rangeserver.output 2>&1 &
 
-echo "use '/'; create table LoadTest ( Field ) MAX_VERSIONS=1;" | $HT_SHELL --batch
+echo "use '/'; create table LoadTest ( Field ) MAX_VERSIONS=1;" | $HT_HOME/bin/ht shell --batch
 
 for ((i=1; i<10; i++)) ; do
 

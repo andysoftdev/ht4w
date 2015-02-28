@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -42,7 +42,7 @@ import org.hypertable.AsyncComm.CommHeader;
 import org.hypertable.AsyncComm.DispatchHandler;
 import org.hypertable.AsyncComm.Event;
 import org.hypertable.AsyncComm.ReactorFactory;
-import org.hypertable.AsyncComm.Serialization;
+import org.hypertable.Common.Serialization;
 
 public class Client {
 

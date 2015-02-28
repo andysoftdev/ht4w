@@ -1,5 +1,5 @@
 /** -*- C++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -197,18 +197,18 @@ int main(int argc, char *argv[]) {
     hyperspace_replica_port_arg = format("--Hyperspace.Replica.Port=%d",
                                        (int)ntohs(addr.sin_port));
 
-    master_args.push_back("Hyperspace.Master");
+    master_args.push_back("htHyperspace");
     master_args.push_back("--config=./name_id_mapper_test.cfg");
     master_args.push_back(hyperspace_replica_port_arg.c_str());
     master_args.push_back((const char *)0);
 
 #ifndef _WIN32
 
-    unlink("./Hyperspace.Master");
-    HT_ASSERT(link("../../Hyperspace/Hyperspace.Master", "./Hyperspace.Master") == 0);
+    unlink("./htHyperspace");
+    HT_ASSERT(link("../../Hyperspace/htHyperspace", "./htHyperspace") == 0);
 
     {
-      ServerLauncher master("./Hyperspace.Master",
+      ServerLauncher master("./htHyperspace",
                             (char * const *)&master_args[0]);
 
 #else

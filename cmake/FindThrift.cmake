@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This file is part of Hypertable.
 #
@@ -44,7 +44,7 @@ if (Thrift_VERSION MATCHES "^Thrift version" AND LibEvent_LIBS
   set(Thrift_FOUND TRUE)
   set(Thrift_LIBS ${Thrift_LIB} ${Thrift_NB_LIB})
 
-  exec_program(${CMAKE_SOURCE_DIR}/bin/ldd.sh
+  exec_program(${CMAKE_SOURCE_DIR}/bin/src-utils/ldd.sh
                ARGS ${Thrift_LIB}
                OUTPUT_VARIABLE LDD_OUT
                RETURN_VALUE LDD_RETURN)

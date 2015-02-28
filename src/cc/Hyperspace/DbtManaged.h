@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,7 +27,6 @@
 #ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable : 4005 ) // 'off_t' : macro redefinition
-#pragma warning( disable : 4995 ) // 'strerror': name was marked as #pragma deprecated
 #endif
 
 #include <db_cxx.h>

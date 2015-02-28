@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,10 +17,10 @@
 # 02110-1301, USA.
 #
 
-# prepend_md5
-add_executable(prepend_md5 prepend_md5.cc)
-target_link_libraries(prepend_md5 HyperCommon HyperComm)
+# ht_prepend_md5
+add_executable(ht_prepend_md5 prepend_md5.cc)
+target_link_libraries(ht_prepend_md5 HyperCommon HyperComm)
 
 if (NOT HT_COMPONENT_INSTALL)
-  install(TARGETS prepend_md5 RUNTIME DESTINATION bin)
+  install(TARGETS ht_prepend_md5 RUNTIME DESTINATION bin)
 endif ()

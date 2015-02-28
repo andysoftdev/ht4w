@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -30,6 +30,7 @@
 #include <Hypertable/Master/DispatchHandlerOperationToggleTableMaintenance.h>
 #include <Hypertable/Master/Utility.h>
 
+#include <Hypertable/Lib/Canonicalize.h>
 #include <Hypertable/Lib/Key.h>
 
 #include <Hyperspace/Session.h>
@@ -44,14 +45,16 @@
 #include <poll.h>
 
 using namespace Hypertable;
+using namespace Hypertable::Lib;
 using namespace Hyperspace;
+using namespace std;
 
 OperationToggleTableMaintenance::OperationToggleTableMaintenance(ContextPtr &context,
                                                                  const std::string &table_name,
                                                                  bool toggle_on)
   : Operation(context, MetaLog::EntityType::OPERATION_TOGGLE_TABLE_MAINTENANCE),
     m_name(table_name), m_toggle_on(toggle_on) {
-  Utility::canonicalize_pathname(m_name);
+  Canonicalize::table_name(m_name);
   add_dependency(Dependency::INIT);
 }
 
@@ -83,7 +86,7 @@ void OperationToggleTableMaintenance::execute() {
       break;
     }
     set_state(OperationState::UPDATE_HYPERSPACE);
-    m_context->mml_writer->record_state(this);
+    m_context->mml_writer->record_state(shared_from_this());
     HT_MAYBE_FAIL("toggle-table-maintenance-INITIAL");
 
     // drop through ...
@@ -117,7 +120,7 @@ void OperationToggleTableMaintenance::execute() {
       m_dependencies.insert(m_id + " move range");
       m_state = OperationState::SCAN_METADATA;
     }
-    m_context->mml_writer->record_state(this);
+    m_context->mml_writer->record_state(shared_from_this());
     HT_MAYBE_FAIL("toggle-table-maintenance-UPDATE_HYPERSPACE-2");
     break;
 
@@ -146,7 +149,7 @@ void OperationToggleTableMaintenance::execute() {
         m_state = OperationState::ISSUE_REQUESTS;
       }
     }
-    m_context->mml_writer->record_state(this);
+    m_context->mml_writer->record_state(shared_from_this());
     HT_MAYBE_FAIL("toggle-table-maintenance-SCAN_METADATA");
     break;
 
@@ -156,7 +159,7 @@ void OperationToggleTableMaintenance::execute() {
       table.id = m_id.c_str();
       table.generation = 0;
       DispatchHandlerOperationPtr op_handler =
-        new DispatchHandlerOperationToggleTableMaintenance(m_context, table, m_toggle_on);
+        make_shared<DispatchHandlerOperationToggleTableMaintenance>(m_context, table, m_toggle_on);
       op_handler->start(m_servers);
       if (!op_handler->wait_for_completion()) {
         std::set<DispatchHandlerOperation::Result> results;
@@ -180,7 +183,7 @@ void OperationToggleTableMaintenance::execute() {
           m_state = OperationState::SCAN_METADATA;
         }
         poll(0, 0, 5000);
-        m_context->mml_writer->record_state(this);
+        m_context->mml_writer->record_state(shared_from_this());
         break;
       }
     }
@@ -203,13 +206,11 @@ void OperationToggleTableMaintenance::display_state(std::ostream &os) {
      << " " << (m_toggle_on ? "ON" : "OFF");
 }
 
-#define OPERATION_TOGGLE_TABLE_MAINTENANCE_VERSION 1
-
-uint16_t OperationToggleTableMaintenance::encoding_version() const {
-  return OPERATION_TOGGLE_TABLE_MAINTENANCE_VERSION;
+uint8_t OperationToggleTableMaintenance::encoding_version_state() const {
+  return 1;
 }
 
-size_t OperationToggleTableMaintenance::encoded_state_length() const {
+size_t OperationToggleTableMaintenance::encoded_length_state() const {
   size_t length = 1 + Serialization::encoded_length_vstr(m_name) +
     Serialization::encoded_length_vstr(m_id);
   length += 4;
@@ -233,7 +234,11 @@ void OperationToggleTableMaintenance::encode_state(uint8_t **bufp) const {
     Serialization::encode_vstr(bufp, location);
 }
 
-void OperationToggleTableMaintenance::decode_state(const uint8_t **bufp, size_t *remainp) {
+void OperationToggleTableMaintenance::decode_state(uint8_t version, const uint8_t **bufp, size_t *remainp) {
+  decode_state_old(version, bufp, remainp);
+}
+
+void OperationToggleTableMaintenance::decode_state_old(uint8_t version, const uint8_t **bufp, size_t *remainp) {
   m_name = Serialization::decode_vstr(bufp, remainp);
   m_id = Serialization::decode_vstr(bufp, remainp);
   m_toggle_on = Serialization::decode_bool(bufp, remainp);

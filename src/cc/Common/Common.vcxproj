@@ -94,6 +94,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -112,6 +114,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\re2;$(SolutionDir)deps\expat</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -136,6 +140,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -162,6 +168,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -183,6 +191,7 @@
     </ClCompile>
     <ClCompile Include="Checksum.cc" />
     <ClCompile Include="Config.cc" />
+    <ClCompile Include="ConsoleOutputSquelcher.cc" />
     <ClCompile Include="Cronolog.cc" />
     <ClCompile Include="Crontab.cc" />
     <ClCompile Include="DiscreteRandomGenerator.cc" />
@@ -206,10 +215,13 @@
     <ClCompile Include="Random.cc" />
     <ClCompile Include="Regex.cc" />
     <ClCompile Include="SecurityUtils.cc" />
+    <ClCompile Include="Serializable.cc" />
     <ClCompile Include="ServerLaunchEvent.cc" />
     <ClCompile Include="SleepWakeNotifier.cc" />
     <ClCompile Include="StatsSerializable.cc" />
     <ClCompile Include="StatsSystem.cc" />
+    <ClCompile Include="Status.cc" />
+    <ClCompile Include="StatusPersister.cc" />
     <ClCompile Include="String.cc" />
     <ClCompile Include="strptime.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -239,6 +251,7 @@
     <ClInclude Include="compat-c.h" />
     <ClInclude Include="Compat.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="ConsoleOutputSquelcher.h" />
     <ClInclude Include="Cronolog.h" />
     <ClInclude Include="Crontab.h" />
     <ClInclude Include="CstrHashMap.h" />
@@ -291,6 +304,8 @@
     <ClInclude Include="StaticBuffer.h" />
     <ClInclude Include="StatsSerializable.h" />
     <ClInclude Include="StatsSystem.h" />
+    <ClInclude Include="Status.h" />
+    <ClInclude Include="StatusPersister.h" />
     <ClInclude Include="StlAllocator.h" />
     <ClInclude Include="StlHash.h" />
     <ClInclude Include="Stopwatch.h" />

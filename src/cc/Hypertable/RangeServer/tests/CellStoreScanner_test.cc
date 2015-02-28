@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -568,8 +568,7 @@ namespace {
 int main(int argc, char **argv) {
   try {
     struct sockaddr_in addr;
-    ConnectionManagerPtr conn_mgr;
-    FsBroker::ClientPtr client;
+    FsBroker::Lib::ClientPtr client;
     CellStorePtr cs;
     std::ofstream out("CellStoreScanner_test.output");
     size_t wordi=0;
@@ -602,11 +601,10 @@ int main(int argc, char **argv) {
 
     InetAddr::initialize(&addr, "localhost", port);
 
-    conn_mgr = new ConnectionManager();
-    Global::dfs = new FsBroker::Client(conn_mgr, addr, 15000);
+    ConnectionManagerPtr conn_mgr = make_shared<ConnectionManager>();
+    client = std::make_shared<FsBroker::Lib::Client>(conn_mgr, addr, 15000);
 
-    // force broker client to be destroyed before connection manager
-    client = (FsBroker::Client *)Global::dfs.get();
+    Global::dfs = client;
 
     if (!client->wait_for_connection(15000)) {
       HT_ERROR("Unable to connect to DFS");

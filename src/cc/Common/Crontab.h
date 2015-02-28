@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -22,7 +22,7 @@
 /// @file
 /// Crontab class for periodic events.
 /// The Crontab class is used to track the timing of a periodic event.
-/// This is used i.e. in the Hypertable.Master to schedule LoadBalancer events.
+/// This is used i.e. in the htMaster to schedule LoadBalancer events.
 
 #ifndef HYPERTABLE_CRONTAB_H
 #define HYPERTABLE_CRONTAB_H
@@ -67,7 +67,7 @@ namespace Hypertable {
     ///   "1-2/2/4 1 * * *"
     ///   "2-1 1 * * *"
     ///   "1-8/ 1 * * *"
-    /// <pre>
+    /// </pre>
     /// @see <code>Common/tests/crontab_test.cc</code> for more examples.
     /// @param spec The crontab string describing the time interval
     /// @throws Error::COMMAND_PARSE_ERROR if the spec cannot be parsed

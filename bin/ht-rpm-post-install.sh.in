@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+# Copyright (C) 2007-2015 Hypertable, Inc.
+#
+# This file is part of Hypertable.
+#
+# Hypertable is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 3
+# of the License, or any later version.
+#
+# Hypertable is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Hypertable. If not, see <http://www.gnu.org/licenses/>
+#
+
+# set "current" link
+pushd . > /dev/null
+cd /opt/hypertable/
+if [ -h current ]; then
+  rm -f current
+fi
+ln -s @VERSION@ current
+popd > /dev/null
+
+if [ -d /tmp/hypertable-install ]; then
+
+  # Make backup of new conf files (that are not .cfg, .def, notification-hook.sh)
+  rm -f /tmp/hypertable-install/tmp-conf.tgz
+  if [ ! -h /opt/hypertable/@VERSION@/conf ] && [ -d /opt/hypertable/@VERSION@/conf ]; then
+    pushd . > /dev/null
+    cd /opt/hypertable/@VERSION@/conf
+    tar czf /tmp/hypertable-install/tmp-conf.tgz --exclude=*.cfg --exclude=*.def --exclude=notification-hook.sh *
+    popd > /dev/null
+  fi
+
+  # fixup symlinks
+  if [ -e /tmp/hypertable-install/post.sh ]; then
+    /tmp/hypertable-install/post.sh
+  fi
+  
+  # Restore backup of new conf files (that are not .cfg, .def, or notification-hook.sh)
+  if [ -e /tmp/hypertable-install/tmp-conf.tgz ]; then
+    pushd . > /dev/null
+    cd @CMAKE_INSTALL_PREFIX@/conf/
+    tar xzf /tmp/hypertable-install/tmp-conf.tgz
+    popd > /dev/null
+  fi
+  
+  # Copy saved config files
+  if ls /tmp/hypertable-install/*.cfg > /dev/null 2>&1; then
+    cp /tmp/hypertable-install/*.cfg @CMAKE_INSTALL_PREFIX@/conf/
+  fi
+
+  # Copy saved .def files
+  if ls /tmp/hypertable-install/*.def > /dev/null 2>&1; then
+    cp /tmp/hypertable-install/*.def @CMAKE_INSTALL_PREFIX@/conf/
+  fi
+
+  # Copy saved notification script
+  if [ -e /tmp/hypertable-install/notification-hook.sh ]; then
+    cp /tmp/hypertable-install/notification-hook.sh @CMAKE_INSTALL_PREFIX@/conf/
+  fi
+
+  # Cleanup
+  rm -rf /tmp/hypertable-*
+fi

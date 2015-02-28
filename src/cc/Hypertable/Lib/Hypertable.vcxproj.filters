@@ -8,6 +8,39 @@
     <Filter Include="Source Files\RS_METRICS">
       <UniqueIdentifier>{d5eba01a-765b-4d1b-8fb4-10f42951c8e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Master">
+      <UniqueIdentifier>{e22a9544-ff0d-43f1-a100-b69b52fb40d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Master\Request">
+      <UniqueIdentifier>{d87456a3-9b44-4266-be45-e2b50e7333f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Master\Request\Parameters">
+      <UniqueIdentifier>{a09b2c4c-fedd-41da-9ac6-c51dc0777f8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Master\Response">
+      <UniqueIdentifier>{45ea01a2-f493-4820-913c-1ff3add057bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Master\Response\Parameters">
+      <UniqueIdentifier>{7db00df9-4821-4a22-a5ab-c55297fddb84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RangeServer">
+      <UniqueIdentifier>{85eb0b5e-4a43-48ac-a661-ce17ea3fdbba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RangeServer\Request">
+      <UniqueIdentifier>{47670fba-e031-49bc-b6d7-1a008d4931d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RangeServer\Request\Parameters">
+      <UniqueIdentifier>{51b60469-21d2-430a-97fd-e0d0d8e75316}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RangeServer\Response">
+      <UniqueIdentifier>{c8af4035-56a4-4b9d-ad7c-5689ab1ead87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RangeServer\Response\Parameters">
+      <UniqueIdentifier>{53a71947-c869-40f5-9841-986b144123fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RangeServerRecovery">
+      <UniqueIdentifier>{3dba93c8-2f5b-4937-a687-276f277f1517}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApacheLogParser.cc">
@@ -23,9 +56,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DataGenerator.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EventHandlerMasterChange.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FixedRandomStringGenerator.cc">
@@ -67,15 +97,6 @@
     <ClCompile Include="LocationCache.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MasterClient.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MasterFileHandler.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MasterProtocol.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MetaLog.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -92,12 +113,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RangeLocator.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RangeServerClient.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RangeServerProtocol.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RangeState.cc">
@@ -143,9 +158,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TableSplit.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Types.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\stdafx.cc">
@@ -214,12 +226,6 @@
     <ClCompile Include="PseudoTables.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RangeRecoveryReceiverPlan.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RangeRecoveryReplayPlan.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SystemVariable.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -248,6 +254,213 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProfileDataScanner.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Canonicalize.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CellInterval.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColumnPredicate.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LegacyDecoder.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\AlterTable.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\Balance.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\Compact.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\CreateNamespace.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\CreateTable.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\DropNamespace.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\DropTable.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\FetchResult.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\MoveRange.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\PhantomCommitComplete.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\PhantomPrepareComplete.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\RecreateIndexTables.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\RegisterServer.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\RelinquishAcknowledge.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\RenameTable.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\ReplayComplete.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\ReplayStatus.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\SetState.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Request\Parameters\Stop.cc">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Response\Parameters\RegisterServer.cc">
+      <Filter>Source Files\Master\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Response\Parameters\Status.cc">
+      <Filter>Source Files\Master\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Response\Parameters\SystemStatus.cc">
+      <Filter>Source Files\Master\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\Client.cc">
+      <Filter>Source Files\Master</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\EventHandlerMasterChange.cc">
+      <Filter>Source Files\Master</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\HyperspaceCallback.cc">
+      <Filter>Source Files\Master</Filter>
+    </ClCompile>
+    <ClCompile Include="Master\NamespaceFlag.cc">
+      <Filter>Source Files\Master</Filter>
+    </ClCompile>
+    <ClCompile Include="QualifiedRangeSpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Response\Parameters\AcknowledgeLoad.cc">
+      <Filter>Source Files\RangeServer\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Response\Parameters\CreateScanner.cc">
+      <Filter>Source Files\RangeServer\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Response\Parameters\GetStatistics.cc">
+      <Filter>Source Files\RangeServer\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Response\Parameters\Status.cc">
+      <Filter>Source Files\RangeServer\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\AcknowledgeLoad.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\CommitLogSync.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\Compact.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\CreateScanner.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\DestroyScanner.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\DropRange.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\DropTable.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\Dump.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\DumpPseudoTable.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\FetchScanblock.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\GetStatistics.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\Heapcheck.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\LoadRange.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\PhantomCommitRanges.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\PhantomLoad.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\PhantomPrepareRanges.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\PhantomUpdate.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\RelinquishRange.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\ReplayFragments.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\SetState.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\TableMaintenanceDisable.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\TableMaintenanceEnable.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\Update.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Request\Parameters\UpdateSchema.cc">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Client.cc">
+      <Filter>Source Files\RangeServer</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServer\Protocol.cc">
+      <Filter>Source Files\RangeServer</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerRecovery\FragmentReplayPlan.cc">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerRecovery\Plan.cc">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerRecovery\ReceiverPlan.cc">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerRecovery\ReplayPlan.cc">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeServerRecovery\ServerReceiverPlan.cc">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClCompile>
+    <ClCompile Include="RowInterval.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableIdentifier.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RangeSpec.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -280,9 +493,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="DataSource.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EventHandlerMasterChange.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="FixedRandomStringGenerator.h">
@@ -330,15 +540,6 @@
     <ClInclude Include="LocationCache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="MasterClient.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MasterFileHandler.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MasterProtocol.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="MetaLog.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -361,12 +562,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RangeLocator.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RangeServerClient.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RangeServerProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RangeState.h">
@@ -418,12 +613,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TableSplit.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Timestamp.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Types.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MetaLogDefinition.h">
@@ -513,15 +702,6 @@
     <ClInclude Include="PseudoTables.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="RangeRecoveryPlan.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RangeRecoveryReceiverPlan.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RangeRecoveryReplayPlan.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="ScanLimitState.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -562,6 +742,216 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ProfileDataScanner.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Canonicalize.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellInterval.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColumnPredicate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LegacyDecoder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\AlterTable.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\Balance.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\Compact.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\CreateNamespace.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\CreateTable.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\DropNamespace.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\DropTable.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\FetchResult.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\MoveRange.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\PhantomCommitComplete.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\PhantomPrepareComplete.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\RecreateIndexTables.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\RegisterServer.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\RelinquishAcknowledge.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\RenameTable.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\ReplayComplete.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\ReplayStatus.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\SetState.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Request\Parameters\Stop.h">
+      <Filter>Source Files\Master\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Response\Parameters\RegisterServer.h">
+      <Filter>Source Files\Master\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Response\Parameters\Status.h">
+      <Filter>Source Files\Master\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Response\Parameters\SystemStatus.h">
+      <Filter>Source Files\Master\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Client.h">
+      <Filter>Source Files\Master</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\EventHandlerMasterChange.h">
+      <Filter>Source Files\Master</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\HyperspaceCallback.h">
+      <Filter>Source Files\Master</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\NamespaceFlag.h">
+      <Filter>Source Files\Master</Filter>
+    </ClInclude>
+    <ClInclude Include="Master\Protocol.h">
+      <Filter>Source Files\Master</Filter>
+    </ClInclude>
+    <ClInclude Include="QualifiedRangeSpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Response\Parameters\AcknowledgeLoad.h">
+      <Filter>Source Files\RangeServer\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Response\Parameters\CreateScanner.h">
+      <Filter>Source Files\RangeServer\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Response\Parameters\GetStatistics.h">
+      <Filter>Source Files\RangeServer\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Response\Parameters\Status.h">
+      <Filter>Source Files\RangeServer\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\AcknowledgeLoad.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\CommitLogSync.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\Compact.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\CreateScanner.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\DestroyScanner.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\DropRange.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\DropTable.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\Dump.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\DumpPseudoTable.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\FetchScanblock.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\GetStatistics.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\Heapcheck.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\LoadRange.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\PhantomCommitRanges.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\PhantomLoad.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\PhantomPrepareRanges.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\PhantomUpdate.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\RelinquishRange.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\ReplayFragments.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\SetState.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\TableMaintenanceDisable.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\TableMaintenanceEnable.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\Update.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Request\Parameters\UpdateSchema.h">
+      <Filter>Source Files\RangeServer\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Client.h">
+      <Filter>Source Files\RangeServer</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServer\Protocol.h">
+      <Filter>Source Files\RangeServer</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerRecovery\FragmentReplayPlan.h">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerRecovery\Plan.h">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerRecovery\ReceiverPlan.h">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerRecovery\ReplayPlan.h">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeServerRecovery\ServerReceiverPlan.h">
+      <Filter>Source Files\RangeServerRecovery</Filter>
+    </ClInclude>
+    <ClInclude Include="RowInterval.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableIdentifier.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeSpec.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

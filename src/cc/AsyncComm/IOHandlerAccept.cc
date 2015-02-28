@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,7 +25,19 @@
  * processing I/O events for accept (listen) sockets.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#define HT_DISABLE_LOG_DEBUG 1
+
+#include "HandlerMap.h"
+#include "IOHandlerAccept.h"
+#include "IOHandlerData.h"
+#include "ReactorFactory.h"
+#include "ReactorRunner.h"
+
+#include <Common/Error.h>
+#include <Common/FileUtils.h>
+#include <Common/Logger.h>
 
 #include <iostream>
 
@@ -38,18 +50,6 @@ extern "C" {
 #include <arpa/inet.h>
 #include <fcntl.h>
 }
-
-#define HT_DISABLE_LOG_DEBUG 1
-
-#include "Common/Error.h"
-#include "Common/FileUtils.h"
-#include "Common/Logger.h"
-
-#include "HandlerMap.h"
-#include "IOHandlerAccept.h"
-#include "IOHandlerData.h"
-#include "ReactorFactory.h"
-#include "ReactorRunner.h"
 
 #ifdef _WIN32
 
@@ -151,7 +151,7 @@ bool IOHandlerAccept::handle_event(IOOP *ioop, time_t) {
   }
 
   data_handler->async_recv_header();
-  deliver_event(new Event(Event::CONNECTION_ESTABLISHED, *sa_remote, Error::OK));
+  deliver_event(make_shared<Event>(Event::CONNECTION_ESTABLISHED, *sa_remote, Error::OK));
 
   // accept next connection
   async_accept();
@@ -164,36 +164,7 @@ bool IOHandlerAccept::handle_event(IOOP *ioop, time_t) {
 #endif
 
 
-#ifdef _WIN32
-
-bool IOHandlerAccept::async_accept() {
-  socket_t sd2 = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  if (sd2 == INVALID_SOCKET) {
-    HT_ERRORF("socket creation error: %s", winapi_strerror(WSAGetLastError()));
-    return false;
-  }
-
-  DWORD bytesReceived = 0;
-  IOOP* ioop = new IOOP(sd2, IOOP::ACCEPT, this);
-  if (!Comm::pfnAcceptEx(m_sd, sd2, &ioop->addresses, 0,
-                  sizeof(struct sockaddr_in) + 16,
-                  sizeof(struct sockaddr_in) + 16,
-                  &bytesReceived,
-                  ioop)) {
-    int err = WSAGetLastError();
-    if (err != ERROR_IO_PENDING) {
-      HT_ERRORF("AcceptEx failed - %s", winapi_strerror(err));
-      return false;
-    }
-  }
-  else {
-    handle_event(ioop, 0);
-    delete ioop;
-  }
-  return true;
-}
-
-#else
+#ifndef _WIN32
 
 bool IOHandlerAccept::handle_incoming_connection() {
   int sd;
@@ -268,11 +239,41 @@ bool IOHandlerAccept::handle_incoming_connection() {
 
     ReactorRunner::handler_map->decrement_reference_count(handler);
 
-    deliver_event(new Event(Event::CONNECTION_ESTABLISHED, addr, Error::OK));
+    EventPtr event = make_shared<Event>(Event::CONNECTION_ESTABLISHED, addr, Error::OK);
+    deliver_event(event);
   }
 
   return false;
  }
+
+#else
+
+bool IOHandlerAccept::async_accept() {
+  socket_t sd2 = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (sd2 == INVALID_SOCKET) {
+    HT_ERRORF("socket creation error: %s", winapi_strerror(WSAGetLastError()));
+    return false;
+  }
+
+  DWORD bytesReceived = 0;
+  IOOP* ioop = new IOOP(sd2, IOOP::ACCEPT, this);
+  if (!Comm::pfnAcceptEx(m_sd, sd2, &ioop->addresses, 0,
+                  sizeof(struct sockaddr_in) + 16,
+                  sizeof(struct sockaddr_in) + 16,
+                  &bytesReceived,
+                  ioop)) {
+    int err = WSAGetLastError();
+    if (err != ERROR_IO_PENDING) {
+      HT_ERRORF("AcceptEx failed - %s", winapi_strerror(err));
+      return false;
+    }
+  }
+  else {
+    handle_event(ioop, 0);
+    delete ioop;
+  }
+  return true;
+}
 
 #endif
 

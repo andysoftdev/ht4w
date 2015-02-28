@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -28,6 +28,8 @@ GcWorker.cc
 DispatchHandlerOperation.cc
 DispatchHandlerOperationGetStatistics.cc
 DispatchHandlerOperationSetState.cc
+DispatchHandlerOperationSystemStatus.cc
+HyperspaceMasterFile.cc
 LoadBalancer.cc
 MetaLogDefinitionMaster.cc
 MetricsHandler.cc
@@ -55,6 +57,7 @@ OperationRelinquishAcknowledge.cc
 OperationRenameTable.cc
 OperationSetState.cc
 OperationStatus.cc
+OperationSystemStatus.cc
 OperationSystemUpgrade.cc
 OperationTimedBarrier.cc
 OperationToggleTableMaintenance.cc
@@ -71,9 +74,9 @@ SystemState.cc
 add_library(HyperMaster ${Master_SRCS})
 target_link_libraries(HyperMaster m Hyperspace HyperFsBroker Hypertable ${RRD_LIBRARIES})
 
-# Hypertable.Master
-add_executable(Hypertable.Master main.cc)
-target_link_libraries(Hypertable.Master HyperMaster Hyperspace Hypertable HyperRanger HyperFsBroker ${MALLOC_LIBRARY})
+# htMaster
+add_executable(htMaster main.cc)
+target_link_libraries(htMaster HyperMaster Hyperspace Hypertable HyperRanger HyperFsBroker ${MALLOC_LIBRARY})
 
 # op_test_driver
 add_executable(op_test_driver tests/op_test_driver.cc)
@@ -93,8 +96,8 @@ target_link_libraries(system_state_test HyperCommon HyperMaster Hypertable ${MAL
 set(SRC_DIR "${HYPERTABLE_SOURCE_DIR}/src/cc/Hypertable/Master/tests")
 set(DST_DIR "${HYPERTABLE_BINARY_DIR}/src/cc/Hypertable/Master")
 
-add_executable(htgc htgc.cc GcWorker.cc)
-target_link_libraries(htgc HyperMaster HyperFsBroker Hypertable ${RRD_LIBRARIES})
+add_executable(ht_gc gc.cc GcWorker.cc)
+target_link_libraries(ht_gc HyperMaster HyperFsBroker Hypertable ${RRD_LIBRARIES})
 
 configure_file(${SRC_DIR}/balance_plan_authority_test.golden
     ${DST_DIR}/balance_plan_authority_test.golden COPYONLY)
@@ -104,9 +107,6 @@ configure_file(${SRC_DIR}/system_state_test.golden
 
 add_test(MasterOperation-TestSetup env INSTALL_DIR=${INSTALL_DIR} 
          ${CMAKE_CURRENT_SOURCE_DIR}/tests/op_test_setup.sh)
-
-add_test(BalancePlanAuthority-upgrade env INSTALL_DIR=${INSTALL_DIR} 
-         ${CMAKE_CURRENT_SOURCE_DIR}/tests/bpa_upgrade.sh)
 
 add_test(MasterOperation-Processor op_dependency_test)
 
@@ -161,7 +161,7 @@ if (NOT HT_COMPONENT_INSTALL)
   file(GLOB HEADERS *.h)
   install(FILES ${HEADERS}
       DESTINATION include/Hypertable/Master)
-  install(TARGETS HyperMaster Hypertable.Master htgc op_test_driver op_dependency_test
+  install(TARGETS HyperMaster htMaster ht_gc
           RUNTIME DESTINATION bin
           LIBRARY DESTINATION lib
           ARCHIVE DESTINATION lib)

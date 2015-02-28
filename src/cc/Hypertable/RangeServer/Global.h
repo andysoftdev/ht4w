@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -34,14 +34,13 @@
 #include "AsyncComm/Comm.h"
 #include "Hyperspace/Session.h"
 #include "Hypertable/Lib/CommitLog.h"
-#include "Hypertable/Lib/MasterClient.h"
+#include "Hypertable/Lib/Master/Client.h"
 #include "Hypertable/Lib/MetaLogWriter.h"
 #include "Hypertable/Lib/PseudoTables.h"
-#include "Hypertable/Lib/RangeServerClient.h"
-#include "Hypertable/Lib/RangeServerProtocol.h"
 #include "Hypertable/Lib/Schema.h"
 #include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/Types.h"
+#include "Hypertable/Lib/RangeSpec.h"
+#include "Hypertable/Lib/TableIdentifier.h"
 
 #include "FileBlockCache.h"
 #include "LoadStatistics.h"
@@ -54,6 +53,8 @@
 
 namespace Hypertable {
 
+  using namespace Lib;
+
   class ApplicationQueue;
 
   class Global {
@@ -63,8 +64,7 @@ namespace Hypertable {
     static Hypertable::FilesystemPtr dfs;
     static Hypertable::FilesystemPtr log_dfs;
     static Hypertable::MaintenanceQueuePtr maintenance_queue;
-    static Hypertable::MasterClientPtr master_client;
-    static Hypertable::RangeServerProtocol *protocol;
+    static Hypertable::Lib::Master::ClientPtr master_client;
     static Hypertable::RangeLocatorPtr range_locator;
     static Hypertable::PseudoTables *pseudo_tables;
     static MetaLogEntityRemoveOkLogsPtr remove_ok_logs;
@@ -79,7 +79,7 @@ namespace Hypertable {
     static CommitLog     *root_log;
     static MetaLog::WriterPtr rsml_writer;
     static std::string    log_dir;
-    static LocationInitializer *location_initializer;
+    static LocationInitializerPtr location_initializer;
     static int64_t        range_split_size;
     static int64_t        range_maximum_size;
     static int32_t        failover_timeout;
@@ -112,8 +112,7 @@ namespace Hypertable {
     static std::vector<MetaLog::EntityTaskPtr> work_queue;
     static StringSet      immovable_range_set;
     static TimeWindow low_activity_time;
-    static void add_to_work_queue(MetaLog::EntityTask *entity);
-    static void add_to_work_queue(MetaLog::EntityTaskPtr &entity);
+    static void add_to_work_queue(MetaLog::EntityTaskPtr entity);
     static void immovable_range_set_add(const TableIdentifier &table, const RangeSpec &spec);
     static void immovable_range_set_remove(const TableIdentifier &table, const RangeSpec &spec);
     static bool immovable_range_set_contains(const TableIdentifier &table, const RangeSpec &spec);

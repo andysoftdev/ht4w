@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -78,7 +78,10 @@ int main(int argc, char **argv) {
 
   #ifdef _WIN32
 
-  String cmd = format("random_write_test --Hypertable.DataDirectory=\"%s\" --config=./hypertable.cfg --total-bytes=%d --blocksize=128 > nul", System::install_dir.c_str(), 2 * 128 * num_cells);
+  String cmd = "..\\hypertable.exe --config=./hypertable.cfg --batch -e \"drop table if exists LoadTest;create table LoadTest(Field);\" > nul";
+  HT_ASSERT(system(cmd.c_str()) == 0);
+
+  cmd = format("..\\ht_load_generator.exe --config=./hypertable.cfg --spec-file=../../../../../tests/data/random-test.spec --no-log-sync --parallel=4 --max-keys=%d update > nul", 10 * num_cells);
   HT_ASSERT(system(cmd.c_str()) == 0);
 
   #endif
@@ -88,7 +91,7 @@ int main(int argc, char **argv) {
   try {
     hypertable_client_ptr = new Hypertable::Client(System::locate_install_dir(argv[0]), "./hypertable.cfg");
     namespace_ptr = hypertable_client_ptr->open_namespace("/");
-    table_ptr = namespace_ptr->open_table("RandomTest");
+    table_ptr = namespace_ptr->open_table("LoadTest");
     scanner = table_ptr->create_scanner(scan_spec.get());
     while(scanner->next(cell) && ii < num_cells) {
       ++ii;

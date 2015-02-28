@@ -127,6 +127,18 @@
     <ClCompile Include="SleepWakeNotifier.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ConsoleOutputSquelcher.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Serializable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Status.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StatusPersister.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h">
@@ -312,9 +324,6 @@
     <ClInclude Include="version.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="strptime.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="HRTimer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -385,6 +394,14 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="SleepWakeNotifier.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConsoleOutputSquelcher.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Status.h" />
+    <ClInclude Include="StatusPersister.h" />
+    <ClInclude Include="strptime.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

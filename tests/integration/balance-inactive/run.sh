@@ -4,34 +4,34 @@ HT_HOME=${INSTALL_DIR:-"$HOME/hypertable/current"}
 SCRIPT_DIR=`dirname $0`
 NUM_POLLS=${NUM_POLLS:-"10"}
 WRITE_SIZE=${WRITE_SIZE:-"40000000"}
-RS1_PIDFILE=$HT_HOME/run/Hypertable.RangeServer.rs1.pid
-RS2_PIDFILE=$HT_HOME/run/Hypertable.RangeServer.rs2.pid
-MASTER_PIDFILE=$HT_HOME/run/Hypertable.Master.pid
+RS1_PIDFILE=$HT_HOME/run/RangeServer.rs1.pid
+RS2_PIDFILE=$HT_HOME/run/RangeServer.rs2.pid
+MASTER_PIDFILE=$HT_HOME/run/Master.pid
 
 kill_servers() {
-  echo "shutdown; quit;" | $HT_HOME/bin/ht rsclient localhost:15871
-  echo "shutdown; quit;" | $HT_HOME/bin/ht rsclient localhost:15870
+  echo "shutdown; quit;" | $HT_HOME/bin/ht rangeserver localhost:15871
+  echo "shutdown; quit;" | $HT_HOME/bin/ht rangeserver localhost:15870
   kill -9 `cat $RS1_PIDFILE`
   kill -9 `cat $RS2_PIDFILE`
   kill -9 `cat $MASTER_PIDFILE`
   \rm -f $RS1_PIDFILE $RS2_PIDFILE
-  $HT_HOME/bin/ht clean-database.sh
+  $HT_HOME/bin/ht destroy-database.sh
 }
 
-$HT_HOME/bin/start-test-servers.sh --clear --no-rangeserver --no-master --no-thriftbroker
+$HT_HOME/bin/ht-start-test-servers.sh --clear --no-rangeserver --no-master --no-thriftbroker
 
-$HT_HOME/bin/ht Hypertable.Master --verbose --pidfile=$MASTER_PIDFILE \
+$HT_HOME/bin/ht Master --verbose --pidfile=$MASTER_PIDFILE \
    2>&1 > master.output &
 
 sleep 3
 
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS1_PIDFILE \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=$RS1_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs1 \
    --Hypertable.RangeServer.Port=15870 \
    --Hypertable.RangeServer.Maintenance.Interval 100 \
    --Hypertable.RangeServer.Range.SplitSize=400K 2>&1 > rangeserver.rs1.output&
 
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS2_PIDFILE \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=$RS2_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs2 \
    --Hypertable.RangeServer.Port=15871 \
    --Hypertable.RangeServer.Maintenance.Interval 100 \

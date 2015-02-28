@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -58,7 +58,7 @@ namespace Hypertable {
 
     virtual void add_unlocked(ApplicationHandler *app_handler) { HT_ASSERT(false); }
 
-    void next_result(ScanCellsPtr &cells, int *error, String &error_msg) {
+    void next_result(ScanCellsPtr &cells, int *error, std::string &error_msg) {
       ApplicationHandler *app_handler;
       cells = 0;
       *error = Error::OK;
@@ -76,9 +76,7 @@ namespace Hypertable {
             m_cells_queue.pop_front();
             break;
           }
-          while (m_work_queue.empty() && 
-                 m_cells_queue.empty() &&
-                (m_error == Error::OK || m_error_shown)) {
+          while (m_work_queue.empty() && m_cells_queue.empty()) {
             m_cond.wait(lock);
           }
           if (!m_work_queue.size())
@@ -109,12 +107,11 @@ namespace Hypertable {
       m_cond.notify_all();
     }
 
-    void set_error(int error, const String &error_msg) {
+    void set_error(int error, const std::string &error_msg) {
       ScopedLock lock(m_mutex);
       m_error = error;
       m_error_msg = error_msg;
       m_error_shown = false;
-      m_cond.notify_one();
     }
 
   private:
@@ -126,11 +123,11 @@ namespace Hypertable {
     WorkQueue              m_work_queue;
     CellsQueue             m_cells_queue;
     int                    m_error;
-    String                 m_error_msg;
+    std::string                 m_error_msg;
     bool                   m_error_shown;
   };
 
-  typedef boost::intrusive_ptr<TableScannerQueue> TableScannerQueuePtr;
+  typedef std::shared_ptr<TableScannerQueue> TableScannerQueuePtr;
 
 } // namespace Hypertable
 

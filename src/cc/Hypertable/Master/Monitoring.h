@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -53,7 +53,7 @@ namespace Hypertable {
      */
     Monitoring(Context *context);
 
-    void add_server(const String &location, StatsSystem &system_info);
+    void add_server(const String &location, const StatsSystem &system_info);
 
     void drop_server(const String &location);
 

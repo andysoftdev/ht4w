@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -585,7 +585,7 @@ void TableMutatorAsync::do_sync() {
        */
       if (retry_failed) {
         sync_handler.get_errors(errors);
-        String error_str = 
+        string error_str = 
           format("commit log sync error '%s' '%s' max retry limit=%d hit.",
                  errors[0].msg.c_str(), Error::get_text(errors[0].error),
                  (int)ms_max_sync_retries);

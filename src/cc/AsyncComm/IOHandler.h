@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,8 +25,8 @@
  * from which I/O handlers are derived.
  */
 
-#ifndef HYPERTABLE_IOHANDLER_H
-#define HYPERTABLE_IOHANDLER_H
+#ifndef AsyncComm_IOHandler_h
+#define AsyncComm_IOHandler_h
 
 #include "DispatchHandler.h"
 #include "PollEvent.h"
@@ -98,7 +98,7 @@ namespace Hypertable {
      * @param sd Socket descriptor
      * @param dhp Dispatch handler
      */
-    IOHandler(socket_t sd, DispatchHandlerPtr &dhp)
+    IOHandler(socket_t sd, const DispatchHandlerPtr &dhp)
       : m_free_flag(0), m_error(Error::OK),
         m_sd(sd), m_dispatch_handler(dhp), m_decomissioned(false) {
       ReactorFactory::get_reactor(m_reactor);
@@ -209,21 +209,15 @@ namespace Hypertable {
      * @param event pointer to Event (deleted by this method)
      * @param dh Event handler via which to deliver event
      */
-    void deliver_event(Event *event, DispatchHandler *dh=0) {
+    void deliver_event(EventPtr &event, DispatchHandler *dh=0) {
       memcpy(&event->local_addr, &m_local_addr, sizeof(m_local_addr));
-      if (!dh) {
-        if (!m_dispatch_handler) {
-          HT_INFOF("%s", event->to_str().c_str());
-          delete event;
-        }
-        else {
-          EventPtr event_ptr(event);
-          m_dispatch_handler->handle(event_ptr);
-        }
-      }
+      if (dh)
+        dh->handle(event);
       else {
-        EventPtr event_ptr(event);
-        dh->handle(event_ptr);
+        if (!m_dispatch_handler)
+          HT_INFOF("%s", event->to_str().c_str());
+        else
+          m_dispatch_handler->handle(event);
       }
     }
 
@@ -613,4 +607,4 @@ namespace Hypertable {
 
 }
 
-#endif // HYPERTABLE_IOHANDLER_H
+#endif // AsyncComm_IOHandler_h

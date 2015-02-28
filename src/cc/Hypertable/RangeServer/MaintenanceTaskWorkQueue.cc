@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -53,7 +53,7 @@ void MaintenanceTaskWorkQueue::execute() {
 	Global::work_queue.push_back(entity_task);
       }
       else
-	m_completed.push_back(entity_task.get());
+	m_completed.push_back(entity_task);
     }
     catch (Hypertable::Exception &e) {
       HT_ERROR_OUT << e << HT_END;

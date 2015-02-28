@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2014 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -44,7 +44,7 @@ public interface Broker {
 
   void Read(ResponseCallbackRead cb, int fd, int amount);
 
-  void Write(ResponseCallbackWrite cb, int fd, int amount, byte [] data,
+  void Append(ResponseCallbackAppend cb, int fd, int amount, byte [] data,
              boolean sync);
 
   void PositionRead(ResponseCallbackPositionRead cb, int fd, long offset,
@@ -64,6 +64,10 @@ public interface Broker {
 
   void Rename(ResponseCallback cb, String src, String dst);
 
+  void Status(ResponseCallbackStatus cb);
+
   void Debug(ResponseCallback cb, int command, byte [] parmas);
+
+  void Shutdown();
 
 }

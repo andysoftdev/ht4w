@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,7 +27,7 @@
 
 namespace Hypertable {
 
-  class RangeServer;
+  namespace Apps { class RangeServer; }
 
   /**
    *

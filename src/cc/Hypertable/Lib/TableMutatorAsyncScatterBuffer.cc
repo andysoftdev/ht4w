@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -34,7 +34,6 @@
 #include <Hypertable/Lib/ClusterId.h>
 #include <Hypertable/Lib/Key.h>
 #include <Hypertable/Lib/KeySpec.h>
-#include <Hypertable/Lib/RangeServerClient.h>
 #include <Hypertable/Lib/Table.h>
 #include <Hypertable/Lib/TableMutatorAsyncDispatchHandler.h>
 #include <Hypertable/Lib/TableMutatorAsyncHandler.h>
@@ -247,7 +246,7 @@ void TableMutatorAsyncScatterBuffer::send(uint32_t flags) {
   SerializedKey key;
   SendRec send_rec;
   size_t len;
-  String range_location;
+  string range_location;
 
   HT_ASSERT(!m_outstanding);
   m_completion_counter.set(m_buffer_map.size());
@@ -290,8 +289,9 @@ void TableMutatorAsyncScatterBuffer::send(uint32_t flags) {
       }
       HT_ASSERT((size_t)(ptr-send_buffer->pending_updates.base)==len);
       send_buffer->dispatch_handler =
-        new TableMutatorAsyncDispatchHandler(m_app_queue, m_mutator, m_id, send_buffer.get(),
-                                             m_auto_refresh);
+        make_shared<TableMutatorAsyncDispatchHandler>(m_app_queue, m_mutator,
+                                                      m_id, send_buffer.get(),
+                                                      m_auto_refresh);
       send_buffer->send_count = send_buffer->key_offsets.size();
     }
 

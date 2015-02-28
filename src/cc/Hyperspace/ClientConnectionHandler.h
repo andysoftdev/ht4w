@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -56,19 +56,18 @@ namespace Hyperspace {
 
     int initiate_connection(struct sockaddr_in &addr) {
       ScopedRecLock lock(m_mutex);
-      DispatchHandlerPtr dhp(this);
       m_state = CONNECTING;
-      int error = m_comm->connect(addr, dhp);
+      int error = m_comm->connect(addr, shared_from_this());
 
       if (error == Error::COMM_ALREADY_CONNECTED) {
-        HT_WARNF("Connection attempt to Hyperspace.Master "
+        HT_WARNF("Connection attempt to htHyperspace "
                  "at %s - %s", InetAddr::format(addr).c_str(),
                  Error::get_text(error));
         error = Error::OK;
       }
 
       if (error != Error::OK) {
-        HT_ERRORF("Problem establishing TCP connection with Hyperspace.Master "
+        HT_ERRORF("Problem establishing TCP connection with htHyperspace "
                   "at %s - %s", InetAddr::format(addr).c_str(),
                   Error::get_text(error));
         m_comm->close_socket(addr);
@@ -97,7 +96,7 @@ namespace Hyperspace {
     bool m_callbacks_enabled;
   };
 
-  typedef intrusive_ptr<ClientConnectionHandler> ClientConnectionHandlerPtr;
+  typedef std::shared_ptr<ClientConnectionHandler> ClientConnectionHandlerPtr;
 
 } // namespace Hypertable
 

@@ -2,11 +2,11 @@
 
 HT_HOME=${INSTALL_DIR:-"/opt/hypertable/current"}
 HYPERTABLE_HOME=${HT_HOME}
-HT_SHELL=$HT_HOME/bin/hypertable
+HT_SHELL="$HT_HOME/bin/ht shell"
 SCRIPT_DIR=`dirname $0`
 MAX_KEYS=${MAX_KEYS:-"200000"}
-RS1_PIDFILE=$HT_HOME/run/Hypertable.RangeServer.rs1.pid
-RS2_PIDFILE=$HT_HOME/run/Hypertable.RangeServer.rs2.pid
+RS1_PIDFILE=$HT_HOME/run/RangeServer.rs1.pid
+RS2_PIDFILE=$HT_HOME/run/RangeServer.rs2.pid
 RUN_DIR=`pwd`
 
 . $HT_HOME/bin/ht-env.sh
@@ -14,7 +14,7 @@ RUN_DIR=`pwd`
 . $SCRIPT_DIR/utilities.sh
 
 kill_all_rs
-$HT_HOME/bin/stop-servers.sh
+$HT_HOME/bin/ht-stop-servers.sh
 
 # clear state
 \rm -rf $HT_HOME/log/*
@@ -24,15 +24,15 @@ $HT_HOME/bin/stop-servers.sh
 gen_test_data
 
 # start servers
-$HT_HOME/bin/start-test-servers.sh --no-rangeserver --no-thriftbroker \
+$HT_HOME/bin/ht-start-test-servers.sh --no-rangeserver --no-thriftbroker \
     --clear --config=${SCRIPT_DIR}/test.cfg
 
 # start both rangeservers
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS1_PIDFILE \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=$RS1_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs1 \
    --Hypertable.RangeServer.Port=15870 --config=${SCRIPT_DIR}/test.cfg 2>&1 > rangeserver.rs1.output&
 wait_for_server_connect
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS2_PIDFILE \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=$RS2_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs2 \
    --Hypertable.RangeServer.Port=15871 --config=${SCRIPT_DIR}/test.cfg 2>&1 > rangeserver.rs2.output&
 
@@ -55,8 +55,8 @@ sleep 2
 ${HT_HOME}/bin/ht shell --config=${SCRIPT_DIR}/test.cfg --no-prompt --exec "use sys; select Location from METADATA MAX_VERSIONS=1 into file '${RUN_DIR}/metadata.pre';"
 
 # dump ranges
-echo "dump nokeys '${RUN_DIR}/rs1_dump.pre'; quit;" | $HT_HOME/bin/ht rsclient localhost:15870
-echo "dump nokeys '${RUN_DIR}/rs2_dump.pre'; quit;" | $HT_HOME/bin/ht rsclient localhost:15871
+echo "dump nokeys '${RUN_DIR}/rs1_dump.pre'; quit;" | $HT_HOME/bin/ht rangeserver localhost:15870
+echo "dump nokeys '${RUN_DIR}/rs2_dump.pre'; quit;" | $HT_HOME/bin/ht rangeserver localhost:15871
 # copy state
 cp -R ${HT_HOME}/fs ${RUN_DIR}/fs_pre
 
@@ -67,12 +67,12 @@ stop_rs 1
 wait_for_recovery rs1
 
 # dump rs2 ranges
-echo "dump nokeys '${RUN_DIR}/rs2_dump.post'; quit;" | $HT_HOME/bin/ht rsclient localhost:15871
+echo "dump nokeys '${RUN_DIR}/rs2_dump.post'; quit;" | $HT_HOME/bin/ht rangeserver localhost:15871
 
 dump_keys dbdump-a.1
 if [ $? -ne 0 ] ; then
   kill_all_rs
-  $HT_HOME/bin/stop-servers.sh
+  $HT_HOME/bin/ht-stop-servers.sh
   exit 1
 fi
 
@@ -80,13 +80,13 @@ fi
 ${HT_HOME}/bin/ht shell --config=${SCRIPT_DIR}/test.cfg --no-prompt --exec "use sys; select Files,Location from METADATA MAX_VERSIONS=1 into file '${RUN_DIR}/metadata.post';"
 
 # bounce servers
-$HT_HOME/bin/stop-servers.sh
+$HT_HOME/bin/ht-stop-servers.sh
 kill_rs 2
 
 # start master and rs2
-$HT_HOME/bin/start-test-servers.sh --no-rangeserver --no-thriftbroker \
+$HT_HOME/bin/ht-start-test-servers.sh --no-rangeserver --no-thriftbroker \
     --config=${SCRIPT_DIR}/test.cfg
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=$RS2_PIDFILE \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=$RS2_PIDFILE \
    --Hypertable.RangeServer.ProxyName=rs2 \
    --Hypertable.RangeServer.Port=15871 --config=${SCRIPT_DIR}/test.cfg 2>&1 >> rangeserver.rs2.output&
 
@@ -96,12 +96,12 @@ ${HT_HOME}/bin/ht shell --config=${SCRIPT_DIR}/test.cfg --no-prompt --exec "use 
 dump_keys dbdump-b.1
 if [ $? -ne 0 ] ; then
   kill_all_rs
-  $HT_HOME/bin/stop-servers.sh
+  $HT_HOME/bin/ht-stop-servers.sh
   exit 1
 fi
 
 # stop servers
-$HT_HOME/bin/stop-servers.sh
+$HT_HOME/bin/ht-stop-servers.sh
 kill_rs 2
 
 # check output
@@ -114,7 +114,7 @@ if [ "$RS2_RANGES" -lt "$ORIGINAL_RANGES" ]
 then
   echo "Test failed, expected at least ${ORIGINAL_RANGES} on rs2, found ${RS2_RANGES}"
   mkdir failed-run-basic-1
-  cp $HT_HOME/log/Hypertable.Master.log rangeserver.rs1.output rangeserver.rs2.output \
+  cp $HT_HOME/log/Master.log rangeserver.rs1.output rangeserver.rs2.output \
       metadata.pre metadata.post failed-run-basic-1
   cp $HT_HOME/fs/local/hypertable/servers/rs1 failed-run-basic-1
   cp $HT_HOME/fs/local/hypertable/servers/rs2 failed-run-basic-1
@@ -129,7 +129,7 @@ then
 fi
 
 echo "Test passed"
-$HT_HOME/bin/stop-servers.sh
+$HT_HOME/bin/ht-stop-servers.sh
 kill_rs 2
 
 exit 0

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -18,7 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
+
+#include <Common/Compat.h>
+
+#include <Hypertable/Master/BalanceAlgorithmLoad.h>
+
+#include <Hypertable/Lib/Config.h>
+#include <Hypertable/Lib/Client.h>
+#include <Hypertable/Lib/BalancePlan.h>
+
+#include <Hyperspace/Session.h>
+
+#include <Common/Init.h>
+#include <Common/Error.h>
+#include <Common/System.h>
 
 #include <iostream>
 #include <fstream>
@@ -31,15 +44,6 @@ extern "C" {
 #include <stdio.h>
 #include <time.h>
 }
-
-#include "Common/Init.h"
-#include "Common/Error.h"
-#include "Common/System.h"
-
-#include "Hypertable/Lib/Config.h"
-#include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/BalancePlan.h"
-#include "Hypertable/Master/BalanceAlgorithmLoad.h"
 
 using namespace Hypertable;
 using namespace Hypertable::Config;
@@ -119,8 +123,9 @@ int main(int argc, char **argv) {
     ClientPtr client = new Hypertable::Client(System::install_dir);
     NamespacePtr ns = client->open_namespace(ns_str);
     TablePtr rs_metrics = ns->open_table(table_str);
-    BalancePlanPtr plan = new BalancePlan;
+    BalancePlanPtr plan = make_shared<BalancePlan>();
     ContextPtr context = new Context(properties);
+    context->rsc_manager.reset();
     context->rs_metrics_table = rs_metrics;
     generate_balance_plan(context->props, load_balancer, context, plan);
     ostream *oo;
@@ -188,7 +193,7 @@ void create_table(String &ns, String &table, String &rs_metrics_file) {
 ;
   // load from file
   String install_dir = System::install_dir;
-  String cmd_str = install_dir + (String)"/bin/hypertable --test-mode --exec \""+ hql + "\"";
+  String cmd_str = install_dir + (String)"/bin/ht_hypertable --test-mode --exec \""+ hql + "\"";
   if (verbose)
     HT_INFOF("Running command: %s", cmd_str.c_str());
   HT_EXPECT(::system(cmd_str.c_str()) == 0, Error::FAILED_EXPECTATION);

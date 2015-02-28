@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,15 +28,21 @@
 
 #include "CommitLogBlockStream.h"
 
+#include <FsBroker/Lib/Utility.h>
+
 #include <Common/Checksum.h>
+#include <Common/Config.h>
 #include <Common/Error.h>
 #include <Common/Logger.h>
+#include <Common/Path.h>
+#include <Common/StatusPersister.h>
 
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
 
 using namespace Hypertable;
+using namespace std;
 
 namespace {
   const uint32_t READAHEAD_BUFFER_SIZE = 131072;
@@ -53,7 +59,7 @@ CommitLogBlockStream::CommitLogBlockStream(FilesystemPtr &fs)
 
 
 CommitLogBlockStream::CommitLogBlockStream(FilesystemPtr &fs,
-    const String &log_dir, const String &fragment)
+    const string &log_dir, const string &fragment)
   : m_fs(fs), m_fd(-1), m_cur_offset(0), m_file_length(0) {
   load(log_dir, fragment);
 }
@@ -64,7 +70,7 @@ CommitLogBlockStream::~CommitLogBlockStream() {
 }
 
 
-void CommitLogBlockStream::load(const String &log_dir, const String &fragment) {
+void CommitLogBlockStream::load(const string &log_dir, const string &fragment) {
   if (m_fd != -1)
     close();
   m_fragment = fragment;
@@ -128,12 +134,17 @@ CommitLogBlockStream::next(CommitLogBlockInfo *infop,
 
   // check for truncation
   if ((m_file_length - m_cur_offset) < header->get_data_zlength()) {
-    HT_WARNF("Commit log fragment '%s' truncated (entry start position %llu)",
+    HT_WARNF("Commit log fragment '%s' truncated (block offset %llu)",
              m_fname.c_str(), (Llu)(m_cur_offset-header->encoded_length()));
     infop->end_offset = m_file_length;
     infop->error = Error::RANGESERVER_TRUNCATED_COMMIT_LOG;
-    m_cur_offset = m_file_length;
-    return true;
+    string archive_fname;
+    archive_bad_fragment(m_fname, archive_fname);
+    Status status(Status::Code::WARNING,
+                  format("Truncated commit log file %s", m_fname.c_str()));
+    StatusPersister::set(status,
+                         {format("File archived to %s",archive_fname.c_str())});
+    return false;
   }
 
   m_block_buffer.ensure(header->encoded_length() + header->get_data_zlength());
@@ -145,8 +156,13 @@ CommitLogBlockStream::next(CommitLogBlockInfo *infop,
              m_fname.c_str(), (Llu)(m_cur_offset-header->encoded_length()));
     infop->end_offset = m_file_length;
     infop->error = Error::RANGESERVER_TRUNCATED_COMMIT_LOG;
-    m_cur_offset = m_file_length;
-    return true;
+    string archive_fname;
+    archive_bad_fragment(m_fname, archive_fname);
+    Status status(Status::Code::WARNING,
+                  format("Truncated commit log file %s", m_fname.c_str()));
+    StatusPersister::set(status,
+                         {format("File archived to %s",archive_fname.c_str())});
+    return false;
   }
 
   m_block_buffer.ptr += nread;
@@ -191,7 +207,7 @@ CommitLogBlockStream::read_header(FilesystemPtr &fs, int32_t fd,
 
 void
 CommitLogBlockStream::write_header(FilesystemPtr &fs, int32_t fd) {
-  String header_str = format("CL%04u\f\n", (unsigned)LatestVersion);
+  string header_str = format("CL%04u\f\n", (unsigned)LatestVersion);
   StaticBuffer buf(HEADER_SIZE);
   HT_ASSERT(header_str.size() == HEADER_SIZE);
   memcpy(buf.base, header_str.c_str(), HEADER_SIZE);
@@ -204,9 +220,7 @@ uint64_t CommitLogBlockStream::header_size() {
 
 
 
-int
-CommitLogBlockStream::load_next_valid_header(
-    BlockHeaderCommitLog *header) {
+int CommitLogBlockStream::load_next_valid_header(BlockHeaderCommitLog *header) {
   size_t remaining = header->encoded_length();
   try {
     size_t nread = 0;
@@ -215,6 +229,8 @@ CommitLogBlockStream::load_next_valid_header(
     m_block_buffer.ptr = m_block_buffer.base;
 
     while ((nread = m_fs->read(m_fd, m_block_buffer.ptr, toread)) < toread) {
+      if (nread == 0)
+        HT_THROW(Error::RANGESERVER_TRUNCATED_COMMIT_LOG, "");
       toread -= nread;
       m_block_buffer.ptr += nread;
     }
@@ -224,10 +240,78 @@ CommitLogBlockStream::load_next_valid_header(
     m_cur_offset += header->encoded_length();
   }
   catch (Exception &e) {
-    HT_ERROR_OUT << e << HT_END;
-    if (ms_assert_on_error)
+    HT_WARN_OUT << e << HT_END;
+    if (e.code() == Error::FSBROKER_EOF ||
+        e.code() == Error::RANGESERVER_TRUNCATED_COMMIT_LOG ||
+        e.code() == Error::BLOCK_COMPRESSOR_TRUNCATED ||
+        e.code() == Error::BLOCK_COMPRESSOR_BAD_HEADER) {
+      string archive_fname;
+      archive_bad_fragment(m_fname, archive_fname);
+      string text;
+      if (e.code() == Error::BLOCK_COMPRESSOR_BAD_HEADER)
+        text = format("Corruption detected in commit log file %s at offset %lld",
+                      m_fname.c_str(), (Lld)m_cur_offset);
+      else
+        text = format("Truncated block header in commit log file %s",
+                      m_fname.c_str());
+      Status status(Status::Code::WARNING, text);
+      StatusPersister::set(status,
+                           { Error::get_text(e.code()),
+                             e.what(),
+                             format("File archived to %s", archive_fname.c_str()) });
+    }
+    else if (ms_assert_on_error)
       HT_ABORT;
     return e.code();
   }
   return Error::OK;
+}
+
+bool CommitLogBlockStream::archive_bad_fragment(const string &fname,
+                                                string &archive_fname) {
+  string archive_directory = Config::properties->get_str("Hypertable.Directory");
+  if (archive_directory.front() != '/')
+    archive_directory = string("/") + archive_directory;
+  if (archive_directory.back() != '/')
+    archive_directory.append("/");
+  archive_directory.append("backup");
+  archive_fname = archive_directory + fname;
+  archive_directory.append(Path(fname).parent_path().string());
+
+  // Create archive directory
+  try {
+    m_fs->mkdirs(archive_directory);
+  }
+  catch (Exception &e) {
+    HT_ERRORF("Problem creating backup directory %s - %s (%s)",
+              archive_directory.c_str(), Error::get_text(e.code()), e.what());
+    return false;
+  }
+
+  // Remove archive file if it already exists
+  try {
+    if (m_fs->exists(archive_fname))
+      m_fs->remove(archive_fname);
+  }
+  catch (Exception &e) {
+    HT_ERRORF("Problem checking existence of backup file %s - %s (%s)",
+              archive_fname.c_str(), Error::get_text(e.code()), e.what());
+    return false;
+  }
+
+  FsBroker::Lib::ClientPtr client = dynamic_pointer_cast<FsBroker::Lib::Client>(m_fs);
+  HT_ASSERT(client);
+
+  // Archive file
+  try {
+    FsBroker::Lib::copy(client, fname, archive_fname);
+  }
+  catch (Exception &e) {
+    HT_ERRORF("Problem copying file %s to %s - %s (%s)",
+              fname.c_str(), archive_fname.c_str(),
+              Error::get_text(e.code()), e.what());
+    return false;
+  }
+  
+  return true;
 }

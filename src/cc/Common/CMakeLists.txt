@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2014 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@ set(Common_SRCS
 Base64.cc
 Checksum.cc
 Config.cc
+ConsoleOutputSquelcher.cc
 Cronolog.cc
 Crontab.cc
 Crypto.cc
@@ -49,7 +50,10 @@ MurmurHash.cc
 Properties.cc
 Random.cc
 Regex.cc
+Serializable.cc
 SleepWakeNotifier.cc
+Status.cc
+StatusPersister.cc
 String.cc
 System.cc
 SystemInfo.cc
@@ -74,11 +78,8 @@ target_link_libraries(HyperCommon ${EXPAT_LIBRARIES} ${SIGAR_LIBRARIES}
   ${NCURSES_LIBRARY} ${CMAKE_THREAD_LIBS_INIT}
     ${RE2_LIBRARIES} ${MALLOC_LIBRARY} ${Libssl_LIBRARIES})
 
-add_executable(system_info system_info.cc)
-target_link_libraries(system_info HyperCommon)
-
-add_executable(ht_checksum ht_checksum.cc)
-target_link_libraries(ht_checksum HyperCommon)
+add_executable(ht_system_info system_info.cc)
+target_link_libraries(ht_system_info HyperCommon)
 
 add_executable(ht_wordstream ht_wordstream.cc)
 target_link_libraries(ht_wordstream HyperCommon)
@@ -105,6 +106,9 @@ add_executable(logging_test tests/logging_test.cc)
 target_link_libraries(logging_test HyperCommon)
 
 # serialization tests
+add_executable(Serializable_test tests/Serializable_test.cc)
+target_link_libraries(Serializable_test HyperCommon)
+
 add_executable(sertest tests/sertest.cc)
 target_link_libraries(sertest HyperCommon)
 
@@ -195,6 +199,7 @@ add_test(Common-Exception exception_test)
 add_test(Common-Exception escaper_test)
 add_test(Common-HostSpecification HostSpecification_test)
 add_test(Common-Logging logging_test)
+add_test(Common-Serializable Serializable_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/Serializable_test.golden)
 add_test(Common-Serialization sertest)
 add_test(Common-ScopeGuard scope_guard_test)
 add_test(Common-InetAddr inetaddr_test)
@@ -233,6 +238,6 @@ if (NOT HT_COMPONENT_INSTALL)
           LIBRARY DESTINATION lib
           ARCHIVE DESTINATION lib)
 
-  install(TARGETS system_info ht_checksum
+  install(TARGETS ht_system_info
           RUNTIME DESTINATION bin)
 endif ()

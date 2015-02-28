@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -54,8 +54,8 @@ using namespace std;
 /**
  *
  */
-LoadDataSourceFileLocal::LoadDataSourceFileLocal(const String &fname,
-  const String &header_fname, int row_uniquify_chars, int load_flags)
+LoadDataSourceFileLocal::LoadDataSourceFileLocal(const string &fname,
+  const string &header_fname, int row_uniquify_chars, int load_flags)
   : LoadDataSource(header_fname, row_uniquify_chars, load_flags),
     m_source(fname), m_fname(fname) {
 

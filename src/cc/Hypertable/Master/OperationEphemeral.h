@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -104,7 +104,7 @@ namespace Hypertable {
      * @note This method unconditionally asserts because it should not be called by
      * ephemeral operations.
      */
-    virtual size_t encoded_state_length() const {
+    size_t encoded_length_state() const override {
       HT_ASSERT(!"Ephemeral operation");
     }
 
@@ -112,7 +112,7 @@ namespace Hypertable {
      * @note This method unconditionally asserts because it should not be called by
      * ephemeral operations.
      */
-    virtual void encode_state(uint8_t **bufp) const {
+    void encode_state(uint8_t **bufp) const override {
       HT_ASSERT(!"Ephemeral operation");
     }
 
@@ -120,7 +120,15 @@ namespace Hypertable {
      * @note This method unconditionally asserts because it should not be called by
      * ephemeral operations.
      */
-    virtual void decode_state(const uint8_t **bufp, size_t *remainp) {
+    void decode_state(uint8_t version, const uint8_t **bufp, size_t *remainp) override {
+      HT_ASSERT(!"Ephemeral operation");
+    }
+
+    /** Decode operation state.
+     * @note This method unconditionally asserts because it should not be called by
+     * ephemeral operations.
+     */
+    void decode_state_old(uint8_t version, const uint8_t **bufp, size_t *remainp) override {
       HT_ASSERT(!"Ephemeral operation");
     }
 
@@ -128,32 +136,7 @@ namespace Hypertable {
      * @note This method unconditionally asserts because it should not be called by
      * ephemeral operations.
      */
-    virtual uint16_t encoding_version() const {
-      HT_ASSERT(!"Ephemeral operation");
-    }
-
-    /** Length of encoded operation.
-     * @note This method unconditionally asserts because it should not be called by
-     * ephemeral operations.
-     */
-    virtual size_t encoded_length() const {
-      HT_ASSERT(!"Ephemeral operation");
-    }
-
-    /** Encode operation.
-     * @note This method unconditionally asserts because it should not be called by
-     * ephemeral operations.
-     */
-    virtual void encode(uint8_t **bufp) const {
-      HT_ASSERT(!"Ephemeral operation");
-    }
-
-    /** Decode operation.
-     * @note This method unconditionally asserts because it should not be called by
-     * ephemeral operations.
-     */
-    virtual void decode(const uint8_t **bufp, size_t *remainp,
-                        uint16_t definition_version) {
+    uint8_t encoding_version_state() const override {
       HT_ASSERT(!"Ephemeral operation");
     }
 

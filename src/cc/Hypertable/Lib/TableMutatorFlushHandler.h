@@ -1,5 +1,5 @@
-/** -*- C++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,7 +27,7 @@
 namespace Hypertable {
 
 struct TableMutatorFlushHandler: ApplicationHandler {
-  TableMutatorFlushHandler(TableMutatorIntervalHandler *interval_handler,
+  TableMutatorFlushHandler(TableMutatorIntervalHandlerPtr &interval_handler,
                            EventPtr &event)
     : ApplicationHandler(event), interval_handler(interval_handler) { }
 

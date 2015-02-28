@@ -89,21 +89,25 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ht_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ht_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ht_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>ht_$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -115,6 +119,8 @@
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,6 +143,8 @@
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -165,6 +173,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -195,6 +205,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

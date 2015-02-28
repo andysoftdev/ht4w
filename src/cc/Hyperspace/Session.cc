@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -74,7 +74,8 @@ Session::Session(Comm *comm, PropertiesPtr &cfg)
   boost::xtime_get(&m_expire_time, boost::TIME_UTC_);
   xtime_add_millis(m_expire_time, m_grace_period);
 
-  m_keepalive_handler_ptr = new ClientKeepaliveHandler(m_comm, m_cfg, this);
+  m_keepalive_handler_ptr = std::make_shared<ClientKeepaliveHandler>(m_comm, m_cfg, this);
+  m_keepalive_handler_ptr->start();
 
   function<void()> sleep_callback = [this]() -> void {this->handle_sleep();};
   function<void()> wakeup_callback = [this]() -> void {this->handle_wakeup();};
@@ -1158,7 +1159,7 @@ String Session::locate(int type) {
 
 /*
  */
-int Session::status(Timer *timer) {
+int Session::status(Status &status, Timer *timer) {
   DispatchHandlerSynchronizer sync_handler;
   EventPtr event_ptr;
   CommBufPtr cbuf_ptr(Protocol::create_status_request());
@@ -1166,6 +1167,12 @@ int Session::status(Timer *timer) {
   if (error == Error::OK) {
     if (!sync_handler.wait_for_reply(event_ptr))
       error = (int)Protocol::response_code(event_ptr);
+    else {
+      const uint8_t *ptr = event_ptr->payload + 4;
+      size_t remain = event_ptr->payload_len - 4;
+      status.decode(&ptr, &remain);
+      error = Error::OK;
+    }
   }
   return error;
 }
@@ -1377,7 +1384,7 @@ Session::send_message(CommBufPtr &cbuf_ptr, DispatchHandler *handler,
       handler)) != Error::OK) {
     std::string str;
     if (!m_silent)
-      HT_WARNF("Comm::send_request to Hypertable.Master at %s failed - %s",
+      HT_WARNF("Comm::send_request to htHyperspace at %s failed - %s",
                m_master_addr.format().c_str(), Error::get_text(error));
   }
   return error;

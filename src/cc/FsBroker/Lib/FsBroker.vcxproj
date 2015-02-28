@@ -32,32 +32,57 @@
     <ClCompile Include="FileDevice.cc" />
     <ClCompile Include="EmbeddedFilesystem.cc" />
     <ClCompile Include="MetricsHandler.cc" />
-    <ClCompile Include="Protocol.cc" />
-    <ClCompile Include="RequestHandlerAppend.cc" />
-    <ClCompile Include="RequestHandlerClose.cc" />
-    <ClCompile Include="RequestHandlerCreate.cc" />
-    <ClCompile Include="RequestHandlerDebug.cc" />
-    <ClCompile Include="RequestHandlerExists.cc" />
-    <ClCompile Include="RequestHandlerFlush.cc" />
-    <ClCompile Include="RequestHandlerLength.cc" />
-    <ClCompile Include="RequestHandlerMkdirs.cc" />
-    <ClCompile Include="RequestHandlerOpen.cc" />
-    <ClCompile Include="RequestHandlerPosixReaddir.cc" />
-    <ClCompile Include="RequestHandlerPread.cc" />
-    <ClCompile Include="RequestHandlerRead.cc" />
-    <ClCompile Include="RequestHandlerReaddir.cc" />
-    <ClCompile Include="RequestHandlerRemove.cc" />
-    <ClCompile Include="RequestHandlerRename.cc" />
-    <ClCompile Include="RequestHandlerRmdir.cc" />
-    <ClCompile Include="RequestHandlerSeek.cc" />
-    <ClCompile Include="RequestHandlerStatus.cc" />
-    <ClCompile Include="ResponseCallbackAppend.cc" />
-    <ClCompile Include="ResponseCallbackExists.cc" />
-    <ClCompile Include="ResponseCallbackLength.cc" />
-    <ClCompile Include="ResponseCallbackOpen.cc" />
-    <ClCompile Include="ResponseCallbackPosixReaddir.cc" />
-    <ClCompile Include="ResponseCallbackRead.cc" />
-    <ClCompile Include="ResponseCallbackReaddir.cc" />
+    <ClCompile Include="Request\Handler\Append.cc" />
+    <ClCompile Include="Request\Handler\Close.cc" />
+    <ClCompile Include="Request\Handler\Create.cc" />
+    <ClCompile Include="Request\Handler\Debug.cc" />
+    <ClCompile Include="Request\Handler\Exists.cc" />
+    <ClCompile Include="Request\Handler\Factory.cc" />
+    <ClCompile Include="Request\Handler\Flush.cc" />
+    <ClCompile Include="Request\Handler\Length.cc" />
+    <ClCompile Include="Request\Handler\Mkdirs.cc" />
+    <ClCompile Include="Request\Handler\Open.cc" />
+    <ClCompile Include="Request\Handler\Pread.cc" />
+    <ClCompile Include="Request\Handler\Read.cc" />
+    <ClCompile Include="Request\Handler\Readdir.cc" />
+    <ClCompile Include="Request\Handler\Remove.cc" />
+    <ClCompile Include="Request\Handler\Rename.cc" />
+    <ClCompile Include="Request\Handler\Rmdir.cc" />
+    <ClCompile Include="Request\Handler\Seek.cc" />
+    <ClCompile Include="Request\Handler\Status.cc" />
+    <ClCompile Include="Request\Parameters\Append.cc" />
+    <ClCompile Include="Request\Parameters\Close.cc" />
+    <ClCompile Include="Request\Parameters\Create.cc" />
+    <ClCompile Include="Request\Parameters\Debug.cc" />
+    <ClCompile Include="Request\Parameters\Exists.cc" />
+    <ClCompile Include="Request\Parameters\Flush.cc" />
+    <ClCompile Include="Request\Parameters\Length.cc" />
+    <ClCompile Include="Request\Parameters\Mkdirs.cc" />
+    <ClCompile Include="Request\Parameters\Open.cc" />
+    <ClCompile Include="Request\Parameters\Pread.cc" />
+    <ClCompile Include="Request\Parameters\Read.cc" />
+    <ClCompile Include="Request\Parameters\Readdir.cc" />
+    <ClCompile Include="Request\Parameters\Remove.cc" />
+    <ClCompile Include="Request\Parameters\Rename.cc" />
+    <ClCompile Include="Request\Parameters\Rmdir.cc" />
+    <ClCompile Include="Request\Parameters\Seek.cc" />
+    <ClCompile Include="Request\Parameters\Shutdown.cc" />
+    <ClCompile Include="Response\Callback\Append.cc" />
+    <ClCompile Include="Response\Callback\Exists.cc" />
+    <ClCompile Include="Response\Callback\Length.cc" />
+    <ClCompile Include="Response\Callback\Open.cc" />
+    <ClCompile Include="Response\Callback\Read.cc" />
+    <ClCompile Include="Response\Callback\Readdir.cc" />
+    <ClCompile Include="Response\Callback\Status.cc" />
+    <ClCompile Include="Response\Parameters\Append.cc" />
+    <ClCompile Include="Response\Parameters\Exists.cc" />
+    <ClCompile Include="Response\Parameters\Length.cc" />
+    <ClCompile Include="Response\Parameters\Open.cc" />
+    <ClCompile Include="Response\Parameters\Read.cc" />
+    <ClCompile Include="Response\Parameters\Readdir.cc" />
+    <ClCompile Include="Response\Parameters\Status.cc" />
+    <ClCompile Include="StatusManager.cc" />
+    <ClCompile Include="Utility.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Broker.h" />
@@ -70,32 +95,57 @@
     <ClInclude Include="EmbeddedFilesystem.h" />
     <ClInclude Include="MetricsHandler.h" />
     <ClInclude Include="OpenFileMap.h" />
-    <ClInclude Include="Protocol.h" />
-    <ClInclude Include="RequestHandlerAppend.h" />
-    <ClInclude Include="RequestHandlerClose.h" />
-    <ClInclude Include="RequestHandlerCreate.h" />
-    <ClInclude Include="RequestHandlerDebug.h" />
-    <ClInclude Include="RequestHandlerExists.h" />
-    <ClInclude Include="RequestHandlerFlush.h" />
-    <ClInclude Include="RequestHandlerLength.h" />
-    <ClInclude Include="RequestHandlerMkdirs.h" />
-    <ClInclude Include="RequestHandlerOpen.h" />
-    <ClInclude Include="RequestHandlerPosixReaddir.h" />
-    <ClInclude Include="RequestHandlerPread.h" />
-    <ClInclude Include="RequestHandlerRead.h" />
-    <ClInclude Include="RequestHandlerReaddir.h" />
-    <ClInclude Include="RequestHandlerRemove.h" />
-    <ClInclude Include="RequestHandlerRename.h" />
-    <ClInclude Include="RequestHandlerRmdir.h" />
-    <ClInclude Include="RequestHandlerSeek.h" />
-    <ClInclude Include="RequestHandlerStatus.h" />
-    <ClInclude Include="ResponseCallbackAppend.h" />
-    <ClInclude Include="ResponseCallbackExists.h" />
-    <ClInclude Include="ResponseCallbackLength.h" />
-    <ClInclude Include="ResponseCallbackOpen.h" />
-    <ClInclude Include="ResponseCallbackPosixReaddir.h" />
-    <ClInclude Include="ResponseCallbackRead.h" />
-    <ClInclude Include="ResponseCallbackReaddir.h" />
+    <ClInclude Include="Request\Handler\Append.h" />
+    <ClInclude Include="Request\Handler\Close.h" />
+    <ClInclude Include="Request\Handler\Create.h" />
+    <ClInclude Include="Request\Handler\Debug.h" />
+    <ClInclude Include="Request\Handler\Exists.h" />
+    <ClInclude Include="Request\Handler\Factory.h" />
+    <ClInclude Include="Request\Handler\Flush.h" />
+    <ClInclude Include="Request\Handler\Length.h" />
+    <ClInclude Include="Request\Handler\Mkdirs.h" />
+    <ClInclude Include="Request\Handler\Open.h" />
+    <ClInclude Include="Request\Handler\Pread.h" />
+    <ClInclude Include="Request\Handler\Read.h" />
+    <ClInclude Include="Request\Handler\Readdir.h" />
+    <ClInclude Include="Request\Handler\Remove.h" />
+    <ClInclude Include="Request\Handler\Rename.h" />
+    <ClInclude Include="Request\Handler\Rmdir.h" />
+    <ClInclude Include="Request\Handler\Seek.h" />
+    <ClInclude Include="Request\Handler\Status.h" />
+    <ClInclude Include="Request\Parameters\Append.h" />
+    <ClInclude Include="Request\Parameters\Close.h" />
+    <ClInclude Include="Request\Parameters\Create.h" />
+    <ClInclude Include="Request\Parameters\Debug.h" />
+    <ClInclude Include="Request\Parameters\Exists.h" />
+    <ClInclude Include="Request\Parameters\Flush.h" />
+    <ClInclude Include="Request\Parameters\Length.h" />
+    <ClInclude Include="Request\Parameters\Mkdirs.h" />
+    <ClInclude Include="Request\Parameters\Open.h" />
+    <ClInclude Include="Request\Parameters\Pread.h" />
+    <ClInclude Include="Request\Parameters\Read.h" />
+    <ClInclude Include="Request\Parameters\Readdir.h" />
+    <ClInclude Include="Request\Parameters\Remove.h" />
+    <ClInclude Include="Request\Parameters\Rename.h" />
+    <ClInclude Include="Request\Parameters\Rmdir.h" />
+    <ClInclude Include="Request\Parameters\Seek.h" />
+    <ClInclude Include="Request\Parameters\Shutdown.h" />
+    <ClInclude Include="Response\Callback\Append.h" />
+    <ClInclude Include="Response\Callback\Exists.h" />
+    <ClInclude Include="Response\Callback\Length.h" />
+    <ClInclude Include="Response\Callback\Open.h" />
+    <ClInclude Include="Response\Callback\Read.h" />
+    <ClInclude Include="Response\Callback\Readdir.h" />
+    <ClInclude Include="Response\Callback\Status.h" />
+    <ClInclude Include="Response\Parameters\Append.h" />
+    <ClInclude Include="Response\Parameters\Exists.h" />
+    <ClInclude Include="Response\Parameters\Length.h" />
+    <ClInclude Include="Response\Parameters\Open.h" />
+    <ClInclude Include="Response\Parameters\Read.h" />
+    <ClInclude Include="Response\Parameters\Readdir.h" />
+    <ClInclude Include="Response\Parameters\Status.h" />
+    <ClInclude Include="StatusManager.h" />
+    <ClInclude Include="Utility.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{570AC1AD-A4F5-4680-839B-F0FF2C8C2796}</ProjectGuid>
@@ -173,6 +223,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -191,6 +243,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -214,6 +268,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -239,6 +295,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

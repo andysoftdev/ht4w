@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -271,7 +271,7 @@ namespace Hypertable {
      *  @return true on success, false on error
      */
     static bool expand_tilde(String &fname);
-    
+
 #ifndef _WIN32
 
     /** Reads all directory entries, applies a regular expression and returns
@@ -285,7 +285,6 @@ namespace Hypertable {
      */
     static void readdir(const String &dirname, const String &fname_regex,
 			std::vector<struct dirent> &listing);
-			
 
 #else
 

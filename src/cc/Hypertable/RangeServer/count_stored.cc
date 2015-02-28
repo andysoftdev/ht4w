@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -103,8 +103,8 @@ int main(int argc, char **argv) {
     // Create Hypertable client object
     ClientPtr hypertable_client = new Hypertable::Client(argv[0]);
     NamespacePtr ns = hypertable_client->open_namespace("/");
-    ConnectionManagerPtr conn_mgr = new ConnectionManager();
-    FsBroker::Client *dfs = new FsBroker::Client(conn_mgr, properties);
+    ConnectionManagerPtr conn_mgr = make_shared<ConnectionManager>();
+    FsBroker::Lib::ClientPtr dfs = std::make_shared<FsBroker::Lib::Client>(conn_mgr, properties);
 
     Global::dfs = dfs;
 

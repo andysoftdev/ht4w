@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,8 +25,6 @@
 
 #include "AsyncComm/ResponseCallback.h"
 #include "Common/Serialization.h"
-
-#include "Hypertable/Lib/Types.h"
 
 #include "Hyperspace/Master.h"
 #include "RequestHandlerExists.h"

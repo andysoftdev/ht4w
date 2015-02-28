@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -70,7 +70,7 @@ namespace Hypertable {
     virtual ~BlockCompressionCodec() { }
 
     /// Compresses a buffer.
-    /// @param intput Input buffer
+    /// @param input Input buffer
     /// @param output Output buffer
     /// @param header Block header populated by function
     /// @param reserve Additional space to reserve at end of <code>output</code>
@@ -78,7 +78,7 @@ namespace Hypertable {
                          BlockHeader &header, size_t reserve=0) = 0;
 
     /// Decompresses a buffer.
-    /// @param intput Input buffer
+    /// @param input Input buffer
     /// @param output Output buffer
     /// @param header Block header
     virtual void inflate(const DynamicBuffer &input, DynamicBuffer &output,
@@ -90,7 +90,7 @@ namespace Hypertable {
     /// @param args Compressor specific arguments
     /// @throws Exception Code set to Error::BLOCK_COMPRESSOR_INVALID_ARG
     virtual void set_args(const Args &args) {
-      foreach_ht (const String &arg, args)
+      foreach_ht (const std::string &arg, args)
         HT_THROWF(Error::BLOCK_COMPRESSOR_INVALID_ARG, "Unrecognized argument "
                   "to %s codec: '%s'", get_compressor_name(get_type()),
                   arg.c_str());

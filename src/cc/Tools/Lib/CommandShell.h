@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -22,18 +22,28 @@
 #ifndef HYPERTABLE_COMMAND_SHELL_H
 #define HYPERTABLE_COMMAND_SHELL_H
 
-#include "Common/ReferenceCount.h"
-#include "Common/Properties.h"
-
 #include "CommandInterpreter.h"
 #include "Notifier.h"
+
+#include <Common/Config.h>
+#include <Common/Properties.h>
+#include <Common/ReferenceCount.h>
+
+#ifndef _WIN32
+#include <histedit.h>
+#endif
+
+#include <string>
 
 namespace Hypertable {
 
   class CommandShell : public ReferenceCount {
   public:
-    CommandShell(const String &program_name, CommandInterpreterPtr &,
-                 PropertiesPtr &);
+    CommandShell(const std::string &prompt_str, const std::string &service_name,
+                 CommandInterpreterPtr &, PropertiesPtr &);
+
+    ~CommandShell();
+
     int run();
 
     bool silent() { return m_silent; }
@@ -43,40 +53,56 @@ namespace Hypertable {
 
     static void add_options(PropertiesDesc &);
 
-#ifndef _WIN32
-
     static String ms_history_file;
 
+  private:
+    char *rl_gets();
+    static CommandShell *ms_instance;
+#ifndef _WIN32
+    static const wchar_t *prompt(EditLine *el);
 #endif
 
-  private:
-    char *rl_gets ();
-
-    String m_program_name;
     CommandInterpreterPtr m_interp_ptr;
     PropertiesPtr m_props;
     NotifierPtr m_notifier_ptr;
 
     String m_accum;
     bool m_verbose {};
-    bool m_batch_mode;
-    bool m_silent;
-    bool m_test_mode;
-    bool m_no_prompt;
+    bool m_batch_mode {};
+    bool m_silent {};
+    bool m_test_mode {};
+    bool m_no_prompt {};
     bool m_line_command_mode {};
-    bool m_cont;
-    char *m_line_read;
-    bool m_notify;
-    bool m_has_cmd_file;
-    bool m_has_cmd_exec;
+    bool m_cont {};
+    char *m_line_read {};
+    bool m_notify {};
+    bool m_has_cmd_file {};
+    bool m_has_cmd_exec {};
     String m_input_str;
-    String m_prompt_str;
+    std::string m_prompt;
+#ifndef _WIN32
+    std::wstring m_wprompt;
+#endif
+    std::string m_service_name;
     String m_cmd_str;
     String m_cmd_file;
     String m_namespace;
+#ifndef _WIN32
+    EditLine *m_editline;
+    HistoryW *m_history;
+    HistEventW m_history_event;
+    TokenizerW *m_tokenizer;
+#endif
   };
 
   typedef intrusive_ptr<CommandShell> CommandShellPtr;
+
+  struct CommandShellPolicy : Config::Policy {
+    static void init_options() {
+      CommandShell::add_options(Config::cmdline_desc());
+    }
+  };
+
 
 } // namespace Hypertable
 

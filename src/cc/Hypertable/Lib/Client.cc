@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -20,13 +20,13 @@
  */
 
 #include <Common/Compat.h>
+
 #include "Client.h"
+#include "Master/NamespaceFlag.h"
 
 #include <Hypertable/Lib/Config.h>
 #include <Hypertable/Lib/ClusterId.h>
 #include <Hypertable/Lib/HqlCommandInterpreter.h>
-
-#include <Hypertable/Master/Operation.h>
 
 #include <Hyperspace/DirEntry.h>
 #include <Hypertable/Lib/Config.h>
@@ -57,7 +57,7 @@ using namespace Hypertable;
 using namespace Hyperspace;
 using namespace Config;
 
-Client::Client(const String &install_dir, const String &config_file,
+Client::Client(const string &install_dir, const string &config_file,
                uint32_t default_timeout_ms)
   : m_connection_timeout_ms(default_timeout_ms), m_timeout_ms(default_timeout_ms),
     m_install_dir(install_dir) {
@@ -70,7 +70,7 @@ Client::Client(const String &install_dir, const String &config_file,
   initialize();
 }
 
-Client::Client(const String &install_dir, uint32_t default_timeout_ms)
+Client::Client(const string &install_dir, uint32_t default_timeout_ms)
   : m_connection_timeout_ms(default_timeout_ms), m_timeout_ms(default_timeout_ms),
     m_install_dir(install_dir) {
   ScopedRecLock lock(rec_mutex);
@@ -104,23 +104,22 @@ Client::Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hypersp
   }
   else {
     m_comm = Comm::instance();
-    m_conn_manager = new ConnectionManager(m_comm);
+    m_conn_manager = std::make_shared<ConnectionManager>(m_comm);
   }
   m_hyperspace = session ? session : new Hyperspace::Session(m_comm, m_props);
   initialize_with_hyperspace();
 }
 
+void Client::create_namespace(const string &name, Namespace *base, bool create_intermediate, bool if_not_exists) {
 
-void Client::create_namespace(const String &name, Namespace *base, bool create_intermediate, bool if_not_exists) {
-
-  String full_name;
-  String sub_name = name;
+  string full_name;
+  string sub_name = name;
   int flags=0;
 
   if (create_intermediate)
-    flags |= NamespaceFlag::CREATE_INTERMEDIATE;
+    flags |= Lib::Master::NamespaceFlag::CREATE_INTERMEDIATE;
   if (if_not_exists)
-    flags |= NamespaceFlag::IF_NOT_EXISTS;
+    flags |= Lib::Master::NamespaceFlag::IF_NOT_EXISTS;
 
   if (base != NULL) {
     full_name = base->get_name() + '/';
@@ -131,9 +130,9 @@ void Client::create_namespace(const String &name, Namespace *base, bool create_i
   m_master_client->create_namespace(full_name, flags);
 }
 
-NamespacePtr Client::open_namespace(const String &name, Namespace *base) {
-  String full_name;
-  String sub_name = name;
+NamespacePtr Client::open_namespace(const string &name, Namespace *base) {
+  string full_name;
+  string sub_name = name;
 
   Namespace::canonicalize(&sub_name);
 
@@ -146,11 +145,11 @@ NamespacePtr Client::open_namespace(const String &name, Namespace *base) {
   return m_namespace_cache->get(full_name);
 }
 
-bool Client::exists_namespace(const String &name, Namespace *base) {
-  String id;
+bool Client::exists_namespace(const string &name, Namespace *base) {
+  string id;
   bool is_namespace = false;
-  String full_name;
-  String sub_name = name;
+  string full_name;
+  string sub_name = name;
 
   Namespace::canonicalize(&sub_name);
 
@@ -165,7 +164,7 @@ bool Client::exists_namespace(const String &name, Namespace *base) {
 
   // TODO: issue 11
 
-  String namespace_file = m_toplevel_dir + "/tables/" + id;
+  string namespace_file = m_toplevel_dir + "/tables/" + id;
 
   try {
     return m_hyperspace->exists(namespace_file);
@@ -175,9 +174,9 @@ bool Client::exists_namespace(const String &name, Namespace *base) {
   }
 }
 
-void Client::drop_namespace(const String &name, Namespace *base, bool if_exists) {
-  String full_name;
-  String sub_name = name;
+void Client::drop_namespace(const string &name, Namespace *base, bool if_exists) {
+  string full_name;
+  string sub_name = name;
 
   Namespace::canonicalize(&sub_name);
 
@@ -192,7 +191,8 @@ void Client::drop_namespace(const String &name, Namespace *base, bool if_exists)
   full_name += sub_name;
 
   m_namespace_cache->remove(full_name);
-  m_master_client->drop_namespace(full_name, if_exists);
+  int32_t flags = if_exists ? Lib::Master::NamespaceFlag::IF_EXISTS : 0;
+  m_master_client->drop_namespace(full_name, flags);
 }
 
 Hyperspace::SessionPtr& Client::get_hyperspace_session()
@@ -200,7 +200,7 @@ Hyperspace::SessionPtr& Client::get_hyperspace_session()
   return m_hyperspace;
 }
 
-MasterClientPtr Client::get_master_client() {
+Lib::Master::ClientPtr Client::get_master_client() {
   return m_master_client;
 }
 
@@ -224,7 +224,7 @@ HqlInterpreter *Client::create_hql_interpreter(bool immutable_namespace) {
 // ------------- PRIVATE METHODS -----------------
 void Client::initialize() {
   m_comm = Comm::instance();
-  m_conn_manager = new ConnectionManager(m_comm);
+  m_conn_manager = make_shared<ConnectionManager>(m_comm);
   m_hyperspace = new Hyperspace::Session(m_comm, m_props);
   initialize_with_hyperspace();
 }
@@ -264,10 +264,12 @@ void Client::initialize_with_hyperspace() {
 
   m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
 
-  m_app_queue = new ApplicationQueue(m_props->
-                                     get_i32("Hypertable.Client.Workers"));
-  m_master_client = new MasterClient(m_conn_manager, m_hyperspace, m_toplevel_dir,
-                                     m_timeout_ms, m_app_queue);
+  m_app_queue =
+    make_shared<ApplicationQueue>(m_props->get_i32("Hypertable.Client.Workers"));
+  m_master_client =
+    new Lib::Master::Client(m_conn_manager, m_hyperspace, m_toplevel_dir,
+                            m_timeout_ms, m_app_queue,
+                            DispatchHandlerPtr(), ConnectionInitializerPtr());
 
   if (!m_master_client->wait_for_connection(timer))
     HT_THROW(Error::REQUEST_TIMEOUT, "Waiting for Master connection");

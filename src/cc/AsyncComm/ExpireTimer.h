@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,8 +25,8 @@
  * holding timer state.
  */
 
-#ifndef HYPERTABLE_EXPIRE_TIMER_H
-#define HYPERTABLE_EXPIRE_TIMER_H
+#ifndef AsyncComm_EXPIRE_TIMER_H
+#define AsyncComm_EXPIRE_TIMER_H
 
 #include <boost/thread/xtime.hpp>
 
@@ -61,4 +61,4 @@ namespace Hypertable {
   /** @}*/
 }
 
-#endif // HYPERTABLE_ExpireTimer_H
+#endif // AsyncComm_ExpireTimer_H

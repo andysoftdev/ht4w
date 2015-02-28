@@ -53,21 +53,21 @@ function grep_or_exit_if_not_found()
 \rm -rf $HT_HOME/log/*
 
 # start the cluster with 3 RangeServers and load them with data
-$HT_HOME/bin/start-test-servers.sh --clear --no-thriftbroker --no-rangeserver \
+$HT_HOME/bin/ht-start-test-servers.sh --clear --no-thriftbroker --no-rangeserver \
      --Hypertable.Monitoring.Interval=3000
 sleep 5
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=rs1.pid \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=rs1.pid \
      --Hypertable.RangeServer.ProxyName=rs1 \
      --Hypertable.RangeServer.Port=15870 \
      --Hypertable.RangeServer.Maintenance.Interval 100 \
      --Hypertable.RangeServer.Range.SplitSize=400K 2>1 > rangeserver.rs1.output&
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=rs2.pid \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=rs2.pid \
      --Hypertable.RangeServer.ProxyName=rs2 \
      --Hypertable.RangeServer.Port=15871 \
      --induce-failure=fsstat-disk-full:signal:0 \
      --Hypertable.RangeServer.Maintenance.Interval 100 \
      --Hypertable.RangeServer.Range.SplitSize=400K 2>1 > rangeserver.rs2.output&
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=rs3.pid \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=rs3.pid \
      --Hypertable.RangeServer.ProxyName=rs3 \
      --Hypertable.RangeServer.Port=15872 \
      --induce-failure=fsstat-disk-full:signal:0 \
@@ -92,12 +92,12 @@ ${HT_HOME}/bin/ht shell --no-prompt --exec "BALANCE ALGORITHM='TABLE_RANGES';"
 sleep 15
 
 # make sure that no range was moved to rs2
-grep_or_exit_if_found "dest_location=rs2" $HT_HOME/log/Hypertable.Master.log
-grep_or_exit_if_found "dest_location=rs3" $HT_HOME/log/Hypertable.Master.log
+grep_or_exit_if_found "dest_location=rs2" $HT_HOME/log/Master.log
+grep_or_exit_if_found "dest_location=rs3" $HT_HOME/log/Master.log
 grep_or_exit_if_not_found "RangeServer rs2: disk use 100% exceeds threshold" \
-    $HT_HOME/log/Hypertable.Master.log
+    $HT_HOME/log/Master.log
 grep_or_exit_if_not_found "RangeServer rs3: disk use 100% exceeds threshold" \
-    $HT_HOME/log/Hypertable.Master.log
+    $HT_HOME/log/Master.log
 
 # once more dump all keys
 ${HT_HOME}/bin/ht shell --no-prompt --Hypertable.Request.Timeout=30000 --exec "USE '/'; SELECT * FROM BalanceTest KEYS_ONLY INTO FILE 'dump.post';"

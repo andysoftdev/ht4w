@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -34,6 +34,7 @@
 #include <Hypertable/RangeServer/MetaLogEntityTaskAcknowledgeRelinquish.h>
 #include <Hypertable/RangeServer/MetadataNormal.h>
 #include <Hypertable/RangeServer/MetadataRoot.h>
+#include <Hypertable/RangeServer/TransferLog.h>
 
 #include <Hypertable/Lib/CommitLog.h>
 #include <Hypertable/Lib/CommitLogReader.h>
@@ -67,42 +68,26 @@ using namespace Hypertable;
 using namespace std;
 
 
-Range::Range(MasterClientPtr &master_client,
-             const TableIdentifier *identifier, SchemaPtr &schema,
-             const RangeSpec *range, RangeSet *range_set,
-             const RangeState *state, bool needs_compaction)
-  : m_scans(0), m_cells_scanned(0), m_cells_returned(0), m_cells_written(0),
-    m_updates(0), m_bytes_scanned(0), m_bytes_returned(0), m_bytes_written(0),
-    m_disk_bytes_read(0), m_master_client(master_client),
-    m_hints_file(identifier->id, range->start_row, range->end_row),
-    m_schema(schema),m_revision(TIMESTAMP_MIN),m_latest_revision(TIMESTAMP_MIN),
-    m_split_off_high(false), m_unsplittable(false), m_added_inserts(0),
-    m_range_set(range_set), m_error(Error::OK),
-    m_compaction_type_needed(0), m_maintenance_generation(0),
-    m_load_metrics(identifier->id, range->start_row, range->end_row),
-    m_dropped(false), m_capacity_exceeded_throttle(false), m_relinquish(false),
-    m_initialized(false) {
-  m_metalog_entity = new MetaLogEntityRange(*identifier, *range, *state, needs_compaction);
+Range::Range(Lib::Master::ClientPtr &master_client,
+             const TableIdentifier &identifier, SchemaPtr &schema,
+             const RangeSpec &range, RangeSet *range_set,
+             const RangeState &state, bool needs_compaction)
+  : m_master_client(master_client),
+    m_hints_file(identifier.id, range.start_row, range.end_row),
+    m_schema(schema), m_range_set(range_set),
+    m_load_metrics(identifier.id, range.start_row, range.end_row) {
+  m_metalog_entity = make_shared<MetaLogEntityRange>(identifier, range, state, needs_compaction);
   initialize();
 }
 
-Range::Range(MasterClientPtr &master_client, SchemaPtr &schema,
-             MetaLogEntityRange *range_entity, RangeSet *range_set)
-  : m_scans(0), m_cells_scanned(0), m_cells_returned(0), m_cells_written(0),
-    m_updates(0), m_bytes_scanned(0), m_bytes_returned(0), m_bytes_written(0),
-    m_disk_bytes_read(0), m_master_client(master_client),
-    m_metalog_entity(range_entity), 
+Range::Range(Lib::Master::ClientPtr &master_client, SchemaPtr &schema,
+             MetaLogEntityRangePtr &range_entity, RangeSet *range_set)
+  : m_master_client(master_client),  m_metalog_entity(range_entity), 
     m_hints_file(range_entity->get_table_id(), range_entity->get_start_row(),
                  range_entity->get_end_row()),
-    m_schema(schema), m_revision(TIMESTAMP_MIN),
-    m_latest_revision(TIMESTAMP_MIN), m_split_threshold(0),
-    m_split_off_high(false), m_unsplittable(false), m_added_inserts(0),
-    m_range_set(range_set), m_error(Error::OK), 
-    m_compaction_type_needed(0), m_maintenance_generation(0),
+    m_schema(schema), m_range_set(range_set),
     m_load_metrics(range_entity->get_table_id(), range_entity->get_start_row(),
-                   range_entity->get_end_row()),
-    m_dropped(false), m_capacity_exceeded_throttle(false), m_relinquish(false),
-    m_initialized(false) {
+                   range_entity->get_end_row()) {
   initialize();
 }
 
@@ -161,6 +146,12 @@ void Range::initialize() {
   }
 
   m_column_family_vector.resize(m_schema->get_max_column_family_id() + 1);
+
+  // If no transfer log, check to see if hints file exists and if not, write
+  // one.  This is to handle the case of the missing hints file for the
+  // initially loaded range in a table
+  if (m_metalog_entity->get_transfer_log().empty() && !m_hints_file.exists())
+    m_hints_file.write(Global::location_initializer->get());
 
   // Read hints file and load AGname-to-hints map
   std::map<String, const AccessGroup::Hints *> hints_map;
@@ -726,11 +717,8 @@ void Range::relinquish() {
 
 
 void Range::relinquish_install_log() {
-  char md5DigestStr[33];
   String logname;
-  time_t now = 0;
   AccessGroupVector ag_vector(0);
-  String transfer_log, original_transfer_log;
 
   {
     ScopedLock lock(m_schema_mutex);
@@ -742,35 +730,14 @@ void Range::relinquish_install_log() {
 
   {
     ScopedLock lock(m_mutex);
-    m_metalog_entity->save_original_transfer_log();
 
-    /**
-     * Create transfer log
-     */
-    md5_trunc_modified_base64(m_metalog_entity->get_end_row().c_str(),
-                              md5DigestStr);
-    md5DigestStr[16] = 0;
+    logname = TransferLog(Global::log_dfs, Global::toplevel_dir,
+                          m_table.id, m_metalog_entity->get_end_row()).name();
 
-    do {
-      if (now != 0)
-        poll(0, 0, 1200);
-      now = time(0);
-      transfer_log = format("%s/tables/%s/_xfer/%s/%d", 
-                            Global::toplevel_dir.c_str(), m_table.id,
-                            md5DigestStr, (int)now);
-    }
-    while (Global::log_dfs->exists(transfer_log));
+    Global::log_dfs->mkdirs(logname);
 
-    m_metalog_entity->set_transfer_log(transfer_log);
+    m_metalog_entity->set_transfer_log(logname);
 
-    try {
-      Global::log_dfs->mkdirs(transfer_log);
-    }
-    catch (Exception &) {
-      poll(0, 0, 1200);
-      m_metalog_entity->rollback_transfer_log();
-      throw;
-    }
 
     /**
      * Persist RELINQUISH_LOG_INSTALLED Metalog state
@@ -780,7 +747,7 @@ void Range::relinquish_install_log() {
 
     for (int i=0; true; i++) {
       try {
-        Global::rsml_writer->record_state(m_metalog_entity.get());
+        Global::rsml_writer->record_state(m_metalog_entity);
         break;
       }
       catch (Exception &e) {
@@ -802,7 +769,7 @@ void Range::relinquish_install_log() {
   {
     Barrier::ScopedActivator block_updates(m_update_barrier);
     ScopedLock lock(m_mutex);
-    m_transfer_log = new CommitLog(Global::dfs,transfer_log,!m_table.is_user());
+    m_transfer_log = new CommitLog(Global::dfs, logname, !m_table.is_user());
     for (size_t i=0; i<ag_vector.size(); i++)
       ag_vector[i]->stage_compaction();
   }
@@ -880,11 +847,10 @@ void Range::relinquish_finalize() {
   HT_MAYBE_FAIL("relinquish-move-range");
 
   m_master_client->move_range(m_metalog_entity->get_source(),
-			      &table_frozen, range_spec,
+                              m_metalog_entity->id(),
+			      table_frozen, range_spec,
                               m_metalog_entity->get_transfer_log(),
                               m_metalog_entity->get_soft_limit(), false);
-
-  remove_original_transfer_log();
 
   // Remove range from TableInfo
   if (!m_range_set->remove(start_row, end_row)) {
@@ -893,15 +859,16 @@ void Range::relinquish_finalize() {
   }
 
   // Mark the Range entity for removal
-  std::vector<MetaLog::Entity *> entities;
+  std::vector<MetaLog::EntityPtr> entities;
   m_metalog_entity->mark_for_removal();
-  entities.push_back(m_metalog_entity.get());
+  entities.push_back(m_metalog_entity);
 
   // Add acknowledge relinquish task
   MetaLog::EntityTaskPtr acknowledge_relinquish_task =
-    new MetaLog::EntityTaskAcknowledgeRelinquish(m_metalog_entity->get_source(),
-                                                 table_frozen, range_spec);
-  entities.push_back(acknowledge_relinquish_task.get());
+    make_shared<MetaLog::EntityTaskAcknowledgeRelinquish>(m_metalog_entity->get_source(),
+                                                          m_metalog_entity->id(),
+							  table_frozen, range_spec);
+  entities.push_back(acknowledge_relinquish_task);
 
   /**
    * Add the log removal task and remove range from RSML
@@ -1000,12 +967,9 @@ void Range::split() {
 void Range::split_install_log() {
   String split_row;
   std::vector<String> split_rows;
-  char md5DigestStr[33];
   AccessGroupVector ag_vector(0);
-  String transfer_log;
+  String logname;
   String start_row, end_row;
-
-  m_metalog_entity->save_original_transfer_log();
 
   m_metalog_entity->get_boundary_rows(start_row, end_row);
 
@@ -1075,34 +1039,12 @@ void Range::split_install_log() {
     ScopedLock lock(m_mutex);
     m_metalog_entity->set_split_row(split_row);
 
-    /**
-     * Create split (transfer) log
-     */
-    md5_trunc_modified_base64(split_row.c_str(), md5DigestStr);
-    md5DigestStr[16] = 0;
-    time_t now = 0;
+    logname = TransferLog(Global::log_dfs, Global::toplevel_dir,
+                          m_table.id, split_row).name();
 
-    do {
-      if (now != 0)
-        poll(0, 0, 1200);
-      now = time(0);
-      transfer_log = format("%s/tables/%s/_xfer/%s/%d",
-                            Global::toplevel_dir.c_str(), m_table.id,
-                            md5DigestStr, (int)now);
-    }
-    while (Global::log_dfs->exists(transfer_log));
+    Global::log_dfs->mkdirs(logname);
 
-    m_metalog_entity->set_transfer_log(transfer_log);
-
-    // Create transfer log dir
-    try {
-      Global::log_dfs->mkdirs(transfer_log);
-    }
-    catch (Exception &) {
-      poll(0, 0, 1200);
-      m_metalog_entity->rollback_transfer_log();
-      throw;
-    }
+    m_metalog_entity->set_transfer_log(logname);
 
     if (m_split_off_high)
       m_metalog_entity->set_old_boundary_row(end_row);
@@ -1116,7 +1058,7 @@ void Range::split_install_log() {
                                 Global::location_initializer->get());
     for (int i=0; true; i++) {
       try {
-        Global::rsml_writer->record_state(m_metalog_entity.get());
+        Global::rsml_writer->record_state(m_metalog_entity);
         break;
       }
       catch (Exception &e) {
@@ -1141,7 +1083,7 @@ void Range::split_install_log() {
     m_split_row = split_row;
     for (size_t i=0; i<ag_vector.size(); i++)
       ag_vector[i]->stage_compaction();
-    m_transfer_log = new CommitLog(Global::dfs, transfer_log, !m_table.is_user());
+    m_transfer_log = new CommitLog(Global::dfs, logname, !m_table.is_user());
   }
 
   HT_MAYBE_FAIL("split-1");
@@ -1378,7 +1320,7 @@ void Range::split_compact_and_shrink() {
     m_metalog_entity->set_state(RangeState::SPLIT_SHRUNK, location);
     for (int i=0; true; i++) {
       try {
-        Global::rsml_writer->record_state(m_metalog_entity.get());
+        Global::rsml_writer->record_state(m_metalog_entity);
         break;
       }
       catch (Exception &e) {
@@ -1437,7 +1379,8 @@ void Range::split_notify_master() {
   }
 
   m_master_client->move_range(m_metalog_entity->get_source(),
-			      &table_frozen, range,
+                              m_metalog_entity->id(),
+			      table_frozen, range,
                               m_metalog_entity->get_transfer_log(),
                               soft_limit, true);
 
@@ -1450,18 +1393,17 @@ void Range::split_notify_master() {
   HT_MAYBE_FAIL_X("metadata-split-3", m_is_metadata);
 
   MetaLog::EntityTaskPtr acknowledge_relinquish_task;
-  std::vector<MetaLog::Entity *> entities;
-
-  remove_original_transfer_log();
+  std::vector<MetaLog::EntityPtr> entities;
 
   // Add Range entity with updated state
-  entities.push_back(m_metalog_entity.get());
+  entities.push_back(m_metalog_entity);
 
   // Add acknowledge relinquish task
   acknowledge_relinquish_task = 
-    new MetaLog::EntityTaskAcknowledgeRelinquish(m_metalog_entity->get_source(),
-                                                 table_frozen, range);
-  entities.push_back(acknowledge_relinquish_task.get());
+    make_shared<MetaLog::EntityTaskAcknowledgeRelinquish>(m_metalog_entity->get_source(),
+                                                          m_metalog_entity->id(),
+							  table_frozen, range);
+  entities.push_back(acknowledge_relinquish_task);
 
   /**
    * Persist STEADY Metalog state and log removal task
@@ -1569,7 +1511,7 @@ void Range::compact(MaintenanceFlag::Map &subtask_map) {
     try {
       ScopedLock lock(m_mutex);
       m_metalog_entity->set_needs_compaction(false);
-      Global::rsml_writer->record_state(m_metalog_entity.get());
+      Global::rsml_writer->record_state(m_metalog_entity);
     }
     catch (Exception &) {
       HT_ERRORF("Problem updating meta log entry for %s", m_name.c_str());
@@ -1785,32 +1727,11 @@ void Range::acknowledge_load(uint32_t timeout_ms) {
   HT_MAYBE_FAIL_X("user-range-acknowledge-load-1", !m_table.is_system());
 
   try {
-    Global::rsml_writer->record_state(m_metalog_entity.get());
+    Global::rsml_writer->record_state(m_metalog_entity);
   }
   catch (Exception &) {
     m_metalog_entity->set_load_acknowledged(false);
     throw;
-  }
-}
-
-void Range::remove_original_transfer_log() {
-  String transfer_log = m_metalog_entity->get_original_transfer_log();
-  if (!transfer_log.empty()) {
-    RE2 regex("\\/_xfer\\/");
-    if (RE2::PartialMatch(transfer_log.c_str(), regex)) {
-      try {
-        HT_INFOF("Removing transfer log %s", transfer_log.c_str());
-        if (Global::log_dfs->exists(transfer_log))
-          Global::log_dfs->rmdir(transfer_log);
-      }
-      catch (Exception &e) {
-        HT_WARNF("Problem removing transfer log %s - %s",
-                 transfer_log.c_str(), Error::get_text(e.code()));
-      }
-    }
-    else
-      HT_WARNF("Skipping log removal of '%s' because it does not look like a transfer log",
-	       transfer_log.c_str());
   }
 }
 

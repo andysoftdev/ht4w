@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -24,14 +24,15 @@
 /// This file contains declarations for CommitLogBlockStream, a class abstraction
 /// for reading a stream of blocks from a commit log.
 
-#ifndef HYPERTABLE_COMMITLOGBLOCKSTREAM_H
-#define HYPERTABLE_COMMITLOGBLOCKSTREAM_H
+#ifndef Hypertable_Lib_CommitLogBlockStream_h
+#define Hypertable_Lib_CommitLogBlockStream_h
 
 #include <Hypertable/Lib/BlockHeaderCommitLog.h>
 
 #include <Common/DynamicBuffer.h>
 #include <Common/String.h>
 #include <Common/Filesystem.h>
+#include <Common/Status.h>
 
 namespace Hypertable {
 
@@ -63,15 +64,15 @@ namespace Hypertable {
   public:
 
     CommitLogBlockStream(FilesystemPtr &fs);
-    CommitLogBlockStream(FilesystemPtr &fs, const String &log_dir,
-                         const String &fragment);
+    CommitLogBlockStream(FilesystemPtr &fs, const std::string &log_dir,
+                         const std::string &fragment);
     virtual ~CommitLogBlockStream();
 
-    void load(const String &log_dir, const String &fragment);
+    void load(const std::string &log_dir, const std::string &fragment);
     void close();
     bool next(CommitLogBlockInfo *, BlockHeaderCommitLog *);
 
-    String &get_fname() { return m_fname; }
+    std::string &get_fname() { return m_fname; }
 
     static bool ms_assert_on_error;
 
@@ -102,7 +103,7 @@ namespace Hypertable {
      * at the beginning of the file.  The header that is written consists of
      * eight bytes and has the following format:
      * <pre>
-     * vNNNN\f\n\0
+     * vNNNN\\f\\n\\0
      * </pre>
      * The <code>NNNN</code> component consists of four ASCII digits that
      * represent the latest version number.  The formfeed+newline allows the
@@ -123,17 +124,20 @@ namespace Hypertable {
 
     int load_next_valid_header(BlockHeaderCommitLog *header);
 
+    bool archive_bad_fragment(const std::string &fname,
+                              std::string &archive_fname);
+
     /// Pointer to filesystem
     FilesystemPtr m_fs;
 
     /// Directory containing commit log fragment file
-    String m_log_dir;
+    std::string m_log_dir;
 
     /// Fragment file name within commit log directory
-    String m_fragment;
+    std::string m_fragment;
 
     /// Full pathname of commit log fragment file
-    String m_fname;
+    std::string m_fname;
 
     /// Version of commit log fragment file format
     uint32_t m_version;
@@ -154,5 +158,4 @@ namespace Hypertable {
   /// @}
 }
 
-#endif // HYPERTABLE_COMMITLOGBLOCKSTREAM_H
-
+#endif // Hypertable_Lib_CommitLogBlockStream_h

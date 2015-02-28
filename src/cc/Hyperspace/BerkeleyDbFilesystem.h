@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -47,7 +47,6 @@
 #ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable : 4005 ) // 'off_t' : macro redefinition
-#pragma warning( disable : 4995 ) // 'strerror': name was marked as #pragma deprecated
 #endif
 
 #include <db_cxx.h>
@@ -234,7 +233,7 @@ namespace Hyperspace {
     /** Constructor.
      * @param props Configruation properties
      * @param basedir Directory of BerkeleyDB database files
-     * @param threads_ids Vector of application thread IDs
+     * @param thread_ids Vector of application thread IDs
      * @param force_recover Force catastrophic recovery logic
      */
     BerkeleyDbFilesystem(PropertiesPtr &props,
@@ -249,7 +248,7 @@ namespace Hyperspace {
 
     /** Checkpoints the BerkeleyDB database.
      * This method calls <code>m_env.txn_checkpoint</code> to checkpoint the
-     * database.  It passes in the value #m_checkpoing_size_kb.  Then if the
+     * database.  It passes in the value #m_checkpoint_size_kb.  Then if the
      * time of the last checkpoint has exceeded #m_log_gc_interval, it will call
      * <code>m_env.log_archive</code> to obtain a list of unused log files and
      * it will remove them.

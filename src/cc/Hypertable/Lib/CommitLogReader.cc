@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -70,28 +70,23 @@ namespace {
   };
 }
 
-CommitLogReader::CommitLogReader(FilesystemPtr &fs, const String &log_dir)
-  : CommitLogBase(log_dir), m_fs(fs), m_fragment_queue_offset(0),
-    m_block_buffer(256), m_revision(TIMESTAMP_MIN), m_compressor(0),
-    m_last_fragment_id(-1), m_verbose(false) {
+CommitLogReader::CommitLogReader(FilesystemPtr &fs, const string &log_dir)
+  : CommitLogBase(log_dir), m_fs(fs), m_block_buffer(256),
+    m_revision(TIMESTAMP_MIN), m_last_fragment_id(-1) {
   if (get_bool("Hypertable.CommitLog.SkipErrors"))
     CommitLogBlockStream::ms_assert_on_error = false;
-
   load_fragments(m_log_dir, 0);
   reset();
 }
 
-CommitLogReader::CommitLogReader(FilesystemPtr &fs, const String &log_dir,
-        const std::vector<uint32_t> &fragment_filter)
-  : CommitLogBase(log_dir), m_fs(fs), m_fragment_queue_offset(0),
-    m_block_buffer(256), m_revision(TIMESTAMP_MIN), m_compressor(0),
-    m_last_fragment_id(-1), m_verbose(false) {
+CommitLogReader::CommitLogReader(FilesystemPtr &fs, const string &log_dir,
+                                 const std::vector<int32_t> &fragment_filter)
+  : CommitLogBase(log_dir), m_fs(fs), m_block_buffer(256),
+    m_revision(TIMESTAMP_MIN),
+    m_fragment_filter(fragment_filter.begin(), fragment_filter.end()),
+    m_last_fragment_id(-1) {
   if (get_bool("Hypertable.CommitLog.SkipErrors"))
     CommitLogBlockStream::ms_assert_on_error = false;
-
-  foreach_ht(uint32_t fragment, fragment_filter)
-    m_fragment_filter.insert(fragment);
-
   load_fragments(log_dir, 0);
   reset();
 }
@@ -135,7 +130,7 @@ CommitLogReader::next_raw_block(CommitLogBlockInfo *infop,
 
   if (header->check_magic(CommitLog::MAGIC_LINK)) {
     assert(header->get_compression_type() == BlockCompressionCodec::NONE);
-    String log_dir = (const char *)(infop->block_ptr + header->encoded_length());
+    string log_dir = (const char *)(infop->block_ptr + header->encoded_length());
     boost::trim_right_if(log_dir, boost::is_any_of("/"));
     m_linked_log_hashes.insert(md5_hash(log_dir.c_str()));
     m_linked_logs.insert(log_dir);
@@ -253,11 +248,11 @@ void CommitLogReader::load_fragments(String log_dir, CommitLogFileInfo *parent) 
     }
 
     char *endptr;
-    long num = strtol(listing[i].name.c_str(), &endptr, 10);
+    int32_t num = (int32_t)strtol(listing[i].name.c_str(), &endptr, 10);
     if (m_fragment_filter.size() && log_dir == m_log_dir &&
       m_fragment_filter.find(num) == m_fragment_filter.end()) {
       if (m_verbose)
-        HT_INFOF("Dropping log fragment %s/%ld because it is filtered",
+        HT_INFOF("Dropping log fragment %s/%d because it is filtered",
                  log_dir.c_str(), num);
       //HT_DEBUG_OUT << "Fragments " << num <<" in " << log_dir
       //    << " is part of CommitLog "
@@ -292,7 +287,7 @@ void CommitLogReader::load_fragments(String log_dir, CommitLogFileInfo *parent) 
 
   if (mark != -1) {
     if (m_fragment_queue.empty() || mark < (int)m_fragment_queue.front()->num) {
-      String mark_filename;
+      string mark_filename;
       try {
         mark_filename = log_dir + "/" + mark + ".mark";
         m_fs->remove(mark_filename);

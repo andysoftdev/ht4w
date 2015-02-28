@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -106,7 +106,7 @@ namespace Hypertable {
                 RangeLocationInfo *rane_loc_infop, bool inclusive=false);
     bool invalidate(const char *table_name, const char *rowkey);
 
-    void invalidate_host(const String &hostname);
+    void invalidate_host(const std::string &hostname);
 
     void display(std::ostream &);
 

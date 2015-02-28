@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -223,7 +223,6 @@ int main(int argc, char **argv) {
   int rval, error;
   uint16_t port = DEFAULT_PORT;
   int reactor_count = 2;
-  ConnectionHandlerFactoryPtr chfp;
   ApplicationQueue *app_queue = 0;
   bool udp = false;
   DispatchHandlerPtr dhp;
@@ -283,7 +282,7 @@ int main(int argc, char **argv) {
     }
 
     if (!udp) {
-      dhp = new Dispatcher(comm, app_queue);
+      dhp = std::make_shared<Dispatcher>(comm, app_queue);
 
       if (client_addr.sin_port != 0) {
 	if ((error = comm->connect(client_addr, local_addr, dhp)) != Error::OK) {
@@ -292,13 +291,13 @@ int main(int argc, char **argv) {
 	}
       }
       else {
-	chfp = new HandlerFactory(dhp);
-	comm->listen(local_addr, chfp, dhp);
+        ConnectionHandlerFactoryPtr handler_factory = make_shared<HandlerFactory>(dhp);
+	comm->listen(local_addr, handler_factory, dhp);
       }
     }
     else {
       assert(client_addr.sin_port == 0);
-      dhp = new UdpDispatcher(comm);
+      dhp = std::make_shared<UdpDispatcher>(comm);
       comm->create_datagram_receive_socket(local_addr, 0, dhp);
     }
 

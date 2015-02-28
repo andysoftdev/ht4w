@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -31,7 +31,7 @@
 #include <Hypertable/RangeServer/UpdateRecRange.h>
 #include <Hypertable/RangeServer/UpdateRequest.h>
 
-#include <Hypertable/Lib/Types.h>
+#include <Hypertable/Lib/TableIdentifier.h>
 
 #include <unordered_map>
 #include <vector>

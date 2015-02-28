@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,11 +19,12 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_LIFEFILETRACKER_H
-#define HYPERTABLE_LIFEFILETRACKER_H
+#ifndef Hypertable_RangeServer_LifeFileTracker_h
+#define Hypertable_RangeServer_LifeFileTracker_h
 
+#include <Hypertable/Lib/RangeSpec.h>
 #include <Hypertable/Lib/Schema.h>
-#include <Hypertable/Lib/Types.h>
+#include <Hypertable/Lib/TableIdentifier.h>
 
 #include <Common/Mutex.h>
 #include <Common/String.h>
@@ -144,4 +145,4 @@ namespace Hypertable {
 
 }
 
-#endif // HYPERTABLE_LIFEFILETRACKER_H
+#endif // Hypertable_RangeServer_LifeFileTracker_h

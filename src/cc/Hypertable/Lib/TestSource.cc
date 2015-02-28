@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -37,7 +37,7 @@ using namespace std;
 using namespace Hypertable;
 
 bool TestSource::next(ByteString &key, ByteString &value) {
-  String line;
+  string line;
   boost::shared_array<char> line_ptr;
   char *base, *ptr, *last;
   char *rowkey;

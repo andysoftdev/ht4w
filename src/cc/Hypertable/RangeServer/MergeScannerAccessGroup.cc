@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -41,10 +41,7 @@ MergeScannerAccessGroup::MergeScannerAccessGroup(String &table_name,
                                                  uint32_t flags)
   : m_flags(flags), m_return_deletes(flags & RETURN_DELETES),
     m_accumulate_counters(flags & ACCUMULATE_COUNTERS), m_prev_cf(-1),
-    m_counted_value(12), m_scan_context(scan_ctx.get()), 
-    m_revs_count(0), m_revs_limit(0), m_no_forward(false),
-    m_count_present(false), m_skip_remaining_counter(false),
-    m_delete_present(false)
+    m_counted_value(12), m_scan_context(scan_ctx.get())
 { 
   m_start_timestamp = scan_ctx->time_interval.first;
   m_end_timestamp = scan_ctx->time_interval.second;

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.BufferUnderflowException;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -35,32 +36,37 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSClient;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.client.HdfsDataInputStream;
+import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
 import org.apache.hadoop.util.ReflectionUtils;
 
 import org.hypertable.AsyncComm.Comm;
 import org.hypertable.AsyncComm.ResponseCallback;
 import org.hypertable.Common.Error;
+import org.hypertable.Common.Status;
 import org.hypertable.FsBroker.Lib.Broker;
 import org.hypertable.FsBroker.Lib.MetricsHandler;
 import org.hypertable.FsBroker.Lib.OpenFileData;
 import org.hypertable.FsBroker.Lib.OpenFileMap;
+import org.hypertable.FsBroker.Lib.ResponseCallbackAppend;
 import org.hypertable.FsBroker.Lib.ResponseCallbackCreate;
 import org.hypertable.FsBroker.Lib.ResponseCallbackExists;
 import org.hypertable.FsBroker.Lib.ResponseCallbackLength;
 import org.hypertable.FsBroker.Lib.ResponseCallbackOpen;
 import org.hypertable.FsBroker.Lib.ResponseCallbackPositionRead;
-import org.hypertable.FsBroker.Lib.ResponseCallbackReaddir;
 import org.hypertable.FsBroker.Lib.ResponseCallbackRead;
-import org.hypertable.FsBroker.Lib.ResponseCallbackWrite;
+import org.hypertable.FsBroker.Lib.ResponseCallbackReaddir;
+import org.hypertable.FsBroker.Lib.ResponseCallbackStatus;
+import org.hypertable.FsBroker.Lib.StatusManager;
 
 import org.apache.hadoop.fs.FileStatus;
 
 /**
  * This is the actual HadoopBroker object that contains all of the application
  * logic.  It has a method for each of the request types (e.g. Open, Close,
- * Read, Write, etc.)  There is only one of these objects for each server
+ * Read, Append, etc.)  There is only one of these objects for each server
  * instance which carries out all of the requests from all connections.
  */
 public class HadoopBroker implements Broker {
@@ -104,6 +110,13 @@ public class HadoopBroker implements Broker {
           mConf.setInt("dfs.datanode.socket.write.timeout", 630000);
         }
 
+        // Setting this to 131072 down from its default of 1M reduces broker
+        // memory consumption
+        if (mConf.getInt("dfs.client.read.shortcircuit.buffer.size", -1) == -1) {
+          System.out.println("Setting 'dfs.client.read.shortcircuit.buffer.size' to 131072");
+          mConf.setInt("dfs.client.read.shortcircuit.buffer.size", 131072);
+        }
+
         // settings from the hadoop configuration are overwritten by values
         // from the configuration file
         str = props.getProperty("HdfsBroker.dfs.replication");
@@ -142,13 +155,17 @@ public class HadoopBroker implements Broker {
             mFilesystem.initialize(FileSystem.getDefaultUri(mConf), mConf);
             mFilesystem_noverify = newInstanceFileSystem();
             mFilesystem_noverify.setVerifyChecksum(false);
+            if (inSafemode()) {
+              mStatusManager.setWriteStatus(Status.Code.CRITICAL, "HDFS is in safemode");
+              log.warning("HDFS is in safemode");
+            }
         }
         catch (Exception e) {
-            log.severe("ERROR: Unable to establish connection to HDFS: " + e);
-            System.exit(1);
+          log.severe("Unable to establish connection to HDFS: " + e);
+          System.exit(1);
         }
     }
-
+  
     private void addHadoopResource(String path) 
                     throws Exception {
         if (mVerbose)
@@ -195,6 +212,48 @@ public class HadoopBroker implements Broker {
 	    fs.initialize(uri, mConf);
 	    return fs;
     }
+
+  private boolean inSafemode() throws IOException, IllegalArgumentException {
+    if (!(mFilesystem instanceof DistributedFileSystem)) {
+      throw new IllegalArgumentException("FileSystem " + mFilesystem.getUri() +
+                                         " is not an HDFS file system");
+    }
+    DistributedFileSystem dfs = (DistributedFileSystem)mFilesystem;
+    return dfs.setSafeMode(SafeModeAction.SAFEMODE_GET);
+  }
+
+  public void waitForSafemodeExit() {
+    boolean firstLoop = true;
+    Random rng = new Random();
+    long timeout = (long)rng.nextInt(10000);
+    try {
+      while (inSafemode()) {
+        mStatusManager.setWriteStatus(Status.Code.CRITICAL, "HDFS is in safemode");
+        synchronized (this) {
+          try {
+            wait(timeout);
+          }
+          catch (Exception e) {
+          }
+          if (mShutdown)
+            return;
+          if (firstLoop) {
+            timeout = 10000;
+            firstLoop = false;
+          }
+          else
+            log.warning("HDFS is in safemode");
+        }
+      }
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+      System.exit(1);
+    }
+    if (!firstLoop)
+      log.info("HDFS has exited safemode");      
+    mStatusManager.clearStatusImmediately();
+  }
 
     /**
      *
@@ -527,14 +586,15 @@ public class HadoopBroker implements Broker {
             mMetricsHandler.addBytesRead(nread);
 
             error = cb.response(offset, nread, data);
-
+            mStatusManager.clearStatus();
         }
         catch (IOException e) {
-            mMetricsHandler.incrementErrorCount();
-            log.severe("I/O exception - " + e.toString());
-            if (error == Error.OK)
-                error = Error.DFSBROKER_IO_ERROR;
-            error = cb.error(error, e.toString());
+          mStatusManager.setReadException(e);
+          mMetricsHandler.incrementErrorCount();
+          log.severe("I/O exception - " + e.toString());
+          if (error == Error.OK)
+            error = Error.DFSBROKER_IO_ERROR;
+          error = cb.error(error, e.toString());
         }
 
         if (error != Error.OK)
@@ -542,7 +602,7 @@ public class HadoopBroker implements Broker {
                     + ", error=" + error + ", amount=" + amount + ")");
     }
 
-    public void Write(ResponseCallbackWrite cb, int fd, int amount,
+    public void Append(ResponseCallbackAppend cb, int fd, int amount,
                       byte [] data, boolean sync) {
         int error = Error.OK;
         OpenFileData ofd;
@@ -551,7 +611,7 @@ public class HadoopBroker implements Broker {
 
             /**
                if (Global.verbose)
-               log.info("Write request handle=" + fd + " amount=" + mAmount);
+               log.info("Append request handle=" + fd + " amount=" + mAmount);
             */
 
             if ((ofd = mOpenFileMap.Get(fd)) == null) {
@@ -578,16 +638,18 @@ public class HadoopBroker implements Broker {
             }
 
             error = cb.response(offset, amount);
+            mStatusManager.clearStatus();
         }
         catch (IOException e) {
-            mMetricsHandler.incrementErrorCount();
-            e.printStackTrace();
-            error = cb.error(Error.DFSBROKER_IO_ERROR, e.toString());
+          mStatusManager.setWriteException(e);
+          mMetricsHandler.incrementErrorCount();
+          e.printStackTrace();
+          error = cb.error(Error.DFSBROKER_IO_ERROR, e.toString());
         }
         catch (BufferUnderflowException e) {
-            mMetricsHandler.incrementErrorCount();
-            e.printStackTrace();
-            error = cb.error(Error.PROTOCOL_ERROR, e.toString());
+          mMetricsHandler.incrementErrorCount();
+          e.printStackTrace();
+          error = cb.error(Error.PROTOCOL_ERROR, e.toString());
         }
 
         if (error != Error.OK)
@@ -653,9 +715,11 @@ public class HadoopBroker implements Broker {
             mMetricsHandler.addBytesRead(nread);
 
             error = cb.response(offset, nread, data);
+            mStatusManager.clearStatus();
             break;
           }
           catch (IOException e) {
+            mStatusManager.setReadException(e);
             mMetricsHandler.incrementErrorCount();
             if (hdfsUtils == null) {
               hdfsUtils = new FSHDFSUtils();
@@ -787,13 +851,15 @@ public class HadoopBroker implements Broker {
             if (error != Error.OK)
                 log.severe("Error sending FLUSH response back (fd=" + fd
                         + ", error=" + error + ")");
+            mStatusManager.clearStatus();
         }
         catch (IOException e) {
-            mMetricsHandler.incrementErrorCount();
-            log.severe("I/O exception - " + e.toString());
-            if (error == Error.OK)
-                error = Error.DFSBROKER_IO_ERROR;
-            error = cb.error(error, e.toString());
+          mStatusManager.setWriteException(e);
+          mMetricsHandler.incrementErrorCount();
+          log.severe("I/O exception - " + e.toString());
+          if (error == Error.OK)
+            error = Error.DFSBROKER_IO_ERROR;
+          error = cb.error(error, e.toString());
         }
     }
 
@@ -941,6 +1007,12 @@ public class HadoopBroker implements Broker {
         cb.response_ok();
     }
 
+    public void Status(ResponseCallbackStatus cb) {
+      int error = cb.response(mStatusManager.get());
+      if (error != 0)
+        log.severe("Problem sending status response - " + Error.GetText(error));
+    }
+
     /**
      */
     public void Debug(ResponseCallback cb, int command, byte [] parmas) {
@@ -951,10 +1023,19 @@ public class HadoopBroker implements Broker {
                  + command);
     }
 
-    private Configuration mConf = new Configuration();
-    private FileSystem    mFilesystem;
-    private FileSystem    mFilesystem_noverify;
+  public void Shutdown() {
+    synchronized (this) {
+      mShutdown = true;
+      notifyAll();
+    }
+  }
+
+  private Configuration mConf = new Configuration();
+  private FileSystem    mFilesystem;
+  private FileSystem    mFilesystem_noverify;
   private MetricsHandler mMetricsHandler;
-    private boolean       mVerbose = false;
-    public  OpenFileMap   mOpenFileMap = new OpenFileMap();
+  private StatusManager mStatusManager = new StatusManager();
+  private boolean       mVerbose;
+  private boolean       mShutdown;
+  public  OpenFileMap   mOpenFileMap = new OpenFileMap();
 }

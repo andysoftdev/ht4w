@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,25 +25,25 @@
  * a polling thread.
  */
 
-#ifndef HYPERTABLE_REACTOR_H
-#define HYPERTABLE_REACTOR_H
-
-#include <queue>
-#include <set>
-#include <vector>
-
-#include <boost/thread/thread.hpp>
-
-extern "C" {
-#include <poll.h>
-}
-
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
+#ifndef AsyncComm_Reactor_h
+#define AsyncComm_Reactor_h
 
 #include "PollTimeout.h"
 #include "RequestCache.h"
 #include "ExpireTimer.h"
+
+#include <Common/Mutex.h>
+
+#include <boost/thread/thread.hpp>
+
+#include <memory>
+#include <queue>
+#include <set>
+#include <vector>
+
+extern "C" {
+#include <poll.h>
+}
 
 namespace Hypertable {
 
@@ -67,7 +67,7 @@ namespace Hypertable {
   /** Manages reactor (polling thread) state including poll interest, request cache,
    * and timers.
    */
-  class Reactor : public ReferenceCount {
+  class Reactor {
 
     friend class ReactorFactory;
 
@@ -106,11 +106,13 @@ namespace Hypertable {
     }
 
     /** Removes request associated with <code>id</code>
-     * @return Pointer to request dispatch handler
+     * @param id Request ID
+     * @param handler Removed dispatch handler
+     * @return <i>true</i> if request removed, <i>false</i> otherwise
      */
-    DispatchHandler *remove_request(uint32_t id) {
+    bool remove_request(uint32_t id, DispatchHandler *&handler) {
       ScopedLock lock(m_mutex);
-      return m_request_cache.remove(id);
+      return m_request_cache.remove(id, handler);
     }
 
     /** Cancels outstanding requests associated with <code>handler</code>
@@ -138,7 +140,7 @@ namespace Hypertable {
      * @param handler Dispatch handler for which associated timers are to be
      * cancelled
      */
-    void cancel_timer(DispatchHandler *handler) {
+    void cancel_timer(const DispatchHandlerPtr &handler) {
       ScopedLock lock(m_mutex);
       typedef TimerHeap::container_type container_t;
       container_t container;
@@ -146,7 +148,7 @@ namespace Hypertable {
       ExpireTimer timer;
       while (!m_timer_heap.empty()) {
         timer = m_timer_heap.top();
-        if (timer.handler != handler)
+        if (timer.handler.get() != handler.get())
           container.push_back(timer);
         m_timer_heap.pop();
       }
@@ -310,8 +312,8 @@ namespace Hypertable {
   };
 
   /// Smart pointer to Reactor
-  typedef intrusive_ptr<Reactor> ReactorPtr;
+  typedef std::shared_ptr<Reactor> ReactorPtr;
   /** @}*/
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_REACTOR_H
+#endif // AsyncComm_Reactor_h

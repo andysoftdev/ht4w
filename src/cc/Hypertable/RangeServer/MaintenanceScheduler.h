@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -54,10 +54,10 @@ namespace Hypertable {
     void schedule();
 
     /// Includes a table for maintenance scheduling.
-    void include(const TableIdentifier *table);
+    void include(const TableIdentifier &table);
 
     /// Excludes a table from maintenance scheduling.
-    void exclude(const TableIdentifier *table);
+    void exclude(const TableIdentifier &table);
 
     /// Sets <i>low memory</i> maintenance prioritization.
     void set_low_memory_mode(bool on) {

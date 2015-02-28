@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -50,64 +50,6 @@ LogWriter *get() {
   if (!logger_obj)
     logger_obj = new LogWriter(logger_name);
   return logger_obj;
-}
-
-void LogWriter::set_file(FILE *file) {
-  ScopedLock lock(mutex);
-  m_file = file;
-}
-
-void LogWriter::add_sink(const LogSink* ls) {
-  ScopedLock lock(mutex);
-  if (ls)
-    logSinks.insert(ls);
-}
-
-void LogWriter::remove_sink(const LogSink* ls) {
-  ScopedLock lock(mutex);
-  if (ls)
-    logSinks.erase(ls);
-}
-
-void LogWriter::set_test_mode(int fd) {
-  if (fd != -1) {
-
-#ifndef _WIN32
-
-    m_file = fdopen(fd, "wt");
-
-#else
-
-    m_file = fdopen(fd, "w+tc");
-
-#endif
-
-  }
-  m_show_line_numbers = false;
-  m_test_mode = true;
-}
-
-void LogWriter::flush() {
-  ScopedLock lock(mutex);
-
-#ifndef _WIN32
-
-  fflush(m_file);
-
-#else
-
-  _fflush_nolock(m_file);
-
-#endif
-}
-
-void LogWriter::close() {
-  ScopedLock lock(mutex);
-
-  if (m_file != stdout) {
-    fclose(m_file);
-    m_file = stdout;
-  }
 }
 
 void LogWriter::log_string(int priority, const char *message) {
@@ -185,6 +127,64 @@ void LogWriter::log(int priority, const char *format, ...) {
   va_start(ap, format);
   log_varargs(priority, format, ap);
   va_end(ap);
+}
+
+void LogWriter::set_file(FILE *file) {
+  ScopedLock lock(mutex);
+  m_file = file;
+}
+
+void LogWriter::add_sink(const LogSink* ls) {
+  ScopedLock lock(mutex);
+  if (ls)
+    logSinks.insert(ls);
+}
+
+void LogWriter::remove_sink(const LogSink* ls) {
+  ScopedLock lock(mutex);
+  if (ls)
+    logSinks.erase(ls);
+}
+
+void LogWriter::set_test_mode(int fd) {
+  if (fd != -1) {
+
+#ifndef _WIN32
+
+    m_file = fdopen(fd, "wt");
+
+#else
+
+    m_file = fdopen(fd, "w+tc");
+
+#endif
+
+  }
+  m_show_line_numbers = false;
+  m_test_mode = true;
+}
+
+void LogWriter::flush() {
+  ScopedLock lock(mutex);
+
+#ifndef _WIN32
+
+  fflush(m_file);
+
+#else
+
+  _fflush_nolock(m_file);
+
+#endif
+}
+
+void LogWriter::close() {
+  ScopedLock lock(mutex);
+
+  if (m_file != stdout) {
+    fclose(m_file);
+    m_file = stdout;
+  }
 }
 
 }} // namespace Hypertable::

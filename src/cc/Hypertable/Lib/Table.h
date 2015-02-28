@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,26 +19,29 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_TABLE_H
-#define HYPERTABLE_TABLE_H
+#ifndef Hypertable_Lib_Table_h
+#define Hypertable_Lib_Table_h
 
-#include "Common/ReferenceCount.h"
-#include "Common/Mutex.h"
+#include <Hypertable/Lib/ClientObject.h>
+#include <Hypertable/Lib/NameIdMapper.h>
+#include <Hypertable/Lib/ScanSpec.h>
+#include <Hypertable/Lib/Schema.h>
+#include <Hypertable/Lib/RangeLocator.h>
+#include <Hypertable/Lib/TableIdentifier.h>
+#include <Hypertable/Lib/RangeServer/Protocol.h>
 
-#include "AsyncComm/ApplicationQueueInterface.h"
+#include <AsyncComm/ApplicationQueueInterface.h>
 
-#include "ClientObject.h"
-#include "NameIdMapper.h"
-#include "Schema.h"
-#include "RangeLocator.h"
-#include "Types.h"
-#include "RangeServerProtocol.h"
+#include <Common/ReferenceCount.h>
+#include <Common/Mutex.h>
 
 namespace Hyperspace {
   class Session;
 }
 
 namespace Hypertable {
+  
+  using namespace Lib;
 
   class ConnectionManager;
   class ResultCallback;
@@ -66,14 +69,14 @@ namespace Hypertable {
     };
 
     enum {
-      MUTATOR_FLAG_NO_LOG_SYNC = RangeServerProtocol::UPDATE_FLAG_NO_LOG_SYNC
+      MUTATOR_FLAG_NO_LOG_SYNC = Lib::RangeServer::Protocol::UPDATE_FLAG_NO_LOG_SYNC
     };
 
     Table(PropertiesPtr &, ConnectionManagerPtr &, Hyperspace::SessionPtr &,
-          NameIdMapperPtr &namemap, const String &name, int32_t flags=0);
+          NameIdMapperPtr &namemap, const std::string &name, int32_t flags=0);
     Table(PropertiesPtr &, RangeLocatorPtr &, ConnectionManagerPtr &,
           Hyperspace::SessionPtr &, ApplicationQueueInterfacePtr &, NameIdMapperPtr &,
-          const String &name, int32_t flags, uint32_t default_timeout_ms);
+          const std::string &name, int32_t flags, uint32_t default_timeout_ms);
     virtual ~Table();
 
     /**
@@ -135,7 +138,7 @@ namespace Hypertable {
       *table_id_p = m_table;
     }
 
-    String get_name() {
+    std::string get_name() {
       ScopedLock lock(m_mutex);
       return m_name;
     }
@@ -262,18 +265,18 @@ namespace Hypertable {
     RangeLocatorPtr        m_range_locator;
     ApplicationQueueInterfacePtr m_app_queue;
     NameIdMapperPtr        m_namemap;
-    String                 m_name;
+    std::string                 m_name;
     TableIdentifierManaged m_table;
     int32_t                m_flags;
     int                    m_timeout_ms;
     bool                   m_stale;
-    String                 m_toplevel_dir;
+    std::string                 m_toplevel_dir;
     size_t                 m_scanner_queue_size;
     TablePtr               m_index_table;
     TablePtr               m_qualifier_index_table;
     Namespace             *m_namespace;
   };
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_TABLE_H
+#endif // Hypertable_Lib_Table_h

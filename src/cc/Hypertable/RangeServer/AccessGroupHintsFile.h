@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -61,7 +61,7 @@ namespace Hypertable {
    * End Row: <start-row>
    * Access Groups: {
    *   ag_name: {
-   *     LatestStoredRevision: <revision>,
+   *     LatestStoredRevision: &lt;revision&gt;,
    *     DiskUsage: $bytes,
    *     Files: $file_list
    *   }
@@ -136,6 +136,10 @@ namespace Hypertable {
     /** Reads hints file.
      */
     void read();
+
+    /// Checks if hints file exists.
+    /// @return <i>true</i> if file exists, <i>false</i> otherwise
+    bool exists();
 
   private:
 

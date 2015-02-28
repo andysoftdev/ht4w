@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -24,13 +24,9 @@
 #include "Common/StaticBuffer.h"
 #include "Common/Error.h"
 
-using namespace Hypertable;
-using namespace Hypertable::FsBroker;
+using namespace Hypertable::FsBroker::Lib;
 using namespace std;
 using namespace boost::iostreams;
-
-
-
 
 FileDevice::FileDevice(ClientPtr &client, const String &filename,
         bool accurate_length, BOOST_IOS::openmode mode)

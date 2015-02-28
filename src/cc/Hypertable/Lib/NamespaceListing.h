@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,8 +28,8 @@
 namespace Hypertable {
   class NamespaceListing {
   public:
-    String name;
-    String id;
+    std::string name;
+    std::string id;
     bool is_namespace;
 
     std::vector<NamespaceListing> sub_entries;

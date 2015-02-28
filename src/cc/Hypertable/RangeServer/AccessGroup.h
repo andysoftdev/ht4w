@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -35,8 +35,9 @@
 #include <Hypertable/RangeServer/MaintenanceFlag.h>
 #include <Hypertable/RangeServer/MergeScannerAccessGroup.h>
 
+#include <Hypertable/Lib/RangeSpec.h>
 #include <Hypertable/Lib/Schema.h>
-#include <Hypertable/Lib/Types.h>
+#include <Hypertable/Lib/TableIdentifier.h>
 
 #include <Common/PageArena.h>
 #include <Common/ReferenceCount.h>

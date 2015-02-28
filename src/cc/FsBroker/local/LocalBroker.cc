@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -55,6 +55,7 @@ extern "C" {
 }
 
 using namespace Hypertable;
+using namespace Hypertable::FsBroker;
 using namespace std;
 
 #ifdef _WIN32
@@ -72,6 +73,9 @@ using namespace std;
 #define CRT_IO_ERROR \
     _strerror(0)
 
+#define DECLARE_ERROR \
+  DWORD error = GetLastError();
+
 inline DWORD fsync( HANDLE fd ) {
     if( !::FlushFileBuffers(fd) ) {
         HT_WIN32_LASTERROR("FlushFileBuffers failed");
@@ -80,7 +84,7 @@ inline DWORD fsync( HANDLE fd ) {
     return ERROR_SUCCESS;
 }
 
-uint64_t SetFilePointer(HANDLE hf, __int64 distance, DWORD dwMoveMethod) {
+inline uint64_t SetFilePointer(HANDLE hf, __int64 distance, DWORD dwMoveMethod) {
    LARGE_INTEGER li;
    li.QuadPart = distance;
    li.LowPart = SetFilePointer(hf, li.LowPart, &li.HighPart, dwMoveMethod);
@@ -98,6 +102,9 @@ uint64_t SetFilePointer(HANDLE hf, __int64 distance, DWORD dwMoveMethod) {
 #define CRT_IO_ERROR \
     strerror(errno)
 
+#define DECLARE_ERROR \
+  int error = errno;
+
 #endif
 
 atomic_t LocalBroker::ms_next_fd = ATOMIC_INIT(0);
@@ -111,6 +118,7 @@ LocalBroker::LocalBroker(PropertiesPtr &cfg) {
     m_directio = cfg->get_bool("FsBroker.Local.DirectIO");
 
   m_metrics_handler = std::make_shared<MetricsHandler>(cfg, "local");
+  m_metrics_handler->start_collecting();
 
 #if defined(__linux__)
   // disable direct i/o for kernels < 2.6
@@ -148,11 +156,12 @@ LocalBroker::LocalBroker(PropertiesPtr &cfg) {
 
 
 LocalBroker::~LocalBroker() {
+  m_metrics_handler->stop_collecting();
 }
 
 
 void
-LocalBroker::open(ResponseCallbackOpen *cb, const char *fname, 
+LocalBroker::open(Response::Callback::Open *cb, const char *fname, 
                   uint32_t flags, uint32_t bufsz) {
   int fd;
 #ifndef _WIN32
@@ -223,7 +232,7 @@ LocalBroker::open(ResponseCallbackOpen *cb, const char *fname,
 
 
 void
-LocalBroker::create(ResponseCallbackOpen *cb, const char *fname, uint32_t flags,
+LocalBroker::create(Response::Callback::Open *cb, const char *fname, uint32_t flags,
                     int32_t bufsz, int16_t replication, int64_t blksz) {
   int fd;
 #ifndef _WIN32
@@ -310,7 +319,7 @@ void LocalBroker::close(ResponseCallback *cb, uint32_t fd) {
 }
 
 
-void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
+void LocalBroker::read(Response::Callback::Read *cb, uint32_t fd, uint32_t amount) {
   OpenFileDataLocalPtr fdata;
 #ifndef _WIN32
   ssize_t nread;
@@ -334,27 +343,37 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
   }
 
 #ifndef _WIN32
-  if ((offset = lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
+  if ((offset = (uint64_t)lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
+    DECLARE_ERROR
     report_error(cb);
-    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, CRT_IO_ERROR);
+    if (error != EINVAL)
+      m_status_manager.set_read_error(error);
+    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd,
+              strerror(errno));
     return;
   }
 
   if ((nread = FileUtils::read(fdata->fd, buf.base, amount)) == -1) {
+    DECLARE_ERROR
     report_error(cb);
+    m_status_manager.set_read_error(error);
     HT_ERRORF("read failed: fd=%d offset=%llu amount=%d - %s",
           fdata->fd, (Llu)offset, amount, IO_ERROR);
     return;
   }
 #else
   if ((offset = SetFilePointer(fdata->fd, 0, FILE_CURRENT)) == (uint64_t)-1) {
+    DWORD error = GetLastError();
     report_error(cb);
+    m_status_manager.set_read_error(error);
     HT_WIN32_LASTERROR("SetFilePointer failed");
     return;
   }
 
   if (!ReadFile(fdata->fd, buf.base, amount, &nread, 0)) {
+    DWORD error = GetLastError();
     report_error(cb);
+    m_status_manager.set_read_error(error);
     HT_WIN32_LASTERROR("FileRead failed");
     return;
   }
@@ -363,6 +382,8 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
   buf.size = nread;
   m_metrics_handler->add_bytes_read(buf.size);
 
+  m_status_manager.clear_status();
+
   if ((error = cb->response(offset, buf)) != Error::OK)
     HT_ERRORF("Problem sending response for read(%u, %u) - %s",
               (unsigned)fd, (unsigned)amount, Error::get_text(error));
@@ -370,7 +391,7 @@ void LocalBroker::read(ResponseCallbackRead *cb, uint32_t fd, uint32_t amount) {
 }
 
 
-void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
+void LocalBroker::append(Response::Callback::Append *cb, uint32_t fd,
                          uint32_t amount, const void *data, bool sync) {
   OpenFileDataLocalPtr fdata;
 #ifndef _WIN32
@@ -394,26 +415,36 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
 
 #ifndef _WIN32
   if ((offset = (uint64_t)lseek(fdata->fd, 0, SEEK_CUR)) == (uint64_t)-1) {
+    DECLARE_ERROR
     report_error(cb);
-    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd, CRT_IO_ERROR);
+    if (error != EINVAL)
+      m_status_manager.set_write_error(error);
+    HT_ERRORF("lseek failed: fd=%d offset=0 SEEK_CUR - %s", fdata->fd,
+              strerror(errno));
     return;
   }
 
   if ((nwritten = FileUtils::write(fdata->fd, data, amount)) == -1) {
+    DECLARE_ERROR
     report_error(cb);
+    m_status_manager.set_write_error(error);
     HT_ERRORF("write failed: fd=%d offset=%llu amount=%d data=%p- %s",
     fdata->fd, (Llu)offset, amount, data, IO_ERROR);
     return;
   }
 #else
   if ((offset = SetFilePointer(fdata->fd, 0, FILE_CURRENT)) == (uint64_t)-1) {
+    DWORD error = GetLastError();
     report_error(cb);
+    m_status_manager.set_read_error(error);
     HT_WIN32_LASTERROR("SetFilePointer failed");
     return;
   }
 
   if (!WriteFile(fdata->fd, data, amount, &nwritten, 0)) {
+    DWORD error = GetLastError();
     report_error(cb);
+    m_status_manager.set_read_error(error);
     HT_WIN32_LASTERROR("WriteFile failed");
     return;
   }
@@ -424,13 +455,16 @@ void LocalBroker::append(ResponseCallbackAppend *cb, uint32_t fd,
 
   int64_t start_time = get_ts64();
   if (sync && fsync(fdata->fd) != 0) {
+    DECLARE_ERROR
     report_error(cb);
-    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, IO_ERROR);
+    m_status_manager.set_write_error(error);
+    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, strerror(errno));
     return;
   }
-  m_metrics_handler->add_sync(get_ts64() - start_time);
 
+  m_metrics_handler->add_sync(get_ts64() - start_time);
   m_metrics_handler->add_bytes_written(nwritten);
+  m_status_manager.clear_status();
 
   if ((error = cb->response(offset, nwritten)) != Error::OK)
     HT_ERRORF("Problem sending response for append(%u, localfd=%u, %u) - %s",
@@ -526,7 +560,7 @@ void LocalBroker::remove(ResponseCallback *cb, const char *fname) {
 }
 
 
-void LocalBroker::length(ResponseCallbackLength *cb, const char *fname,
+void LocalBroker::length(Response::Callback::Length *cb, const char *fname,
         bool accurate) {
   String abspath;
   uint64_t length;
@@ -562,7 +596,7 @@ void LocalBroker::length(ResponseCallbackLength *cb, const char *fname,
 
 
 void
-LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
+LocalBroker::pread(Response::Callback::Read *cb, uint32_t fd, uint64_t offset,
                    uint32_t amount, bool) {
   OpenFileDataLocalPtr fdata;
 #ifndef _WIN32
@@ -586,7 +620,9 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
 
   nread = FileUtils::pread(fdata->fd, buf.base, buf.aligned_size(), (off_t)offset);
   if (nread != (ssize_t)buf.aligned_size()) {
+    DECLARE_ERROR
     report_error(cb);
+    m_status_manager.set_read_error(error);
     HT_ERRORF("pread failed: fd=%d amount=%d aligned_size=%d offset=%llu - %s",
               fdata->fd, (int)amount, (int)buf.aligned_size(), (Llu)offset,
               IO_ERROR);
@@ -594,6 +630,7 @@ LocalBroker::pread(ResponseCallbackRead *cb, uint32_t fd, uint64_t offset,
   }
 
   m_metrics_handler->add_bytes_read(nread);
+  m_status_manager.clear_status();
 
   if ((error = cb->response(offset, buf)) != Error::OK)
     HT_ERRORF("Problem sending response for pread(%u, %llu, %u) - %s",
@@ -669,7 +706,7 @@ void LocalBroker::rmdir(ResponseCallback *cb, const char *dname) {
 
 }
 
-void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
+void LocalBroker::readdir(Response::Callback::Readdir *cb, const char *dname) {
   std::vector<Filesystem::Dirent> listing;
   Filesystem::Dirent entry;
   String absdir;
@@ -799,121 +836,6 @@ void LocalBroker::readdir(ResponseCallbackReaddir *cb, const char *dname) {
   cb->response(listing);
 }
 
-
-void LocalBroker::posix_readdir(ResponseCallbackPosixReaddir *cb,
-            const char *dname) {
-  std::vector<Filesystem::DirectoryEntry> listing;
-  String absdir;
-
-  HT_DEBUGF("PosixReaddir dir='%s'", dname);
-
-  if (dname[0] == '/')
-    absdir = m_rootdir + dname;
-  else
-    absdir = m_rootdir + "/" + dname;
-
-#ifdef _WIN32
-
-  WIN32_FIND_DATA ffd;
-  HANDLE hFind = FindFirstFile( (absdir + "\\*").c_str(), &ffd);
-  if (hFind == INVALID_HANDLE_VALUE) {
-    report_error(cb);
-    return;
-  }
-  do {
-    if (*ffd.cFileName) {
-      if (ffd.cFileName[0] != '.' ||
-          (ffd.cFileName[1] != 0 && (ffd.cFileName[1] != '.' || ffd.cFileName[2] != 0))) {
-        Filesystem::DirectoryEntry dirent;
-        if (m_no_removal) {
-          size_t len = strlen(ffd.cFileName);
-          if (len <= 8 || strcmp(&ffd.cFileName[len-8], ".deleted"))
-            dirent.name = ffd.cFileName;
-          else
-            continue;
-        }
-        else
-          dirent.name = ffd.cFileName;
-
-        if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-          dirent.flags = Filesystem::DIRENT_DIRECTORY;
-          dirent.length = 0;
-        }
-        else {
-          dirent.flags = 0;
-          dirent.length = ffd.nFileSizeLow;
-        }
-        listing.push_back(dirent);
-      }
-    }
-  } while (FindNextFile(hFind, &ffd) != 0);
-  if (!FindClose(hFind))
-    HT_ERRORF("FindClose failed: %s", IO_ERROR);
-
-#else
-
-  DIR *dirp = opendir(absdir.c_str());
-  if (dirp == 0) {
-    report_error(cb);
-    HT_ERRORF("opendir('%s') failed - %s", absdir.c_str(), strerror(errno));
-    return;
-  }
-
-  struct dirent *dp = (struct dirent *)new uint8_t [sizeof(struct dirent)+1025];
-  struct dirent *result;
-
-  if (readdir_r(dirp, dp, &result) != 0) {
-    report_error(cb);
-    HT_ERRORF("readdir('%s') failed - %s", absdir.c_str(), strerror(errno));
-    (void)closedir(dirp);
-    delete [] (uint8_t *)dp;
-    return;
-  }
-
-  while (result != 0) {
-    if (result->d_name[0] != '.' && result->d_name[0] != 0) {
-      Filesystem::DirectoryEntry dirent;
-      if (m_no_removal) {
-        size_t len = strlen(result->d_name);
-        if (len <= 8 || strcmp(&result->d_name[len-8], ".deleted"))
-          dirent.name = result->d_name;
-        else
-          continue;
-      }
-      else
-        dirent.name = result->d_name;
-      dirent.flags = 0;
-      if (result->d_type & DT_DIR) {
-        dirent.flags |= Filesystem::DIRENT_DIRECTORY;
-        dirent.length = 0;
-      }
-      else {
-        dirent.length = (uint32_t)FileUtils::size(absdir + "/"
-                + result->d_name);
-      }
-      listing.push_back(dirent);
-      //HT_INFOF("readdir Adding listing '%s'", result->d_name);
-    }
-
-    if (readdir_r(dirp, dp, &result) != 0) {
-      report_error(cb);
-      HT_ERRORF("readdir('%s') failed - %s", absdir.c_str(), strerror(errno));
-      delete [] (uint8_t *)dp;
-      return;
-    }
-  }
-  (void)closedir(dirp);
-
-  delete [] (uint8_t *)dp;
-
-#endif
-
-  HT_DEBUGF("Sending back %d listings", (int)listing.size());
-
-  cb->response(listing);
-}
-
-
 void LocalBroker::flush(ResponseCallback *cb, uint32_t fd) {
   OpenFileDataLocalPtr fdata;
 
@@ -928,18 +850,22 @@ void LocalBroker::flush(ResponseCallback *cb, uint32_t fd) {
 
   int64_t start_time = get_ts64();
   if (fsync(fdata->fd) != 0) {
+    DECLARE_ERROR
     report_error(cb);
-    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, IO_ERROR);
+    m_status_manager.set_write_error(error);
+    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, strerror(errno));
     return;
   }
+
   m_metrics_handler->add_sync(get_ts64() - start_time);
+  m_status_manager.clear_status();
 
   cb->response_ok();
 }
 
 
-void LocalBroker::status(ResponseCallback *cb) {
-  cb->response_ok();
+void LocalBroker::status(Response::Callback::Status *cb) {
+  cb->response(m_status_manager.get());
 }
 
 
@@ -950,7 +876,7 @@ void LocalBroker::shutdown(ResponseCallback *cb) {
 }
 
 
-void LocalBroker::exists(ResponseCallbackExists *cb, const char *fname) {
+void LocalBroker::exists(Response::Callback::Exists *cb, const char *fname) {
   String abspath;
 
   HT_DEBUGF("exists file='%s'", fname);

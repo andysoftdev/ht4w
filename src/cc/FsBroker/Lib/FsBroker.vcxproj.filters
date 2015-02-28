@@ -5,6 +5,24 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Source Files\Request">
+      <UniqueIdentifier>{72c0b6db-af21-40bc-a5e3-961cee248983}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Response">
+      <UniqueIdentifier>{2419c560-9227-4dcd-9882-12ca7730a340}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Request\Handler">
+      <UniqueIdentifier>{fd1cfa47-1bde-4d85-ab12-25901401b0fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Request\Parameters">
+      <UniqueIdentifier>{0492895c-f974-41dc-9c7e-0b21f84c4091}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Response\Callback">
+      <UniqueIdentifier>{d0ac1dde-da7b-4051-91c7-5a786e735846}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Response\Parameters">
+      <UniqueIdentifier>{ac8278e1-9f51-427d-86cf-48177dd7ca1b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\stdafx.cc">
@@ -25,88 +43,163 @@
     <ClCompile Include="FileDevice.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Protocol.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerAppend.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerClose.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerCreate.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerDebug.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerExists.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerFlush.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerLength.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerMkdirs.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerOpen.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerPread.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerRead.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerReaddir.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerRemove.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerRename.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerRmdir.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerSeek.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerStatus.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackAppend.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackExists.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackLength.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackOpen.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackRead.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ResponseCallbackReaddir.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="EmbeddedFilesystem.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ResponseCallbackPosixReaddir.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RequestHandlerPosixReaddir.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MetricsHandler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Append.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Close.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Create.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Debug.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Exists.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Flush.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Length.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Mkdirs.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Open.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Pread.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Read.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Readdir.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Remove.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Rename.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Rmdir.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Seek.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Shutdown.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Append.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Close.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Create.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Debug.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Exists.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Factory.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Flush.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Length.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Mkdirs.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Open.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Pread.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Read.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Readdir.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Remove.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Rename.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Rmdir.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Seek.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Handler\Status.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Append.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Exists.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Length.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Open.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Read.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Readdir.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Callback\Status.cc">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Parameters\Append.cc">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Parameters\Exists.cc">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Parameters\Length.cc">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Parameters\Open.cc">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Parameters\Read.cc">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Parameters\Readdir.cc">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\Parameters\Status.cc">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="StatusManager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -135,88 +228,163 @@
     <ClInclude Include="OpenFileMap.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Protocol.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerAppend.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerClose.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerCreate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerDebug.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerExists.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerFlush.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerLength.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerMkdirs.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerOpen.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerPread.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerRead.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerReaddir.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerRemove.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerRename.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerRmdir.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerSeek.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerStatus.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackAppend.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackExists.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackLength.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackOpen.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackRead.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ResponseCallbackReaddir.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="EmbeddedFilesystem.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ResponseCallbackPosixReaddir.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RequestHandlerPosixReaddir.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="MetricsHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Append.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Close.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Create.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Debug.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Exists.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Flush.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Length.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Mkdirs.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Open.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Pread.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Read.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Readdir.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Remove.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Rename.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Rmdir.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Seek.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Shutdown.h">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Append.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Close.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Create.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Debug.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Exists.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Factory.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Flush.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Length.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Mkdirs.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Open.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Pread.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Read.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Readdir.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Remove.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Rename.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Rmdir.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Seek.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Status.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Append.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Exists.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Length.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Open.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Read.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Readdir.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Callback\Status.h">
+      <Filter>Source Files\Response\Callback</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Parameters\Append.h">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Parameters\Exists.h">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Parameters\Length.h">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Parameters\Open.h">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Parameters\Read.h">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Parameters\Readdir.h">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\Parameters\Status.h">
+      <Filter>Source Files\Response\Parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="StatusManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -265,18 +265,18 @@ int main(int argc, char **argv) {
   // Setup dirs /links
   unlink("rs1.out");unlink("rs2.out");unlink("rs3.out");
 #ifndef _WIN32
-  unlink("./Hypertable.RangeServer");
-  HT_ASSERT(link("../RangeServer/Hypertable.RangeServer",
-                 "./Hypertable.RangeServer") == 0);
-  unlink("./serverup");
-  HT_ASSERT(link("../../Tools/serverup/serverup", "./serverup") == 0);
+  unlink("./htRangeServer");
+  HT_ASSERT(link("../RangeServer/htRangeServer",
+                 "./htRangeServer") == 0);
+  unlink("./ht_serverup");
+  HT_ASSERT(link("../../Tools/serverup/ht_serverup", "./ht_serverup") == 0);
 #endif
 
   config_file = install_dir + config_file;
   Config::parse_file(config_file, file_desc());
 
 #ifndef _WIN32
-  start_all = ht_bin_path + "/start-test-servers.sh --clear --no-rangeserver"
+  start_all = ht_bin_path + "/ht-start-test-servers.sh --clear --no-rangeserver"
               " --no-thriftbroker --config=" + config_file;
   if (system(start_all.c_str()) !=0) {
     HT_ERROR("Unable to start servers");
@@ -431,9 +431,9 @@ namespace {
     //make syscall to serverup and make sure RangeServer is up
     String command;
 #ifndef _WIN32
-    command = (String)"./serverup --wait 5000 --silent --range-server localhost:" + port + (String)" rangeserver";
+    command = (String)"./ht_serverup --wait 5000 --silent --range-server localhost:" + port + (String)" rangeserver";
 #else
-    command = (String)"..\\serverup.exe --wait 5000 --silent --range-server localhost:" + port + (String)" rangeserver";
+    command = (String)"..\\ht_serverup.exe --wait 5000 --silent --range-server localhost:" + port + (String)" rangeserver";
 #endif
     if (system(command.c_str()) !=0) {
       HT_ERRORF("RangeServer on port %d did not come up", port);
@@ -475,7 +475,7 @@ namespace {
       rs_args.push_back((const char *)0);
 
 #ifndef _WIN32
-      rs = new ServerLauncher("./Hypertable.RangeServer", (char * const *)&rs_args[0],
+      rs = new ServerLauncher("./htRangeServer", (char * const *)&rs_args[0],
                               outfile.c_str());
 #else
       rs = new ServerLauncher("..\\Hypertable.RangeServer.exe", (char * const *)&rs_args[0],

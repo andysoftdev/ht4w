@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -71,7 +71,7 @@ namespace Hypertable {
 
     /// Returns Hyperspace cache entry for a table.
     /// @param table_id %Table identifier string
-    /// @param schema Output parameter to hold Schema object
+    /// @param entry Reference to Entry object to be filled in
     /// @return <i>true</i> if cache entry found for <code>table_id</code>,
     /// <i>false</i> otherwise.
     bool get(const String &table_id, Entry &entry);

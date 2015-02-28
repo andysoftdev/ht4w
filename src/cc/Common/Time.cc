@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -34,29 +34,6 @@
 #ifdef _WIN32
 
 #include "HRTimer.h"
-
-struct tm* gmtime_r(const time_t *timer, struct tm *result)
-{
-  if (timer && *timer < 0) { // handle date/times before 1970
-    static time_t ofs = 0;
-    if( !ofs ) {
-      struct tm t_ofs;
-      memset(&t_ofs, 0, sizeof(t_ofs));
-      t_ofs.tm_year = 126;
-      t_ofs.tm_mday = 1;
-      ofs = _mkgmtime(&t_ofs);
-    }
-    time_t t = *timer + ofs;
-    if (gmtime_s(result, &t)) {
-      return 0;
-    }
-    result->tm_year -= 56;
-  }
-  else if (gmtime_s(result, timer)) {
-    return 0;
-  }
-  return result;
-}
 
 #endif
 
@@ -202,6 +179,7 @@ time_t timegm(struct tm *t) {
     }
   return (tl - (tb - tl));
 }
+
 #elif defined(_WIN32)
 
 namespace {
@@ -272,3 +250,30 @@ void localtime_r(const time_t* time, tm* t) {
 #endif
 
 } // namespace Hypertable
+
+#ifdef _WIN32
+
+struct tm* gmtime_r(const time_t *timer, struct tm *result)
+{
+  if (timer && *timer < 0) { // handle date/times before 1970
+    static time_t ofs = 0;
+    if( !ofs ) {
+      struct tm t_ofs;
+      memset(&t_ofs, 0, sizeof(t_ofs));
+      t_ofs.tm_year = 126;
+      t_ofs.tm_mday = 1;
+      ofs = _mkgmtime(&t_ofs);
+    }
+    time_t t = *timer + ofs;
+    if (gmtime_s(result, &t)) {
+      return 0;
+    }
+    result->tm_year -= 56;
+  }
+  else if (gmtime_s(result, timer)) {
+    return 0;
+  }
+  return result;
+}
+
+#endif

@@ -195,6 +195,8 @@
       <AdditionalIncludeDirectories>.\;$(SolutionDir)deps\thrift\lib\cpp\src\windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\zlib</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>force_inc.h</ForcedIncludeFiles>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -222,6 +224,8 @@
       <AdditionalOptions>/wd4996 %(AdditionalOptions)</AdditionalOptions>
       <ForcedIncludeFiles>force_inc.h</ForcedIncludeFiles>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -255,6 +259,8 @@
       <AdditionalIncludeDirectories>.\;$(SolutionDir)deps\thrift\lib\cpp\src\windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\zlib</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>force_inc.h</ForcedIncludeFiles>
       <OmitFramePointers>true</OmitFramePointers>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -290,6 +296,8 @@
       <AdditionalOptions>/wd4996 %(AdditionalOptions)</AdditionalOptions>
       <ForcedIncludeFiles>force_inc.h</ForcedIncludeFiles>
       <OmitFramePointers>true</OmitFramePointers>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

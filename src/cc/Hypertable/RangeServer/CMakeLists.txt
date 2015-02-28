@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2014 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This file is part of Hypertable.
 #
@@ -30,8 +30,9 @@ CellCacheAllocator.cc
 CellCacheManager.cc
 CellCacheScanner.cc
 CellListScannerBuffer.cc
-CellStoreReleaseCallback.cc
+CellStore.cc
 CellStoreFactory.cc
+CellStoreReleaseCallback.cc
 CellStoreScanner.cc
 CellStoreScannerIntervalBlockIndex.cc
 CellStoreScannerIntervalReadahead.cc
@@ -43,7 +44,6 @@ CellStoreTrailerV4.cc
 CellStoreTrailerV5.cc
 CellStoreTrailerV6.cc
 CellStoreTrailerV7.cc
-CellStore.cc
 CellStoreV0.cc
 CellStoreV1.cc
 CellStoreV2.cc
@@ -82,58 +82,58 @@ MaintenanceTaskMemoryPurge.cc
 MaintenanceTaskRelinquish.cc
 MaintenanceTaskSplit.cc
 MaintenanceTaskWorkQueue.cc
-MergeScannerRange.cc
 MergeScannerAccessGroup.cc
+MergeScannerRange.cc
+MetaLogDefinitionRangeServer.cc
 MetaLogEntityRange.cc
 MetaLogEntityRemoveOkLogs.cc
 MetaLogEntityTaskAcknowledgeRelinquish.cc
-MetaLogDefinitionRangeServer.cc
 MetadataNormal.cc
 MetadataRoot.cc
 PhantomRange.cc
 PhantomRangeMap.cc
 QueryCache.cc
 Range.cc
-RangeServer.cc
-RequestHandlerAcknowledgeLoad.cc
-RequestHandlerCompact.cc
-RequestHandlerCreateScanner.cc
-RequestHandlerDestroyScanner.cc
-RequestHandlerDoMaintenance.cc
-RequestHandlerDropRange.cc
-RequestHandlerDump.cc
-RequestHandlerDumpPseudoTable.cc
-RequestHandlerGetStatistics.cc
-RequestHandlerGroupCommit.cc
-RequestHandlerFetchScanblock.cc
-RequestHandlerHeapcheck.cc
-RequestHandlerDropTable.cc
-RequestHandlerLoadRange.cc
-RequestHandlerMetadataSync.cc
-RequestHandlerUpdateSchema.cc
-RequestHandlerRelinquishRange.cc
-RequestHandlerStatus.cc
-RequestHandlerUpdate.cc
-RequestHandlerWaitForMaintenance.cc
-RequestHandlerShutdown.cc
-RequestHandlerCommitLogSync.cc
-RequestHandlerReplayFragments.cc
-RequestHandlerPhantomLoad.cc
-RequestHandlerPhantomUpdate.cc
-RequestHandlerPhantomCommitRanges.cc
-RequestHandlerPhantomPrepareRanges.cc
-RequestHandlerSetState.cc
-RequestHandlerTableMaintenanceDisable.cc
-RequestHandlerTableMaintenanceEnable.cc
-ResponseCallbackCreateScanner.cc
-ResponseCallbackFetchScanblock.cc
-ResponseCallbackGetStatistics.cc
-ResponseCallbackUpdate.cc
-ResponseCallbackPhantomUpdate.cc
-ResponseCallbackAcknowledgeLoad.cc
 RangeReplayBuffer.cc
+RangeServer.cc
 ReplayBuffer.cc
 ReplayDispatchHandler.cc
+Request/Handler/AcknowledgeLoad.cc
+Request/Handler/CommitLogSync.cc
+Request/Handler/Compact.cc
+Request/Handler/CreateScanner.cc
+Request/Handler/DestroyScanner.cc
+Request/Handler/DoMaintenance.cc
+Request/Handler/DropRange.cc
+Request/Handler/DropTable.cc
+Request/Handler/Dump.cc
+Request/Handler/DumpPseudoTable.cc
+Request/Handler/FetchScanblock.cc
+Request/Handler/GetStatistics.cc
+Request/Handler/GroupCommit.cc
+Request/Handler/Heapcheck.cc
+Request/Handler/LoadRange.cc
+Request/Handler/MetadataSync.cc
+Request/Handler/PhantomCommitRanges.cc
+Request/Handler/PhantomLoad.cc
+Request/Handler/PhantomPrepareRanges.cc
+Request/Handler/PhantomUpdate.cc
+Request/Handler/RelinquishRange.cc
+Request/Handler/ReplayFragments.cc
+Request/Handler/SetState.cc
+Request/Handler/Shutdown.cc
+Request/Handler/Status.cc
+Request/Handler/TableMaintenanceDisable.cc
+Request/Handler/TableMaintenanceEnable.cc
+Request/Handler/Update.cc
+Request/Handler/UpdateSchema.cc
+Request/Handler/WaitForMaintenance.cc
+Response/Callback/AcknowledgeLoad.cc
+Response/Callback/CreateScanner.cc
+Response/Callback/GetStatistics.cc
+Response/Callback/PhantomUpdate.cc
+Response/Callback/Status.cc
+Response/Callback/Update.cc
 ScanContext.cc
 ScannerMap.cc
 ServerState.cc
@@ -151,27 +151,27 @@ endif ()
 add_library(HyperRanger ${RangeServer_SRCS})
 target_link_libraries(HyperRanger m HyperFsBroker Hypertable ${RE2_LIBRARIES})
 
-# RangeServer
-add_executable(Hypertable.RangeServer main.cc)
-target_link_libraries(Hypertable.RangeServer HyperRanger ${MALLOC_LIBRARY})
+# htRangeServer
+add_executable(htRangeServer main.cc)
+target_link_libraries(htRangeServer HyperRanger ${MALLOC_LIBRARY})
 
-# csdump
-add_executable(csdump csdump.cc)
-target_link_libraries(csdump HyperRanger)
+# ht_csdump
+add_executable(ht_csdump csdump.cc)
+target_link_libraries(ht_csdump HyperRanger)
 
-# csvalidate
-add_executable(csvalidate csvalidate.cc)
-target_link_libraries(csvalidate HyperRanger)
+# ht_csvalidate
+add_executable(ht_csvalidate csvalidate.cc)
+target_link_libraries(ht_csvalidate HyperRanger)
 
-# count_stored - program to diff two sorted files
-add_executable(count_stored count_stored.cc)
-target_link_libraries(count_stored HyperRanger)
+# ht_count_stored - program to diff two sorted files
+add_executable(ht_count_stored count_stored.cc)
+target_link_libraries(ht_count_stored HyperRanger)
 
 if (NOT HT_COMPONENT_INSTALL)
   file(GLOB HEADERS *.h)
   install(FILES ${HEADERS}
       DESTINATION include/Hypertable/RangeServer)
-  install(TARGETS HyperRanger Hypertable.RangeServer csdump csvalidate count_stored
+  install(TARGETS HyperRanger htRangeServer ht_csdump ht_csvalidate ht_count_stored
           RUNTIME DESTINATION bin
           LIBRARY DESTINATION lib
           ARCHIVE DESTINATION lib)

@@ -26,6 +26,8 @@
 #error Platform isn't supported
 #endif
 
+#include <vector>
+
 namespace Hypertable {
 
   class ProcessUtils {

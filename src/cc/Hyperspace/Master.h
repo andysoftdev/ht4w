@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -36,6 +36,7 @@
 #include <Hyperspace/response/ResponseCallbackReaddir.h>
 #include <Hyperspace/response/ResponseCallbackReaddirAttr.h>
 #include <Hyperspace/response/ResponseCallbackReadpathAttr.h>
+#include <Hyperspace/response/ResponseCallbackStatus.h>
 
 #include <AsyncComm/Comm.h>
 #include <AsyncComm/ConnectionManager.h>
@@ -46,6 +47,7 @@
 #include <Common/Properties.h>
 #include <Common/ReferenceCount.h>
 #include <Common/SockAddrMap.h>
+#include <Common/Status.h>
 #include <Common/StringExt.h>
 #include <Common/Time.h>
 #include <Common/atomic.h>
@@ -115,6 +117,7 @@ namespace Hyperspace {
     void readpath_attr(ResponseCallbackReadpathAttr *cb, uint64_t session_id,
                        uint64_t handle, const char *name, const char *attr);
     void shutdown(ResponseCallback *cb, uint64_t session_id);
+    void status(ResponseCallbackStatus *cb);
     void lock(ResponseCallbackLock *cb, uint64_t session_id, uint64_t handle,
               uint32_t mode, bool try_lock);
     void release(ResponseCallback *cb, uint64_t session_id, uint64_t handle);
@@ -328,7 +331,7 @@ namespace Hyperspace {
 #ifdef _WIN32
     ::HANDLE      m_lock_fd;
 #else
-	int           m_lock_fd;	
+    int           m_lock_fd;
 #endif
     uint32_t      m_generation;
     uint64_t      m_next_handle_number;
@@ -352,6 +355,9 @@ namespace Hyperspace {
 
     // BerkeleyDB state
     BerkeleyDbFilesystem *m_bdb_fs;
+
+    /// Program status tracker
+    Status m_status;
 
   };
 

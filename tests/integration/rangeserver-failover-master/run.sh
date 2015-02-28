@@ -2,7 +2,7 @@
 
 HT_HOME=${INSTALL_DIR:-"/opt/hypertable/current"}
 HYPERTABLE_HOME=${HT_HOME}
-HT_SHELL=$HT_HOME/bin/hypertable
+HT_SHELL="$HT_HOME/bin/ht shell"
 SCRIPT_DIR=`dirname $0`
 DATA_SEED=42
 DATA_SIZE=${DATA_SIZE:-"2000000"}
@@ -15,8 +15,8 @@ RUN_DIR=`pwd`
 \rm -rf $HT_HOME/log/*
 
 # shut down range servers
-kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.*.pid`
-\rm -f $HT_HOME/run/Hypertable.RangeServer.*.pid
+kill -9 `cat $HT_HOME/run/RangeServer.*.pid`
+\rm -f $HT_HOME/run/RangeServer.*.pid
 
 # Dumping cores slows things down unnecessarily for normal test runs
 #ulimit -c 0
@@ -24,12 +24,12 @@ kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.*.pid`
 start_master() {
     local INDUCER_ARG=$1
     shift
-    set_start_vars Hypertable.Master
+    set_start_vars Master
     check_pidfile $pidfile && return 0
 
     check_server --config=${SCRIPT_DIR}/test.cfg master
     if [ $? != 0 ] ; then
-        $HT_HOME/bin/ht Hypertable.Master --verbose --pidfile=$HT_HOME/run/Hypertable.Master.pid \
+        $HT_HOME/bin/ht Master --verbose --pidfile=$HT_HOME/run/Master.pid \
             --config=${SCRIPT_DIR}/test.cfg $INDUCER_ARG 2>&1 > master.output.$TEST&
         wait_for_server_up master "$pidname" --config=${SCRIPT_DIR}/test.cfg
     else
@@ -68,25 +68,25 @@ stop_range_servers() {
     local port
     let port=15869+$1
     while [ $port -ge 15870 ] ; do
-        echo "shutdown; quit;" | $HT_HOME/bin/ht rsclient localhost:$port
+        echo "shutdown; quit;" | $HT_HOME/bin/ht rangeserver localhost:$port
         let port-=1
     done
     sleep 1
-    kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs?.pid`
-    \rm -f $HT_HOME/run/Hypertable.RangeServer.rs?.pid
+    kill -9 `cat $HT_HOME/run/RangeServer.rs?.pid`
+    \rm -f $HT_HOME/run/RangeServer.rs?.pid
 }
 
 stop_rs() {
     local port
     let port=15869+$1
-    echo "shutdown; quit;" | $HT_HOME/bin/ht rsclient localhost:$port
-    kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs$1.pid`
-    \rm -f $HT_HOME/run/Hypertable.RangeServer.rs$1.pid
+    echo "shutdown; quit;" | $HT_HOME/bin/ht rangeserver localhost:$port
+    kill -9 `cat $HT_HOME/run/RangeServer.rs$1.pid`
+    \rm -f $HT_HOME/run/RangeServer.rs$1.pid
 }
 
 kill_rs() {
-    kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.rs$1.pid`
-    \rm -f $HT_HOME/run/Hypertable.RangeServer.rs$1.pid
+    kill -9 `cat $HT_HOME/run/RangeServer.rs$1.pid`
+    \rm -f $HT_HOME/run/RangeServer.rs$1.pid
 }
 
 save_failure_state() {
@@ -126,7 +126,7 @@ run_test() {
     let i=1
     while [ $# -gt 0 ] ; do
         INDUCED_FAILURE[$i]=$1
-        PIDFILE[$i]=$HT_HOME/run/Hypertable.RangeServer.rs$i.pid
+        PIDFILE[$i]=$HT_HOME/run/RangeServer.rs$i.pid
         let port=15869+$i
         PORT[$i]=$port
         let i+=1
@@ -145,11 +145,11 @@ run_test() {
     done
 
     stop_range_servers $RS_COUNT
-    $HT_HOME/bin/stop-servers.sh
+    $HT_HOME/bin/ht-stop-servers.sh
 
     sleep 10
 
-    $HT_HOME/bin/start-test-servers.sh --no-master --no-rangeserver \
+    $HT_HOME/bin/ht-start-test-servers.sh --no-master --no-rangeserver \
         --no-thriftbroker --clear --FsBroker.DisableFileRemoval=true
 
     # start master-launcher script in background. it will restart the
@@ -161,7 +161,7 @@ run_test() {
     echo $MASTER_INDUCED_FAILURE | grep ":exit:" > /dev/null
     if [ $? == 0 ] ; then
         MASTER_EXIT=true
-        set_start_vars Hypertable.Master
+        set_start_vars Master
         $SCRIPT_DIR/master-launcher.sh $RESTART_RANGESERVERS_ARG $INDUCER_ARG > master.output.$TEST 2>&1 &
         wait_for_server_up master "$pidname" --config=${SCRIPT_DIR}/test.cfg        
     else
@@ -175,7 +175,7 @@ run_test() {
         if test -n "${INDUCED_FAILURE[$j]}" ; then
             INDUCER_ARG=--induce-failure=${INDUCED_FAILURE[$j]}
         fi
-        $HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=${PIDFILE[$j]} \
+        $HT_HOME/bin/ht RangeServer --verbose --pidfile=${PIDFILE[$j]} \
             --Hypertable.RangeServer.ProxyName=rs$j \
             --Hypertable.RangeServer.Port=${PORT[$j]} $INDUCER_ARG \
             --config=${SCRIPT_DIR}/test.cfg 2>&1 > rangeserver.rs$j.output.$TEST &
@@ -262,14 +262,14 @@ run_test() {
     sleep 5
 
     # shut down range servers
-    kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.*.pid`
-    \rm -f $HT_HOME/run/Hypertable.RangeServer.*.pid
+    kill -9 `cat $HT_HOME/run/RangeServer.*.pid`
+    \rm -f $HT_HOME/run/RangeServer.*.pid
 
     # Make sure all ranges have been acknowledged
     let j=2
     while [ $j -le $RS_COUNT ] ; do
         if test -z "${INDUCED_FAILURE[$j]}" ; then
-            $HT_HOME/bin/metalog_dump /hypertable/servers/rs$j/log/rsml | fgrep -v "PHANTOM" | fgrep "load_acknowledged=false"
+            $HT_HOME/bin/ht metalog_dump /hypertable/servers/rs$j/log/rsml | fgrep -v "PHANTOM" | fgrep "load_acknowledged=false"
             if [ $? == 0 ] ; then
                 echo "ERROR: Unacknowledged ranges"
                 exit 1
@@ -279,7 +279,7 @@ run_test() {
     done
 
     # shut down remaining servers
-    $HT_HOME/bin/stop-servers.sh
+    $HT_HOME/bin/ht-stop-servers.sh
 
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -49,7 +49,7 @@ using namespace boost::filesystem;
 string System::install_dir;
 string System::exe_name;
 
-#if !defined(__sun__) && !defined(_WIN32)
+#ifndef _WIN32
 
 long System::tm_gmtoff;
 string System::tm_zone;
@@ -164,40 +164,40 @@ int32_t System::get_drive_count() {
     }
   }
 
-	// check volumes if there are no physical drives
-	if (drive_count == 0) {
-		char volumeName[MAX_PATH];
-		HANDLE fh = FindFirstVolumeA(volumeName, ARRAYSIZE(volumeName));
-		if (fh != INVALID_HANDLE_VALUE) {
-			do {
-				if (GetDriveTypeA(volumeName) == DRIVE_FIXED) {
-					PathRemoveBackslashA(volumeName);
-					// is USB device
-					dev = CreateFileA(volumeName, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
-					if (dev != INVALID_HANDLE_VALUE) {
-						DWORD dwOutBytes = 0;
-						STORAGE_PROPERTY_QUERY query;
-						query.PropertyId = StorageDeviceProperty;
-						query.QueryType = PropertyStandardQuery;
+  // check volumes if there are no physical drives
+  if (drive_count == 0) {
+    char volumeName[MAX_PATH];
+    HANDLE fh = FindFirstVolumeA(volumeName, ARRAYSIZE(volumeName));
+    if (fh != INVALID_HANDLE_VALUE) {
+      do {
+        if (GetDriveTypeA(volumeName) == DRIVE_FIXED) {
+          PathRemoveBackslashA(volumeName);
+          // is USB device
+          dev = CreateFileA(volumeName, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+          if (dev != INVALID_HANDLE_VALUE) {
+            DWORD dwOutBytes = 0;
+            STORAGE_PROPERTY_QUERY query;
+            query.PropertyId = StorageDeviceProperty;
+            query.QueryType = PropertyStandardQuery;
 
-						char outBuf[1024];
-						PSTORAGE_DEVICE_DESCRIPTOR pDevDesc = (PSTORAGE_DEVICE_DESCRIPTOR)outBuf;
-						pDevDesc->Size = sizeof(outBuf);
-						if (DeviceIoControl(dev, IOCTL_STORAGE_QUERY_PROPERTY, &query, sizeof(query), pDevDesc, pDevDesc->Size, &dwOutBytes, 0)) {
-							if (pDevDesc->BusType != BusTypeUsb) 
-								++drive_count;
-						}
-						else {
-							++drive_count; // assume none USB
-						}
-					}
-					CloseHandle(dev);
-				}
-			}
-			while (FindNextVolumeA(fh, volumeName, ARRAYSIZE(volumeName)));
-			FindVolumeClose(fh);
-		}
-	}
+            char outBuf[1024];
+            PSTORAGE_DEVICE_DESCRIPTOR pDevDesc = (PSTORAGE_DEVICE_DESCRIPTOR)outBuf;
+            pDevDesc->Size = sizeof(outBuf);
+            if (DeviceIoControl(dev, IOCTL_STORAGE_QUERY_PROPERTY, &query, sizeof(query), pDevDesc, pDevDesc->Size, &dwOutBytes, 0)) {
+              if (pDevDesc->BusType != BusTypeUsb) 
+                ++drive_count;
+            }
+            else {
+              ++drive_count; // assume none USB
+            }
+          }
+          CloseHandle(dev);
+        }
+      }
+      while (FindNextVolumeA(fh, volumeName, ARRAYSIZE(volumeName)));
+      FindVolumeClose(fh);
+    }
+  }
 
 #endif
 

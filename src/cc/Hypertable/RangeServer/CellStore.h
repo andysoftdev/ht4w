@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -35,7 +35,7 @@
 #include <Hypertable/RangeServer/KeyDecompressor.h>
 
 #include <Hypertable/Lib/BlockCompressionCodec.h>
-#include <Hypertable/Lib/Types.h>
+#include <Hypertable/Lib/TableIdentifier.h>
 
 #include <Common/Mutex.h>
 #include <Common/String.h>

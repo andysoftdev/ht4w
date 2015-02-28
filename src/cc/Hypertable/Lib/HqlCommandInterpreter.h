@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -58,7 +58,7 @@ namespace Hypertable {
     /// SELECT queries are issued.
     /// @param line HQL command to execute
     /// @return Command return code
-    int execute_line(const String &line) override;
+    int execute_line(const std::string &line) override;
 
   private:
 

@@ -2,7 +2,7 @@
 
 HT_HOME=${INSTALL_DIR:-"/opt/hypertable/current"}
 HYPERTABLE_HOME=${HT_HOME}
-HT_SHELL=$HT_HOME/bin/hypertable
+HT_SHELL="$HT_HOME/bin/ht shell"
 SCRIPT_DIR=`dirname $0`
 DATA_SEED=42
 DATA_SIZE=${DATA_SIZE:-"2000000"}
@@ -15,27 +15,27 @@ RUN_DIR=`pwd`
 \rm -rf $HT_HOME/log/*
 
 # shut down range servers
-kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.*.pid`
-\rm -f $HT_HOME/run/Hypertable.RangeServer.*.pid
+kill -9 `cat $HT_HOME/run/RangeServer.*.pid`
+\rm -f $HT_HOME/run/RangeServer.*.pid
 
 # Start servers (minus range server)
-$HT_HOME/bin/start-test-servers.sh --no-rangeserver \
+$HT_HOME/bin/ht-start-test-servers.sh --no-rangeserver \
     --no-thriftbroker --clear --induce-failure="bad-rsml:throw:0" \
     --config=${SCRIPT_DIR}/test.cfg 
 
 # Start rs1
-$HT_HOME/bin/ht Hypertable.RangeServer \
+$HT_HOME/bin/ht RangeServer \
     --config=${SCRIPT_DIR}/test.cfg \
     --verbose \
-    --pidfile=$HT_HOME/run/Hypertable.RangeServer.rs1.pid \
+    --pidfile=$HT_HOME/run/RangeServer.rs1.pid \
     --Hypertable.RangeServer.ProxyName=rs1 \
     --Hypertable.RangeServer.Port=15870 > rangeserver.rs1.output &
 
 # Start rs2
-$HT_HOME/bin/ht Hypertable.RangeServer \
+$HT_HOME/bin/ht RangeServer \
     --config=${SCRIPT_DIR}/test.cfg \
     --verbose \
-    --pidfile=$HT_HOME/run/Hypertable.RangeServer.rs2.pid \
+    --pidfile=$HT_HOME/run/RangeServer.rs2.pid \
     --Hypertable.RangeServer.ProxyName=rs2 \
     --Hypertable.RangeServer.Port=15871 > rangeserver.rs2.output &
 
@@ -59,28 +59,28 @@ fi
 sleep 10
 
 ## Kill servers
-kill `cat $HT_HOME/run/Hypertable.Master.pid`
-kill `cat $HT_HOME/run/Hypertable.RangeServer.rs*.pid`
-$HT_HOME/bin/stop-servers.sh
+kill `cat $HT_HOME/run/Master.pid`
+kill `cat $HT_HOME/run/RangeServer.rs*.pid`
+$HT_HOME/bin/ht-stop-servers.sh
 
 # Start servers (minus range server)
-$HT_HOME/bin/start-test-servers.sh --no-rangeserver \
+$HT_HOME/bin/ht-start-test-servers.sh --no-rangeserver \
     --no-thriftbroker  --config=${SCRIPT_DIR}/test.cfg 
 
 # Start rs1
-$HT_HOME/bin/ht Hypertable.RangeServer \
+$HT_HOME/bin/ht RangeServer \
     --config=${SCRIPT_DIR}/test.cfg \
     --verbose \
-    --pidfile=$HT_HOME/run/Hypertable.RangeServer.rs1.pid \
+    --pidfile=$HT_HOME/run/RangeServer.rs1.pid \
     --Hypertable.RangeServer.ProxyName=rs1 \
     --induce-failure="bad-rsml:throw:0" \
     --Hypertable.RangeServer.Port=15870 > rangeserver.rs1.output &
 
 # Start rs2
-$HT_HOME/bin/ht Hypertable.RangeServer \
+$HT_HOME/bin/ht RangeServer \
     --config=${SCRIPT_DIR}/test.cfg \
     --verbose \
-    --pidfile=$HT_HOME/run/Hypertable.RangeServer.rs2.pid \
+    --pidfile=$HT_HOME/run/RangeServer.rs2.pid \
     --Hypertable.RangeServer.ProxyName=rs2 \
     --Hypertable.RangeServer.Port=15871 > rangeserver.rs2.output &
 
@@ -94,10 +94,10 @@ done
 
 
 # Shut down range servers
-kill -9 `cat $HT_HOME/run/Hypertable.RangeServer.*.pid`
-\rm -f $HT_HOME/run/Hypertable.RangeServer.*.pid
+kill -9 `cat $HT_HOME/run/RangeServer.*.pid`
+\rm -f $HT_HOME/run/RangeServer.*.pid
 
 # Shut down remaining servers
-$HT_HOME/bin/stop-servers.sh
+$HT_HOME/bin/ht-stop-servers.sh
 
 exit 0

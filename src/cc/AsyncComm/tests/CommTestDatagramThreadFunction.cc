@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -165,11 +165,7 @@ void CommTestDatagramThreadFunction::operator()() {
     infile.close();
   }
   else {
-#ifndef _WIN32
     HT_ERRORF("Unable to open file '%s' : %s", m_input_file, strerror(errno));
-#else
-    HT_ERRORF("Unable to open file '%s' : %s", m_input_file, winapi_strerror(::GetLastError()));
-#endif
     return;
   }
 

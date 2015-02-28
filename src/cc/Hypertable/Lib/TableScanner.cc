@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -42,8 +42,8 @@ TableScanner::TableScanner(Comm *comm, Table *table,
   : m_callback(this), m_cur_cells(0), m_cur_cells_index(0), m_cur_cells_size(0),
     m_error(Error::OK), m_eos(false) {
 
-  m_queue = new TableScannerQueue();
-  ApplicationQueueInterfacePtr app_queue = (ApplicationQueueInterface *)m_queue.get();
+  m_queue = make_shared<TableScannerQueue>();
+  ApplicationQueueInterfacePtr app_queue = m_queue;
   m_scanner = new TableScannerAsync(comm, app_queue, table, range_locator, 
                                     scan_spec, timeout_ms, &m_callback);
 }
@@ -98,7 +98,7 @@ void TableScanner::scan_ok(ScanCellsPtr &cells) {
   m_queue->add_cells(cells);
 }
 
-void TableScanner::scan_error(int error, const String &error_msg) {
+void TableScanner::scan_error(int error, const string &error_msg) {
   m_queue->set_error(error, error_msg);
 }
 

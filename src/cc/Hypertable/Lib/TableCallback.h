@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -54,7 +54,7 @@ namespace Hypertable {
      * @param error_msg
      * @param eos end of scan
      */
-    void scan_error(TableScannerAsync *scanner, int error, const String &error_msg,
+    void scan_error(TableScannerAsync *scanner, int error, const std::string &error_msg,
                     bool eos);
 
     /**

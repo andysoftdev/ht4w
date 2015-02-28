@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -39,7 +39,7 @@ namespace Hypertable {
       virtual bool execute() = 0;
       virtual void work_queue_add_hook() { }
     };
-    typedef intrusive_ptr<EntityTask> EntityTaskPtr;
+    typedef std::shared_ptr<EntityTask> EntityTaskPtr;
 
   } // namespace MetaLog
 } // namespace Hypertable

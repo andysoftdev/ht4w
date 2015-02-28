@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,6 +25,8 @@
 
 namespace Hypertable {
 
+  using namespace Lib;
+
   class TableMutatorAsync;
   class TableScannerAsync;
 
@@ -33,7 +35,7 @@ namespace Hypertable {
 
       Result(TableScannerAsync *scanner, ScanCellsPtr &cells);
       Result(TableScannerAsync *scanner, int error,
-             const String &error_msg);
+             const std::string &error_msg);
       Result(TableMutatorAsync *);
       Result(TableMutatorAsync *, int error, FailedMutations &failed_mutations);
 
@@ -43,7 +45,7 @@ namespace Hypertable {
       TableScannerAsync *get_scanner();
       TableMutatorAsync *get_mutator();
       void get_cells(Cells &cells);
-      void get_error(int &error, String &m_error_msg);
+      void get_error(int &error, std::string &m_error_msg);
       FailedMutations& get_failed_mutations();
       void get_failed_cells(Cells &cells);
       size_t memory_used() {
@@ -58,7 +60,7 @@ namespace Hypertable {
       TableMutatorAsync *m_mutator;
       ScanCellsPtr m_cells;
       int m_error;
-      String m_error_msg;
+      std::string m_error_msg;
       bool m_isscan;
       bool m_iserror;
       CellsBuilder m_failed_cells;

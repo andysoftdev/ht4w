@@ -2,7 +2,7 @@
 
 HT_HOME=${INSTALL_DIR:-"$HOME/hypertable/current"}
 HYPERTABLE_HOME=${HT_HOME}
-HT_SHELL=$HT_HOME/bin/hypertable
+HT_SHELL="$HT_HOME/bin/ht shell"
 SCRIPT_DIR=`dirname $0`
 #DATA_SEED=42 # for repeating certain runs
 DIGEST="openssl dgst -md5"
@@ -15,7 +15,7 @@ save_failure_state() {
   mkdir $ARCHIVE_DIR
   \ps auxww | fgrep -i hyper | fgrep -v java > $ARCHIVE_DIR/ps-listing.txt
   mv dbdump.* rangeserver.output* error* report.* $ARCHIVE_DIR
-  cp $HT_HOME/log/Hypertable.Master.log $ARCHIVE_DIR
+  cp $HT_HOME/log/Master.log $ARCHIVE_DIR
   cp $HT_HOME/log/Hyperspace.log $ARCHIVE_DIR
   if [ -e Testing/Temporary/LastTest.log.tmp ] ; then
     ln Testing/Temporary/LastTest.log.tmp $ARCHIVE_DIR/LastTest.log.tmp
@@ -30,15 +30,15 @@ save_failure_state() {
 
 stop_range_server() {
   # stop any existing range server if necessary
-  pidfile=$HT_HOME/run/Hypertable.RangeServer.pid
+  pidfile=$HT_HOME/run/RangeServer.pid
   if [ -f $pidfile ]; then
     kill -9 `cat $pidfile`
     rm -f $pidfile
     sleep 1
 
-    if $HT_HOME/bin/serverup --silent rangeserver; then
+    if $HT_HOME/bin/ht serverup --silent rangeserver; then
       echo "Can't stop range server, exiting"
-      ps -ef | grep Hypertable.RangeServer
+      ps -ef | grep htRangeServer
       exit 1
     fi
   fi
@@ -56,7 +56,7 @@ run_test() {
   shift;
 
   if [ -z "$SKIP_START_SERVERS" ]; then
-    $HT_HOME/bin/start-test-servers.sh --no-rangeserver --no-thriftbroker \
+    $HT_HOME/bin/ht-start-test-servers.sh --no-rangeserver --no-thriftbroker \
                                        --clear
   fi
 
@@ -98,7 +98,7 @@ run_test() {
     echo "Test $TEST_ID FAILED." >> report.txt
     echo "Test $TEST_ID FAILED." >> errors.txt
     DUMP_FILE=`pwd`/rsdump.$TEST_ID
-    echo "dump '$DUMP_FILE';" | $HT_HOME/bin/ht ht_rsclient --batch
+    echo "dump '$DUMP_FILE';" | $HT_HOME/bin/ht ht_rangeserver --batch
 
     cat out >> report.txt
     touch error

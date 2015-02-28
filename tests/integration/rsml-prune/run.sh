@@ -3,13 +3,13 @@
 HYPERTABLE_HOME=/opt/hypertable/current
 HT_TEST_DFS=${HT_TEST_DFS:-local}
 
-PIDFILE=$HYPERTABLE_HOME/run/Hypertable.RangeServer.pid
+PIDFILE=$HYPERTABLE_HOME/run/RangeServer.pid
 
-$HYPERTABLE_HOME/bin/start-test-servers.sh --clean --no-thriftbroker
+$HYPERTABLE_HOME/bin/ht-start-test-servers.sh --clear --no-thriftbroker
 
 sleep 5
 
-echo "create table LoadTest ( Field );" | $HYPERTABLE_HOME/bin/hypertable --batch
+echo "create table LoadTest ( Field );" | $HYPERTABLE_HOME/bin/ht shell --batch
 
 if [ $? != 0 ] ; then
     echo "Unable to create table 'LoadTest', exiting ..."

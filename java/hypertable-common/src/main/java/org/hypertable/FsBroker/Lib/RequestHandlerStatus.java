@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -30,19 +30,19 @@ import org.hypertable.AsyncComm.ResponseCallback;
 
 public class RequestHandlerStatus extends ApplicationHandler {
 
-    static final Logger log = Logger.getLogger(
-        "org.hypertable.FsBroker.Lib");
+  static final Logger log = Logger.getLogger("org.hypertable.FsBroker.Lib");
 
-    public RequestHandlerStatus(Comm comm, ApplicationQueue appQueue,
-                                Event event) {
-        super(event);
-        mComm = comm;
-    }
+  public RequestHandlerStatus(Comm comm, Broker broker, Event event) {
+    super(event);
+    mComm = comm;
+    mBroker = broker;
+  }
 
-    public void run() {
-        ResponseCallback cb = new ResponseCallback(mComm, mEvent);
-        cb.response_ok();
-    }
+  public void run() {
+    ResponseCallbackStatus cb = new ResponseCallbackStatus(mComm, mEvent);
+    mBroker.Status(cb);
+  }
 
-    private Comm              mComm;
+  private Comm mComm;
+  private Broker mBroker;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -93,16 +93,16 @@ void ReactorRunner::operator()() {
     while ((n = poll(&pollfds[0], pollfds.size(),
                      timeout.get_millis())) >= 0 || errno == EINTR) {
 
-        if (record_arrival_time)
+      if (record_arrival_time)
         got_arrival_time = false;
 
-        if (dispatch_delay)
+      if (dispatch_delay)
         did_delay = false;
 
-        m_reactor->get_removed_handlers(removed_handlers);
-        if (!shutdown)
+      m_reactor->get_removed_handlers(removed_handlers);
+      if (!shutdown)
         HT_DEBUGF("poll returned %d events", n);
-        for (size_t i=0; i<pollfds.size(); i++) {
+      for (size_t i=0; i<pollfds.size(); i++) {
 
         if (pollfds[i].revents == 0)
           continue;
@@ -129,21 +129,21 @@ void ReactorRunner::operator()() {
             arrival_time = time(0);
             got_arrival_time = true;
           }
-            if (handlers[i]->handle_event(&pollfds[i], arrival_time))
-              removed_handlers.insert(handlers[i]);
+          if (handlers[i]->handle_event(&pollfds[i], arrival_time))
+            removed_handlers.insert(handlers[i]);
         }
-        }
-        if (!removed_handlers.empty())
+      }
+      if (!removed_handlers.empty())
         cleanup_and_remove_handlers(removed_handlers);
-        m_reactor->handle_timeouts(timeout);
-        if (shutdown)
+      m_reactor->handle_timeouts(timeout);
+      if (shutdown)
         return;
 
-        m_reactor->fetch_poll_array(pollfds, handlers);
+      m_reactor->fetch_poll_array(pollfds, handlers);
     }
 
     if (!shutdown)
-      HT_ERRORF("poll() failed - %s", strerror(errno));
+      HT_ERRORF("poll() failed : %s", strerror(errno));
 
     return;
   }
@@ -154,45 +154,45 @@ void ReactorRunner::operator()() {
   struct epoll_event events[256];
 
   while ((n = epoll_wait(m_reactor->poll_fd, events, 256,
-    timeout.get_millis())) >= 0 || errno == EINTR) {
+          timeout.get_millis())) >= 0 || errno == EINTR) {
 
-      if (record_arrival_time)
-        got_arrival_time = false;
+    if (record_arrival_time)
+      got_arrival_time = false;
 
-      if (dispatch_delay)
-        did_delay = false;
+    if (dispatch_delay)
+      did_delay = false;
 
-      m_reactor->get_removed_handlers(removed_handlers);
+    m_reactor->get_removed_handlers(removed_handlers);
 
-      if (!shutdown)
-        HT_DEBUGF("epoll_wait returned %d events", n);
-      for (int i=0; i<n; i++) {
-        handler = (IOHandler *)events[i].data.ptr;
-        if (handler && removed_handlers.count(handler) == 0) {
-          // dispatch delay for testing
-          if (dispatch_delay && !did_delay && (events[i].events & EPOLLIN)) {
-            poll(0, 0, (int)dispatch_delay);
-            did_delay = true;
-          }
-          if (record_arrival_time && !got_arrival_time
+    if (!shutdown)
+      HT_DEBUGF("epoll_wait returned %d events", n);
+    for (int i=0; i<n; i++) {
+      handler = (IOHandler *)events[i].data.ptr;
+      if (handler && removed_handlers.count(handler) == 0) {
+        // dispatch delay for testing
+        if (dispatch_delay && !did_delay && (events[i].events & EPOLLIN)) {
+          poll(0, 0, (int)dispatch_delay);
+          did_delay = true;
+        }
+        if (record_arrival_time && !got_arrival_time
             && (events[i].events & EPOLLIN)) {
           arrival_time = time(0);
-              got_arrival_time = true;
-          }
-          if (handler->handle_event(&events[i], arrival_time))
-            removed_handlers.insert(handler);
+          got_arrival_time = true;
         }
+        if (handler->handle_event(&events[i], arrival_time))
+          removed_handlers.insert(handler);
       }
-      if (!removed_handlers.empty())
-        cleanup_and_remove_handlers(removed_handlers);
-      m_reactor->handle_timeouts(timeout);
-      if (shutdown)
-        return;
+    }
+    if (!removed_handlers.empty())
+      cleanup_and_remove_handlers(removed_handlers);
+    m_reactor->handle_timeouts(timeout);
+    if (shutdown)
+      return;
   }
 
   if (!shutdown)
     HT_ERRORF("epoll_wait(%d) failed : %s", m_reactor->poll_fd,
-    strerror(errno));
+              strerror(errno));
 
 #elif defined(__sun__)
 
@@ -208,88 +208,88 @@ void ReactorRunner::operator()() {
                           &nget, timeout.get_timespec())) >= 0 ||
          errno == EINTR || errno == EAGAIN || errno == ETIME) {
 
-      //HT_INFOF("port_getn returned with %d", nget);
+    //HT_INFOF("port_getn returned with %d", nget);
 
-      if (record_arrival_time)
-        got_arrival_time = false;
+    if (record_arrival_time)
+      got_arrival_time = false;
 
-      if (dispatch_delay)
-        did_delay = false;
+    if (dispatch_delay)
+      did_delay = false;
 
-      m_reactor->get_removed_handlers(removed_handlers);
-      for (unsigned i=0; i<nget; i++) {
+    m_reactor->get_removed_handlers(removed_handlers);
+    for (unsigned i=0; i<nget; i++) {
 
-        // handle interrupt
-        if (events[i].portev_source == PORT_SOURCE_ALERT)
+      // handle interrupt
+      if (events[i].portev_source == PORT_SOURCE_ALERT)
         break;
 
-        handler = (IOHandler *)events[i].portev_user;
-        if (handler && removed_handlers.count(handler) == 0) {
-          // dispatch delay for testing
-          if (dispatch_delay && !did_delay && events[i].portev_events == POLLIN) {
-            poll(0, 0, (int)dispatch_delay);
-            did_delay = true;
-          }
-          if (record_arrival_time && !got_arrival_time && events[i].portev_events == POLLIN) {
-          arrival_time = time(0);
-            got_arrival_time = true;
-          }
-          if (handler->handle_event(&events[i], arrival_time))
-            removed_handlers.insert(handler);
-          else if (removed_handlers.count(handler) == 0)
-            handler->reset_poll_interest();
+      handler = (IOHandler *)events[i].portev_user;
+      if (handler && removed_handlers.count(handler) == 0) {
+        // dispatch delay for testing
+        if (dispatch_delay && !did_delay && events[i].portev_events == POLLIN) {
+          poll(0, 0, (int)dispatch_delay);
+          did_delay = true;
         }
+        if (record_arrival_time && !got_arrival_time && events[i].portev_events == POLLIN) {
+          arrival_time = time(0);
+          got_arrival_time = true;
+        }
+        if (handler->handle_event(&events[i], arrival_time))
+          removed_handlers.insert(handler);
+        else if (removed_handlers.count(handler) == 0)
+          handler->reset_poll_interest();
       }
-      if (!removed_handlers.empty())
-        cleanup_and_remove_handlers(removed_handlers);
-      m_reactor->handle_timeouts(timeout);
-      if (shutdown)
-        return;
-      nget=1;
+    }
+    if (!removed_handlers.empty())
+      cleanup_and_remove_handlers(removed_handlers);
+    m_reactor->handle_timeouts(timeout);
+    if (shutdown)
+      return;
+    nget=1;
   }
 
   if (!shutdown) {
     HT_ERRORF("port_getn(%d) failed : %s", m_reactor->poll_fd,
-      strerror(errno));
+              strerror(errno));
     if (timeout.get_timespec() == 0)
       HT_ERROR("timespec is null");
-
+      
   }
 
 #elif defined(__APPLE__) || defined(__FreeBSD__)
   struct kevent events[32];
 
   while ((n = kevent(m_reactor->kqd, NULL, 0, events, 32,
-    timeout.get_timespec())) >= 0 || errno == EINTR) {
+          timeout.get_timespec())) >= 0 || errno == EINTR) {
 
-      if (record_arrival_time)
-        got_arrival_time = false;
+    if (record_arrival_time)
+      got_arrival_time = false;
 
-      if (dispatch_delay)
-        did_delay = false;
+    if (dispatch_delay)
+      did_delay = false;
 
-      m_reactor->get_removed_handlers(removed_handlers);
-      for (int i=0; i<n; i++) {
-        handler = (IOHandler *)events[i].udata;
-        if (handler && removed_handlers.count(handler) == 0) {
-          // dispatch delay for testing
-          if (dispatch_delay && !did_delay && events[i].filter == EVFILT_READ) {
-            poll(0, 0, (int)dispatch_delay);
-            did_delay = true;
-          }
-          if (record_arrival_time && !got_arrival_time && events[i].filter == EVFILT_READ) {
-          arrival_time = time(0);
-            got_arrival_time = true;
-          }
-          if (handler->handle_event(&events[i], arrival_time))
-            removed_handlers.insert(handler);
+    m_reactor->get_removed_handlers(removed_handlers);
+    for (int i=0; i<n; i++) {
+      handler = (IOHandler *)events[i].udata;
+      if (handler && removed_handlers.count(handler) == 0) {
+        // dispatch delay for testing
+        if (dispatch_delay && !did_delay && events[i].filter == EVFILT_READ) {
+          poll(0, 0, (int)dispatch_delay);
+          did_delay = true;
         }
+        if (record_arrival_time && !got_arrival_time && events[i].filter == EVFILT_READ) {
+          arrival_time = time(0);
+          got_arrival_time = true;
+        }
+        if (handler->handle_event(&events[i], arrival_time))
+          removed_handlers.insert(handler);
       }
-      if (!removed_handlers.empty())
-        cleanup_and_remove_handlers(removed_handlers);
-      m_reactor->handle_timeouts(timeout);
-      if (shutdown)
-        return;
+    }
+    if (!removed_handlers.empty())
+      cleanup_and_remove_handlers(removed_handlers);
+    m_reactor->handle_timeouts(timeout);
+    if (shutdown)
+      return;
   }
 
   if (!shutdown)

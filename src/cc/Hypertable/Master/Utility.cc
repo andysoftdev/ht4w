@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -31,11 +31,13 @@
 
 #include <Hypertable/Lib/Key.h>
 #include <Hypertable/Lib/KeySpec.h>
-#include <Hypertable/Lib/RangeServerClient.h>
+#include <Hypertable/Lib/RangeServer/Client.h>
 #include <Hypertable/Lib/Schema.h>
 #include <Hypertable/Lib/TableMutator.h>
 #include <Hypertable/Lib/TableScanner.h>
-#include <Hypertable/Lib/Types.h>
+#include <Hypertable/Lib/TableIdentifier.h>
+#include <Hypertable/Lib/RangeSpec.h>
+#include <Hypertable/Lib/QualifiedRangeSpec.h>
 
 #include <Hyperspace/Session.h>
 
@@ -43,6 +45,7 @@
 
 #include <Common/FailureInducer.h>
 #include <Common/ScopeGuard.h>
+#include <Common/StatusPersister.h>
 #include <Common/StringExt.h>
 #include <Common/md5.h>
 #include <Common/Time.h>
@@ -309,7 +312,7 @@ bool next_available_server(ContextPtr &context, String &location, bool urgent) {
 
 void create_table_load_range(ContextPtr &context, const String &location,
                              TableIdentifier &table, RangeSpec &range, bool needs_compaction) {
-  RangeServerClient rsc(context->comm);
+  Lib::RangeServer::Client rsc(context->comm);
   CommAddress addr;
 
   if (context->test_mode) {
@@ -346,7 +349,7 @@ void create_table_load_range(ContextPtr &context, const String &location,
 
 void create_table_acknowledge_range(ContextPtr &context, const String &location,
                                     TableIdentifier &table, RangeSpec &range) {
-  RangeServerClient rsc(context->comm);
+  Lib::RangeServer::Client rsc(context->comm);
   CommAddress addr;
 
   if (context->test_mode) {
@@ -402,10 +405,43 @@ String root_range_location(ContextPtr &context) {
   return location;
 }
 
-void canonicalize_pathname(std::string &pathname) {
-  boost::trim_if(pathname, boost::is_any_of("/ "));
-  if (!pathname.empty())
-    pathname = String("/") + pathname;
+bool status(ContextPtr &context, Timer &timer, Status &status) {
+  if (context->startup_in_progress())
+    status.set(Status::Code::CRITICAL, Status::Text::SERVER_IS_COMING_UP);
+  else if (context->shutdown_in_progress())
+    status.set(Status::Code::CRITICAL, Status::Text::SERVER_IS_SHUTTING_DOWN);
+  else if (!context->master_file->lock_acquired())
+    status.set(Status::Code::OK, Status::Text::STANDBY);
+  else if (context->quorum_reached) {
+    size_t connected_servers = context->available_server_count();
+    size_t total_servers = context->rsc_manager->server_count();
+    if (connected_servers < total_servers) {
+      size_t failover_pct
+        = context->props->get_i32("Hypertable.Failover.Quorum.Percentage");
+      size_t quorum = ((total_servers * failover_pct) + 99) / 100;
+      if (connected_servers == 0)
+        status.set(Status::Code::CRITICAL,
+                   "RangeServer recovery blocked because 0 servers available.");
+      else if (connected_servers < quorum)
+        status.set(Status::Code::CRITICAL,
+                   format("RangeServer recovery blocked (%d servers "
+                          "available, quorum of %d is required)",
+                          (int)connected_servers, (int)quorum));
+      else
+        status.set(Status::Code::WARNING, "RangeServer recovery in progress");
+    }
+    else {
+      context->dfs->status(status, &timer);
+      Status::Code code;
+      string text;
+      status.get(&code, text);
+      if (code != Status::Code::OK)
+        status.set(code, format("FsBroker %s", text.c_str()));
+      else
+        StatusPersister::get(status);
+    }
+  }
+  return status.get() == Status::Code::OK;
 }
 
 }}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -2433,6 +2433,22 @@ public:
     _return = value.empty() ? guid : value;
   }
 
+  void status(ThriftGen::Status& _return) override {
+    try {
+      _return.__set_code(0);
+      _return.__set_text("");
+    }
+    RETHROW("");
+  }
+
+  void shutdown() override {
+#ifndef _WIN32
+    kill(getpid(), SIGKILL);
+#else
+    ExitProcess(0);
+#endif
+  }
+
   virtual void error_get_text(std::string &_return, int error_code) {
     LOG_API_START("error_code=" << error_code);
     _return = HyperAppHelper::error_get_text(error_code);
@@ -3087,6 +3103,7 @@ int main(int argc, char **argv) {
     }
 
     g_metrics_handler = std::make_shared<MetricsHandler>(properties, g_slow_query_log);
+    g_metrics_handler->start_collecting();
 
     boost::shared_ptr<ThriftBroker::Context> context(new ThriftBroker::Context());
 
@@ -3119,6 +3136,7 @@ int main(int argc, char **argv) {
 
     server.serve();
     
+    g_metrics_handler->start_collecting();
     g_metrics_handler.reset();
     
     HT_NOTICE("Exiting thrift broker");

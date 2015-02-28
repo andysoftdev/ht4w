@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -52,103 +52,13 @@ typedef struct {
 #endif
 } atomic_t;
 
+#define ATOMIC_INIT(i)          { (i) }
 
-/**
-* Initialization macro for atomic variables;
-* use like this:
-*
-* atomic_t atom = ATOMIC_INIT(0);
-*
-* @param i The initialization value
-*/
-#define ATOMIC_INIT(i) { (i) }
+#define atomic_read(v)          ((v)->counter)
 
-/**
-* Atomically reads the value of v.
-*
-* @param v Pointer to an atomic_t variable
-* @return The integer value of the variable
-*/
-#define atomic_read(v) ((v)->counter)
+#define atomic_set(v, i)        (((v)->counter) = (i))
 
-/**
-* Atomically sets the value of v to i.
-*
-* @param v Pointer to an atomic_t variable
-* @param i The new value of the variable
-*/
-#define atomic_set(v, i) (((v)->counter) = (i))
-
-/**
- * Atomically increments v and returns the new value
- *
- * @param v Pointer to an atomic_t variable
- * @return The new, incremented value
- */
-#define atomic_inc_return(v)  (atomic_add_return(1, v))
-
-/**
- * Atomically decrements v and returns the new value
- *
- * @param v Pointer to an atomic_t variable
- * @return The new, decremented value
- */
-#define atomic_dec_return(v)  (atomic_sub_return(1, v))
-
-#ifdef _WIN32
-
-inline void atomic_add(int i, atomic_t *v)
-{
-  _InterlockedExchangeAdd(&v->counter, i);
-}
-
-inline void atomic_sub(int i, atomic_t *v)
-{
-  _InterlockedExchangeAdd(&v->counter, -i);
-}
-
-inline int atomic_add_return(int i, atomic_t *v)
-{
-  return _InterlockedExchangeAdd(&v->counter, i) + i;
-}
-
-inline int atomic_sub_return(int i, atomic_t *v)
-{
-  return _InterlockedExchangeAdd(&v->counter, -i) - i;
-}
-
-
-inline int atomic_sub_and_test(int i, atomic_t *v)
-{
-  return _InterlockedExchangeAdd(&v->counter, -i) == i;
-}
-
-inline void atomic_inc(atomic_t *v)
-{
-  _InterlockedIncrement(&v->counter);
-}
-
-inline void atomic_dec(atomic_t *v)
-{
-  _InterlockedDecrement(&v->counter);
-}
-
-inline int atomic_dec_and_test(atomic_t *v)
-{
-  return 0 == _InterlockedDecrement(&v->counter);
-}
-
-inline int atomic_inc_and_test(atomic_t *v)
-{
-  return 0 == _InterlockedIncrement(&v->counter);
-}
-
-inline int atomic_add_negative(int i, atomic_t *v)
-{
-  return (_InterlockedExchangeAdd(&v->counter, i) + i) < 0;
-}
-
-#else
+#ifndef _WIN32
 
 /**
  * Adds an integer to an atomic variable
@@ -309,6 +219,10 @@ static __inline__ int atomic_add_negative(int i, atomic_t *v)
   return c;
 }
 
+#define atomic_inc_return(v)  (atomic_add_return(1, v))
+
+#define atomic_dec_return(v)  (atomic_sub_return(1, v))
+
 /* These are x86-specific, used by some header files */
 #define atomic_clear_mask(mask, addr)                       \
                 __asm__ __volatile__(LOCK "andl %0,%1"      \
@@ -317,9 +231,66 @@ static __inline__ int atomic_add_negative(int i, atomic_t *v)
 #define atomic_set_mask(mask, addr)                         \
                 __asm__ __volatile__(LOCK "orl %0,%1"       \
                 : : "r" (mask),"m" (*(addr)) : "memory")
-                
-           
+
 /** @}*/
+
+
+#else
+
+inline void atomic_add(int i, atomic_t *v)
+{
+  _InterlockedExchangeAdd(&v->counter, i);
+}
+
+inline void atomic_sub(int i, atomic_t *v)
+{
+  _InterlockedExchangeAdd(&v->counter, -i);
+}
+
+inline int atomic_add_return(int i, atomic_t *v)
+{
+  return _InterlockedExchangeAdd(&v->counter, i) + i;
+}
+
+inline int atomic_sub_return(int i, atomic_t *v)
+{
+  return _InterlockedExchangeAdd(&v->counter, -i) - i;
+}
+
+
+inline int atomic_sub_and_test(int i, atomic_t *v)
+{
+  return _InterlockedExchangeAdd(&v->counter, -i) == i;
+}
+
+inline void atomic_inc(atomic_t *v)
+{
+  _InterlockedIncrement(&v->counter);
+}
+
+inline void atomic_dec(atomic_t *v)
+{
+  _InterlockedDecrement(&v->counter);
+}
+
+inline int atomic_dec_and_test(atomic_t *v)
+{
+  return 0 == _InterlockedDecrement(&v->counter);
+}
+
+inline int atomic_inc_and_test(atomic_t *v)
+{
+  return 0 == _InterlockedIncrement(&v->counter);
+}
+
+inline int atomic_add_negative(int i, atomic_t *v)
+{
+  return (_InterlockedExchangeAdd(&v->counter, i) + i) < 0;
+}
+
+#define atomic_inc_return(v)  (atomic_add_return(1, v))
+
+#define atomic_dec_return(v)  (atomic_sub_return(1, v))
 
 #endif
 

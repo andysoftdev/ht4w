@@ -139,6 +139,8 @@ class ClientServiceIf {
   virtual void generate_guid(std::string& _return) = 0;
   virtual void create_cell_unique(std::string& _return, const Namespace ns, const std::string& table_name, const Key& key, const std::string& value) = 0;
   virtual void error_get_text(std::string& _return, const int32_t error_code) = 0;
+  virtual void status(Status& _return) = 0;
+  virtual void shutdown() = 0;
 };
 
 class ClientServiceIfFactory {
@@ -558,6 +560,12 @@ class ClientServiceNull : virtual public ClientServiceIf {
     return;
   }
   void error_get_text(std::string& /* _return */, const int32_t /* error_code */) {
+    return;
+  }
+  void status(Status& /* _return */) {
+    return;
+  }
+  void shutdown() {
     return;
   }
 };
@@ -15691,6 +15699,204 @@ class ClientService_error_get_text_presult {
 
 };
 
+
+class ClientService_status_args {
+ public:
+
+  ClientService_status_args() {
+  }
+
+  virtual ~ClientService_status_args() throw() {}
+
+
+  bool operator == (const ClientService_status_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const ClientService_status_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const ClientService_status_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class ClientService_status_pargs {
+ public:
+
+
+  virtual ~ClientService_status_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _ClientService_status_result__isset {
+  _ClientService_status_result__isset() : success(false), e(false) {}
+  bool success;
+  bool e;
+} _ClientService_status_result__isset;
+
+class ClientService_status_result {
+ public:
+
+  ClientService_status_result() {
+  }
+
+  virtual ~ClientService_status_result() throw() {}
+
+  Status success;
+  ClientException e;
+
+  _ClientService_status_result__isset __isset;
+
+  void __set_success(const Status& val) {
+    success = val;
+  }
+
+  void __set_e(const ClientException& val) {
+    e = val;
+  }
+
+  bool operator == (const ClientService_status_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    if (!(e == rhs.e))
+      return false;
+    return true;
+  }
+  bool operator != (const ClientService_status_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const ClientService_status_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _ClientService_status_presult__isset {
+  _ClientService_status_presult__isset() : success(false), e(false) {}
+  bool success;
+  bool e;
+} _ClientService_status_presult__isset;
+
+class ClientService_status_presult {
+ public:
+
+
+  virtual ~ClientService_status_presult() throw() {}
+
+  Status* success;
+  ClientException e;
+
+  _ClientService_status_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+
+class ClientService_shutdown_args {
+ public:
+
+  ClientService_shutdown_args() {
+  }
+
+  virtual ~ClientService_shutdown_args() throw() {}
+
+
+  bool operator == (const ClientService_shutdown_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const ClientService_shutdown_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const ClientService_shutdown_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class ClientService_shutdown_pargs {
+ public:
+
+
+  virtual ~ClientService_shutdown_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _ClientService_shutdown_result__isset {
+  _ClientService_shutdown_result__isset() : e(false) {}
+  bool e;
+} _ClientService_shutdown_result__isset;
+
+class ClientService_shutdown_result {
+ public:
+
+  ClientService_shutdown_result() {
+  }
+
+  virtual ~ClientService_shutdown_result() throw() {}
+
+  ClientException e;
+
+  _ClientService_shutdown_result__isset __isset;
+
+  void __set_e(const ClientException& val) {
+    e = val;
+  }
+
+  bool operator == (const ClientService_shutdown_result & rhs) const
+  {
+    if (!(e == rhs.e))
+      return false;
+    return true;
+  }
+  bool operator != (const ClientService_shutdown_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const ClientService_shutdown_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _ClientService_shutdown_presult__isset {
+  _ClientService_shutdown_presult__isset() : e(false) {}
+  bool e;
+} _ClientService_shutdown_presult__isset;
+
+class ClientService_shutdown_presult {
+ public:
+
+
+  virtual ~ClientService_shutdown_presult() throw() {}
+
+  ClientException e;
+
+  _ClientService_shutdown_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
 class ClientServiceClient : virtual public ClientServiceIf {
  public:
   ClientServiceClient(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
@@ -16083,6 +16289,12 @@ class ClientServiceClient : virtual public ClientServiceIf {
   void error_get_text(std::string& _return, const int32_t error_code);
   void send_error_get_text(const int32_t error_code);
   void recv_error_get_text(std::string& _return);
+  void status(Status& _return);
+  void send_status();
+  void recv_status(Status& _return);
+  void shutdown();
+  void send_shutdown();
+  void recv_shutdown();
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -16220,6 +16432,8 @@ class ClientServiceProcessor : public ::apache::thrift::TProcessor {
   void process_generate_guid(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_create_cell_unique(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_error_get_text(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_status(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_shutdown(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
  public:
   ClientServiceProcessor(boost::shared_ptr<ClientServiceIf> iface) :
     iface_(iface) {
@@ -16347,6 +16561,8 @@ class ClientServiceProcessor : public ::apache::thrift::TProcessor {
     processMap_["generate_guid"] = &ClientServiceProcessor::process_generate_guid;
     processMap_["create_cell_unique"] = &ClientServiceProcessor::process_create_cell_unique;
     processMap_["error_get_text"] = &ClientServiceProcessor::process_error_get_text;
+    processMap_["status"] = &ClientServiceProcessor::process_status;
+    processMap_["shutdown"] = &ClientServiceProcessor::process_shutdown;
   }
 
   virtual bool process(boost::shared_ptr<apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr<apache::thrift::protocol::TProtocol> poprot, void* callContext);
@@ -17526,6 +17742,25 @@ class ClientServiceMultiface : virtual public ClientServiceIf {
       } else {
         ifaces_[i]->error_get_text(_return, error_code);
       }
+    }
+  }
+
+  void status(Status& _return) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->status(_return);
+        return;
+      } else {
+        ifaces_[i]->status(_return);
+      }
+    }
+  }
+
+  void shutdown() {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      ifaces_[i]->shutdown();
     }
   }
 

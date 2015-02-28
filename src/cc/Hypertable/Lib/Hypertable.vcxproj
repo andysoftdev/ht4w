@@ -28,13 +28,15 @@
     <ClCompile Include="AccessGroupSpec.cc" />
     <ClCompile Include="ApacheLogParser.cc" />
     <ClCompile Include="BalancePlan.cc" />
+    <ClCompile Include="Canonicalize.cc" />
     <ClCompile Include="Cell.cc" />
+    <ClCompile Include="CellInterval.cc" />
     <ClCompile Include="Client.cc" />
     <ClCompile Include="ClusterId.cc" />
     <ClCompile Include="ColumnFamilySpec.cc" />
+    <ClCompile Include="ColumnPredicate.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="DataGenerator.cc" />
-    <ClCompile Include="EventHandlerMasterChange.cc" />
     <ClCompile Include="FixedRandomStringGenerator.cc" />
     <ClCompile Include="Future.cc" />
     <ClCompile Include="FutureCallback.cc" />
@@ -45,6 +47,7 @@
     <ClCompile Include="IntervalScannerAsync.cc" />
     <ClCompile Include="Key.cc" />
     <ClCompile Include="KeySpec.cc" />
+    <ClCompile Include="LegacyDecoder.cc" />
     <ClCompile Include="LoadDataEscape.cc" />
     <ClCompile Include="LoadDataSource.cc" />
     <ClCompile Include="LoadDataSourceFactory.cc" />
@@ -52,9 +55,32 @@
     <ClCompile Include="LoadDataSourceFileLocal.cc" />
     <ClCompile Include="LoadDataSourceStdin.cc" />
     <ClCompile Include="LocationCache.cc" />
-    <ClCompile Include="MasterClient.cc" />
-    <ClCompile Include="MasterFileHandler.cc" />
-    <ClCompile Include="MasterProtocol.cc" />
+    <ClCompile Include="Master\Client.cc" />
+    <ClCompile Include="Master\EventHandlerMasterChange.cc" />
+    <ClCompile Include="Master\HyperspaceCallback.cc" />
+    <ClCompile Include="Master\NamespaceFlag.cc" />
+    <ClCompile Include="Master\Request\Parameters\AlterTable.cc" />
+    <ClCompile Include="Master\Request\Parameters\Balance.cc" />
+    <ClCompile Include="Master\Request\Parameters\Compact.cc" />
+    <ClCompile Include="Master\Request\Parameters\CreateNamespace.cc" />
+    <ClCompile Include="Master\Request\Parameters\CreateTable.cc" />
+    <ClCompile Include="Master\Request\Parameters\DropNamespace.cc" />
+    <ClCompile Include="Master\Request\Parameters\DropTable.cc" />
+    <ClCompile Include="Master\Request\Parameters\FetchResult.cc" />
+    <ClCompile Include="Master\Request\Parameters\MoveRange.cc" />
+    <ClCompile Include="Master\Request\Parameters\PhantomCommitComplete.cc" />
+    <ClCompile Include="Master\Request\Parameters\PhantomPrepareComplete.cc" />
+    <ClCompile Include="Master\Request\Parameters\RecreateIndexTables.cc" />
+    <ClCompile Include="Master\Request\Parameters\RegisterServer.cc" />
+    <ClCompile Include="Master\Request\Parameters\RelinquishAcknowledge.cc" />
+    <ClCompile Include="Master\Request\Parameters\RenameTable.cc" />
+    <ClCompile Include="Master\Request\Parameters\ReplayComplete.cc" />
+    <ClCompile Include="Master\Request\Parameters\ReplayStatus.cc" />
+    <ClCompile Include="Master\Request\Parameters\SetState.cc" />
+    <ClCompile Include="Master\Request\Parameters\Stop.cc" />
+    <ClCompile Include="Master\Response\Parameters\RegisterServer.cc" />
+    <ClCompile Include="Master\Response\Parameters\Status.cc" />
+    <ClCompile Include="Master\Response\Parameters\SystemStatus.cc" />
     <ClCompile Include="MetaLog.cc" />
     <ClCompile Include="MetaLogEntity.cc" />
     <ClCompile Include="MetaLogEntityHeader.cc" />
@@ -65,15 +91,49 @@
     <ClCompile Include="NamespaceCache.cc" />
     <ClCompile Include="ProfileDataScanner.cc" />
     <ClCompile Include="PseudoTables.cc" />
+    <ClCompile Include="QualifiedRangeSpec.cc" />
     <ClCompile Include="RangeLocator.cc" />
     <ClCompile Include="RangeMoveSpec.cc" />
-    <ClCompile Include="RangeRecoveryReceiverPlan.cc" />
-    <ClCompile Include="RangeRecoveryReplayPlan.cc" />
-    <ClCompile Include="RangeServerClient.cc" />
-    <ClCompile Include="RangeServerProtocol.cc" />
+    <ClCompile Include="RangeServerRecovery\FragmentReplayPlan.cc" />
+    <ClCompile Include="RangeServerRecovery\Plan.cc" />
+    <ClCompile Include="RangeServerRecovery\ReceiverPlan.cc" />
+    <ClCompile Include="RangeServerRecovery\ReplayPlan.cc" />
+    <ClCompile Include="RangeServerRecovery\ServerReceiverPlan.cc" />
+    <ClCompile Include="RangeServer\Client.cc" />
+    <ClCompile Include="RangeServer\Protocol.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\AcknowledgeLoad.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\CommitLogSync.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\Compact.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\CreateScanner.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\DestroyScanner.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\DropRange.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\DropTable.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\Dump.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\DumpPseudoTable.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\FetchScanblock.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\GetStatistics.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\Heapcheck.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\LoadRange.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\PhantomCommitRanges.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\PhantomLoad.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\PhantomPrepareRanges.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\PhantomUpdate.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\RelinquishRange.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\ReplayFragments.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\SetState.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\TableMaintenanceDisable.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\TableMaintenanceEnable.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\Update.cc" />
+    <ClCompile Include="RangeServer\Request\Parameters\UpdateSchema.cc" />
+    <ClCompile Include="RangeServer\Response\Parameters\AcknowledgeLoad.cc" />
+    <ClCompile Include="RangeServer\Response\Parameters\CreateScanner.cc" />
+    <ClCompile Include="RangeServer\Response\Parameters\GetStatistics.cc" />
+    <ClCompile Include="RangeServer\Response\Parameters\Status.cc" />
+    <ClCompile Include="RangeSpec.cc" />
     <ClCompile Include="RangeState.cc" />
     <ClCompile Include="Result.cc" />
     <ClCompile Include="RootFileHandler.cc" />
+    <ClCompile Include="RowInterval.cc" />
     <ClCompile Include="RS_METRICS\RangeMetrics.cc" />
     <ClCompile Include="RS_METRICS\ReaderTable.cc" />
     <ClCompile Include="RS_METRICS\ServerMetrics.cc" />
@@ -88,6 +148,7 @@
     <ClCompile Include="TableCache.cc" />
     <ClCompile Include="TableCallback.cc" />
     <ClCompile Include="TableDumper.cc" />
+    <ClCompile Include="TableIdentifier.cc" />
     <ClCompile Include="TableMutator.cc" />
     <ClCompile Include="TableMutatorAsync.cc" />
     <ClCompile Include="TableMutatorAsyncDispatchHandler.cc" />
@@ -103,26 +164,27 @@
     <ClCompile Include="TableScannerDispatchHandler.cc" />
     <ClCompile Include="TableScannerHandler.cc" />
     <ClCompile Include="TableSplit.cc" />
-    <ClCompile Include="Types.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessGroupSpec.h" />
     <ClInclude Include="ApacheLogParser.h" />
     <ClInclude Include="BalancePlan.h" />
+    <ClInclude Include="Canonicalize.h" />
     <ClInclude Include="Cell.h" />
+    <ClInclude Include="CellInterval.h" />
     <ClInclude Include="CellPredicate.h" />
     <ClInclude Include="Cells.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="ClientObject.h" />
     <ClInclude Include="ClusterId.h" />
     <ClInclude Include="ColumnFamilySpec.h" />
+    <ClInclude Include="ColumnPredicate.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="DataGenerator.h" />
     <ClInclude Include="DataGeneratorColumn.h" />
     <ClInclude Include="DataGeneratorQualifier.h" />
     <ClInclude Include="DataGeneratorRowComponent.h" />
     <ClInclude Include="DataSource.h" />
-    <ClInclude Include="EventHandlerMasterChange.h" />
     <ClInclude Include="FixedRandomStringGenerator.h" />
     <ClInclude Include="Future.h" />
     <ClInclude Include="FutureCallback.h" />
@@ -136,6 +198,7 @@
     <ClInclude Include="IntervalScannerAsync.h" />
     <ClInclude Include="Key.h" />
     <ClInclude Include="KeySpec.h" />
+    <ClInclude Include="LegacyDecoder.h" />
     <ClInclude Include="LoadDataEscape.h" />
     <ClInclude Include="LoadDataFlags.h" />
     <ClInclude Include="LoadDataSource.h" />
@@ -144,9 +207,33 @@
     <ClInclude Include="LoadDataSourceFileLocal.h" />
     <ClInclude Include="LoadDataSourceStdin.h" />
     <ClInclude Include="LocationCache.h" />
-    <ClInclude Include="MasterClient.h" />
-    <ClInclude Include="MasterFileHandler.h" />
-    <ClInclude Include="MasterProtocol.h" />
+    <ClInclude Include="Master\Client.h" />
+    <ClInclude Include="Master\EventHandlerMasterChange.h" />
+    <ClInclude Include="Master\HyperspaceCallback.h" />
+    <ClInclude Include="Master\NamespaceFlag.h" />
+    <ClInclude Include="Master\Protocol.h" />
+    <ClInclude Include="Master\Request\Parameters\AlterTable.h" />
+    <ClInclude Include="Master\Request\Parameters\Balance.h" />
+    <ClInclude Include="Master\Request\Parameters\Compact.h" />
+    <ClInclude Include="Master\Request\Parameters\CreateNamespace.h" />
+    <ClInclude Include="Master\Request\Parameters\CreateTable.h" />
+    <ClInclude Include="Master\Request\Parameters\DropNamespace.h" />
+    <ClInclude Include="Master\Request\Parameters\DropTable.h" />
+    <ClInclude Include="Master\Request\Parameters\FetchResult.h" />
+    <ClInclude Include="Master\Request\Parameters\MoveRange.h" />
+    <ClInclude Include="Master\Request\Parameters\PhantomCommitComplete.h" />
+    <ClInclude Include="Master\Request\Parameters\PhantomPrepareComplete.h" />
+    <ClInclude Include="Master\Request\Parameters\RecreateIndexTables.h" />
+    <ClInclude Include="Master\Request\Parameters\RegisterServer.h" />
+    <ClInclude Include="Master\Request\Parameters\RelinquishAcknowledge.h" />
+    <ClInclude Include="Master\Request\Parameters\RenameTable.h" />
+    <ClInclude Include="Master\Request\Parameters\ReplayComplete.h" />
+    <ClInclude Include="Master\Request\Parameters\ReplayStatus.h" />
+    <ClInclude Include="Master\Request\Parameters\SetState.h" />
+    <ClInclude Include="Master\Request\Parameters\Stop.h" />
+    <ClInclude Include="Master\Response\Parameters\RegisterServer.h" />
+    <ClInclude Include="Master\Response\Parameters\Status.h" />
+    <ClInclude Include="Master\Response\Parameters\SystemStatus.h" />
     <ClInclude Include="MetaLog.h" />
     <ClInclude Include="MetaLogDefinition.h" />
     <ClInclude Include="MetaLogEntity.h" />
@@ -159,18 +246,51 @@
     <ClInclude Include="NamespaceListing.h" />
     <ClInclude Include="ProfileDataScanner.h" />
     <ClInclude Include="PseudoTables.h" />
+    <ClInclude Include="QualifiedRangeSpec.h" />
     <ClInclude Include="RangeLocationInfo.h" />
     <ClInclude Include="RangeLocator.h" />
     <ClInclude Include="RangeMoveSpec.h" />
-    <ClInclude Include="RangeRecoveryPlan.h" />
-    <ClInclude Include="RangeRecoveryReceiverPlan.h" />
-    <ClInclude Include="RangeRecoveryReplayPlan.h" />
-    <ClInclude Include="RangeServerClient.h" />
-    <ClInclude Include="RangeServerProtocol.h" />
+    <ClInclude Include="RangeServerRecovery\FragmentReplayPlan.h" />
+    <ClInclude Include="RangeServerRecovery\Plan.h" />
+    <ClInclude Include="RangeServerRecovery\ReceiverPlan.h" />
+    <ClInclude Include="RangeServerRecovery\ReplayPlan.h" />
+    <ClInclude Include="RangeServerRecovery\ServerReceiverPlan.h" />
+    <ClInclude Include="RangeServer\Client.h" />
+    <ClInclude Include="RangeServer\Protocol.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\AcknowledgeLoad.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\CommitLogSync.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\Compact.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\CreateScanner.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\DestroyScanner.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\DropRange.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\DropTable.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\Dump.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\DumpPseudoTable.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\FetchScanblock.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\GetStatistics.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\Heapcheck.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\LoadRange.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\PhantomCommitRanges.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\PhantomLoad.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\PhantomPrepareRanges.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\PhantomUpdate.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\RelinquishRange.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\ReplayFragments.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\SetState.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\TableMaintenanceDisable.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\TableMaintenanceEnable.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\Update.h" />
+    <ClInclude Include="RangeServer\Request\Parameters\UpdateSchema.h" />
+    <ClInclude Include="RangeServer\Response\Parameters\AcknowledgeLoad.h" />
+    <ClInclude Include="RangeServer\Response\Parameters\CreateScanner.h" />
+    <ClInclude Include="RangeServer\Response\Parameters\GetStatistics.h" />
+    <ClInclude Include="RangeServer\Response\Parameters\Status.h" />
+    <ClInclude Include="RangeSpec.h" />
     <ClInclude Include="RangeState.h" />
     <ClInclude Include="Result.h" />
     <ClInclude Include="ResultCallback.h" />
     <ClInclude Include="RootFileHandler.h" />
+    <ClInclude Include="RowInterval.h" />
     <ClInclude Include="RS_METRICS\RangeMetrics.h" />
     <ClInclude Include="RS_METRICS\Reader.h" />
     <ClInclude Include="RS_METRICS\ReaderTable.h" />
@@ -188,6 +308,7 @@
     <ClInclude Include="TableCache.h" />
     <ClInclude Include="TableCallback.h" />
     <ClInclude Include="TableDumper.h" />
+    <ClInclude Include="TableIdentifier.h" />
     <ClInclude Include="TableMutator.h" />
     <ClInclude Include="TableMutatorAsync.h" />
     <ClInclude Include="TableMutatorAsyncCompletionCounter.h" />
@@ -208,8 +329,6 @@
     <ClInclude Include="TableScannerHandler.h" />
     <ClInclude Include="TableScannerQueue.h" />
     <ClInclude Include="TableSplit.h" />
-    <ClInclude Include="Timestamp.h" />
-    <ClInclude Include="Types.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0FB3EC20-0B6E-4E66-8FE2-D99E8E386BFA}</ProjectGuid>
@@ -288,6 +407,8 @@
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -307,6 +428,8 @@
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -331,6 +454,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -357,6 +482,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

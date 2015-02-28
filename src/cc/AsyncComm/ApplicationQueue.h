@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,15 +25,14 @@
  * an application queue.
  */
 
-#ifndef HYPERTABLE_APPLICATIONQUEUE_H
-#define HYPERTABLE_APPLICATIONQUEUE_H
+#ifndef Hypertable_AyncComm_ApplicationQueue_h
+#define Hypertable_AyncComm_ApplicationQueue_h
 
 #include <AsyncComm/ApplicationQueueInterface.h>
 #include <AsyncComm/ApplicationHandler.h>
 
 #include <Common/Logger.h>
 #include <Common/Mutex.h>
-#include <Common/ReferenceCount.h>
 #include <Common/StringExt.h>
 #include <Common/Thread.h>
 
@@ -43,6 +42,7 @@
 #include <cassert>
 #include <list>
 #include <map>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -437,9 +437,8 @@ namespace Hypertable {
 
       HT_ASSERT(app_handler);
 
-      ScopedLock lock(m_state.mutex);
-
       if (group_id != 0) {
+        ScopedLock ulock(m_state.mutex);
         if ((uiter = m_state.group_state_map.find(group_id))
             != m_state.group_state_map.end()) {
           rec->group_state = (*uiter).second;
@@ -452,17 +451,19 @@ namespace Hypertable {
         }
       }
 
-      if (app_handler->is_urgent()) {
-        m_state.urgent_queue.push_back(rec);
-        if (m_dynamic_threads && m_state.threads_available == 0) {
-          Worker worker(m_state, true);
-          Thread t(worker);
-          return;
+      {
+        ScopedLock lock(m_state.mutex);
+        if (app_handler->is_urgent()) {
+          m_state.urgent_queue.push_back(rec);
+          if (m_dynamic_threads && m_state.threads_available == 0) {
+            Worker worker(m_state, true);
+            Thread t(worker);
+          }
         }
+        else
+          m_state.queue.push_back(rec);
+        m_state.cond.notify_one();
       }
-      else
-        m_state.queue.push_back(rec);
-      m_state.cond.notify_one();
     }
 
     /** Adds a request (application request handler) to the application queue.
@@ -488,8 +489,8 @@ namespace Hypertable {
   };
 
   /// Smart pointer to ApplicationQueue object
-  typedef boost::intrusive_ptr<ApplicationQueue> ApplicationQueuePtr;
+  typedef std::shared_ptr<ApplicationQueue> ApplicationQueuePtr;
   /** @}*/
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_APPLICATIONQUEUE_H
+#endif // Hypertable_AyncComm_ApplicationQueue_h

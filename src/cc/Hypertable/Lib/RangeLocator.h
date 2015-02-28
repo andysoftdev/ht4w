@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,31 +19,31 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_RANGELOCATOR_H
-#define HYPERTABLE_RANGELOCATOR_H
+#ifndef Hypertable_Lib_RangeLocator_h
+#define Hypertable_Lib_RangeLocator_h
 
-#include "Common/Mutex.h"
-#include "Common/Error.h"
-#include "Common/ReferenceCount.h"
-#include "Common/Timer.h"
-#include "Common/Properties.h"
+#include <Hypertable/Lib/LocationCache.h>
+#include <Hypertable/Lib/RangeLocationInfo.h>
+#include <Hypertable/Lib/RangeServer/Client.h>
+#include <Hypertable/Lib/ScanBlock.h>
+#include <Hypertable/Lib/Schema.h>
+#include <Hypertable/Lib/TableIdentifier.h>
 
-#include "AsyncComm/ConnectionManager.h"
+#include <Hyperspace/Session.h>
 
-#include "Hyperspace/Session.h"
+#include <AsyncComm/ConnectionManager.h>
 
-#include "LocationCache.h"
-#include "RangeServerClient.h"
-#include "RangeLocationInfo.h"
-#include "Schema.h"
-#include "Types.h"
+#include <Common/Mutex.h>
+#include <Common/Error.h>
+#include <Common/ReferenceCount.h>
+#include <Common/Timer.h>
+#include <Common/Properties.h>
 
 #include <deque>
 #include <vector>
 
 namespace Hypertable {
 
-  class RangeServerClient;
   class RangeLocator;
   class RangeLocatorHyperspaceSessionCallback: public Hyperspace::SessionCallback {
   public:
@@ -116,7 +116,7 @@ namespace Hypertable {
       return m_cache->invalidate(table->id, row_key);
     }
 
-    void invalidate_host(const String &hostname) {
+    void invalidate_host(const std::string &hostname) {
       ScopedLock lock(m_mutex);
       CommAddress addr;
       addr.set_proxy(hostname);
@@ -174,7 +174,7 @@ namespace Hypertable {
     Hyperspace::HandleCallbackPtr m_root_handler;
     bool                   m_root_stale;
     RangeLocationInfo      m_root_range_info;
-    RangeServerClient      m_range_server;
+    Lib::RangeServer::Client m_range_server;
     uint8_t                m_startrow_cid;
     uint8_t                m_location_cid;
     TableIdentifier        m_metadata_table;
@@ -184,7 +184,7 @@ namespace Hypertable {
     Mutex                  m_hyperspace_mutex;
     uint32_t               m_timeout_ms;
     RangeLocatorHyperspaceSessionCallback m_hyperspace_session_callback;
-    String                 m_toplevel_dir;
+    std::string                 m_toplevel_dir;
     uint32_t               m_metadata_readahead_count;
     uint32_t               m_max_error_queue_length;
     uint32_t               m_metadata_retry_interval;
@@ -193,6 +193,6 @@ namespace Hypertable {
 
   typedef intrusive_ptr<RangeLocator> RangeLocatorPtr;
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_RANGELOCATOR_H
+#endif // Hypertable_Lib_RangeLocator_h

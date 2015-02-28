@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -32,12 +32,12 @@ namespace Hypertable {
     class EntityTaskAcknowledgeRelinquish : public EntityTask {
     public:
       EntityTaskAcknowledgeRelinquish(const EntityHeader &header_);
-      EntityTaskAcknowledgeRelinquish(const String &loc, const TableIdentifier &t, const RangeSpec &rs);
+      EntityTaskAcknowledgeRelinquish(const String &loc, int64_t id,
+                                      const TableIdentifier &t,
+                                      const RangeSpec &rs);
       virtual ~EntityTaskAcknowledgeRelinquish() { }
       virtual bool execute();
       virtual void work_queue_add_hook();
-      virtual size_t encoded_length() const;
-      virtual void encode(uint8_t **bufp) const;
 
       /** Decodes serlialized EntityTaskAcknowledgeRelinquish object.
        * @param bufp Address of source buffer pointer (advanced by call)
@@ -45,14 +45,29 @@ namespace Hypertable {
        * <code>*bufp</code> (decremented by call).
        * @param definition_version Version of DefinitionMaster
        */
-      virtual void decode(const uint8_t **bufp, size_t *remainp,
-                          uint16_t definition_version);
+      void decode(const uint8_t **bufp, size_t *remainp,
+                  uint16_t definition_version) override;
       virtual const String name();
       virtual void display(std::ostream &os);
 
       String location;
+      int64_t range_id {};
       TableIdentifierManaged table;
       RangeSpecManaged range_spec;
+
+    private:
+
+      uint8_t encoding_version() const override;
+
+      size_t encoded_length_internal() const override;
+
+      void encode_internal(uint8_t **bufp) const override;
+
+      void decode_internal(uint8_t version, const uint8_t **bufp,
+                           size_t *remainp) override;
+
+      void decode_old(const uint8_t **bufp, size_t *remainp);
+      
     };
 
   } // namespace MetaLog

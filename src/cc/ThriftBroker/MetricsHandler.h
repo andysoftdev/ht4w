@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,6 +27,7 @@
 #ifndef ThriftBroker_MetricsHandler_h
 #define ThriftBroker_MetricsHandler_h
 
+#include <AsyncComm/Comm.h>
 #include <AsyncComm/DispatchHandler.h>
 
 #include <Common/Cronolog.h>
@@ -66,7 +67,13 @@ namespace Hypertable {
 
     /// Destructor.
     /// Cancels the timer.
-    virtual ~MetricsHandler();
+    virtual ~MetricsHandler() {};
+
+    /// Starts metrics collection.
+    void start_collecting();
+
+    /// Stops metrics collection.
+    void stop_collecting();
 
     /// Collects and publishes metrics.
     /// This method computes and updates the requests/s, errors, connections,
@@ -78,30 +85,33 @@ namespace Hypertable {
     virtual void handle(EventPtr &event);
 
     /// Increments request count.
-    /// Increments #m_requests which is used in computing requests/s.
+    /// Increments request count which is used in computing requests/s.
     void request_increment() {
       m_requests.current++;
     }
 
     /// Increments error count.
-    /// Increments #m_errors which is used in computing errors/s.
+    /// Increments error count which is used in computing errors/s.
     void error_increment() {
       m_errors.current++;
     }
 
     /// Increments connection count.
-    /// Increments #m_active_connections.
+    /// Increments active connection count.
     void connection_increment() {
       m_active_connections++;
     }
 
     /// Decrements connection count.
-    /// Decrements #m_active_connections.
+    /// Decrements active connection count.
     void connection_decrement() {
       m_active_connections--;
     }
 
   private:
+
+    /// Comm layer
+    Comm *m_comm {};
 
     /// Ganglia metrics collector
     MetricsCollectorGangliaPtr m_ganglia_collector;

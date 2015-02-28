@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -76,6 +76,10 @@ namespace Hypertable {
          "Minimum value for rowkey component <n>.")
         ("rowkey.component.<n>.max", str(),
          "Maximum value for rowkey component <n>.")
+        ("rowkey.component.<n>.length.min", str(),
+         "Minimum length of randomly generated row component <n>.")
+        ("rowkey.component.<n>.length.max", str(),
+         "Maximum length of randomly generated row component <n>.")
         ("<column>.qualifier.type", str(), "Type of qualifier")
         ("<column>.qualifier.size", i32(), "Size of qualifier")
         ("<column>.qualifier.charset", str(),
@@ -85,6 +89,7 @@ namespace Hypertable {
         ("<column>.value.size", i32(), "Size of value")
         ("<column>.value.source", i32(), "Source file to pull value data from")
         ("<column>.value.source.words", i32(), "Interpret source as word stream; value.size treated as word count")
+        ("<column>.value.fixed", boo(), "Used the same fixed value for each cell (default=false)")
         ;
       cmdline_hidden_desc().add(file_desc());
     }
@@ -126,7 +131,7 @@ namespace Hypertable {
     int64_t m_amount;
     int64_t m_count;
     unsigned long m_last_data_size;
-    String m_row;
+    std::string m_row;
     int32_t  m_next_column;
   };
 
@@ -157,7 +162,7 @@ namespace Hypertable {
     std::vector<ColumnSpec> m_column_specs;
 
   private:
-    int parse_order(const String &str);
+    int parse_order(const std::string &str);
   };
 
 }

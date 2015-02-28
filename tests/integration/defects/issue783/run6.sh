@@ -53,24 +53,24 @@ function grep_or_exit_if_not_found()
 \rm -rf $HT_HOME/log/*
 
 # start the cluster with 2 RangeServers and load them with data
-$HT_HOME/bin/start-test-servers.sh --clear --no-thriftbroker --no-rangeserver \
+$HT_HOME/bin/ht-start-test-servers.sh --clear --no-thriftbroker --no-rangeserver \
      --Hypertable.Monitoring.Interval=3000
 sleep 5
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=rs1.pid \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=rs1.pid \
      --Hypertable.RangeServer.ProxyName=rs1 \
      --Hypertable.RangeServer.Port=15870 \
      --Hypertable.LoadMetrics.Interval=10 \
      '--induce-failure=report-metrics-immediately:signal:0' \
      --Hypertable.RangeServer.Maintenance.Interval 100 \
      --Hypertable.RangeServer.Range.SplitSize=400K 2>1 > rangeserver.rs1.output&
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=rs2.pid \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=rs2.pid \
      --Hypertable.RangeServer.ProxyName=rs2 \
      --Hypertable.RangeServer.Port=15871 \
      --Hypertable.LoadMetrics.Interval=10 \
      '--induce-failure=fsstat-disk-full:signal:0;report-metrics-immediately:signal:0' \
      --Hypertable.RangeServer.Maintenance.Interval 100 \
      --Hypertable.RangeServer.Range.SplitSize=400K 2>1 > rangeserver.rs2.output&
-$HT_HOME/bin/ht Hypertable.RangeServer --verbose --pidfile=rs3.pid \
+$HT_HOME/bin/ht RangeServer --verbose --pidfile=rs3.pid \
      --Hypertable.RangeServer.ProxyName=rs3 \
      --Hypertable.RangeServer.Port=15872 \
      --Hypertable.LoadMetrics.Interval=10 \
@@ -88,7 +88,7 @@ wait_for_file $HT_HOME/run/monitoring/rangeservers/rs2_stats_v0.rrd
 wait_for_file $HT_HOME/run/monitoring/rangeservers/rs3_stats_v0.rrd
 
 # compact ranges and wait a bit till RS_METRICS is populated
-${HT_HOME}/bin/ht rsclient --exec "COMPACT RANGES USER; WAIT FOR MAINTENANCE;"
+${HT_HOME}/bin/ht rangeserver --exec "COMPACT RANGES USER; WAIT FOR MAINTENANCE;"
 
 sleep 15
 
@@ -101,12 +101,12 @@ ${HT_HOME}/bin/ht shell --no-prompt --exec "BALANCE ALGORITHM='LOAD';"
 sleep 10
 
 # make sure that no range was moved to another machine
-grep_or_exit_if_found "dest_location=rs2" $HT_HOME/log/Hypertable.Master.log
-grep_or_exit_if_found "dest_location=rs3" $HT_HOME/log/Hypertable.Master.log
+grep_or_exit_if_found "dest_location=rs2" $HT_HOME/log/Master.log
+grep_or_exit_if_found "dest_location=rs3" $HT_HOME/log/Master.log
 grep_or_exit_if_not_found "RangeServer rs2: disk use 100% exceeds threshold" \
-    $HT_HOME/log/Hypertable.Master.log
+    $HT_HOME/log/Master.log
 grep_or_exit_if_not_found "RangeServer rs2: disk use 100% exceeds threshold" \
-    $HT_HOME/log/Hypertable.Master.log
+    $HT_HOME/log/Master.log
 
 # once more dump all keys
 ${HT_HOME}/bin/ht shell --no-prompt --Hypertable.Request.Timeout=30000 --exec "USE '/'; SELECT * FROM BalanceTest KEYS_ONLY INTO FILE 'dump.post';"

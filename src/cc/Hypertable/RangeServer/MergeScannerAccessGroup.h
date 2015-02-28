@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -336,14 +336,14 @@ namespace Hypertable {
     // to avoid performance problems, the revision limit is checked in this 
     // class and not in MergeScannerRange. otherwise this class would send
     // ALL revisions to the upper level, even if just one would be required.
-    uint32_t m_revs_count;
-    uint32_t m_revs_limit;
+    uint32_t m_revs_count {};
+    uint32_t m_revs_limit {};
 
-    DynamicBuffer m_prev_key;
+    DynamicBuffer m_prev_key {};
     int32_t m_prev_cf;
-    bool m_no_forward;
-    bool m_count_present;
-    bool m_skip_remaining_counter;
+    bool m_no_forward {};
+    bool m_count_present {};
+    bool m_skip_remaining_counter {};
     DynamicBuffer m_counted_key_buffer;
     uint64_t      m_count;
     Key           m_counted_key;
@@ -352,14 +352,14 @@ namespace Hypertable {
     int64_t       m_end_timestamp;
     int64_t       m_revision;
     RegexpInfo    m_regexp_cache;
-    bool m_delete_present;
-    DynamicBuffer m_deleted_row;
+    bool m_delete_present {};
+    DynamicBuffer m_deleted_row {};
     int64_t m_deleted_row_timestamp;
-    DynamicBuffer m_deleted_column_family;
+    DynamicBuffer m_deleted_column_family {};
     int64_t m_deleted_column_family_timestamp;
-    DynamicBuffer m_deleted_cell;
+    DynamicBuffer m_deleted_cell {};
     int64_t m_deleted_cell_timestamp;
-    DynamicBuffer m_deleted_cell_version;
+    DynamicBuffer m_deleted_cell_version {};
     std::set<int64_t> m_deleted_cell_version_set;
     IndexUpdaterPtr m_index_updater;
 

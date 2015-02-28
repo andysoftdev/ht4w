@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -32,6 +32,7 @@
 #include "Error.h"
 #include "String.h"
 
+#include <set>
 #include <iostream>
 #include <signal.h>
 #include <stdarg.h>
@@ -43,6 +44,12 @@ namespace Hypertable {
 
 /** Logging framework. */
 namespace Logger {
+
+  class LogSink {
+    public:
+      virtual void log(int priority, const String &message, const std::string &entry) const = 0;
+  };
+  typedef std::set<const LogSink*> LogSinks;
 
   /** @addtogroup Common
    *  @{
@@ -63,13 +70,6 @@ namespace Logger {
       NOTSET = 8
     };
   } // namespace Priority
-  
-  class LogSink {
-    public:
-      virtual void log(int priority, const String &message, const std::string &entry) const = 0;
-  };
-
-  typedef std::set<const LogSink*> LogSinks;
 
   /** The LogWriter class writes to stdout. It's not used directly, but
    * rather through the macros below (i.e. HT_ERROR_OUT, HT_ERRORF etc).
@@ -179,7 +179,7 @@ namespace Logger {
 
 #define HT_LOG_BUFSZ 1024
 
-/** The HT_ABORT macro terminates the application and generates a core dump */
+/* The HT_ABORT macro terminates the application and generates a core dump */
 #ifdef HT_USE_ABORT
 #  define HT_ABORT ::abort()
 #else

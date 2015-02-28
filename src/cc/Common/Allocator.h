@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -115,7 +115,7 @@ struct AllocatorBase {
    *
    * @param p A pointer to the memory area where the new object will be
    *        constructed
-   * @param val An object that is copied
+   * @param args Arguments
    */
 #ifdef _WIN32
 

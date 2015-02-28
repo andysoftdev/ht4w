@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -43,24 +43,26 @@ import org.hypertable.AsyncComm.ResponseCallback;
 
 import org.hypertable.Common.Error;
 import org.hypertable.Common.Filesystem;
+import org.hypertable.Common.Status;
 import org.hypertable.FsBroker.Lib.Broker;
 import org.hypertable.FsBroker.Lib.OpenFileData;
 import org.hypertable.FsBroker.Lib.OpenFileMap;
+import org.hypertable.FsBroker.Lib.ResponseCallbackAppend;
 import org.hypertable.FsBroker.Lib.ResponseCallbackCreate;
 import org.hypertable.FsBroker.Lib.ResponseCallbackExists;
 import org.hypertable.FsBroker.Lib.ResponseCallbackLength;
 import org.hypertable.FsBroker.Lib.ResponseCallbackOpen;
 import org.hypertable.FsBroker.Lib.ResponseCallbackPositionRead;
-import org.hypertable.FsBroker.Lib.ResponseCallbackReaddir;
 import org.hypertable.FsBroker.Lib.ResponseCallbackRead;
-import org.hypertable.FsBroker.Lib.ResponseCallbackWrite;
+import org.hypertable.FsBroker.Lib.ResponseCallbackReaddir;
+import org.hypertable.FsBroker.Lib.ResponseCallbackStatus;
 
 import org.apache.hadoop.fs.FileStatus;
 
 /**
  * This is the actual HadoopBroker object that contains all of the application
  * logic.  It has a method for each of the request types (e.g. Open, Close,
- * Read, Write, etc.)  There is only one of these objects for each server
+ * Read, Append, etc.)  There is only one of these objects for each server
  * instance which carries out all of the requests from all connections.
  */
 public class HadoopBroker implements Broker {
@@ -576,7 +578,7 @@ public class HadoopBroker implements Broker {
                     + ", error=" + error + ", amount=" + amount + ")");
     }
 
-    public void Write(ResponseCallbackWrite cb, int fd, int amount,
+    public void Append(ResponseCallbackAppend cb, int fd, int amount,
                       byte [] data, boolean sync) {
         int error = Error.OK;
         OpenFileData ofd;
@@ -585,7 +587,7 @@ public class HadoopBroker implements Broker {
 
             /**
                if (Global.verbose)
-               log.info("Write request handle=" + fd + " amount=" + mAmount);
+               log.info("Append request handle=" + fd + " amount=" + mAmount);
             */
 
             if ((ofd = mOpenFileMap.Get(fd)) == null) {
@@ -946,6 +948,12 @@ public class HadoopBroker implements Broker {
         cb.response_ok();
     }
 
+    public void Status(ResponseCallbackStatus cb) {
+      int error = cb.response(mStatus);
+      if (error != 0)
+        log.severe("Problem sending status response - " + Error.GetText(error));
+    }
+
     /**
      */
     public void Debug(ResponseCallback cb, int command, byte [] parmas) {
@@ -956,9 +964,18 @@ public class HadoopBroker implements Broker {
                  + command);
     }
 
-    private Configuration mConf = new Configuration();
-    private FileSystem    mFilesystem;
-    private FileSystem    mFilesystem_noverify;
-    private boolean       mVerbose = false;
-    public  OpenFileMap   mOpenFileMap = new OpenFileMap();
+  public void Shutdown() {
+    synchronized (this) {
+      mShutdown = true;
+      notifyAll();
+    }
+  }
+
+  private Configuration mConf = new Configuration();
+  private FileSystem mFilesystem;
+  private FileSystem mFilesystem_noverify;
+  private Status mStatus = new Status();
+  private boolean mVerbose;
+  private boolean mShutdown;
+  public  OpenFileMap mOpenFileMap = new OpenFileMap();
 }

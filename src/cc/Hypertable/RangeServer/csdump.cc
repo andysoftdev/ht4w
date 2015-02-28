@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -105,9 +105,9 @@ int main(int argc, char **argv) {
     bool tsv_format = has("tsv-format");
     char *column_id_map[256];
 
-    ConnectionManagerPtr conn_mgr = new ConnectionManager();
+    ConnectionManagerPtr conn_mgr = make_shared<ConnectionManager>();
 
-    FsBroker::Client *dfs = new FsBroker::Client(conn_mgr, properties);
+    FsBroker::Lib::ClientPtr dfs = std::make_shared<FsBroker::Lib::Client>(conn_mgr, properties);
 
     if (!dfs->wait_for_connection(timeout)) {
       cerr << "error: timed out waiting for FS broker" << endl;

@@ -7,13 +7,13 @@ THREADS=${THREADS:-"8"}
 ITERATIONS=${ITERATIONS:-"1"}
 
 for ((i=0; i<$ITERATIONS; i++)) ; do
-    $HT_HOME/bin/start-test-servers.sh --clear --no-thriftbroker \
+    $HT_HOME/bin/ht-start-test-servers.sh --clear --no-thriftbroker \
         --Hypertable.RangeServer.AccessGroup.MergeFiles=2 \
         --Hypertable.RangeServer.AccessGroup.MaxMemory=50K \
         --Hypertable.RangeServer.Maintenance.Interval=1k \
         --Hypertable.Master.Gc.Interval=1k
 
-    $HT_HOME/bin/hypertable --no-prompt < $SCRIPT_DIR/create-table.hql
+    $HT_HOME/bin/ht shell --no-prompt < $SCRIPT_DIR/create-table.hql
 
     $SCRIPT_DIR/dump-loop.sh &
 
@@ -28,7 +28,7 @@ for ((i=0; i<$ITERATIONS; i++)) ; do
     kill %1
 
     dump_it() {
-        $HT_HOME/bin/hypertable --batch < $SCRIPT_DIR/dump-table.hql | wc -l
+        $HT_HOME/bin/ht shell --batch < $SCRIPT_DIR/dump-table.hql | wc -l
     }
 
     count=`dump_it`

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -152,13 +152,8 @@ Properties::load(const String &fname, const PropertiesDesc &desc,
   try {
     std::ifstream in(fname.c_str());
 
-#ifdef _WIN32
-    if (!in)
-      HT_THROWF(Error::CONFIG_BAD_CFG_FILE, "%s", winapi_strerror(GetLastError()));
-#else
     if (!in)
       HT_THROWF(Error::CONFIG_BAD_CFG_FILE, "%s", strerror(errno));
-#endif
 
 #if BOOST_VERSION >= 103500
     parsed_options parsed_opts = parse_config_file(in, desc, allow_unregistered);

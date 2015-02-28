@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -530,7 +530,6 @@ namespace Hypertable { namespace Serialization {
 #ifdef _MSC_VER
 #pragma warning( pop )
 #endif
-
 
   /**
    * Encode an InetAddr structure

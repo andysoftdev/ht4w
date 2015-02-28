@@ -1,5 +1,5 @@
 /** -*- C++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -35,6 +35,7 @@ void init_thrift_client_options() {
     ;
   alias("thrift-timeout", "ThriftBroker.Timeout");
   // hidden aliases
+  alias("thrift-host", "ThriftBroker.Host");
   alias("thrift-port", "ThriftBroker.Port");
 }
 

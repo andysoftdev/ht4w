@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,7 +27,7 @@ using namespace std;
 
 NamespaceCache::NamespaceCache(PropertiesPtr &props, RangeLocatorPtr &range_locator,
     ConnectionManagerPtr &conn_manager, Hyperspace::SessionPtr &hyperspace,
-    ApplicationQueueInterfacePtr &app_queue, NameIdMapperPtr &namemap, MasterClientPtr &master_client,
+    ApplicationQueueInterfacePtr &app_queue, NameIdMapperPtr &namemap, Lib::Master::ClientPtr &master_client,
     TableCachePtr &table_cache, uint32_t default_timeout_ms, Client *client)
   : m_props(props), m_range_locator(range_locator), m_comm(conn_manager->get_comm()),
     m_conn_manager(conn_manager), m_hyperspace(hyperspace), m_app_queue(app_queue),
@@ -38,9 +38,9 @@ NamespaceCache::NamespaceCache(PropertiesPtr &props, RangeLocatorPtr &range_loca
               m_app_queue && m_namemap && m_master_client && m_table_cache);
 }
 
-NamespacePtr NamespaceCache::get(const String &name) {
+NamespacePtr NamespaceCache::get(const string &name) {
   ScopedLock lock(m_mutex);
-  String id;
+  string id;
   bool is_namespace = false;
   NamespacePtr ns;
   NamespaceMap::iterator it = m_namespace_map.find(name);
@@ -59,7 +59,7 @@ NamespacePtr NamespaceCache::get(const String &name) {
   return ns;
 }
 
-bool NamespaceCache::remove(const String &name) {
+bool NamespaceCache::remove(const string &name) {
   ScopedLock lock(m_mutex);
   bool found = false;
   NamespaceMap::iterator it = m_namespace_map.find(name);

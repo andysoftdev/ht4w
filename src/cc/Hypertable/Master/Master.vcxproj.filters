@@ -151,6 +151,15 @@
     <ClCompile Include="MetricsHandler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DispatchHandlerOperationSystemStatus.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HyperspaceMasterFile.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OperationSystemStatus.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionHandler.h">
@@ -334,6 +343,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MetricsHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DispatchHandlerOperationSystemStatus.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HyperspaceMasterFile.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OperationSystemStatus.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -30,6 +30,11 @@ extern "C" {
 }
 
 namespace Hypertable {
+namespace FsBroker {
+namespace Lib {
+
+  /// @addtogroup FsBrokerLib
+  /// @{
 
   class OpenFileData : public ReferenceCount {
   public:
@@ -106,7 +111,10 @@ namespace Hypertable {
 
     typedef std::unordered_map<int, OpenFileDataPtr> FileMap;
 
-    Mutex         m_mutex;
-    FileMap       m_file_map;
+    Mutex m_mutex;
+    FileMap m_file_map;
   };
-}
+
+  /// @}
+
+}}}

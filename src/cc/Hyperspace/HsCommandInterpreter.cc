@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -505,6 +505,28 @@ int HsCommandInterpreter::execute_line(const String &line) {
       int type = state.locate_type;
       String result = m_session->locate(type);
       cout << result << endl;
+    }
+
+    else if (state.command == COMMAND_STATUS) {
+      Status status;
+      Status::Code code;
+      int32_t error = m_session->status(status);
+      if (error == Error::OK) {
+        string text;
+        status.get(&code, text);
+        if (!m_silent) {
+          cout << "Hyperspace " << Status::code_to_string(code);
+          if (!text.empty())
+            cout << " - " << text;
+          cout << endl;
+        }
+      }
+      else {
+        if (!m_silent)
+          cout << "Hyperspace CRITICAL - " << Error::get_text(error) << endl;
+        code = Status::Code::CRITICAL;
+      }
+      return static_cast<int>(code);
     }
 
     else if (state.command == COMMAND_HELP) {

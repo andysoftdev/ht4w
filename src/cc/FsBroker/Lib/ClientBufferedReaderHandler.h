@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -18,23 +18,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#ifndef HYPERTABLE_CLIENTBUFFEREDREADERHANDLER_H
-#define HYPERTABLE_CLIENTBUFFEREDREADERHANDLER_H
+#ifndef FsBroker_Lib_ClientBufferedReaderHandler_h
+#define FsBroker_Lib_ClientBufferedReaderHandler_h
 
-#include <queue>
+#include <AsyncComm/DispatchHandler.h>
+
+#include <Common/Mutex.h>
+#include <Common/String.h>
 
 #include <boost/thread/condition.hpp>
 
-#include "Common/Mutex.h"
-#include "Common/String.h"
+#include <queue>
 #include "Common/Filesystem.h"
-#include "AsyncComm/DispatchHandler.h"
 
 namespace Hypertable {
+namespace FsBroker {
+namespace Lib {
 
-  namespace FsBroker {
-    class Client;
-  }
+  class Client;
+
+  /// @addtogroup FsBrokerLib
+  /// @{
 
   class ClientBufferedReaderHandler : public DispatchHandler {
 
@@ -45,7 +49,7 @@ namespace Hypertable {
 
     virtual ~ClientBufferedReaderHandler();
 
-    virtual void handle(EventPtr &event_ptr);
+    virtual void handle(EventPtr &event);
 
     size_t read(void *buf, size_t len);
 
@@ -64,14 +68,16 @@ namespace Hypertable {
     bool                 m_eof;
     int                  m_error;
     std::string          m_error_msg;
-    uint8_t             *m_ptr;
-    uint8_t             *m_end_ptr;
+    const uint8_t             *m_ptr;
+    const uint8_t             *m_end_ptr;
     uint64_t             m_end_offset;
     uint64_t             m_outstanding_offset;
     uint64_t             m_actual_offset;
   };
 
-}
+  /// @}
 
-#endif // HYPERTABLE_CLIENTBUFFEREDREADERHANDLER_H
+}}}
+
+#endif // FsBroker_Lib_ClientBufferedReaderHandler_h
 

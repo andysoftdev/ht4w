@@ -62,6 +62,7 @@
     <ClCompile Include="response\ResponseCallbackReaddir.cc" />
     <ClCompile Include="response\ResponseCallbackReaddirAttr.cc" />
     <ClCompile Include="response\ResponseCallbackReadpathAttr.cc" />
+    <ClCompile Include="response\ResponseCallbackStatus.cc" />
     <ClCompile Include="ServerConnectionHandler.cc" />
     <ClCompile Include="ServerKeepaliveHandler.cc" />
     <ClCompile Include="StateDbKeys.cc" />
@@ -116,6 +117,7 @@
     <ClInclude Include="response\ResponseCallbackReaddir.h" />
     <ClInclude Include="response\ResponseCallbackReaddirAttr.h" />
     <ClInclude Include="response\ResponseCallbackReadpathAttr.h" />
+    <ClInclude Include="response\ResponseCallbackStatus.h" />
     <ClInclude Include="ServerConnectionHandler.h" />
     <ClInclude Include="ServerKeepaliveHandler.h" />
     <ClInclude Include="Session.h" />
@@ -209,6 +211,8 @@
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -234,6 +238,8 @@
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -264,6 +270,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -296,6 +304,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

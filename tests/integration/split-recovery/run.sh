@@ -2,7 +2,7 @@
 
 HT_HOME=${INSTALL_DIR:-"$HOME/hypertable/current"}
 HYPERTABLE_HOME=${HT_HOME}
-HT_SHELL=$HT_HOME/bin/hypertable
+HT_SHELL="$HT_HOME/bin/ht shell"
 SCRIPT_DIR=`dirname $0`
 #DATA_SEED=42 # for repeating certain runs
 DIGEST="openssl dgst -md5"
@@ -21,15 +21,15 @@ gen_test_data() {
 
 stop_range_server() {
   # stop any existing range server if necessary
-  pidfile=$HT_HOME/run/Hypertable.RangeServer.pid
+  pidfile=$HT_HOME/run/RangeServer.pid
   if [ -f $pidfile ]; then
     kill -9 `cat $pidfile`
     \rm -f $pidfile
     sleep 1
 
-    if $HT_HOME/bin/serverup --silent rangeserver; then
+    if $HT_HOME/bin/ht serverup --silent rangeserver; then
       echo "Can't stop range server, exiting"
-      ps -ef | grep Hypertable.RangeServer
+      ps -ef | grep htRangeServer
       exit 1
     fi
   fi
@@ -39,7 +39,7 @@ save_failure_state() {
     local TEST_ID=$1
     shift
     mkdir failed-run-$TEST_ID
-    pstack `cat $HT_HOME/run/Hypertable.Master.pid` > failed-run-$TEST_ID/master.stack
+    pstack `cat $HT_HOME/run/Master.pid` > failed-run-$TEST_ID/master.stack
     cp rangeserver.output.$TEST_ID $HT_HOME/log/* failed-run-$TEST_ID
     touch $HT_HOME/run/debug-op
     sleep 60
@@ -59,13 +59,13 @@ run_test() {
 
   if [ -z "$SKIP_START_SERVERS" ]; then
       stop_range_server
-      \rm -f $HT_HOME/run/Hypertable.RangeServer.pid
-      $HT_HOME/bin/start-test-servers.sh --no-rangeserver --no-thriftbroker --clear
+      \rm -f $HT_HOME/run/RangeServer.pid
+      $HT_HOME/bin/ht-start-test-servers.sh --no-rangeserver --no-thriftbroker --clear
   fi
 
   $SCRIPT_DIR/rangeserver-launcher.sh $@ > rangeserver.output.$TEST_ID 2>&1 &
 
-  set_start_vars Hypertable.RangeServer
+  set_start_vars RangeServer
   wait_for_server_up rangeserver "$pidname"
 
   $HT_SHELL --batch < $SCRIPT_DIR/create-test-table.hql

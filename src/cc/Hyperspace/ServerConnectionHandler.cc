@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -168,7 +168,7 @@ void ServerConnectionHandler::handle(EventPtr &event) {
                                             m_session_id, event);
         break;
       case Protocol::COMMAND_STATUS:
-        handler = new RequestHandlerStatus(m_comm, event);
+        handler = new RequestHandlerStatus(m_comm, m_master.get(), event);
         break;
       case Protocol::COMMAND_SHUTDOWN:
         handler = new RequestHandlerShutdown(m_comm, m_master.get(),
@@ -203,7 +203,7 @@ void ServerConnectionHandler::handle(EventPtr &event) {
       HT_ERROR_OUT << e << HT_END;
     }
 
-    if ((error = m_comm->set_timer(m_maintenance_interval, this)) != Error::OK)
+    if ((error = m_comm->set_timer(m_maintenance_interval, shared_from_this())) != Error::OK)
        HT_FATALF("Problem setting timer - %s", Error::get_text(error));
 
   }

@@ -1,0 +1,108 @@
+#!/bin/bash
+#
+# Copyright (C) 2007-2015 Hypertable, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# The installation directory
+export HYPERTABLE_HOME=$(cd `dirname "$0"`/.. && pwd)
+. $HYPERTABLE_HOME/bin/ht-env.sh
+
+# Parse and remove ht-java-run.sh specific arguments
+DEBUG_ARGS=
+
+# Setup CLASSPATH
+CLASSPATH="${HYPERTABLE_HOME}"
+
+while [ $# -gt 1 ] ; do
+  if [ "--pidfile" = "$1" ] ; then
+    shift
+    echo "$$" > $1
+    shift
+  elif [ "--debug" = "$1" ] ; then
+    DEBUG_ARGS="-Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=n\
+                -Xdebug"
+    shift
+  elif [ "--add-to-classpath" = "$1" ] ; then
+    shift
+    CLASSPATH=${CLASSPATH}:$1
+    shift
+  elif [ "--verbose" = "$1" ] ; then
+    shift
+  else
+    break
+  fi
+done
+
+# Make sure configured for Hadoop distro
+DISTRO=
+if [ -e $HYPERTABLE_HOME/conf/hadoop-distro ]; then
+  DISTRO=`cat $HYPERTABLE_HOME/conf/hadoop-distro`
+fi
+
+if [ -z "$DISTRO" ]; then
+    echo "No Hadoop distro is configured.  Run the following script to"
+    echo "configure:"
+    echo ""
+    echo "$HYPERTABLE_HOME/bin/ht-set-hadoop-distro.sh"
+    exit 1
+fi
+
+# so that filenames w/ spaces are handled correctly in loops below
+IFS=
+
+DISTRO_NEEDS_SETTING=0
+JAR_COUNT=`ls -1 $HYPERTABLE_HOME/lib/java/*.jar | wc -l`
+if [ $JAR_COUNT -eq 0 ]; then
+    DISTRO_NEEDS_SETTING=1
+else
+    JAR=`ls -1 $HYPERTABLE_HOME/lib/java/*.jar | head -1`
+    SYSTEM=`uname -s`
+    if [ $SYSTEM == "Linux" ]; then
+        CONF_DATE=`stat -t -c '%Y' $HYPERTABLE_HOME/conf/hadoop-distro`
+        JAR_DATE=`stat -t -c '%Y' $JAR`
+        if [[ $CONF_DATE > $JAR_DATE ]]; then
+            DISTRO_NEEDS_SETTING=1
+        fi
+    elif [ $SYSTEM == "Darwin" ]; then
+        CONF_DATE=`stat -f '%B' $HYPERTABLE_HOME/conf/hadoop-distro`
+        JAR_DATE=`stat -f '%B' $JAR`
+        if [[ $CONF_DATE > $JAR_DATE ]]; then
+            DISTRO_NEEDS_SETTING=1
+        fi
+    else
+        DISTRO_NEEDS_SETTING=1
+    fi
+fi
+
+if [ $DISTRO_NEEDS_SETTING -eq 1 ]; then
+    $HYPERTABLE_HOME/bin/ht-set-hadoop-distro.sh $DISTRO
+fi
+
+
+# add lib/java to CLASSPATH
+for f in $HYPERTABLE_HOME/lib/java/*.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+
+unset IFS
+
+#
+# run it
+#
+if [ "$JAVA_HOME" != "" ] ; then
+  exec $JAVA_HOME/bin/java $DEBUG_ARGS -classpath "$CLASSPATH" "$@"
+else
+  exec java $DEBUG_ARGS -classpath "$CLASSPATH" "$@"
+fi

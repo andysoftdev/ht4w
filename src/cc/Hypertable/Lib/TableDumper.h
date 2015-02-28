@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -42,7 +42,7 @@ namespace Hypertable {
      * @param scan_spec scan specification
      * @param target_node_count target node count
      */
-    TableDumper(NamespacePtr &ns, const String &name, ScanSpec &scan_spec,
+    TableDumper(NamespacePtr &ns, const std::string &name, ScanSpec &scan_spec,
 		size_t target_node_count=20);
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -32,11 +32,9 @@
  * The %Common library contains general purpose utility classes used by all
  * other modules within Hypertable.  It is not dependent on any other library
  * defined in %Hypertable.
- * @{
- * @}
  */
 
-/** Portability macros for C code. */
+/* Portability macros for C code. */
 #ifdef __cplusplus
 #  define HT_EXTERN_C  extern "C"
 #else
@@ -58,8 +56,8 @@
 #  define HT_FORMAT(x) __attribute__((format x))
 #  define HT_FUNC __PRETTY_FUNCTION__
 #  define HT_COND(x, _prob_) __builtin_expect(x, _prob_)
-#elif _MSC_VER
-#  define HT_NORETURN //__declspec(noreturn)
+#elif _WIN32
+#  define HT_NORETURN
 #  define HT_FORMAT(x)
 #  ifndef __attribute__
 #    define __attribute__(x)
@@ -114,12 +112,19 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
+
+#endif
+
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <strings.h>
+#include <stdlib.h>
+
+#ifdef _WIN32
 
 #ifdef __cplusplus
 
@@ -169,6 +174,18 @@ char* ctime_r( const time_t *time, char (&buffer)[size] ) {
   return buffer;
 }
 
+template <size_t size> inline
+char* asctime_r( const struct tm *_tm, char (&buffer)[size] ) {
+  asctime_s( buffer, size, _tm );
+  return buffer;
+}
+
+template <size_t size> inline
+char* strerror_r( int errnum, char (&buffer)[size] ) {
+  strerror_s( buffer, size, errnum );
+  return buffer;
+}
+
 inline uint8_t* valloc(size_t size) {
   return (uint8_t*) VirtualAlloc(0, size, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 }
@@ -180,7 +197,7 @@ inline void vfree(const uint8_t* p) {
 
 inline int posix_memalign(void **memptr, size_t alignment, size_t size) {
   *memptr = _aligned_malloc(size, alignment);
-  return errno; 
+  return errno;
 }
 
 #endif
@@ -200,13 +217,14 @@ typedef signed __int64 off64_t;
 #define off_t off64_t
 
 typedef int pid_t;
-extern struct tm * gmtime_r(const time_t *timer, struct tm *result);
 
 #define HAVE_STRUCT_TIMESPEC
 typedef struct timespec {
     time_t tv_sec; // Seconds since 00:00:00 GMT, 1 January 1970
     long tv_nsec;  // Additional nanoseconds since tv_sec
 } timespec_t;
+
+struct tm * gmtime_r( const time_t *timer, struct tm *result );
 
 const char* winapi_strerror( DWORD err );
 
@@ -229,21 +247,7 @@ typedef int64_t ssize_t;
 typedef int32_t ssize_t;
 #endif
 
-//#pragma deprecated(_errno) //removed with boost 1.50
 #pragma deprecated(perror)
-#pragma deprecated(strerror)
-
-#else
-
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
-#include <strings.h>
-#include <stdlib.h>
-
-typedef int socket_t;
-#define INVALID_SOCKET -1
-#define off_t size_t
 
 #endif 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,8 +25,8 @@
  * functor class used to wait for and react to I/O events.
  */
 
-#ifndef HYPERTABLE_REACTORRUNNER_H
-#define HYPERTABLE_REACTORRUNNER_H
+#ifndef AsyncComm_REACTORRUNNER_H
+#define AsyncComm_REACTORRUNNER_H
 
 #include "HandlerMap.h"
 #include "Reactor.h"
@@ -85,4 +85,4 @@ namespace Hypertable {
   /** @}*/
 }
 
-#endif // HYPERTABLE_REACTORRUNNER_H
+#endif // AsyncComm_REACTORRUNNER_H

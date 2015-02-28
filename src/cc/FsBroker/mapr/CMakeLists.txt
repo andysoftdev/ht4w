@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -19,8 +19,8 @@
 
 include_directories(${Mapr_INCLUDE_DIR} ${Jni_INCLUDE_DIR})
 
-# maprBroker
-add_executable(maprBroker main.cc MaprBroker.cc)
-target_link_libraries(maprBroker HyperFsBroker ${Mapr_LIBRARIES} ${MALLOC_LIBRARY})
+# htFsBrokerMapr
+add_executable(htFsBrokerMapr main.cc MaprBroker.cc)
+target_link_libraries(htFsBrokerMapr HyperFsBroker ${Mapr_LIBRARIES} ${MALLOC_LIBRARY})
 
-install(TARGETS maprBroker RUNTIME DESTINATION bin)
+install(TARGETS htFsBrokerMapr RUNTIME DESTINATION bin)

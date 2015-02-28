@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -24,15 +24,18 @@
 /// This file contains declarations for a set of general-purpose utility
 /// functions used by the %Master.
 
-#ifndef HYPERTABLE_UTILITY_H
-#define HYPERTABLE_UTILITY_H
+#ifndef Hypertable_Master_Utility_h
+#define Hypertable_Master_Utility_h
 
 #include <Hypertable/Master/Context.h>
 
+#include <Hypertable/Lib/RangeSpec.h>
+#include <Hypertable/Lib/TableIdentifier.h>
 #include <Hypertable/Lib/TableParts.h>
-#include <Hypertable/Lib/Types.h>
 
+#include <Common/Status.h>
 #include <Common/StringExt.h>
+#include <Common/Timer.h>
 
 namespace Hypertable {
 
@@ -157,7 +160,7 @@ namespace Hypertable {
      * Queries RangeServerConnectionManager for next available server to hold
      * a new range and sets <code>location</code> to the server name if found.
      * @param context %Master context
-     * @param context Reference to string to hold next available server name
+     * @param location Reference to string to hold next available server name
      * @param urgent Use servers that exceed disk threshold, if necessary
      * @return <i>true</i> if next available server found, <i>false</i>
      * otherwise
@@ -246,17 +249,18 @@ namespace Hypertable {
      */
     extern String root_range_location(ContextPtr &context);
 
-    /// Canonicalizes pathname.
-    /// This member function canonicalizes <code>pathname</code> by stripping
-    /// any leading and trailing whitespace or '/' characters and then
-    /// prepending a '/' character.
-    /// @param pathname Pathname to canonicalize (modified in place)
-    extern void canonicalize_pathname(std::string &pathname);
+    /// Runs a status check on the master.
+    /// @param context %Master context
+    /// @param timer Deadline timer
+    /// @param status Status output object
+    /// @return <i>true</i> if status is Status::Code::OK, <i>false</i>
+    /// otherwise
+    extern bool status(ContextPtr &context, Timer &timer, Status &status);
 
     /// @}
 
   } // namespace Utility
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_UTILITY_H
+#endif // Hypertable_Master_Utility_h

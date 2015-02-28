@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,8 +25,8 @@
  * processing I/O events for datagram sockets.
  */
 
-#ifndef HYPERTABLE_IOHANDLERDATAGRAM_H
-#define HYPERTABLE_IOHANDLERDATAGRAM_H
+#ifndef AsyncComm_IOHandlerDatagram_h
+#define AsyncComm_IOHandlerDatagram_h
 
 #include <list>
 #include <utility>
@@ -39,6 +39,7 @@ extern "C" {
 
 #include "CommBuf.h"
 #include "IOHandler.h"
+
 
 namespace Hypertable {
 
@@ -57,7 +58,7 @@ namespace Hypertable {
      * @param sd Socket descriptor bound to an address
      * @param dhp Default dispatch handler
      */
-    IOHandlerDatagram(socket_t sd, DispatchHandlerPtr &dhp) : IOHandler(sd, dhp) {
+    IOHandlerDatagram(socket_t sd, const DispatchHandlerPtr &dhp) : IOHandler(sd, dhp) {
       m_message = new uint8_t [65536];
       memcpy(&m_addr, &m_local_addr, sizeof(InetAddr));
 
@@ -204,6 +205,7 @@ namespace Hypertable {
      * @return Error::OK on success, or Error::COMM_SEND_ERROR on send error
      */
     int handle_write_readiness();
+
 #endif
 
   private:
@@ -211,23 +213,24 @@ namespace Hypertable {
     /// Send queue message record
     typedef std::pair<struct sockaddr_in, CommBufPtr> SendRec;
 
-#ifdef _WIN32
-
-    /// Message receive buffer
-    struct sockaddr_in  m_whence;  // sender address
-    int                 m_whencelen;
-    
-#else
+#ifndef _WIN32
 
     uint8_t *m_message;
 
     /// Send queue
     std::list<SendRec> m_send_queue;
+
+#else
+
+    /// Message receive buffer
+    struct sockaddr_in  m_whence;  // sender address
+    int                 m_whencelen;
+
 #endif
 
-  uint8_t              *m_message;
+    uint8_t              *m_message;
   };
   /** @}*/
 }
 
-#endif // HYPERTABLE_IOHANDLERDATAGRAM_H
+#endif // AsyncComm_IOHandlerDatagram_h

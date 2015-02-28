@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -50,7 +50,6 @@ ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
                                                Session *session)
   : m_dead(false), m_destroying(false), m_comm(comm),
     m_session(session), m_session_id(0) {
-  int error;
 
   HT_TRY("getting config values",
     m_verbose = cfg->get_bool("Hypertable.Verbose");
@@ -64,11 +63,6 @@ ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
   boost::xtime_get(&m_jeopardy_time, boost::TIME_UTC_);
   xtime_add_millis(m_jeopardy_time, m_lease_interval);
 
-  m_local_addr = InetAddr(INADDR_ANY, m_datagram_send_port);
-
-  DispatchHandlerPtr dhp(this);
-  m_comm->create_datagram_receive_socket(m_local_addr, 0x10, dhp);
-
   foreach_ht(const String &replica, cfg->get_strs("Hyperspace.Replica.Host")) {
     m_hyperspace_replicas.push_back(replica);
   }
@@ -79,6 +73,17 @@ ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
                                  m_hyperspace_port), Error::BAD_DOMAIN_NAME);
 
   m_session->update_master_addr(m_hyperspace_replicas[0]);
+
+}
+
+
+void ClientKeepaliveHandler::start() {
+  int error;
+
+  m_local_addr = InetAddr(INADDR_ANY, m_datagram_send_port);
+
+  m_comm->create_datagram_receive_socket(m_local_addr, 0x10, shared_from_this());
+
   CommBufPtr cbp(Hyperspace::Protocol::create_client_keepalive_request(m_session_id,
                                                                        m_delivered_events));
 
@@ -87,10 +92,11 @@ ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
     HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
   }
 
-  if ((error = m_comm->set_timer(m_keep_alive_interval, this))
+  if ((error = m_comm->set_timer(m_keep_alive_interval, shared_from_this()))
       != Error::OK) {
     HT_THROW_AND_LOG(error, "Problem setting timer - %s");
   }
+
 }
 
 
@@ -146,7 +152,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
             HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
           }
 
-          if ((error = m_comm->set_timer(m_keep_alive_interval, this)) != Error::OK) {
+          if ((error = m_comm->set_timer(m_keep_alive_interval, shared_from_this())) != Error::OK) {
             HT_THROW_AND_LOG(error, "Problem setting timer - %s");
           }
           break;
@@ -181,8 +187,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
           if (m_session_id == 0) {
             m_session_id = session_id;
             if (!m_conn_handler) {
-              m_conn_handler = new ClientConnectionHandler(m_comm,
-                  m_session, m_lease_interval);
+              m_conn_handler = make_shared<ClientConnectionHandler>(m_comm, m_session, m_lease_interval);
               m_conn_handler->set_verbose_mode(m_verbose);
               m_conn_handler->set_session_id(m_session_id);
             }
@@ -393,7 +398,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
       HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
     }
 
-    if ((error = m_comm->set_timer(m_keep_alive_interval, this))
+    if ((error = m_comm->set_timer(m_keep_alive_interval, shared_from_this()))
         != Error::OK) {
       HT_THROW_AND_LOG(error, "Problem setting timer - %s");
     }
@@ -422,8 +427,7 @@ void ClientKeepaliveHandler::expire_session() {
 
     m_local_addr = InetAddr(INADDR_ANY, m_datagram_send_port);
 
-    DispatchHandlerPtr dhp(this);
-    m_comm->create_datagram_receive_socket(m_local_addr, 0x10, dhp);
+    m_comm->create_datagram_receive_socket(m_local_addr, 0x10, shared_from_this());
 
     CommBufPtr cbp(Hyperspace::Protocol::create_client_keepalive_request(
         m_session_id, m_delivered_events));
@@ -434,7 +438,7 @@ void ClientKeepaliveHandler::expire_session() {
       HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
     }
 
-    if ((error = m_comm->set_timer(m_keep_alive_interval, this))
+    if ((error = m_comm->set_timer(m_keep_alive_interval, shared_from_this()))
         != Error::OK) {
       HT_THROW_AND_LOG(error, "Problem setting timer - %s");
     }

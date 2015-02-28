@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,37 +25,31 @@
  * managing the maintenance timer.
  */
 
-#include "Common/Compat.h"
-#include "Common/Config.h"
-#include "Common/Error.h"
-#include "Common/InetAddr.h"
-#include "Common/StringExt.h"
-#include "Common/System.h"
-#include "Common/Time.h"
+#include <Common/Compat.h>
+
+#include "Global.h"
+#include "RangeServer.h"
+#include "Request/Handler/DoMaintenance.h"
+#include "TimerHandler.h"
+
+#include <Hypertable/Lib/KeySpec.h>
+
+#include <Common/Config.h>
+#include <Common/Error.h>
+#include <Common/InetAddr.h>
+#include <Common/StringExt.h>
+#include <Common/System.h>
+#include <Common/Time.h>
 
 #include <algorithm>
 #include <sstream>
 
-#include "Common/Time.h"
-
-#include "Global.h"
-#include "RangeServer.h"
-#include "RequestHandlerDoMaintenance.h"
-#include "TimerHandler.h"
-
-#include "Hypertable/Lib/KeySpec.h"
-
 using namespace Hypertable;
+using namespace Hypertable::RangeServer;
 using namespace Hypertable::Config;
 
-/**
- *
- */
-TimerHandler::TimerHandler(Comm *comm, RangeServer *range_server)
-  : m_comm(comm), m_range_server(range_server),
-    m_shutdown(false), m_shutdown_complete(false),
-    m_immediate_maintenance_scheduled(false), m_app_queue_paused(false),
-    m_low_memory_mode(false), m_moderate_low_memory_mode(false), m_schedule_outstanding(false) {
+TimerHandler::TimerHandler(Comm *comm, Apps::RangeServer *range_server)
+  : m_comm(comm), m_range_server(range_server) {
   int32_t maintenance_interval;
 
   m_query_cache_memory = get_i64("Hypertable.RangeServer.QueryCache.MaxMemory");
@@ -83,7 +77,7 @@ TimerHandler::TimerHandler(Comm *comm, RangeServer *range_server)
 
 void TimerHandler::start() {
   int error;
-  if ((error = m_comm->set_timer(0, this)) != Error::OK)
+  if ((error = m_comm->set_timer(0, shared_from_this())) != Error::OK)
     HT_FATALF("Problem setting timer - %s", Error::get_text(error));
 }
 
@@ -98,7 +92,7 @@ void TimerHandler::schedule_immediate_maintenance() {
     int error;
     uint32_t millis = (elapsed < 1000) ? 1000 - elapsed : 0;
     HT_INFOF("Scheduling immediate maintenance for %u millis in the future", millis);
-    if ((error = m_comm->set_timer(millis, this)) != Error::OK)
+    if ((error = m_comm->set_timer(millis, shared_from_this())) != Error::OK)
       HT_FATALF("Problem setting timer - %s", Error::get_text(error));
     m_immediate_maintenance_scheduled = true;
   }
@@ -125,7 +119,7 @@ void TimerHandler::maintenance_scheduled_notify() {
     m_immediate_maintenance_scheduled = false;
   else {
     int error;
-    if ((error = m_comm->set_timer(m_current_interval, this)) != Error::OK)
+    if ((error = m_comm->set_timer(m_current_interval, shared_from_this())) != Error::OK)
       HT_FATALF("Problem setting timer - %s", Error::get_text(error));
   }
 }
@@ -134,11 +128,7 @@ void TimerHandler::maintenance_scheduled_notify() {
 void TimerHandler::shutdown() {
   ScopedLock lock(m_mutex);
   m_shutdown = true;
-  m_comm->cancel_timer(this);
-  // gracfully complete shutdown
-  int error;
-  if ((error = m_comm->set_timer(0, this)) != Error::OK)
-    HT_FATALF("Problem setting timer - %s", Error::get_text(error));
+  m_comm->cancel_timer(shared_from_this());
 }
 
 
@@ -148,12 +138,8 @@ void TimerHandler::handle(Hypertable::EventPtr &event) {
   bool do_maintenance = !m_schedule_outstanding;
   boost::xtime now;
 
-  if (m_shutdown) {
-    HT_INFO("TimerHandler shutting down.");
-    m_shutdown_complete = true;
-    m_shutdown_cond.notify_all();
+  if (m_shutdown)
     return;
-  }
 
   boost::xtime_get(&now, TIME_UTC_);
 
@@ -199,11 +185,11 @@ void TimerHandler::handle(Hypertable::EventPtr &event) {
     if (event->type == Hypertable::Event::TIMER) {
 
       if (do_maintenance) {
-        m_app_queue->add( new RequestHandlerDoMaintenance(m_range_server) );
+        m_app_queue->add( new Request::Handler::DoMaintenance(m_range_server) );
         m_schedule_outstanding = true;
       }
       else {
-        if ((error = m_comm->set_timer(m_current_interval, this)) != Error::OK)
+        if ((error = m_comm->set_timer(m_current_interval, shared_from_this())) != Error::OK)
           HT_FATALF("Problem setting timer - %s", Error::get_text(error));
       }
     }

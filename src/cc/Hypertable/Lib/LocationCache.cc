@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -176,7 +176,7 @@ bool LocationCache::invalidate(const char *table_name, const char *rowkey) {
   return true;
 }
 
-void LocationCache::invalidate_host(const String &hostname) {
+void LocationCache::invalidate_host(const string &hostname) {
   ScopedLock lock(m_mutex);
   CommAddress addr;
 

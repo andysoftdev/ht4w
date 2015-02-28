@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -772,19 +772,8 @@ BerkeleyDbFilesystem::incr_attr(BDbTxn &txn, const String &fname, const String &
       }
 
       *valuep = strtoull(numbuf, 0, 0);
-
-#ifdef _WIN32
-#pragma warning( push )
-#pragma warning( disable : 4995 ) // '_errno': name was marked as #pragma deprecated
-#endif
-
       // Sanity check value
       if (*valuep == 0 && errno == EINVAL)
-
-#ifdef _WIN32
-#pragma warning( pop )
-#endif
-
         HT_THROWF(HYPERSPACE_BAD_ATTRIBUTE,
                   "incr attr '%s' invalid: '%s', cannot convert to integer",
                   aname.c_str(), numbuf);

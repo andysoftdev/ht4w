@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -29,6 +29,20 @@
 
 #include "Common/Compat.h"
 
+#include "ReactorFactory.h"
+#include "ReactorRunner.h"
+#include "Comm.h"
+#include "IOHandlerAccept.h"
+#include "IOHandlerData.h"
+
+#include <Common/Config.h>
+#include <Common/Error.h>
+#include <Common/InetAddr.h>
+#include <Common/FileUtils.h>
+#include <Common/ScopeGuard.h>
+#include <Common/SystemInfo.h>
+#include <Common/Time.h>
+
 #include <cassert>
 #include <iostream>
 
@@ -48,19 +62,6 @@ extern "C" {
 #include <arpa/inet.h>
 }
 
-#include "Common/Config.h"
-#include "Common/Error.h"
-#include "Common/InetAddr.h"
-#include "Common/FileUtils.h"
-#include "Common/ScopeGuard.h"
-#include "Common/SystemInfo.h"
-#include "Common/Time.h"
-
-#include "ReactorFactory.h"
-#include "ReactorRunner.h"
-#include "Comm.h"
-#include "IOHandlerAccept.h"
-#include "IOHandlerData.h"
 #ifdef _WIN32
 #include "IOOP.h"
 #endif
@@ -97,6 +98,9 @@ Comm::Comm() {
              "AsyncComm::comm object");
     HT_ABORT;
   }
+
+  m_verbose = Config::properties->has("verbose") && Config::properties->get_bool("verbose");
+  ReactorFactory::verbose = m_verbose;
 
   InetAddr::initialize(&m_local_addr, System::net_info().primary_addr.c_str(), 0);
 
@@ -175,7 +179,8 @@ int Comm::register_socket(int sd, const CommAddress &addr,
 }
 
 
-int Comm::connect(const CommAddress &addr, DispatchHandlerPtr &default_handler) {
+int
+Comm::connect(const CommAddress &addr, const DispatchHandlerPtr &default_handler) {
   socket_t sd;
   int error = m_handler_map->contains_data_handler(addr);
 
@@ -189,7 +194,8 @@ int Comm::connect(const CommAddress &addr, DispatchHandlerPtr &default_handler) 
   uint16_t port;
   while (true) {
     if ((sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-      HT_ERRORF("socket: %s", strerror(errno));
+      if (m_verbose)
+        HT_ERRORF("socket: %s", strerror(errno));
       return Error::COMM_SOCKET_ERROR;
     }
 
@@ -203,10 +209,10 @@ int Comm::connect(const CommAddress &addr, DispatchHandlerPtr &default_handler) 
         ::close(sd);
         continue;
       }
-      HT_ERRORF( "bind: %s: %s", m_local_addr.format().c_str(), strerror(errno));
+      if (m_verbose)
+        HT_ERRORF( "bind: %s: %s", m_local_addr.format().c_str(), strerror(errno));
       return Error::COMM_BIND_ERROR;
     }
-
     break;
   }
 
@@ -225,8 +231,9 @@ int Comm::connect(const CommAddress &addr, DispatchHandlerPtr &default_handler) 
 
 
 
-int Comm::connect(const CommAddress &addr, const CommAddress &local_addr,
-  DispatchHandlerPtr &default_handler) {
+int
+Comm::connect(const CommAddress &addr, const CommAddress &local_addr,
+              const DispatchHandlerPtr &default_handler) {
   socket_t sd;
   int error = m_handler_map->contains_data_handler(addr);
 
@@ -237,7 +244,22 @@ int Comm::connect(const CommAddress &addr, const CommAddress &local_addr,
   else if (error != Error::COMM_NOT_CONNECTED)
     return error;
 
-#ifdef _WIN32
+#ifndef _WIN32
+
+  if ((sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+    if (m_verbose)
+      HT_ERRORF("socket: %s", strerror(errno));
+    return Error::COMM_SOCKET_ERROR;
+  }
+
+  // bind socket to local address
+  if ((::bind(sd, (const sockaddr *)&local_addr.inet, sizeof(sockaddr_in))) < 0) {
+    if (m_verbose)
+      HT_ERRORF( "bind: %s: %s", local_addr.to_str().c_str(), strerror(errno));
+    return Error::COMM_BIND_ERROR;
+  }
+
+#else
 
   sd = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, 0, 0, WSA_FLAG_OVERLAPPED);
   if (sd == INVALID_SOCKET) {
@@ -247,19 +269,6 @@ int Comm::connect(const CommAddress &addr, const CommAddress &local_addr,
 
   if ((::bind(sd, (const sockaddr *)&local_addr.inet, sizeof(sockaddr_in))) == SOCKET_ERROR) {
     HT_ERRORF( "bind: %s: %s", local_addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
-    return Error::COMM_BIND_ERROR;
-  }
-
-#else
-
-  if ((sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-    HT_ERRORF("socket: %s", strerror(errno));
-    return Error::COMM_SOCKET_ERROR;
-  }
-
-  // bind socket to local address
-  if ((::bind(sd, (const sockaddr *)&local_addr.inet, sizeof(sockaddr_in))) < 0) {
-    HT_ERRORF( "bind: %s: %s", local_addr.to_str().c_str(), strerror(errno));
     return Error::COMM_BIND_ERROR;
   }
 
@@ -305,15 +314,24 @@ bool Comm::wait_for_proxy_load(Timer &timer) {
 }
 
 
-void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
-  DispatchHandlerPtr &default_handler) {
+void
+Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
+             const DispatchHandlerPtr &default_handler) {
   IOHandlerAccept *handler;
   int one = 1;
   socket_t sd;
 
   HT_ASSERT(addr.is_inet());
 
-#ifdef _WIN32
+#ifndef _WIN32
+
+  if ((sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    HT_THROW(Error::COMM_SOCKET_ERROR, strerror(errno));
+
+  // Set to non-blocking
+  FileUtils::set_flags(sd, O_NONBLOCK);
+
+#else
 
   sd = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, 0, 0, WSA_FLAG_OVERLAPPED);
   if (sd == INVALID_SOCKET) {
@@ -325,26 +343,18 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
     HT_ERRORF("ioctlsocket(FIONBIO) failed - %s", winapi_strerror(WSAGetLastError()));
   }
 
-#else
-
-  if ((sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-    HT_THROW(Error::COMM_SOCKET_ERROR, strerror(errno));
-
-  // Set to non-blocking
-  FileUtils::set_flags(sd, O_NONBLOCK);
-
 #endif
 
 #if defined(__linux__)
-  if (setsockopt(sd, SOL_TCP, TCP_NODELAY, &one, sizeof(one)) < 0)
+  if (setsockopt(sd, SOL_TCP, TCP_NODELAY, &one, sizeof(one)) < 0 && m_verbose)
     HT_ERRORF("setting TCP_NODELAY: %s", strerror(errno));
 #elif defined(__sun__)
-  if (setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, (char*)&one, sizeof(one)) < 0)
+  if (setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, (char*)&one, sizeof(one)) < 0 && m_verbose)
     HT_ERRORF("setting TCP_NODELAY: %s", strerror(errno));
 #elif defined(__APPLE__) || defined(__FreeBSD__)
-  if (setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one)) < 0)
+  if (setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one)) < 0 && m_verbose)
     HT_WARNF("setsockopt(SO_NOSIGPIPE) failure: %s", strerror(errno));
-  if (setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)) < 0)
+  if (setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)) < 0 && m_verbose)
     HT_WARNF("setsockopt(SO_REUSEPORT) failure: %s", strerror(errno));
 #elif defined(_WIN32)
   if (setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, (const char*)&one, sizeof(one)) == SOCKET_ERROR)
@@ -353,7 +363,28 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
     HT_ERRORF("setting SO_REUSEADDR: %s", winapi_strerror(WSAGetLastError()));
 #endif
 
-#ifdef _WIN32
+#ifndef _WIN32
+
+  if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0 && m_verbose)
+    HT_ERRORF("setting SO_REUSEADDR: %s", strerror(errno));
+
+  int bind_attempts = 0;
+  while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0) {
+    if (bind_attempts == 24)
+      HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
+                addr.to_str().c_str(), strerror(errno));
+    if (m_verbose)
+      HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
+               addr.to_str().c_str(), strerror(errno));
+    poll(0, 0, 10000);
+    bind_attempts++;
+  }
+
+  if (::listen(sd, 1000) < 0)
+    HT_THROWF(Error::COMM_LISTEN_ERROR, "listening: %s", strerror(errno));
+
+#else
+
   int bind_attempts = 0;
   while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) == SOCKET_ERROR) {
     if (bind_attempts == 6)
@@ -367,25 +398,6 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
   if (::listen(sd, 1000) == SOCKET_ERROR)
     HT_THROWF(Error::COMM_LISTEN_ERROR, "listening: %s", winapi_strerror(WSAGetLastError()));
 
-#else
-
-  if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0)
-    HT_ERRORF("setting SO_REUSEADDR: %s", strerror(errno));
-
-  int bind_attempts = 0;
-  while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0) {
-    if (bind_attempts == 24)
-      HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
-                addr.to_str().c_str(), strerror(errno));
-    HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
-             addr.to_str().c_str(), strerror(errno));
-    poll(0, 0, 10000);
-    bind_attempts++;
-  }
-
-  if (::listen(sd, 1000) < 0)
-    HT_THROWF(Error::COMM_LISTEN_ERROR, "listening: %s", strerror(errno));
-
 #endif
 
   handler = new IOHandlerAccept(sd, default_handler, m_handler_map, chf);
@@ -393,6 +405,7 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
 
   int32_t error;
   if ((error = handler->start_polling()) != Error::OK) {
+    m_handler_map->remove_handler(handler);
     delete handler;
     HT_THROWF(error, "Problem polling on listen socket bound to %s",
               addr.to_str().c_str());
@@ -408,13 +421,15 @@ void Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
 
 
 
-int Comm::send_request(const CommAddress &addr, uint32_t timeout_ms,
-  CommBufPtr &cbuf, DispatchHandler *resp_handler) {
+int
+Comm::send_request(const CommAddress &addr, uint32_t timeout_ms,
+                   CommBufPtr &cbuf, DispatchHandler *resp_handler) {
   IOHandlerData *data_handler;
   int error;
 
   if ((error = m_handler_map->checkout_handler(addr, &data_handler)) != Error::OK) {
-    HT_WARNF("No connection for %s - %s", addr.to_str().c_str(), Error::get_text(error));
+    if (m_verbose)
+      HT_WARNF("No connection for %s - %s", addr.to_str().c_str(), Error::get_text(error));
     return error;
   }
 
@@ -455,7 +470,8 @@ int Comm::send_response(const CommAddress &addr, CommBufPtr &cbuf) {
   int error;
 
   if ((error = m_handler_map->checkout_handler(addr, &data_handler)) != Error::OK) {
-    HT_ERRORF("No connection for %s - %s", addr.to_str().c_str(), Error::get_text(error));
+    if (m_verbose)
+      HT_ERRORF("No connection for %s - %s", addr.to_str().c_str(), Error::get_text(error));
     return error;
   }
 
@@ -473,61 +489,34 @@ int Comm::send_response(const CommAddress &addr, CommBufPtr &cbuf) {
 
 
 void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
-                                          DispatchHandlerPtr &dhp) {
+                                     const DispatchHandlerPtr &dhp) {
   IOHandlerDatagram *handler;
   socket_t sd;
 
   HT_ASSERT(addr.is_inet());
   int bufsize = 4*32768;
 
-#ifdef _WIN32
-
-  sd = WSASocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, 0, 0, WSA_FLAG_OVERLAPPED);
-  if (sd  == SOCKET_ERROR)
-    HT_THROWF(Error::COMM_SOCKET_ERROR, "WSASocket: %s", winapi_strerror(WSAGetLastError()));
-
-  // Set to non-blocking
-  u_long one_arg = 1;
-  if (ioctlsocket(sd, FIONBIO, &one_arg) == SOCKET_ERROR) {
-    HT_ERRORF("ioctlsocket(FIONBIO) failed - %s", winapi_strerror(WSAGetLastError()));
-  }
-
-  int sndbufsize = 0; 
-  int one = 1;
-  if (setsockopt(sd, SOL_SOCKET, SO_SNDBUF, (char *)&sndbufsize, sizeof(sndbufsize)) == SOCKET_ERROR)
-    HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", winapi_strerror(WSAGetLastError()));
-  if (setsockopt(sd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
-    HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", winapi_strerror(WSAGetLastError()));
-  if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one)) == SOCKET_ERROR)
-    HT_WARNF("setsockopt(SO_REUSEADDR) failure: %s", winapi_strerror(WSAGetLastError()));
-
-#else
+#ifndef _WIN32
 
   if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     HT_THROWF(Error::COMM_SOCKET_ERROR, "%s", strerror(errno));
 
   // Set to non-blocking
-  FileUtils::set_flags(sd, O_NONBLOCK);  
+  FileUtils::set_flags(sd, O_NONBLOCK);
 
   if (setsockopt(sd, SOL_SOCKET, SO_SNDBUF, (char *)&bufsize, sizeof(bufsize))
-    < 0) {
+      < 0) {
+    if (m_verbose)
       HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", strerror(errno));
   }
   if (setsockopt(sd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, sizeof(bufsize))
-    < 0) {
+      < 0) {
+    if (m_verbose)
       HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", strerror(errno));
   }
 
-#endif
-
   if (tos) {
-
-#ifndef _WIN32
-
     int opt;
-
-#endif
-
 #if defined(__linux__)
     opt = tos;
     setsockopt(sd, SOL_IP, IP_TOS, &opt, sizeof(opt));
@@ -539,32 +528,50 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
 #endif
   }
 
-  // bind socket
   int bind_attempts = 0;
+  while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0) {
+    if (bind_attempts == 24)
+      HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
+                addr.to_str().c_str(), strerror(errno));
+    if (m_verbose)
+      HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
+               addr.to_str().c_str(), strerror(errno));
+    poll(0, 0, 10000);
+    bind_attempts++;
+  }
 
-#ifdef _WIN32
+#else
 
+  sd = WSASocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, 0, 0, WSA_FLAG_OVERLAPPED);
+  if (sd  == SOCKET_ERROR)
+    HT_THROWF(Error::COMM_SOCKET_ERROR, "WSASocket: %s", winapi_strerror(WSAGetLastError()));
+
+  // Set to non-blocking
+  u_long one_arg = 1;
+  if (ioctlsocket(sd, FIONBIO, &one_arg) == SOCKET_ERROR) {
+    HT_ERRORF("ioctlsocket(FIONBIO) failed - %s", winapi_strerror(WSAGetLastError()));
+  }
+
+  int one = 1;
+  if (setsockopt(sd, SOL_SOCKET, SO_SNDBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
+    HT_ERRORF("setsockopt(SO_SNDBUF) failed - %s", winapi_strerror(WSAGetLastError()));
+  if (setsockopt(sd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, sizeof(bufsize)) == SOCKET_ERROR)
+    HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", winapi_strerror(WSAGetLastError()));
+  if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one)) == SOCKET_ERROR)
+    HT_WARNF("setsockopt(SO_REUSEADDR) failure: %s", winapi_strerror(WSAGetLastError()));
+
+  int bind_attempts = 0;
   while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) == SOCKET_ERROR) {
     if (bind_attempts == 24)
       HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
                 addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
       HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
                addr.to_str().c_str(), winapi_strerror(WSAGetLastError()));
-
-#else
-
-  while ((::bind(sd, (const sockaddr *)&addr.inet, sizeof(sockaddr_in))) < 0)
-    if (bind_attempts == 24)
-      HT_THROWF(Error::COMM_BIND_ERROR, "binding to %s: %s",
-                addr.to_str().c_str(), strerror(errno));
-      HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
-               addr.to_str().c_str(), strerror(errno));
-
-#endif
-
     poll(0, 0, 10000);
     bind_attempts++;
   }
+
+#endif
 
   handler = new IOHandlerDatagram(sd, dhp);
 
@@ -574,6 +581,7 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
 
   int32_t error;
   if ((error = handler->start_polling()) != Error::OK) {
+    m_handler_map->remove_handler(handler);
     delete handler;
     HT_THROWF(error, "Problem polling on datagram socket bound to %s",
               addr.to_str().c_str());
@@ -589,8 +597,9 @@ int Comm::send_datagram(const CommAddress &addr, const CommAddress &send_addr,
   HT_ASSERT(addr.is_inet());
 
   if ((error = m_handler_map->checkout_handler(send_addr, &handler)) != Error::OK) {
-    HT_ERRORF("Datagram send/local address %s not registered",
-      send_addr.to_str().c_str());
+    if (m_verbose)
+      HT_ERRORF("Datagram send/local address %s not registered",
+                send_addr.to_str().c_str());
     return error;
   }
 
@@ -608,7 +617,7 @@ int Comm::send_datagram(const CommAddress &addr, const CommAddress &send_addr,
 }
 
 
-int Comm::set_timer(uint32_t duration_millis, DispatchHandler *handler) {
+int Comm::set_timer(uint32_t duration_millis, const DispatchHandlerPtr &handler) {
   ExpireTimer timer;
   boost::xtime_get(&timer.expire_time, boost::TIME_UTC_);
   xtime_add_millis(timer.expire_time, duration_millis);
@@ -619,7 +628,7 @@ int Comm::set_timer(uint32_t duration_millis, DispatchHandler *handler) {
 
 
 int
-Comm::set_timer_absolute(boost::xtime expire_time, DispatchHandler *handler) {
+Comm::set_timer_absolute(boost::xtime expire_time, const DispatchHandlerPtr &handler) {
   ExpireTimer timer;
   memcpy(&timer.expire_time, &expire_time, sizeof(boost::xtime));
   timer.handler = handler;
@@ -627,7 +636,7 @@ Comm::set_timer_absolute(boost::xtime expire_time, DispatchHandler *handler) {
   return Error::OK;
 }
 
-void Comm::cancel_timer(DispatchHandler *handler) {
+void Comm::cancel_timer(const DispatchHandlerPtr &handler) {
   m_timer_reactor->cancel_timer(handler);
 }
 
@@ -670,7 +679,32 @@ void Comm::find_available_tcp_port(InetAddr &addr) {
 
   for (size_t i=0; i<15; i++) {
 
-#ifdef _WIN32
+#ifndef _WIN32
+
+    if ((sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+      HT_FATALF("socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) failure: %s",
+                strerror(errno));
+
+    if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0)
+      HT_FATALF("setting TCP socket SO_REUSEADDR: %s", strerror(errno));
+
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    if (setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)) < 0 && m_verbose)
+      HT_WARNF("setsockopt(SO_REUSEPORT) failure: %s", strerror(errno));
+#endif
+
+    check_addr = addr;
+    check_addr.sin_port = htons(starting_port+i);
+
+    if (::bind(sd, (const sockaddr *)&check_addr, sizeof(sockaddr_in)) == 0) {
+      ::close(sd);
+      addr.sin_port = check_addr.sin_port;
+      return;
+    }
+
+    ::close(sd);
+
+#else
 
     sd = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, 0, 0, WSA_FLAG_OVERLAPPED);
     if (sd == INVALID_SOCKET) {
@@ -694,26 +728,6 @@ void Comm::find_available_tcp_port(InetAddr &addr) {
 
     ::closesocket(sd);
 
-#else
-
-    if ((sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-      HT_FATALF("socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) failure: %s",
-                strerror(errno));
-
-    if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0)
-      HT_FATALF("setting TCP socket SO_REUSEADDR: %s", strerror(errno));
-
-    check_addr = addr;
-    check_addr.sin_port = htons(starting_port+i);
-
-    if (::bind(sd, (const sockaddr *)&check_addr, sizeof(sockaddr_in)) == 0) {
-      ::close(sd);
-      addr.sin_port = check_addr.sin_port;
-      return;
-    }
-
-    ::close(sd);
-
 #endif
 
   }
@@ -731,7 +745,30 @@ void Comm::find_available_udp_port(InetAddr &addr) {
 
   for (size_t i=0; i<15; i++) {
 
-#ifdef _WIN32
+#ifndef _WIN32
+
+    if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+      HT_FATALF("socket(AF_INET, SOCK_DGRAM, 0) failure: %s", strerror(errno));
+
+    if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0)
+      HT_FATALF("setting UDP socket SO_REUSEADDR: %s", strerror(errno));
+
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    if (setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)) < 0 && m_verbose)
+      HT_WARNF("setsockopt(SO_REUSEPORT) failure: %s", strerror(errno));
+#endif
+    check_addr = addr;
+    check_addr.sin_port = htons(starting_port+i);
+
+    if (::bind(sd, (const sockaddr *)&addr, sizeof(sockaddr_in)) == 0) {
+      ::close(sd);
+      addr.sin_port = check_addr.sin_port;
+      return;
+    }
+
+    ::close(sd);
+
+#else
 
     sd = WSASocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, 0, 0, WSA_FLAG_OVERLAPPED);
     if (sd == INVALID_SOCKET) {
@@ -755,25 +792,6 @@ void Comm::find_available_udp_port(InetAddr &addr) {
 
     ::closesocket(sd);
 
-#else
-
-    if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-      HT_FATALF("socket(AF_INET, SOCK_DGRAM, 0) failure: %s", strerror(errno));
-
-    if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0)
-      HT_FATALF("setting UDP socket SO_REUSEADDR: %s", strerror(errno));
-
-    check_addr = addr;
-    check_addr.sin_port = htons(starting_port+i);
-
-    if (::bind(sd, (const sockaddr *)&addr, sizeof(sockaddr_in)) == 0) {
-      ::close(sd);
-      addr.sin_port = check_addr.sin_port;
-      return;
-    }
-
-    ::close(sd);
-
 #endif
 
   }
@@ -789,8 +807,9 @@ void Comm::find_available_udp_port(InetAddr &addr) {
 *  ----- Private methods -----
 */
 
-int Comm::connect_socket(socket_t sd, const CommAddress &addr,
-                         DispatchHandlerPtr &default_handler) {
+int
+Comm::connect_socket(socket_t sd, const CommAddress &addr,
+                     const DispatchHandlerPtr &default_handler) {
   IOHandlerData *handler;
   int32_t error;
   int one = 1;
@@ -806,27 +825,23 @@ int Comm::connect_socket(socket_t sd, const CommAddress &addr,
     connectable_addr = addr;
 
     // Set to non-blocking
-#ifdef _WIN32
-
+#ifndef _WIN32
+    FileUtils::set_flags(sd, O_NONBLOCK);
+#else
     u_long one_arg = 1;
     if( ioctlsocket(sd, FIONBIO, &one_arg) == SOCKET_ERROR ) {
       HT_ERRORF("ioctlsocket(FIONBIO) failed - %s", winapi_strerror(WSAGetLastError()));
     }
-
-#else
-
-  FileUtils::set_flags(sd, O_NONBLOCK);
-
 #endif
 
 #if defined(__linux__)
-  if (setsockopt(sd, SOL_TCP, TCP_NODELAY, &one, sizeof(one)) < 0)
+  if (setsockopt(sd, SOL_TCP, TCP_NODELAY, &one, sizeof(one)) < 0 && m_verbose)
     HT_ERRORF("setsockopt(TCP_NODELAY) failure: %s", strerror(errno));
 #elif defined(__sun__)
-  if (setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one)) < 0)
+  if (setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one)) < 0 && m_verbose)
     HT_ERRORF("setsockopt(TCP_NODELAY) failure: %s", strerror(errno));
 #elif defined(__APPLE__) || defined(__FreeBSD__)
-  if (setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one)) < 0)
+  if (setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one)) < 0 && m_verbose)
     HT_WARNF("setsockopt(SO_NOSIGPIPE) failure: %s", strerror(errno));
 #elif defined(_WIN32)
   if (setsockopt(sd, IPPROTO_TCP, TCP_NODELAY, (const char*)&one, sizeof(one)) == SOCKET_ERROR)
@@ -838,7 +853,46 @@ int Comm::connect_socket(socket_t sd, const CommAddress &addr,
     handler->set_proxy(addr.proxy);
   m_handler_map->insert_handler(handler);
 
-#ifdef _WIN32
+#ifndef _WIN32
+
+  while (::connect(sd, (struct sockaddr *)&connectable_addr.inet, sizeof(struct sockaddr_in))
+          < 0) {
+      if (errno == EINTR) {
+        poll(0, 0, 1000);
+        continue;
+      }
+      else if (errno == EINPROGRESS) {
+        //HT_INFO("connect() in progress starting to poll");
+      error = handler->start_polling(PollEvent::READ|PollEvent::WRITE);
+      if (error == Error::COMM_POLL_ERROR) {
+        if (m_verbose)
+          HT_ERRORF("Polling problem on connection to %s: %s",
+                    connectable_addr.to_str().c_str(), strerror(errno));
+        m_handler_map->remove_handler(handler);
+        delete handler;
+      }
+      return error;
+    }
+    m_handler_map->remove_handler(handler);
+    delete handler;
+    if (m_verbose)
+      HT_ERRORF("connecting to %s: %s", connectable_addr.to_str().c_str(),
+                strerror(errno));
+      return Error::COMM_CONNECT_ERROR;
+  }
+
+  error = handler->start_polling(PollEvent::READ|PollEvent::WRITE);
+  if (error != Error::OK) {
+    if (m_verbose)
+      HT_ERRORF("Polling problem on connection to %s: %s (%s)",
+                connectable_addr.to_str().c_str(),
+                Error::get_text(error), strerror(errno));
+    m_handler_map->remove_handler(handler);
+    delete handler;
+  }
+  return error;
+
+#else
 
   // ConnectEx requires bind to be called before
   struct sockaddr_storage ss = {0};
@@ -873,42 +927,6 @@ int Comm::connect_socket(socket_t sd, const CommAddress &addr,
   }
 
   return Error::OK;
-
-#else
-
-  while (::connect(sd, (struct sockaddr *)&connectable_addr.inet, sizeof(struct sockaddr_in))
-    < 0) {
-      if (errno == EINTR) {
-        poll(0, 0, 1000);
-        continue;
-      }
-      else if (errno == EINPROGRESS) {
-        //HT_INFO("connect() in progress starting to poll");
-      error = handler->start_polling(PollEvent::READ|PollEvent::WRITE);
-      if (error == Error::COMM_POLL_ERROR) {
-        HT_ERRORF("Polling problem on connection to %s: %s",
-                  connectable_addr.to_str().c_str(), strerror(errno));
-        m_handler_map->remove_handler(handler);
-        delete handler;
-      }
-      return error;
-    }
-    m_handler_map->remove_handler(handler);
-    delete handler;
-      HT_ERRORF("connecting to %s: %s", connectable_addr.to_str().c_str(),
-        strerror(errno));
-      return Error::COMM_CONNECT_ERROR;
-  }
-
-  error = handler->start_polling(PollEvent::READ|PollEvent::WRITE);
-  if (error != Error::OK) {
-    HT_ERRORF("Polling problem on connection to %s: %s (%s)",
-              connectable_addr.to_str().c_str(),
-              Error::get_text(error), strerror(errno));
-    m_handler_map->remove_handler(handler);
-    delete handler;
-  }
-  return error;
 
 #endif
 

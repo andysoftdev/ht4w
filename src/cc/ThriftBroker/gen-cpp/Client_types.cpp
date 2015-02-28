@@ -56,6 +56,20 @@ const char* _kMutatorFlagNames[] = {
 };
 const std::map<int, const char*> _MutatorFlag_VALUES_TO_NAMES(::apache::thrift::TEnumIterator(2, _kMutatorFlagValues, _kMutatorFlagNames), ::apache::thrift::TEnumIterator(-1, NULL, NULL));
 
+int _kStatusCodeValues[] = {
+  StatusCode::OK,
+  StatusCode::WARNING,
+  StatusCode::CRITICAL,
+  StatusCode::UNKNOWN
+};
+const char* _kStatusCodeNames[] = {
+  "OK",
+  "WARNING",
+  "CRITICAL",
+  "UNKNOWN"
+};
+const std::map<int, const char*> _StatusCode_VALUES_TO_NAMES(::apache::thrift::TEnumIterator(4, _kStatusCodeValues, _kStatusCodeNames), ::apache::thrift::TEnumIterator(-1, NULL, NULL));
+
 const char* RowInterval::ascii_fingerprint = "E1A4BCD94F003EFF8636F1C98591705A";
 const uint8_t RowInterval::binary_fingerprint[16] = {0xE1,0xA4,0xBC,0xD9,0x4F,0x00,0x3E,0xFF,0x86,0x36,0xF1,0xC9,0x85,0x91,0x70,0x5A};
 
@@ -2265,6 +2279,77 @@ uint32_t Schema::write(::apache::thrift::protocol::TProtocol* oprot) const {
     xfer += this->column_family_defaults.write(oprot);
     xfer += oprot->writeFieldEnd();
   }
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+const char* Status::ascii_fingerprint = "3F5FC93B338687BC7235B1AB103F47B3";
+const uint8_t Status::binary_fingerprint[16] = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
+
+uint32_t Status::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+  bool isset_code = false;
+  bool isset_text = false;
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->code);
+          isset_code = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 2:
+        if (ftype == ::apache::thrift::protocol::T_STRING) {
+          xfer += iprot->readString(this->text);
+          isset_text = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  if (!isset_code)
+    throw TProtocolException(TProtocolException::INVALID_DATA);
+  if (!isset_text)
+    throw TProtocolException(TProtocolException::INVALID_DATA);
+  return xfer;
+}
+
+uint32_t Status::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("Status");
+  xfer += oprot->writeFieldBegin("code", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->code);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("text", ::apache::thrift::protocol::T_STRING, 2);
+  xfer += oprot->writeString(this->text);
+  xfer += oprot->writeFieldEnd();
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;

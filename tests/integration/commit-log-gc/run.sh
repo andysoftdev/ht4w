@@ -4,19 +4,19 @@ HT_HOME=${INSTALL_DIR:-"$HOME/hypertable/current"}
 HYPERTABLE_HOME=$HT_HOME
 SCRIPT_DIR=`dirname $0`
 NUM_POLLS=${NUM_POLLS:-"10"}
-MY_IP=`$HT_HOME/bin/system_info --my-ip`
+MY_IP=`$HT_HOME/bin/ht system_info --my-ip`
 WRITE_TOTAL=${WRITE_TOTAL:-"30000000"}
 WRITE_SIZE=${WRITE_SIZE:-"500000"}
 
 . $HT_HOME/bin/ht-env.sh
 
-$HT_HOME/bin/start-test-servers.sh --clear --no-thriftbroker \
+$HT_HOME/bin/ht-start-test-servers.sh --clear --no-thriftbroker \
    --Hypertable.RangeServer.CommitLog.RollLimit 1M \
    --Hypertable.RangeServer.CommitLog.Compressor none \
    --Hypertable.RangeServer.Maintenance.Interval 100 \
    --Hypertable.RangeServer.Range.SplitSize=1M
 
-$HT_HOME/bin/hypertable --no-prompt < $SCRIPT_DIR/create-table.hql
+$HT_HOME/bin/ht shell --no-prompt < $SCRIPT_DIR/create-table.hql
 
 for ((i=1; i<10; i++)) ; do
 

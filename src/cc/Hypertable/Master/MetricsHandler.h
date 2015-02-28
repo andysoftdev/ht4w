@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,6 +27,7 @@
 #ifndef Master_MetricsHandler_h
 #define Master_MetricsHandler_h
 
+#include <AsyncComm/Comm.h>
 #include <AsyncComm/DispatchHandler.h>
 
 #include <Common/MetricsCollectorGanglia.h>
@@ -56,7 +57,13 @@ namespace Hypertable {
 
     /// Destructor.
     /// Cancels the timer.
-    virtual ~MetricsHandler();
+    virtual ~MetricsHandler() {};
+
+    /// Starts metrics collection.
+    void start_collecting();
+
+    /// Stops metrics collection.
+    void stop_collecting();
 
     /// Collects and publishes metrics.
     /// This method computes and updates the <code>operations/s</code> and
@@ -67,12 +74,15 @@ namespace Hypertable {
     virtual void handle(EventPtr &event);
 
     /// Increments operation count.
-    /// Increments #m_operations which is used in computing operations/s.
+    /// Increments operation count which is used in computing operations/s.
     void operation_increment() {
       m_operations.current++;
     }
 
   private:
+
+    /// Comm layer
+    Comm *m_comm {};
 
     /// Ganglia metrics collector
     MetricsCollectorGangliaPtr m_ganglia_collector;
@@ -88,6 +98,9 @@ namespace Hypertable {
 
     /// %Master operations
     interval_metric<int64_t> m_operations {};
+
+    /// Collection has started
+    bool m_started {};
   };
 
   /// Smart pointer to MetricsHandler

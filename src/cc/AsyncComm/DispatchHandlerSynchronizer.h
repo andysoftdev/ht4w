@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,16 +25,18 @@
  * used to synchronzie with response messages.
  */
 
-#ifndef DISPATCHHANDLERSYNCHRONIZER_H
-#define DISPATCHHANDLERSYNCHRONIZER_H
-
-#include <queue>
-
-#include <boost/thread/condition.hpp>
-#include "Common/Mutex.h"
+#ifndef AsyncComm_DispatchHandlerSynchronizer_h
+#define AsyncComm_DispatchHandlerSynchronizer_h
 
 #include "DispatchHandler.h"
 #include "Event.h"
+
+#include <Common/Mutex.h>
+
+#include <boost/thread/condition.hpp>
+
+#include <memory>
+#include <queue>
 
 namespace Hypertable {
 
@@ -100,6 +102,16 @@ namespace Hypertable {
      */
     bool wait_for_reply(EventPtr &event);
 
+    /// Waits for CONNECTION_ESTABLISHED event.
+    /// This function waits for an event to arrive on #m_receive_queue and if it
+    /// is an ERROR event, it throws an exception, if it is a DISCONNECT event
+    /// it returns <i>false</i>, and if it is a CONNECTION_ESTABLISHED event,
+    /// it returns <i>true</i>.
+    /// @return <i>true</i> if CONNECTION_ESTABLISHED event received,
+    /// <i>false</i> if DISCONNECT event received.
+    /// @throws Exception with code set to ERROR event error code.
+    bool wait_for_connection();
+
   private:
 
     /// Mutex for serializing concurrent access
@@ -112,8 +124,12 @@ namespace Hypertable {
     std::queue<EventPtr> m_receive_queue;
 
   };
+
+  /// Smart pointer to DispatchHandlerSynchronizer
+  typedef std::shared_ptr<DispatchHandlerSynchronizer> DispatchHandlerSynchronizerPtr;
+
   /** @}*/
-} // namespace Hypertable
+}
 
 
-#endif // DISPATCHHANDLERSYNCHRONIZER_H
+#endif // AsyncComm_DispatchHandlerSynchronizer_h

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -121,8 +121,7 @@ void CommTestThreadFunction::operator()() {
       CommBufPtr cbp( new CommBuf(header, encoded_length_str16(line)) );
       cbp->append_str16(line);
       int retries = 0;
-      while ((error = m_comm->send_request(m_addr, 30000, cbp, resp_handler))
-              != Error::OK) {
+      while ((error = m_comm->send_request(m_addr, 30000, cbp, resp_handler)) != Error::OK) {
         if (error == Error::COMM_NOT_CONNECTED) {
           if (retries == 5) {
             HT_ERROR("Connection timeout.");

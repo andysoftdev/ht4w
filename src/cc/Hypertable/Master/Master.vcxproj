@@ -34,7 +34,9 @@
     <ClCompile Include="DispatchHandlerOperation.cc" />
     <ClCompile Include="DispatchHandlerOperationGetStatistics.cc" />
     <ClCompile Include="DispatchHandlerOperationSetState.cc" />
+    <ClCompile Include="DispatchHandlerOperationSystemStatus.cc" />
     <ClCompile Include="GcWorker.cc" />
+    <ClCompile Include="HyperspaceMasterFile.cc" />
     <ClCompile Include="LoadBalancer.cc" />
     <ClCompile Include="MetaLogDefinitionMaster.cc" />
     <ClCompile Include="MetricsHandler.cc" />
@@ -63,6 +65,7 @@
     <ClCompile Include="OperationSetState.cc" />
     <ClCompile Include="OperationStatus.cc" />
     <ClCompile Include="OperationStop.cc" />
+    <ClCompile Include="OperationSystemStatus.cc" />
     <ClCompile Include="OperationSystemUpgrade.cc" />
     <ClCompile Include="OperationTimedBarrier.cc" />
     <ClCompile Include="OperationToggleTableMaintenance.cc" />
@@ -87,9 +90,11 @@
     <ClInclude Include="DispatchHandlerOperationDropTable.h" />
     <ClInclude Include="DispatchHandlerOperationGetStatistics.h" />
     <ClInclude Include="DispatchHandlerOperationSetState.h" />
+    <ClInclude Include="DispatchHandlerOperationSystemStatus.h" />
     <ClInclude Include="DispatchHandlerOperationToggleTableMaintenance.h" />
     <ClInclude Include="EntityType.h" />
     <ClInclude Include="GcWorker.h" />
+    <ClInclude Include="HyperspaceMasterFile.h" />
     <ClInclude Include="LoadBalancer.h" />
     <ClInclude Include="MetaLogDefinitionMaster.h" />
     <ClInclude Include="MetricsHandler.h" />
@@ -120,6 +125,7 @@
     <ClInclude Include="OperationSetState.h" />
     <ClInclude Include="OperationStatus.h" />
     <ClInclude Include="OperationStop.h" />
+    <ClInclude Include="OperationSystemStatus.h" />
     <ClInclude Include="OperationSystemUpgrade.h" />
     <ClInclude Include="OperationTimedBarrier.h" />
     <ClInclude Include="OperationToggleTableMaintenance.h" />
@@ -214,6 +220,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -235,6 +243,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -262,6 +272,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -291,6 +303,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

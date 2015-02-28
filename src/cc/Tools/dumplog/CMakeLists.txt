@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2012 Hypertable, Inc.
+# Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,10 +17,10 @@
 # 02110-1301, USA.
 #
 
-# dumplog - program to display a commit log
-add_executable(dumplog dumplog.cc)
-target_link_libraries(dumplog HyperFsBroker Hypertable)
+# ht_dumplog - program to display a commit log
+add_executable(ht_dumplog dumplog.cc)
+target_link_libraries(ht_dumplog HyperFsBroker Hypertable)
 
 if (NOT HT_COMPONENT_INSTALL)
-  install(TARGETS dumplog RUNTIME DESTINATION bin)
+  install(TARGETS ht_dumplog RUNTIME DESTINATION bin)
 endif ()

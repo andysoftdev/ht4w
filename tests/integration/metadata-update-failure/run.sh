@@ -2,7 +2,7 @@
 
 HT_HOME=${INSTALL_DIR:-"$HOME/hypertable/current"}
 HYPERTABLE_HOME=${HT_HOME}
-HT_SHELL=$HT_HOME/bin/hypertable
+HT_SHELL="$HT_HOME/bin/ht shell"
 SCRIPT_DIR=`dirname $0`
 #DATA_SEED=42 # for repeating certain runs
 DIGEST="openssl dgst -md5"
@@ -22,15 +22,15 @@ gen_test_data() {
 
 stop_range_server() {
   # stop any existing range server if necessary
-  pidfile=$HT_HOME/run/Hypertable.RangeServer.pid
+  pidfile=$HT_HOME/run/RangeServer.pid
   if [ -f $pidfile ]; then
     kill -9 `cat $pidfile`
     rm -f $pidfile
     sleep 1
 
-    if $HT_HOME/bin/serverup --silent rangeserver; then
+    if $HT_HOME/bin/ht serverup --silent rangeserver; then
       echo "Can't stop range server, exiting"
-      ps -ef | grep Hypertable.RangeServer
+      ps -ef | grep htRangeServer
       exit 1
     fi
   fi
@@ -38,11 +38,11 @@ stop_range_server() {
 
 
 run_test() {
-  $HT_HOME/bin/start-test-servers.sh --no-rangeserver --no-thriftbroker --clear \
+  $HT_HOME/bin/ht-start-test-servers.sh --no-rangeserver --no-thriftbroker --clear \
       --config $CFG_FILE 
   stop_range_server
 
-  $HT_HOME/bin/Hypertable.RangeServer --verbose \
+  $HT_HOME/bin/htRangeServer --verbose \
       --induce-failure=LiveFileTracker-update_files_column:throw:0\
       --config $SCRIPT_DIR/metadata-update-failure.cfg > rangeserver.output >&1 &
   # give rangeserver time to get registered etc 
@@ -102,7 +102,7 @@ echo ""
 echo "**** TEST REPORT ****"
 echo ""
 cat report.txt
-$HT_HOME/bin/stop-servers.sh 
+$HT_HOME/bin/ht-stop-servers.sh 
 echo "Test OVER." >> report.txt
 
 grep FAILED report.txt > /dev/null && exit 1

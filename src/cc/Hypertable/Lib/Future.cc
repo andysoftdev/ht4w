@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -152,7 +152,7 @@ void Future::enqueue(ResultPtr &result) {
   m_outstanding_cond.notify_one();
 }
 
-void Future::scan_error(TableScannerAsync *scanner, int error, const String &error_msg,
+void Future::scan_error(TableScannerAsync *scanner, int error, const string &error_msg,
                         bool eos) {
   ResultPtr result = new Result(scanner, error, error_msg);
   enqueue(result);

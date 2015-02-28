@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -21,14 +21,9 @@
 
 #include "Common/Compat.h"
 #include "Common/InetAddr.h"
-#include "Tools/Lib/CommandShell.h"
 #include "Config.h"
 
 namespace Hypertable { namespace Config {
-
-void init_command_shell_options() {
-  CommandShell::add_options(cmdline_desc());
-}
 
 void init_master_client_options() {
   cmdline_desc().add_options()

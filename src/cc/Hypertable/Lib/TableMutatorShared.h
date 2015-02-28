@@ -1,5 +1,5 @@
-/** -*- C++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -23,6 +23,8 @@
 #include "Common/Time.h"
 
 #include "TableMutator.h"
+
+#include <memory>
 
 namespace Hypertable {
 
@@ -138,7 +140,7 @@ private:
   RecMutex      m_mutex;
   uint32_t      m_flush_interval;
   HiResTime     m_last_flush_ts;
-  intrusive_ptr<TableMutatorIntervalHandler> m_tick_handler;
+  std::shared_ptr<TableMutatorIntervalHandler> m_tick_handler;
 };
 
 } // namespace Hypertable

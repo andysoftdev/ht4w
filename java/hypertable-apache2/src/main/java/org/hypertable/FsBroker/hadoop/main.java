@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/*
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -177,7 +177,7 @@ public class main {
         ms_broker = new HadoopBroker(comm, props);
         handlerFactory = new HandlerFactory(comm, ms_app_queue, ms_broker);
         comm.Listen(port, handlerFactory, null);
-
+        ms_broker.waitForSafemodeExit();
         ms_app_queue.Join();
     }
 

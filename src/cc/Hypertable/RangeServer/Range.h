@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -45,11 +45,11 @@
 #include <Hypertable/Lib/CommitLog.h>
 #include <Hypertable/Lib/CommitLogReader.h>
 #include <Hypertable/Lib/Key.h>
-#include <Hypertable/Lib/MasterClient.h>
+#include <Hypertable/Lib/Master/Client.h>
+#include <Hypertable/Lib/RangeSpec.h>
 #include <Hypertable/Lib/RangeState.h>
 #include <Hypertable/Lib/Schema.h>
-#include <Hypertable/Lib/Timestamp.h>
-#include <Hypertable/Lib/Types.h>
+#include <Hypertable/Lib/TableIdentifier.h>
 
 #include <Common/Barrier.h>
 #include <Common/ReferenceCount.h>
@@ -118,16 +118,16 @@ namespace Hypertable {
     typedef std::map<String, AccessGroup *> AccessGroupMap;
     typedef std::vector<AccessGroupPtr> AccessGroupVector;
 
-    Range(MasterClientPtr &, const TableIdentifier *, SchemaPtr &,
-          const RangeSpec *, RangeSet *, const RangeState *, bool needs_compaction=false);
-    Range(MasterClientPtr &, SchemaPtr &, MetaLogEntityRange *, RangeSet *);
+    Range(Lib::Master::ClientPtr &, const TableIdentifier &, SchemaPtr &,
+          const RangeSpec &, RangeSet *, const RangeState &, bool needs_compaction=false);
+    Range(Lib::Master::ClientPtr &, SchemaPtr &, MetaLogEntityRangePtr &, RangeSet *);
     virtual ~Range() {}
     void add(const Key &key, const ByteString value);
 
     void lock();
     void unlock();
 
-    MetaLogEntityRange *metalog_entity() { return m_metalog_entity.get(); }
+    MetaLogEntityRangePtr metalog_entity() { return m_metalog_entity; }
 
     void create_scanner(ScanContextPtr &scan_ctx, MergeScannerRangePtr &scanner);
 
@@ -327,8 +327,6 @@ namespace Hypertable {
       return m_metalog_entity->get_load_acknowledged();
     }
 
-    void remove_original_transfer_log();
-
     /// Get table ID
     /// @return %Table ID
     const std::string get_table_id() { return m_table.id; }
@@ -354,19 +352,19 @@ namespace Hypertable {
     void split_notify_master();
 
     // these need to be aligned
-    uint64_t         m_scans;
-    uint64_t         m_cells_scanned;
-    uint64_t         m_cells_returned;
-    uint64_t         m_cells_written;
-    uint64_t         m_updates;
-    uint64_t         m_bytes_scanned;
-    uint64_t         m_bytes_returned;
-    uint64_t         m_bytes_written;
-    uint64_t         m_disk_bytes_read;
+    uint64_t m_scans {};
+    uint64_t m_cells_scanned {};
+    uint64_t m_cells_returned {};
+    uint64_t m_cells_written {};
+    uint64_t m_updates {};
+    uint64_t m_bytes_scanned {};
+    uint64_t m_bytes_returned {};
+    uint64_t m_bytes_written {};
+    uint64_t m_disk_bytes_read {};
 
     Mutex            m_mutex;
     Mutex            m_schema_mutex;
-    MasterClientPtr  m_master_client;
+    Lib::Master::ClientPtr  m_master_client;
     MetaLogEntityRangePtr m_metalog_entity;
     AccessGroupHintsFile m_hints_file;
     SchemaPtr        m_schema;
@@ -376,28 +374,28 @@ namespace Hypertable {
     AccessGroupVector  m_access_group_vector;
     std::vector<AccessGroup *>       m_column_family_vector;
     RangeMaintenanceGuard m_maintenance_guard;
-    int64_t          m_revision;
-    int64_t          m_latest_revision;
-    int64_t          m_split_threshold;
-    String           m_split_row;
-    CommitLogPtr     m_transfer_log;
+    int64_t m_revision {TIMESTAMP_MIN};
+    int64_t m_latest_revision {TIMESTAMP_MIN};
+    int64_t m_split_threshold {};
+    String m_split_row;
+    CommitLogPtr m_transfer_log;
     Barrier          m_update_barrier;
     Barrier          m_scan_barrier;
-    bool             m_split_off_high;
-    bool             m_is_root;
-    bool             m_is_metadata;
-    bool             m_unsplittable;
+    bool             m_split_off_high {};
+    bool             m_is_root {};
+    bool             m_is_metadata {};
+    bool             m_unsplittable {};
     uint64_t         m_added_deletes[KEYSPEC_DELETE_MAX];
-    uint64_t         m_added_inserts;
+    uint64_t         m_added_inserts {};
     RangeSet        *m_range_set;
-    int32_t          m_error;
-    int              m_compaction_type_needed;
-    int64_t          m_maintenance_generation;
+    int32_t          m_error {};
+    int              m_compaction_type_needed {};
+    int64_t          m_maintenance_generation {};
     LoadMetricsRange m_load_metrics;
-    bool             m_dropped;
-    bool             m_capacity_exceeded_throttle;
-    bool             m_relinquish;
-    bool             m_initialized;
+    bool             m_dropped {};
+    bool             m_capacity_exceeded_throttle {};
+    bool             m_relinquish {};
+    bool             m_initialized {};
   };
 
   /// Smart pointer to Range

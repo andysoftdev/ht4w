@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,16 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_TABLEMUTATORASYNC_H
-#define HYPERTABLE_TABLEMUTATORASYNC_H
-
-#include <iostream>
-
-#include "AsyncComm/ConnectionManager.h"
-
-#include "Common/Properties.h"
-#include "Common/StringExt.h"
-#include "Common/Timer.h"
+#ifndef Hypertable_Lib_TableMutatorAsync_h
+#define Hypertable_Lib_TableMutatorAsync_h
 
 #include "Cells.h"
 #include "ClientObject.h"
@@ -36,9 +28,16 @@
 #include "Table.h"
 #include "TableMutatorAsyncScatterBuffer.h"
 #include "RangeLocator.h"
-#include "RangeServerClient.h"
 #include "Schema.h"
-#include "Types.h"
+#include "TableIdentifier.h"
+
+#include <AsyncComm/ConnectionManager.h>
+
+#include <Common/Properties.h>
+#include <Common/StringExt.h>
+#include <Common/Timer.h>
+
+#include <iostream>
 
 namespace Hypertable {
 
@@ -131,9 +130,9 @@ namespace Hypertable {
     }
 
     /**
-     * Convenient helper for String values
+     * Convenient helper for std::string values
      */
-    void set(const KeySpec &key, const String &value) {
+    void set(const KeySpec &key, const std::string &value) {
       set(key, value.data(), value.length());
     }
 
@@ -298,6 +297,6 @@ namespace Hypertable {
     TableMutator *m_mutator;
   };
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_TABLEMUTATORASYNC_H
+#endif // Hypertable_Lib_TableMutatorAsync_h

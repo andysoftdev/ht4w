@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -33,10 +33,10 @@ using namespace std;
  *
  */
 LoadDataSource *
-LoadDataSourceFactory::create(FsBroker::ClientPtr &dfs_client,
-    const String &input_fname, const int src,
-    const String &header_fname, const int header_src,
-    const std::vector<String> &key_columns, const String &timestamp_column,
+LoadDataSourceFactory::create(FsBroker::Lib::ClientPtr &dfs_client,
+    const string &input_fname, const int src,
+    const string &header_fname, const int header_src,
+    const std::vector<String> &key_columns, const string &timestamp_column,
     char field_separator, int row_uniquify_chars, int load_flags) {
 
   LoadDataSource *lds;

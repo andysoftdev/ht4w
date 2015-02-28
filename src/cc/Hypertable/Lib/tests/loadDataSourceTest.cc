@@ -1,5 +1,5 @@
 /** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
   uint32_t value_len;
   int fd;
   std::vector<String> key_columns;
-  FsBroker::ClientPtr null_dfs_client;
+  FsBroker::Lib::ClientPtr null_dfs_client;
   bool is_delete;
 
   vector<String> testnames;

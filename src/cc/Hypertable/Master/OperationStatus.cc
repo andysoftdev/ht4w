@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,15 +19,19 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include "Common/Error.h"
-#include "Common/FailureInducer.h"
-#include "Common/Serialization.h"
-#include "Common/StringExt.h"
+#include <Common/Compat.h>
 
 #include "OperationStatus.h"
+#include "Utility.h"
+
+#include <Common/Error.h>
+#include <Common/Serialization.h>
+#include <Common/Status.h>
+#include <Common/StatusPersister.h>
+#include <Common/StringExt.h>
 
 using namespace Hypertable;
+using namespace Hypertable::Lib::Master;
 
 OperationStatus::OperationStatus(ContextPtr &context, EventPtr &event) 
   : OperationEphemeral(context, event, MetaLog::EntityType::OPERATION_STATUS) {
@@ -35,6 +39,10 @@ OperationStatus::OperationStatus(ContextPtr &context, EventPtr &event)
 }
 
 void OperationStatus::execute() {
+  Status status;
+  Timer timer(m_event->header.timeout_ms, true);
+  Utility::status(m_context, timer, status);
+  m_params.set_status(status);
   complete_ok();
 }
 
@@ -44,4 +52,26 @@ const String OperationStatus::name() {
 
 const String OperationStatus::label() {
   return String("Status");
+}
+
+size_t OperationStatus::encoded_result_length() const {
+  return 4 + m_params.encoded_length();
+}
+
+/// @details
+/// Encoding is as follows:
+/// <table>
+///   <tr>
+///   <th>Encoding</th><th>Description</th>
+///   </tr>
+///   <tr>
+///   <td>i32</td><td>Error code (Error::OK)</td>
+///   </tr>
+///   <tr>
+///   <td>Response::Parameters::Status</td><td>Response parameters</td>
+///   </tr>
+/// </table>
+void OperationStatus::encode_result(uint8_t **bufp) const {
+  Serialization::encode_i32(bufp, Error::OK);
+  m_params.encode(bufp);
 }

@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2012 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,28 +19,31 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_DATAGENERATORROWCOMPONENT_H
-#define HYPERTABLE_DATAGENERATORROWCOMPONENT_H
+#ifndef Hypertable_Lib_DataGeneratorRowComponent_h
+#define Hypertable_Lib_DataGeneratorRowComponent_h
+
+#include <Hypertable/Lib/Cell.h>
+
+#include <Common/Config.h>
+#include <Common/DiscreteRandomGeneratorFactory.h>
+#include <Common/Random.h>
+#include <Common/String.h>
+
+#ifdef _WIN32
+#include "Common/Time.h"
+#include "Common/strptime.h"
+#endif
+
+extern "C" {
+#include <limits.h>
+#include <stdlib.h>
+}
 
 #include <iostream>
 #include <iterator>
 #include <sstream>
 #include <string>
-
-extern "C" {
-#include <limits.h>
-#include <stdlib.h>
-#ifdef _WIN32
-#include "Common/strptime.h"
-#endif
-}
-
-#include "Common/Config.h"
-#include "Common/DiscreteRandomGeneratorFactory.h"
-#include "Common/String.h"
-#include <Common/Time.h>
-
-#include "Cell.h"
+#include <memory>
 
 using namespace Hypertable::Config;
 using namespace std;
@@ -54,14 +57,16 @@ namespace Hypertable {
   class RowComponentSpec {
   public:
     RowComponentSpec() : type(-1), order(-1), value_count(0), seed((unsigned)-1) { }
-    int type;
-    int order;
-    String format;
-    String min;
-    String max;
-    uint64_t value_count;
-    unsigned seed;
-    String distribution;
+    int type {};
+    int order {};
+    std::string format;
+    std::string min;
+    std::string max;
+    unsigned length_min {};
+    unsigned length_max {};
+    uint64_t value_count {};
+    unsigned seed {};
+    std::string distribution;
   };
 
   class RowComponent : public RowComponentSpec {
@@ -77,6 +82,39 @@ namespace Hypertable {
     virtual void render(String &dst) = 0;
   protected:
     DiscreteRandomGeneratorPtr m_rng;
+  };
+
+  class RowComponentString : public RowComponent {
+  public:
+    RowComponentString(RowComponentSpec &spec) : RowComponent(spec) {
+
+      if (length_min == 0 && length_max == 0) {
+        cout << "ERROR: length.min and/or length.max must be specified for row component type 'string'" << endl;
+        _exit(1);
+      }
+      else if (length_max < length_min) {
+        cout << "ERROR: length.max must be less than length.min for row component" << endl;
+        _exit(1);
+      }
+
+      if (order != RANDOM) {
+        cout << "ERROR: 'random' is the only currently supported row component type" << endl;
+        _exit(1);
+      }
+
+      m_render_buf.reset( new char [length_max+1] );
+      m_render_buf.get()[length_max] = 0;
+    }
+    virtual ~RowComponentString() { }
+    virtual bool next() {
+      Random::fill_buffer_with_random_ascii(m_render_buf.get(), length_max);
+      return false;
+    }
+    virtual void render(String &dst) {
+      dst.append((const char *)m_render_buf.get());
+    }
+  private:
+    std::unique_ptr<char[]> m_render_buf;
   };
 
   class RowComponentInteger : public RowComponent {
@@ -221,4 +259,4 @@ namespace Hypertable {
 
 }
 
-#endif // HYPERTABLE_DATAGENERATORROWCOMPONENT_H
+#endif // Hypertable_Lib_DataGeneratorRowComponent_h

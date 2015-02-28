@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2013 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -26,22 +26,23 @@
  * range servers.
  */
 
-#ifndef HYPERTABLE_DISPATCHHANDLEROPERATION_H
-#define HYPERTABLE_DISPATCHHANDLEROPERATION_H
-
-#include "AsyncComm/Comm.h"
-#include "AsyncComm/DispatchHandler.h"
-
-#include "Common/StringExt.h"
-
-#include "Hypertable/Lib/RangeServerClient.h"
-#include "Hypertable/Lib/Types.h"
+#ifndef Hypertable_Master_DispatchHandlerOperation_h
+#define Hypertable_Master_DispatchHandlerOperation_h
 
 #include "Context.h"
+
+#include <Hypertable/Lib/RangeServer/Client.h>
+
+#include <AsyncComm/Comm.h>
+#include <AsyncComm/DispatchHandler.h>
+
+#include <Common/StringExt.h>
 
 #include <set>
 
 namespace Hypertable {
+
+  using namespace Lib;
 
   /** @addtogroup Master
    *  @{
@@ -139,7 +140,7 @@ namespace Hypertable {
     ContextPtr m_context;
 
     /// %Range server client object
-    RangeServerClient m_rsclient;
+    RangeServer::Client m_rsclient;
 
   private:
 
@@ -173,10 +174,9 @@ namespace Hypertable {
   };
 
   /// Smart pointer to DispatchHandlerOperation
-  typedef intrusive_ptr<DispatchHandlerOperation> DispatchHandlerOperationPtr;
+  typedef std::shared_ptr<DispatchHandlerOperation> DispatchHandlerOperationPtr;
 
   /** @}*/
 }
 
-
-#endif // HYPERTABLE_DISPATCHHANDLEROPERATION_H
+#endif // Hypertable_Master_DispatchHandlerOperation_h

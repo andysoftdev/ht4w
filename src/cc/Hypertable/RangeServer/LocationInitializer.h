@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2014 Hypertable, Inc.
+ * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -29,7 +29,7 @@
 
 #include <Hypertable/RangeServer/Context.h>
 
-#include <Hypertable/Lib/RangeServerProtocol.h>
+#include <Hypertable/Lib/RangeServer/Protocol.h>
 
 #include <Hyperspace/Session.h>
 
@@ -39,6 +39,8 @@
 #include <Common/Mutex.h>
 
 namespace Hypertable {
+
+  using namespace Lib;
 
   /// @addtogroup RangeServer
   /// @{
@@ -56,9 +58,9 @@ namespace Hypertable {
     virtual bool is_removed(const String &path,
                             Hyperspace::SessionPtr &hyperspace);
 
-    virtual CommBuf *create_initialization_request();
-    virtual bool process_initialization_response(Event *event);
-    virtual uint64_t initialization_command() { return RangeServerProtocol::COMMAND_INITIALIZE; }
+    CommBuf *create_initialization_request() override;
+    bool process_initialization_response(Event *event) override;
+    uint64_t initialization_command() override { return Lib::RangeServer::Protocol::COMMAND_INITIALIZE; }
 
     /// Gets assigned location (proxy name) 
     String get();
@@ -95,6 +97,9 @@ namespace Hypertable {
     /// Flag indicating that Hyperspace lock on location file is held
     bool m_lock_held {};
   };
+
+  /// Smart pointer to LocationInitializer
+  typedef std::shared_ptr<LocationInitializer> LocationInitializerPtr;
 
   /// @}
 }
