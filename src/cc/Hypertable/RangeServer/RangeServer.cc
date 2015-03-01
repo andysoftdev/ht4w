@@ -50,6 +50,7 @@
 #include <Hypertable/Lib/ClusterId.h>
 #include <Hypertable/Lib/CommitLog.h>
 #include <Hypertable/Lib/Key.h>
+#include <Hypertable/Lib/LegacyDecoder.h>
 #include <Hypertable/Lib/MetaLogDefinition.h>
 #include <Hypertable/Lib/MetaLogReader.h>
 #include <Hypertable/Lib/MetaLogWriter.h>
@@ -442,6 +443,8 @@ void Apps::RangeServer::status(Response::Callback::Status *cb) {
     status.set(Status::Code::CRITICAL, Status::Text::SERVER_IS_COMING_UP);
   else if (m_shutdown)
     status.set(Status::Code::CRITICAL, Status::Text::SERVER_IS_SHUTTING_DOWN);
+  else if (!Global::range_initialization_complete)
+    status.set(Status::Code::WARNING, "Range initialization not yet complete");
   else {
     Timer timer(cb->event()->header.timeout_ms, true);
     Global::dfs->status(status, &timer);
@@ -1006,6 +1009,23 @@ void Apps::RangeServer::local_recover() {
   }
 }
 
+void Apps::RangeServer::decode_table_id(const uint8_t **bufp, size_t *remainp, TableIdentifier *tid) {
+  const uint8_t *buf_saved = *bufp;
+  size_t remain_saved = *remainp;
+  try {
+    tid->decode(bufp, remainp);
+  }
+  catch (Exception &e) {
+    if (e.code() == Error::PROTOCOL_ERROR) {
+      *bufp = buf_saved;
+      *remainp = remain_saved;
+      legacy_decode(bufp, remainp, tid);
+    }
+    else
+      throw;
+  }
+}
+
 
 void
 Apps::RangeServer::replay_load_range(TableInfoMap &replay_map,
@@ -1103,7 +1123,7 @@ void Apps::RangeServer::replay_log(TableInfoMap &replay_map,
     const uint8_t *ptr = base;
     const uint8_t *end = base + len;
 
-    table_id.decode(&ptr, &len);
+    decode_table_id(&ptr, &len, &table_id);
 
     // Fetch table info
     if (!replay_map.lookup(table_id.id, table_info))

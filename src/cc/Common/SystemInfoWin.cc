@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2014 Thalmann Software & Consulting, http://www.softdev.ch
+ * Copyright (C) 2010-2015 Thalmann Software & Consulting, http://www.softdev.ch
  *
  * This file is part of ht4w.
  *
@@ -414,7 +414,28 @@ MemStat &MemStat::refresh() {
   return *this;
 }
 
+DiskStat::DiskStat(const DiskStat &other) {
+  prefix = other.prefix;
+  reads_rate = other.reads_rate;
+  writes_rate = other.writes_rate;
+  read_rate = other.read_rate;
+  write_rate = other.write_rate;
+  if (other.prev_stat) {
+    HT_FATAL("Not implemented");
+  }
+}
+
 DiskStat::~DiskStat() {
+}
+
+void DiskStat::swap(DiskStat &other) {
+  prefix.swap(other.prefix);
+  std::swap(reads_rate, other.reads_rate);
+  std::swap(writes_rate, other.writes_rate);
+  std::swap(read_rate, other.read_rate);
+  std::swap(write_rate, other.write_rate);
+  std::swap(prev_stat, other.prev_stat);
+  std::swap(stopwatch, other.stopwatch);
 }
 
 DiskStat &DiskStat::refresh(const char *dir_prefix) {
@@ -430,7 +451,27 @@ DiskStat &DiskStat::refresh(const char *dir_prefix) {
   return *this;
 }
 
+SwapStat::SwapStat(const SwapStat &other) {
+  total = other.total;
+  used = other.used;
+  free = other.free;
+  page_in = other.page_in;
+  page_out = other.page_out;
+  if (other.prev_stat) {
+    HT_FATAL("Not implemented");
+  }
+}
+
 SwapStat::~SwapStat() {
+}
+
+void SwapStat::swap(SwapStat &other) {
+  std::swap(total, other.total);
+  std::swap(used, other.used);
+  std::swap(free, other.free);
+  std::swap(page_in, other.page_in);
+  std::swap(page_out, other.page_out);
+  std::swap(prev_stat, other.prev_stat);
 }
 
 SwapStat &SwapStat::refresh() {

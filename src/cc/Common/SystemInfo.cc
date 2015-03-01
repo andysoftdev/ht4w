@@ -530,7 +530,7 @@ DiskStat::DiskStat(const DiskStat &other) {
   writes_rate = other.writes_rate;
   read_rate = other.read_rate;
   write_rate = other.write_rate;
-  if (prev_stat) {
+  if (other.prev_stat) {
     prev_stat = new sigar_disk_usage_t();
     memcpy(prev_stat, other.prev_stat, sizeof(sigar_disk_usage_t));
   }

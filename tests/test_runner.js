@@ -674,12 +674,7 @@ function scanner_abrupt_end_test(logfile, testName) {
         clean_target();
         return status;
     }
-    status = run_target(logfile, testName, "10000", true);
-    if (status != 0) {
-        clean_target();
-        return status;
-    }
-    return run_target(logfile, testName, "100000");
+    return run_target(logfile, testName, "10000", true);
 }
 
 function schema_test(logfile, testName) {

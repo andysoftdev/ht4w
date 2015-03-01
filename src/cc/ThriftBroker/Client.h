@@ -80,6 +80,9 @@ class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
     bool m_do_close;
   };
 
+  /// Smart pointer to client
+  typedef std::shared_ptr<Client> ClientPtr;
+
 #ifdef _WIN32
 
   class ThriftClient;
@@ -217,9 +220,6 @@ class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
   };
 
 #endif
-
-  /// Smart pointer to client
-  typedef std::shared_ptr<Client> ClientPtr;
 
 }} // namespace Hypertable::Thrift
 

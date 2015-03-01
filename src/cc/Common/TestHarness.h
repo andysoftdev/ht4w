@@ -92,6 +92,8 @@ namespace Hypertable {
      */
     void validate_and_exit(const char *golden_file) {
       validate(golden_file);
+      if (!m_error)
+        unlink(m_output_file);
       _exit(m_error ? 1 : 0);
     }
 

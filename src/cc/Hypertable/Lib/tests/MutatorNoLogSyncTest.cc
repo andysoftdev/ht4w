@@ -431,9 +431,11 @@ namespace {
     //make syscall to serverup and make sure RangeServer is up
     String command;
 #ifndef _WIN32
-    command = (String)"./ht_serverup --wait 5000 --silent --range-server localhost:" + port + (String)" rangeserver";
+    command = (String)"./ht_serverup --Hypertable.RangeServer.ReadyStatus=WARNING --wait 5000 --silent --range-server localhost:"
+      + port + (String)" rangeserver";
 #else
-    command = (String)"..\\ht_serverup.exe --wait 5000 --silent --range-server localhost:" + port + (String)" rangeserver";
+    command = (String)"..\\ht_serverup.exe --Hypertable.RangeServer.ReadyStatus=WARNING --wait 5000 --silent --range-server localhost:"
+      + port + (String)" rangeserver";
 #endif
     if (system(command.c_str()) !=0) {
       HT_ERRORF("RangeServer on port %d did not come up", port);
