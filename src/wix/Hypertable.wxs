@@ -5,7 +5,7 @@
   <?define ProductName = "Hypertable"?>
   <?define Manufacturer="ht4w.softdev.ch"?>
   <?define Description="Hypertable for Windows"?>
-  <?define Copyright="ht4w, Copyright © 2010-2014"?>
+  <?define Copyright="ht4w, Copyright © 2010-2015"?>
 
   <?if $(var.VisualStudioVersion) = "10.0"?>
     <?define VCRedistTitle="Visual C++ 10.0 Runtime"?>
