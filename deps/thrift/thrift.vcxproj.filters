@@ -7,288 +7,288 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="lib\cpp\src\windows\WinFcntl.h">
+    <ClInclude Include="lib\cpp\src\thrift\windows\config.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\concurrency\BoostThreadFactory.h">
+    <ClInclude Include="lib\cpp\src\thrift\concurrency\Exception.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\windows\config.h">
+    <ClInclude Include="lib\cpp\src\thrift\concurrency\FunctionRunner.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\concurrency\Exception.h">
+    <ClInclude Include="lib\cpp\src\thrift\windows\GetTimeOfDay.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\windows\force_inc.h">
+    <ClInclude Include="lib\cpp\src\thrift\windows\Operators.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\concurrency\FunctionRunner.h">
+    <ClInclude Include="lib\cpp\src\thrift\processor\PeekProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\windows\GetTimeOfDay.h">
+    <ClInclude Include="lib\cpp\src\thrift\concurrency\PlatformThreadFactory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\windows\Operators.h">
+    <ClInclude Include="lib\cpp\src\thrift\windows\SocketPair.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\processor\PeekProcessor.h">
+    <ClInclude Include="lib\cpp\src\thrift\processor\StatsProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\concurrency\PlatformThreadFactory.h">
+    <ClInclude Include="lib\cpp\src\thrift\TApplicationException.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\windows\SocketPair.h">
+    <ClInclude Include="lib\cpp\src\thrift\windows\TargetVersion.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\processor\StatsProcessor.h">
+    <ClInclude Include="lib\cpp\src\thrift\async\TAsyncBufferProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\TApplicationException.h">
+    <ClInclude Include="lib\cpp\src\thrift\async\TAsyncChannel.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\windows\TargetVersion.h">
+    <ClInclude Include="lib\cpp\src\thrift\async\TAsyncProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\async\TAsyncBufferProcessor.h">
+    <ClInclude Include="lib\cpp\src\thrift\async\TAsyncProtocolProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\async\TAsyncChannel.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TBase64Utils.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\async\TAsyncProcessor.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TBinaryProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\async\TAsyncProtocolProcessor.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TBufferTransports.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TBase64Utils.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TCompactProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TBinaryProtocol.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TDebugProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TBufferTransports.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TDenseProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TCompactProtocol.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TFDTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TDebugProtocol.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TFileTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TDenseProtocol.h">
+    <ClInclude Include="lib\cpp\src\thrift\concurrency\Thread.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TFDTransport.h">
+    <ClInclude Include="lib\cpp\src\thrift\concurrency\ThreadManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TFileTransport.h">
+    <ClInclude Include="lib\cpp\src\thrift\Thrift.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\concurrency\Thread.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\THttpClient.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\concurrency\ThreadManager.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\THttpServer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\Thrift.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\THttpTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\THttpClient.h">
+    <ClInclude Include="lib\cpp\src\thrift\concurrency\TimerManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\THttpServer.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TJSONProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\THttpTransport.h">
+    <ClInclude Include="lib\cpp\src\thrift\TLogging.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\concurrency\TimerManager.h">
+    <ClInclude Include="lib\cpp\src\thrift\server\TNonblockingServer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TJSONProtocol.h">
+    <ClInclude Include="lib\cpp\src\thrift\TProcessor.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\TLogging.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\server\TNonblockingServer.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TProtocolException.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\TProcessor.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TProtocolTap.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TProtocol.h">
+    <ClInclude Include="lib\cpp\src\thrift\server\TServer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TProtocolException.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TServerSocket.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TProtocolTap.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TServerTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\server\TServer.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TShortReadTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TServerSocket.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TSimpleFileTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TServerTransport.h">
+    <ClInclude Include="lib\cpp\src\thrift\server\TSimpleServer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TShortReadTransport.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TSocket.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TSimpleFileTransport.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TSocketPool.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\server\TSimpleServer.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TSSLServerSocket.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TSocket.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TSSLSocket.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TSocketPool.h">
+    <ClInclude Include="lib\cpp\src\thrift\server\TThreadedServer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TSSLServerSocket.h">
+    <ClInclude Include="lib\cpp\src\thrift\server\TThreadPoolServer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TSSLSocket.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\server\TThreadedServer.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TTransportException.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\server\TThreadPoolServer.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TTransportUtils.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TTransport.h">
+    <ClInclude Include="lib\cpp\src\thrift\protocol\TVirtualProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TTransportException.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TVirtualTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TTransportUtils.h">
+    <ClInclude Include="lib\cpp\src\thrift\windows\TWinsockSingleton.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\protocol\TVirtualProtocol.h">
+    <ClInclude Include="lib\cpp\src\thrift\transport\TZlibTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TVirtualTransport.h">
+    <ClInclude Include="lib\cpp\src\thrift\concurrency\Util.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\windows\TWinsockSingleton.h">
+    <ClInclude Include="lib\cpp\src\thrift\windows\WinFcntl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\transport\TZlibTransport.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\cpp\src\concurrency\Util.h">
+    <ClInclude Include="lib\cpp\src\thrift\concurrency\StdThreadFactory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lib\cpp\src\async\TAsyncChannel.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\async\TAsyncChannel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\async\TAsyncProtocolProcessor.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\async\TAsyncProtocolProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\concurrency\BoostMonitor.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\concurrency\ThreadManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\concurrency\BoostMutex.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\concurrency\TimerManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\concurrency\BoostThreadFactory.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\concurrency\Util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\concurrency\ThreadManager.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\processor\PeekProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\concurrency\TimerManager.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\protocol\TBase64Utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\concurrency\Util.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\protocol\TDebugProtocol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\processor\PeekProcessor.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\protocol\TDenseProtocol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\protocol\TBase64Utils.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\protocol\TJSONProtocol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\protocol\TDenseProtocol.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\server\TSimpleServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\protocol\TJSONProtocol.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\server\TThreadedServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\server\TSimpleServer.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\server\TThreadPoolServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\server\TThreadedServer.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\TApplicationException.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\server\TThreadPoolServer.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\Thrift.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TBufferTransports.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TBufferTransports.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TFDTransport.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TFDTransport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TFileTransport.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TFileTransport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\THttpClient.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\THttpClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\THttpServer.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\THttpServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\THttpTransport.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\THttpTransport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TServerSocket.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TServerSocket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TSimpleFileTransport.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TSimpleFileTransport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TSocket.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TSocket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TSocketPool.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TSocketPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TTransportUtils.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TTransportUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\windows\GetTimeOfDay.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TZlibTransport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\windows\SocketPair.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\windows\GetTimeOfDay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\windows\TWinsockSingleton.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\windows\SocketPair.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\windows\WinFcntl.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\windows\TWinsockSingleton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\TApplicationException.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\windows\WinFcntl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\Thrift.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\transport\TTransportException.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\transport\TZlibTransport.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\concurrency\StdMonitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\protocol\TDebugProtocol.cpp">
+    <ClCompile Include="lib\cpp\src\thrift\concurrency\StdMutex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\thrift\concurrency\StdThreadFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,7 +1,7 @@
 @echo off
 
-deps\thrift\thrift-0.9.1.exe -r -gen java -out java/hypertable-common/src/main/java src\cc\ThriftBroker\client.thrift
-deps\thrift\thrift-0.9.1.exe -r -gen java -out java/hypertable-common/src/main/java src\cc\ThriftBroker\hql.thrift
+deps\thrift\thrift-0.9.2.exe -r -gen java -out java/hypertable-common/src/main/java src\cc\ThriftBroker\client.thrift
+deps\thrift\thrift-0.9.2.exe -r -gen java -out java/hypertable-common/src/main/java src\cc\ThriftBroker\hql.thrift
 
 @call "%ANT_HOME%\bin\ant" dist -Dversion=%1 -Dvisualstudioversion=%2
 

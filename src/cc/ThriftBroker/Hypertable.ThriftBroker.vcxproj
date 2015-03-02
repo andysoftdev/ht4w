@@ -95,7 +95,7 @@
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\thrift\windows</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/wd4250 %(AdditionalOptions)</AdditionalOptions>
@@ -123,7 +123,7 @@
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\thrift\windows</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/wd4250 %(AdditionalOptions)</AdditionalOptions>
@@ -154,7 +154,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\thrift\windows</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -191,7 +191,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\thrift\windows</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>

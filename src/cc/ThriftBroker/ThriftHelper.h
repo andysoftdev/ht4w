@@ -26,15 +26,6 @@
 namespace Hypertable { namespace ThriftGen {
 
 std::ostream &operator<<(std::ostream &, const CellAsArray &);
-std::ostream &operator<<(std::ostream &, const RowInterval &);
-std::ostream &operator<<(std::ostream &, const Key &);
-std::ostream &operator<<(std::ostream &, const Cell &);
-std::ostream &operator<<(std::ostream &, const CellInterval &);
-std::ostream &operator<<(std::ostream &, const ScanSpec &);
-std::ostream &operator<<(std::ostream &, const HqlResult &);
-std::ostream &operator<<(std::ostream &, const HqlResult2 &);
-std::ostream &operator<<(std::ostream &, const HqlResultAsArrays &);
-std::ostream &operator<<(std::ostream &, const ClientException &);
 
 // These are mostly for test code and not efficient for production.
 Cell

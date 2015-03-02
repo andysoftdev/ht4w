@@ -95,7 +95,7 @@
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\thrift\windows</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/wd4250 %(AdditionalOptions)</AdditionalOptions>
@@ -122,7 +122,7 @@
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <StringPooling>true</StringPooling>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\thrift\windows</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/wd4250 %(AdditionalOptions)</AdditionalOptions>
@@ -152,7 +152,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\thrift\windows</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -186,7 +186,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\sigar\include;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\thrift\windows</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -275,13 +275,13 @@
   <ItemGroup>
     <CustomBuild Include="Client.thrift">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)deps\thrift\thrift-0.8.0.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)deps\thrift\thrift-0.9.2.exe --gen cpp %(Filename).thrift</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">thrift %(Filename)</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)deps\thrift\thrift-0.8.0.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)deps\thrift\thrift-0.9.2.exe --gen cpp %(Filename).thrift</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">thrift %(Filename)</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)deps\thrift\thrift-0.8.0.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)deps\thrift\thrift-0.9.2.exe --gen cpp %(Filename).thrift</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">thrift %(Filename)</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)deps\thrift\thrift-0.8.0.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)deps\thrift\thrift-0.9.2.exe --gen cpp %(Filename).thrift</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">thrift %(Filename)</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">./gen-cpp/ClientService_server.skeleton.cpp</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">./gen-cpp/ClientService_server.skeleton.cpp</Outputs>
@@ -290,10 +290,10 @@
     </CustomBuild>
     <CustomBuild Include="Hql.thrift">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)deps\thrift\thrift-0.8.0.exe --gen cpp %(Filename).thrift</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)deps\thrift\thrift-0.8.0.exe --gen cpp %(Filename).thrift</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)deps\thrift\thrift-0.8.0.exe --gen cpp %(Filename).thrift</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)deps\thrift\thrift-0.8.0.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)deps\thrift\thrift-0.9.2.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)deps\thrift\thrift-0.9.2.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)deps\thrift\thrift-0.9.2.exe --gen cpp %(Filename).thrift</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)deps\thrift\thrift-0.9.2.exe --gen cpp %(Filename).thrift</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">thrift %(Filename)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">thrift %(Filename)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">thrift %(Filename)</Message>
