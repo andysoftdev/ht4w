@@ -677,6 +677,11 @@ function scanner_abrupt_end_test(logfile, testName) {
     return run_target(logfile, testName, "10000", true);
 }
 
+function serializable_test(logfile, testName) {
+    prepare_target(testName, ["Serializable_test.golden"]);
+    return run_target(logfile, testName);
+}
+
 function schema_test(logfile, testName) {
     prepare_target(testName, ["test-schemas.xml", "Schema_test.golden"]);
     return run_target(logfile, testName);
@@ -756,6 +761,7 @@ all_tests.add("scan_spec_test", run_target);
 all_tests.add("scanner_abrupt_end_test", scanner_abrupt_end_test);
 all_tests.add("schema_test", schema_test);
 all_tests.add("scope_guard_test", run_target);
+all_tests.add("serializable_test", serializable_test);
 all_tests.add("serialization_test", run_target);
 all_tests.add("stats_serialize_test", run_target);
 all_tests.add("string_compressor_test", run_target);

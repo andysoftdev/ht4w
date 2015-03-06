@@ -345,7 +345,11 @@ int main(int argc, char **argv) {
   fout.close();
 
   if (!golden.empty()) {
+#ifndef _WIN32
     string cmd("diff Serializable_test.output ");
+#else
+    string cmd("fc Serializable_test.output ");
+#endif
     cmd.append(golden);
     if (system(cmd.c_str()))
       _exit(1);
