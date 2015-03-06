@@ -155,7 +155,6 @@ void HandlerMap::decrement_reference_count(IOHandler *handler) {
 
 void HandlerMap::increment_reference_count(IOHandler *handler) {
   ScopedRecLock lock(m_mutex);
-  HT_ASSERT(!handler->is_decomissioned());
   handler->increment_reference_count(this);
 }
 
