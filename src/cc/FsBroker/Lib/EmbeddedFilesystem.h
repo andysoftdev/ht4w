@@ -26,7 +26,7 @@
 #error Platform isn't supported
 #endif
 
-#include <unordered_map>
+#include <map>
 #include <set>
 #include <deque>
 #include <boost/thread/condition.hpp>
@@ -140,14 +140,14 @@ namespace Lib {
     friend struct WorkerAsyncIO;
 
     struct Request {
-      enum { fdWrite = 0, fdRead = -1 };
-      int fd;
+      enum { fdDefault = -1 };
+      int fd {};
       Hypertable::CommBufPtr cbp;
-      DispatchHandler *handler;
+      DispatchHandler *handler {};
 
-      Request() : fd(0), handler(0) {}
+      Request() {}
       Request(int _fd, CommBufPtr &_cbp, DispatchHandler *_handler)
-      : fd(_fd), cbp(_cbp), handler(_handler) {}
+        : fd(_fd), cbp(_cbp), handler(_handler) {}
     };
 
     class RequestQueue {
@@ -158,23 +158,21 @@ namespace Lib {
       bool dequeue(Request &request);
       void sync(int fd);
       void completed(int fd);
-      void shutdown(bool shutdown);
+      void shutdown();
 
     private:
-      bool can_dequeue() const;
       bool dequeue_request(Request &request);
-      bool empty(int fd) const;
+      bool contains_request(int fd);
 
       typedef std::deque<Request> Queue;
-      typedef std::map<int, Queue> FdQueueMap;
       typedef std::set<int> FdSet;
 
-      FdQueueMap m_fd_queue_map;
+      Queue m_queue;
       FdSet m_fd_in_progress;
       RecMutex& m_mutex;
-      boost::condition m_fd_cond;
+      boost::condition m_cond;
       boost::condition m_fd_completed_cond;
-      bool m_shutdown;
+      bool m_shutdown {};
     };
 
     class FdSyncGuard {
@@ -196,6 +194,7 @@ namespace Lib {
     void worker_async_io();
     void enqueue_message(int fd, Hypertable::CommBufPtr &cbp_request, DispatchHandler *handler);
     void process_message(Hypertable::CommBufPtr &cbp_request, DispatchHandler *handler);
+    void send_response(CommBufPtr &cbp_request, DispatchHandler *handler, DynamicBuffer& response);
 
     int open(const String &name, uint32_t flags, bool sync);
     int create(const String &name, uint32_t flags, int32_t bufsz,
@@ -256,7 +255,7 @@ namespace Lib {
     ThreadGroup m_asyncio_thread;
     RequestQueue m_request_queue;
 
-    typedef std::unordered_map<int, ClientBufferedReaderHandler *>
+    typedef std::map<int, ClientBufferedReaderHandler *>
         BufferedReaderMap;
     BufferedReaderMap m_buffered_reader_map;
   };

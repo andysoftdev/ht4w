@@ -91,7 +91,7 @@ using namespace Hypertable::FsBroker::Lib;
 atomic_t EmbeddedFilesystem::ms_next_fd = ATOMIC_INIT(0);
 
 EmbeddedFilesystem::EmbeddedFilesystem(PropertiesPtr &cfg)
-  : m_directio(false), m_asyncio(true), m_request_queue(m_mutex) {
+  : m_directio(false), m_asyncio(false), m_request_queue(m_mutex) {
   m_directio = cfg->get_bool(cfg->has("FsBroker.Local.DirectIO") ? "FsBroker.Local.DirectIO" : "DfsBroker.Local.DirectIO");
   m_no_removal = cfg->get_bool("FsBroker.DisableFileRemoval");
   m_asyncio = cfg->get_bool("FsBroker.Local.Embedded.AsyncIO");
@@ -119,7 +119,7 @@ EmbeddedFilesystem::EmbeddedFilesystem(PropertiesPtr &cfg)
 
 EmbeddedFilesystem::~EmbeddedFilesystem() {
   if (m_asyncio) {
-    m_request_queue.shutdown(true);
+    m_request_queue.shutdown();
     m_asyncio_thread.join_all();
 
     ScopedRecLock lock(m_mutex);
@@ -134,8 +134,7 @@ void EmbeddedFilesystem::open(const String &name, uint32_t flags, DispatchHandle
     Lib::Request::Parameters::Open params(name, flags, 0);
     CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
     params.encode(cbuf->get_data_ptr_address());
-
-    enqueue_message(Request::fdRead, cbuf, handler);
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error opening DFS file: %s", name.c_str());
@@ -155,14 +154,16 @@ int EmbeddedFilesystem::open_buffered(const String &name, uint32_t flags, uint32
                HT_IO_ALIGNED(start_offset) &&
                HT_IO_ALIGNED(end_offset)));
 
-    int fd = open(name, flags, false);
+    int fd = open(name, flags);
 
     if (m_asyncio) {
+      FsBroker::Lib::ClientBufferedReaderHandler *reader_handler = 
+        new FsBroker::Lib::ClientBufferedReaderHandler(this, fd, buf_size, outstanding,
+                                          start_offset, end_offset);
+
       ScopedRecLock lock(m_mutex);
       HT_ASSERT(m_buffered_reader_map.find(fd) == m_buffered_reader_map.end());
-      m_buffered_reader_map[fd] =
-          new FsBroker::Lib::ClientBufferedReaderHandler(this, fd, buf_size, outstanding,
-                                          start_offset, end_offset);
+      m_buffered_reader_map[fd] = reader_handler;
     }
 
     return fd;
@@ -195,8 +196,7 @@ void EmbeddedFilesystem::create(const String &name, uint32_t flags, int32_t bufs
     Lib::Request::Parameters::Create params(name, flags, bufsz, replication, blksz);
     CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
     params.encode(cbuf->get_data_ptr_address());
-
-    enqueue_message(Request::fdWrite, cbuf, handler);
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error creating DFS file: %s:", name.c_str());
@@ -214,16 +214,12 @@ void EmbeddedFilesystem::decode_response_create(EventPtr &event, int32_t *fd) {
 
 void EmbeddedFilesystem::close(int fd, DispatchHandler *handler) {
   try {
-    if (!handler)
-      close(fd);
-    else {
-      CommHeader header(Lib::Request::Handler::Factory::FUNCTION_CLOSE);
-      header.gid = fd;
-      Lib::Request::Parameters::Close params(fd);
-      CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
-
-      enqueue_message(fd, cbuf, handler);
-    }
+    CommHeader header(Lib::Request::Handler::Factory::FUNCTION_CLOSE);
+    header.gid = fd;
+    Lib::Request::Parameters::Close params(fd);
+    CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
+    params.encode(cbuf->get_data_ptr_address());
+    enqueue_message(fd, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error closing DFS fd: %d", fd);
@@ -231,7 +227,10 @@ void EmbeddedFilesystem::close(int fd, DispatchHandler *handler) {
 }
 
 void EmbeddedFilesystem::close(int fd) {
-  close(fd, m_asyncio);
+  if(m_asyncio)
+    close(fd, (DispatchHandler*)0);
+  else
+    close(fd, m_asyncio);
 }
 
 void EmbeddedFilesystem::read(int fd, size_t len, DispatchHandler *handler) {
@@ -240,7 +239,7 @@ void EmbeddedFilesystem::read(int fd, size_t len, DispatchHandler *handler) {
     header.gid = fd;
     Lib::Request::Parameters::Read params(fd, len);
     CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
-
+    params.encode(cbuf->get_data_ptr_address());
     enqueue_message(fd, cbuf, handler);
   }
   catch (Exception &e) {
@@ -299,24 +298,31 @@ void EmbeddedFilesystem::decode_response_read(EventPtr &event, const void **buff
 void EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags,
                DispatchHandler *handler) {
   try {
-    if (!handler)
-      append(fd, buffer, flags);
+    StaticBuffer ownbuffer;
+    StaticBuffer* owned_buffer;
+    if (buffer.own)
+      owned_buffer = &buffer;
     else {
-      CommHeader header(Lib::Request::Handler::Factory::FUNCTION_APPEND);
-      header.gid = fd;
-      header.alignment = HT_DIRECT_IO_ALIGNMENT;
-      CommBuf *cbuf = new CommBuf(header, HT_DIRECT_IO_ALIGNMENT, buffer);
-      Lib::Request::Parameters::Append params(fd, buffer.size, (bool)(flags & O_FLUSH));
-      uint8_t *base = (uint8_t *)cbuf->get_data_ptr();
-      params.encode(cbuf->get_data_ptr_address());
-      size_t padding = HT_DIRECT_IO_ALIGNMENT -
-        (((uint8_t *)cbuf->get_data_ptr()) - base);
-      memset(cbuf->get_data_ptr(), 0, padding);
-      cbuf->advance_data_ptr(padding);
+      DynamicBuffer dbuf(buffer.size, true);
+      dbuf.add_unchecked(buffer.base, buffer.size);
+      ownbuffer = dbuf;
 
-      CommBufPtr cbp(cbuf);
-      enqueue_message(fd, cbp, handler);
+      owned_buffer = &ownbuffer;
     }
+    CommHeader header(Lib::Request::Handler::Factory::FUNCTION_APPEND);
+    header.gid = fd;
+    header.alignment = HT_DIRECT_IO_ALIGNMENT;
+    CommBuf *cbuf = new CommBuf(header, HT_DIRECT_IO_ALIGNMENT, *owned_buffer);
+    Lib::Request::Parameters::Append params(fd, owned_buffer->size, (bool)(flags & O_FLUSH));
+    uint8_t *base = (uint8_t *)cbuf->get_data_ptr();
+    params.encode(cbuf->get_data_ptr_address());
+    size_t padding = HT_DIRECT_IO_ALIGNMENT -
+      (((uint8_t *)cbuf->get_data_ptr()) - base);
+    memset(cbuf->get_data_ptr(), 0, padding);
+    cbuf->advance_data_ptr(padding);
+
+    CommBufPtr cbp(cbuf);
+    enqueue_message(fd, cbp, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error appending %u bytes to DFS fd %d",
@@ -345,17 +351,12 @@ void EmbeddedFilesystem::decode_response_append(EventPtr &event, uint64_t *offse
 
 void EmbeddedFilesystem::seek(int fd, uint64_t offset, DispatchHandler *handler) {
   try {
-    if (!handler)
-      seek(fd, offset);
-    else {
-      CommHeader header(Lib::Request::Handler::Factory::FUNCTION_SEEK);
-      header.gid = fd;
-      Lib::Request::Parameters::Seek params(fd, offset);
-      CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
-      params.encode(cbuf->get_data_ptr_address());
-
-      enqueue_message(fd, cbuf, handler);
-    }
+    CommHeader header(Lib::Request::Handler::Factory::FUNCTION_SEEK);
+    header.gid = fd;
+    Lib::Request::Parameters::Seek params(fd, offset);
+    CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
+    params.encode(cbuf->get_data_ptr_address());
+    enqueue_message(fd, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error seeking to %llu on DFS fd %d",
@@ -364,20 +365,19 @@ void EmbeddedFilesystem::seek(int fd, uint64_t offset, DispatchHandler *handler)
 }
 
 void EmbeddedFilesystem::seek(int fd, uint64_t offset) {
-  seek(fd, offset, m_asyncio);
+  if(m_asyncio)
+    seek(fd, offset, (DispatchHandler*)0);
+  else
+    seek(fd, offset, m_asyncio);
 }
 
 void EmbeddedFilesystem::remove(const String &name, DispatchHandler *handler) {
   try {
-    if (!handler)
-      remove(name);
-    else {
-      CommHeader header(Lib::Request::Handler::Factory::FUNCTION_REMOVE);
-      Lib::Request::Parameters::Remove params(name);
-      CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
-      params.encode(cbuf->get_data_ptr_address());
-      enqueue_message(Request::fdWrite, cbuf, handler);
-    }
+    CommHeader header(Lib::Request::Handler::Factory::FUNCTION_REMOVE);
+    Lib::Request::Parameters::Remove params(name);
+    CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
+    params.encode(cbuf->get_data_ptr_address());
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error removing DFS file: %s", name.c_str());
@@ -385,7 +385,10 @@ void EmbeddedFilesystem::remove(const String &name, DispatchHandler *handler) {
 }
 
 void EmbeddedFilesystem::remove(const String &name, bool force) {
-  remove(name, force, m_asyncio);
+  if(m_asyncio)
+    remove(name, (DispatchHandler*)0);
+  else
+    remove(name, force, m_asyncio);
 }
 
 void EmbeddedFilesystem::length(const String &name, bool accurate, DispatchHandler *handler) {
@@ -394,8 +397,7 @@ void EmbeddedFilesystem::length(const String &name, bool accurate, DispatchHandl
     Lib::Request::Parameters::Length params(name, accurate);
     CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
     params.encode(cbuf->get_data_ptr_address());
-
-    enqueue_message(Request::fdRead, cbuf, handler);
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error sending length request for DFS file: %s",
@@ -428,7 +430,6 @@ void EmbeddedFilesystem::pread(int fd, size_t len, uint64_t offset,
     Lib::Request::Parameters::Pread params(fd, offset, len, true);
     CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
     params.encode(cbuf->get_data_ptr_address());
-
     enqueue_message(fd, cbuf, handler);
   }
   catch (Exception &e) {
@@ -448,16 +449,11 @@ void EmbeddedFilesystem::decode_response_pread(EventPtr &event, const void **buf
 
 void EmbeddedFilesystem::mkdirs(const String &name, DispatchHandler *handler) {
   try {
-    if (!handler)
-      mkdirs(name);
-    else {
-      CommHeader header(Lib::Request::Handler::Factory::FUNCTION_MKDIRS);
-      Lib::Request::Parameters::Mkdirs params(name);
-      CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
-      params.encode(cbuf->get_data_ptr_address());
-
-      enqueue_message(Request::fdWrite, cbuf, handler);
-    }
+    CommHeader header(Lib::Request::Handler::Factory::FUNCTION_MKDIRS);
+    Lib::Request::Parameters::Mkdirs params(name);
+    CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
+    params.encode(cbuf->get_data_ptr_address());
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error sending mkdirs request for DFS "
@@ -466,22 +462,20 @@ void EmbeddedFilesystem::mkdirs(const String &name, DispatchHandler *handler) {
 }
 
 void EmbeddedFilesystem::mkdirs(const String &name) {
-  mkdirs(name, m_asyncio);
+  if(m_asyncio)
+    mkdirs(name, (DispatchHandler*)0);
+  else
+    mkdirs(name, m_asyncio);
 }
 
 void EmbeddedFilesystem::flush(int fd, DispatchHandler *handler) {
   try {
-    if (!handler)
-      flush(fd);
-    else {
-      CommHeader header(Lib::Request::Handler::Factory::FUNCTION_FLUSH);
-      header.gid = fd;
-      Lib::Request::Parameters::Flush params(fd);
-      CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
-      params.encode(cbuf->get_data_ptr_address());
-
-      enqueue_message(fd, cbuf, handler);
-    }
+    CommHeader header(Lib::Request::Handler::Factory::FUNCTION_FLUSH);
+    header.gid = fd;
+    Lib::Request::Parameters::Flush params(fd);
+    CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
+    params.encode(cbuf->get_data_ptr_address());
+    enqueue_message(fd, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error flushing DFS fd %d", fd);
@@ -489,21 +483,19 @@ void EmbeddedFilesystem::flush(int fd, DispatchHandler *handler) {
 }
 
 void EmbeddedFilesystem::flush(int fd) {
-  flush(fd, m_asyncio);
+  if(m_asyncio)
+    flush(fd, (DispatchHandler*)0);
+  else
+    flush(fd, m_asyncio);
 }
 
 void EmbeddedFilesystem::rmdir(const String &name, DispatchHandler *handler) {
   try {
-    if (!handler)
-      rmdir(name);
-    else {
-      CommHeader header(Lib::Request::Handler::Factory::FUNCTION_RMDIR);
-      Lib::Request::Parameters::Rmdir params(name);
-      CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
-      params.encode(cbuf->get_data_ptr_address());
-
-      enqueue_message(Request::fdWrite, cbuf, handler);
-    }
+    CommHeader header(Lib::Request::Handler::Factory::FUNCTION_RMDIR);
+    Lib::Request::Parameters::Rmdir params(name);
+    CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
+    params.encode(cbuf->get_data_ptr_address());
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error sending rmdir request for DFS directory: "
@@ -512,7 +504,10 @@ void EmbeddedFilesystem::rmdir(const String &name, DispatchHandler *handler) {
 }
 
 void EmbeddedFilesystem::rmdir(const String &name, bool force) {
-  rmdir(name, force, m_asyncio);
+  if(m_asyncio)
+    rmdir(name, (DispatchHandler*)0);
+  else
+    rmdir(name, force, m_asyncio);
 }
 
 void EmbeddedFilesystem::readdir(const String &name, DispatchHandler *handler) {
@@ -521,8 +516,7 @@ void EmbeddedFilesystem::readdir(const String &name, DispatchHandler *handler) {
     Lib::Request::Parameters::Readdir params(name);
     CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
     params.encode(cbuf->get_data_ptr_address());
-
-    enqueue_message(Request::fdRead, cbuf, handler);
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error sending readdir request for DFS directory"
@@ -554,8 +548,7 @@ void EmbeddedFilesystem::exists(const String &name, DispatchHandler *handler) {
     Lib::Request::Parameters::Exists params(name);
     CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
     params.encode(cbuf->get_data_ptr_address());
-
-    enqueue_message(Request::fdRead, cbuf, handler);
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "sending 'exists' request for DFS path: %s",
@@ -582,16 +575,11 @@ bool EmbeddedFilesystem::decode_response_exists(EventPtr &event) {
 
 void EmbeddedFilesystem::rename(const String &src, const String &dst, DispatchHandler *handler) {
   try {
-    if (!handler)
-      rename(src, dst);
-    else {
-      CommHeader header(Lib::Request::Handler::Factory::FUNCTION_RENAME);
-      Lib::Request::Parameters::Rename params(src, dst);
-      CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
-      params.encode(cbuf->get_data_ptr_address());
-
-      enqueue_message(Request::fdWrite, cbuf, handler);
-    }
+    CommHeader header(Lib::Request::Handler::Factory::FUNCTION_RENAME);
+    Lib::Request::Parameters::Rename params(src, dst);
+    CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
+    params.encode(cbuf->get_data_ptr_address());
+    enqueue_message(Request::fdDefault, cbuf, handler);
   }
   catch (Exception &e) {
     HT_THROW2F(e.code(), e, "Error sending 'rename' request for DFS "
@@ -600,7 +588,10 @@ void EmbeddedFilesystem::rename(const String &src, const String &dst, DispatchHa
 }
 
 void EmbeddedFilesystem::rename(const String &src, const String &dst) {
-  rename(src, dst, m_asyncio);
+  if(m_asyncio)
+    rename(src, dst, (DispatchHandler*)0);
+  else
+    rename(src, dst, m_asyncio);
 }
 
 void EmbeddedFilesystem::status(Status &status, Timer *timer) {
@@ -643,9 +634,8 @@ void EmbeddedFilesystem::worker_async_io() {
 }
 
 void EmbeddedFilesystem::enqueue_message(int fd, CommBufPtr &cbp_request, DispatchHandler *handler) {
-  if (m_asyncio) {
+  if (m_asyncio)
     m_request_queue.enqueue(Request(fd, cbp_request, handler));
-  }
   else
     process_message(cbp_request, handler);
 }
@@ -660,40 +650,43 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
     switch (cbp_request->header.command) {
     case Lib::Request::Handler::Factory::FUNCTION_OPEN:
       {
-        uint32_t flags = decode_i32(&decode_ptr, &decode_remain);
-        uint32_t bufsz = decode_i32(&decode_ptr, &decode_remain);
-        const char *fname = decode_str16(&decode_ptr, &decode_remain);
+        Lib:: Request::Parameters::Open request;
+        request.decode(&decode_ptr, &decode_remain);
+        const char* fname = request.get_fname();
         // validate filename
         if (fname[strlen(fname)-1] == '/')
           HT_THROWF(Error::FSBROKER_BAD_FILENAME, "bad filename: %s", fname);
-        int fd = open(fname, flags, false);
+        int fd = open(fname, request.get_flags(), false);
 
-        response.ensure(8);
+        Lib::Response::Parameters::Open params(fd);
+        response.ensure(4 + params.encoded_length());
         encode_i32(&response.ptr, Error::OK);
-        encode_i32(&response.ptr, fd);
+        params.encode(&response.ptr);
       }
       break;
     case Lib::Request::Handler::Factory::FUNCTION_CREATE:
       {
-        uint32_t flags = decode_i32(&decode_ptr, &decode_remain);
-        int32_t bufsz = decode_i32(&decode_ptr, &decode_remain);
-        int32_t replication = decode_i32(&decode_ptr, &decode_remain);
-        int64_t blksz = decode_i64(&decode_ptr, &decode_remain);
-        const char *fname = decode_str16(&decode_ptr, &decode_remain);
+        Lib:: Request::Parameters::Create request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        const char *fname = request.get_name();
         // validate filename
         if (fname[strlen(fname)-1] == '/')
           HT_THROWF(Error::FSBROKER_BAD_FILENAME, "bad filename: %s", fname);
-        int fd = create(fname, flags, bufsz, replication, blksz, false);
+        int fd = create(fname, request.get_flags(), request.get_buffer_size(), request.get_replication(), request.get_block_size(), false);
 
-        response.ensure(8);
+        Lib::Response::Parameters::Open params(fd);
+        response.ensure(4 + params.encoded_length());
         encode_i32(&response.ptr, Error::OK);
-        encode_i32(&response.ptr, fd);
+        params.encode(&response.ptr);
       }
       break;
     case Lib::Request::Handler::Factory::FUNCTION_CLOSE:
       {
-        int fd = Serialization::decode_i32(&decode_ptr, &decode_remain);
-        close(fd, false);
+        Lib:: Request::Parameters::Close request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        close(request.get_fd(), false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -701,36 +694,42 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
       break;
     case Lib::Request::Handler::Factory::FUNCTION_READ:
       {
-        int fd = decode_i32(&decode_ptr, &decode_remain);
-        uint32_t amount = decode_i32(&decode_ptr, &decode_remain);
-        response.ensure(16 + amount);
-        uint64_t offset;
-        size_t nread = read(fd, response.base + 16, amount, &offset, false);
+        Lib:: Request::Parameters::Read request;
+        request.decode(&decode_ptr, &decode_remain);
 
+        uint32_t amount = request.get_amount();
+        uint64_t offset = 0;
+        uint8_t params_length = 4 + Lib::Response::Parameters::Read(offset, amount).encoded_length();
+        response.ensure(params_length + amount);
+        size_t nread = read(request.get_fd(), response.base + params_length, amount, &offset, false);
+
+        Lib::Response::Parameters::Read params(offset, static_cast<uint32_t>(nread));
         encode_i32(&response.ptr, Error::OK);
-        encode_i64(&response.ptr, offset);
-        encode_i32(&response.ptr, amount);
+        params.encode(&response.ptr);
       }
       break;
     case Lib::Request::Handler::Factory::FUNCTION_APPEND:
       {
-        int fd = decode_i32(&decode_ptr, &decode_remain);
-        uint32_t amount = decode_i32(&decode_ptr, &decode_remain);
+        Lib:: Request::Parameters::Append request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        uint32_t amount = request.get_size();
         bool flush = decode_bool(&decode_ptr, &decode_remain);
         uint64_t offset;
-        append(fd, cbp_request->ext, flush ? O_FLUSH : 0, &offset, false);
+        size_t written = append(request.get_fd(), cbp_request->ext, request.get_flush() ? O_FLUSH : 0, &offset, false);
 
-        response.ensure(16);
+        Lib::Response::Parameters::Append params(offset, static_cast<uint32_t>(written));
+        response.ensure(4 + params.encoded_length());
         encode_i32(&response.ptr, Error::OK);
-        encode_i64(&response.ptr, offset);
-        encode_i32(&response.ptr, amount);
+        params.encode(&response.ptr);
       }
       break;
     case Lib::Request::Handler::Factory::FUNCTION_SEEK:
       {
-        int fd = decode_i32(&decode_ptr, &decode_remain);
-        uint64_t offset = decode_i64(&decode_ptr, &decode_remain);
-        seek(fd, offset, false);
+        Lib:: Request::Parameters::Seek request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        seek(request.get_fd(), request.get_offset(), false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -738,8 +737,10 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
       break;
     case Lib::Request::Handler::Factory::FUNCTION_REMOVE:
       {
-        const char *fname = decode_str16(&decode_ptr, &decode_remain);
-        remove(fname, true, false);
+        Lib:: Request::Parameters::Remove request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        remove(request.get_fname(), true, false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -747,33 +748,39 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
       break;
     case Lib::Request::Handler::Factory::FUNCTION_LENGTH:
       {
-        const char *fname = decode_str16(&decode_ptr, &decode_remain);
-        bool accurate = decode_bool(&decode_ptr, &decode_remain);
-        int64_t len = length(fname, false);
+        Lib:: Request::Parameters::Length request;
+        request.decode(&decode_ptr, &decode_remain);
 
-        response.ensure(12);
+        int64_t len = length(request.get_fname(), false);
+
+        Lib::Response::Parameters::Length params(len);
+        response.ensure(4 + params.encoded_length());
         encode_i32(&response.ptr, Error::OK);
-        encode_i64(&response.ptr, len);
+        params.encode(&response.ptr);
       }
       break;
     case Lib::Request::Handler::Factory::FUNCTION_PREAD:
       {
-        int fd = decode_i32(&decode_ptr, &decode_remain);
-        uint64_t offset = decode_i64(&decode_ptr, &decode_remain);
-        uint32_t amount = decode_i32(&decode_ptr, &decode_remain);
-        bool verify_checksum = decode_bool(&decode_ptr, &decode_remain);
-        response.ensure(16 + amount);
-        size_t nread = pread(fd, response.base + 16, offset, amount, verify_checksum, false);
+        Lib:: Request::Parameters::Pread request;
+        request.decode(&decode_ptr, &decode_remain);
 
+        uint32_t amount = request.get_amount();
+        uint64_t offset = request.get_offset();
+        uint8_t params_length = 4 + Lib::Response::Parameters::Read(offset, amount).encoded_length();
+        response.ensure(params_length + amount);
+        size_t nread = pread(request.get_fd(), response.base +  params_length, offset, amount, request.get_verify_checksum(), false);
+
+        Lib::Response::Parameters::Read params(offset, static_cast<uint32_t>(nread));
         encode_i32(&response.ptr, Error::OK);
-        encode_i64(&response.ptr, offset);
-        encode_i32(&response.ptr, amount);
+        params.encode(&response.ptr);
       }
       break;
     case Lib::Request::Handler::Factory::FUNCTION_MKDIRS:
       {
-        const char *dname = decode_str16(&decode_ptr, &decode_remain);
-        mkdirs(dname, false);
+        Lib:: Request::Parameters::Mkdirs request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        mkdirs(request.get_dirname(), false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -781,8 +788,10 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
       break;
     case Lib::Request::Handler::Factory::FUNCTION_FLUSH:
       {
-        int fd = decode_i32(&decode_ptr, &decode_remain);
-        flush(fd, false);
+        Lib:: Request::Parameters::Flush request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        flush(request.get_fd(), false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -790,8 +799,10 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
       break;
     case Lib::Request::Handler::Factory::FUNCTION_RMDIR:
       {
-        const char *dname = decode_str16(&decode_ptr, &decode_remain);
-        rmdir(dname, true, false);
+        Lib:: Request::Parameters::Rmdir request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        rmdir(request.get_dirname(), true, false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -799,35 +810,37 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
       break;
     case Lib::Request::Handler::Factory::FUNCTION_READDIR:
       {
-        const char *dname = decode_str16(&decode_ptr, &decode_remain);
-        std::vector<Dirent> listing;
-        readdir(dname, listing, false);
+        Lib:: Request::Parameters::Readdir request;
+        request.decode(&decode_ptr, &decode_remain);
 
-        uint32_t len = 8;
-        for each (const Dirent& d in listing)
-          len += d.encoded_length();
-        response.ensure(len);
+        std::vector<Dirent> listing;
+        readdir(request.get_dirname(), listing, false);
+
+        Lib::Response::Parameters::Readdir params(listing);
+        response.ensure(4 + params.encoded_length());
         encode_i32(&response.ptr, Error::OK);
-        encode_i32(&response.ptr, listing.size());
-        for each (const Dirent& d in listing)
-          d.encode(&response.ptr);
+        params.encode(&response.ptr);
       }
       break;
     case Lib::Request::Handler::Factory::FUNCTION_EXISTS:
       {
-        const char *fname = decode_str16(&decode_ptr, &decode_remain);
-        bool exist = exists(fname, false);
+        Lib:: Request::Parameters::Exists request;
+        request.decode(&decode_ptr, &decode_remain);
 
-        response.ensure(5);
+        bool exist = exists(request.get_fname(), false);
+
+        Lib::Response::Parameters::Exists params(exist);
+        response.ensure(4 + params.encoded_length());
         encode_i32(&response.ptr, Error::OK);
-        encode_bool(&response.ptr, exist);
+        params.encode(&response.ptr);
       }
       break;
     case Lib::Request::Handler::Factory::FUNCTION_RENAME:
       {
-        const char *src = decode_str16(&decode_ptr, &decode_remain);
-        const char *dst = decode_str16(&decode_ptr, &decode_remain);
-        rename(src, dst, false);
+        Lib:: Request::Parameters::Rename request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        rename(request.get_from(), request.get_to(), false);
 
         response.ensure(4);
         encode_i32(&response.ptr, Error::OK);
@@ -850,16 +863,22 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
     encode_str16(&response.ptr, errmsg);
   }
 
-  EventPtr event = make_shared<Event>(Event::MESSAGE);
-  event->header.initialize_from_request_header(cbp_request->header);
-  event->payload = response.base;
-  event->payload_len = response.size;
-  handler->handle(event);
+  send_response(cbp_request, handler,response);
+}
+
+void EmbeddedFilesystem::send_response(CommBufPtr &cbp_request, DispatchHandler *handler, DynamicBuffer& response) {
+  if (handler) {
+    EventPtr event = make_shared<Event>(Event::MESSAGE);
+    event->header.initialize_from_request_header(cbp_request->header);
+    event->payload = response.base;
+    event->payload_len = response.size;
+    handler->handle(event);
+  }
 }
 
 int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
     if (name[0] == '/')
@@ -884,7 +903,7 @@ int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
 int EmbeddedFilesystem::create(const String &name, uint32_t flags, int32_t bufsz,
                int32_t replication, int64_t blksz, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
     if (name[0] == '/')
@@ -992,7 +1011,7 @@ void EmbeddedFilesystem::seek(int fd, uint64_t offset, bool sync) {
 
 void EmbeddedFilesystem::remove(const String &name, bool force, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
     if (name[0] == '/')
@@ -1010,7 +1029,7 @@ void EmbeddedFilesystem::remove(const String &name, bool force, bool sync) {
 
 int64_t EmbeddedFilesystem::length(const String &name, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
     if (name[0] == '/')
@@ -1046,7 +1065,7 @@ size_t EmbeddedFilesystem::pread(int fd, void *dst, size_t len, uint64_t offset,
 
 void EmbeddedFilesystem::mkdirs(const String &name, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String absdir;
     if (name[0] == '/')
@@ -1076,7 +1095,7 @@ void EmbeddedFilesystem::flush(int fd, bool sync) {
 
 void EmbeddedFilesystem::rmdir(const String &name, bool force, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String absdir;
     if (name[0] == '/')
@@ -1096,7 +1115,7 @@ void EmbeddedFilesystem::rmdir(const String &name, bool force, bool sync) {
 
 void EmbeddedFilesystem::readdir(const String &name, std::vector<Dirent> &listing, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String absdir;
     if (name[0] == '/')
@@ -1139,7 +1158,7 @@ void EmbeddedFilesystem::readdir(const String &name, std::vector<Dirent> &listin
 
 bool EmbeddedFilesystem::exists(const String &name, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
     if (name[0] == '/')
@@ -1157,7 +1176,7 @@ bool EmbeddedFilesystem::exists(const String &name, bool sync) {
 
 void EmbeddedFilesystem::rename(const String &src, const String &dst, bool sync) {
   try {
-    FdSyncGuard guard(this, Request::fdWrite, sync);
+    FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String asrc = m_rootdir + "/" + src;
     String adst = m_rootdir + "/" + dst;
@@ -1260,82 +1279,70 @@ void EmbeddedFilesystem::throw_error() {
 }
 
 EmbeddedFilesystem::RequestQueue::RequestQueue(RecMutex& mutex)
-: m_mutex(mutex), m_shutdown(false)
+: m_mutex(mutex)
 {
 }
 
 void EmbeddedFilesystem::RequestQueue::enqueue(const Request& request) {
   ScopedRecLock lock(m_mutex);
   if (!m_shutdown) {
-    FdQueueMap::iterator it = m_fd_queue_map.find(request.fd);
-    if( it == m_fd_queue_map.end())
-      it = m_fd_queue_map.insert(FdQueueMap::value_type(request.fd, Queue())).first;
-    it->second.push_back(request);
-    m_fd_cond.notify_one();
+    m_queue.push_back(request);
+    m_cond.notify_one();
   }
 }
 
 bool EmbeddedFilesystem::RequestQueue::dequeue(Request &request) {
-  while (true) {
-    ScopedRecLock lock(m_mutex);
-    while (!can_dequeue()) {
-      if (m_shutdown)
-        return false;
-      m_fd_cond.wait(lock);
-    }
-    if (dequeue_request(request))
-      return true;
+  ScopedRecLock lock(m_mutex);
+  while (!dequeue_request(request)) {
+    if (m_shutdown)
+      return false;
+    m_cond.wait(lock);
   }
+  return !m_shutdown;
 }
 
 void EmbeddedFilesystem::RequestQueue::sync(int fd) {
   ScopedRecLock lock(m_mutex);
-  while (!empty(fd) || m_fd_in_progress.find(fd) != m_fd_in_progress.end())
+  while (m_fd_in_progress.find(fd) != m_fd_in_progress.end() || contains_request(fd))
     m_fd_completed_cond.wait(lock);
   m_fd_in_progress.insert(fd);
 }
 
 void EmbeddedFilesystem::RequestQueue::completed(int fd) {
   ScopedRecLock lock(m_mutex);
-  m_fd_in_progress.erase(fd);
-  m_fd_completed_cond.notify_all();
-  if (!m_fd_queue_map.empty()) {
-    FdQueueMap::const_iterator it = m_fd_queue_map.find(fd);
-    if (it != m_fd_queue_map.end() && it->second.empty())
-      m_fd_queue_map.erase(fd);
-    m_fd_cond.notify_one();
+  if (m_fd_in_progress.erase(fd)) {
+    m_fd_completed_cond.notify_all();
+    if (!m_queue.empty()) {
+      m_cond.notify_all();
+    }
   }
 }
 
-void EmbeddedFilesystem::RequestQueue::shutdown(bool shutdown) {
+void EmbeddedFilesystem::RequestQueue::shutdown() {
   ScopedRecLock lock(m_mutex);
-  m_shutdown = shutdown;
-  m_fd_cond.notify_all();
-}
-
-bool EmbeddedFilesystem::RequestQueue::can_dequeue() const {
-  for (FdQueueMap::const_iterator it = m_fd_queue_map.begin(); it != m_fd_queue_map.end(); ++it) {
-    if (!it->second.empty() && m_fd_in_progress.find(it->first) == m_fd_in_progress.end())
-      return true;
-  }
-  return false;
+  m_queue.clear();
+  m_shutdown = true;
+  m_cond.notify_all();
 }
 
 bool EmbeddedFilesystem::RequestQueue::dequeue_request(Request& request) {
-  for (FdQueueMap::iterator it = m_fd_queue_map.begin(); it != m_fd_queue_map.end(); ++it) {
-    if (!it->second.empty() && m_fd_in_progress.find(it->first) == m_fd_in_progress.end()) {
-      m_fd_in_progress.insert(it->first);
-      request = it->second.front();
-      it->second.pop_front();
+  for (Queue::const_iterator it = m_queue.begin(); it != m_queue.end(); ++it) {
+    if (m_fd_in_progress.find(it->fd) == m_fd_in_progress.end()) {
+      m_fd_in_progress.insert(it->fd);
+      request = *it;
+      m_queue.erase(it);
       return true;
     }
   }
   return false;
 }
 
-bool EmbeddedFilesystem::RequestQueue::empty(int fd) const {
-  FdQueueMap::const_iterator it = m_fd_queue_map.find(fd);
-  return it == m_fd_queue_map.end() || it->second.empty();
+bool EmbeddedFilesystem::RequestQueue::contains_request(int fd) {
+  for (Queue::const_iterator it = m_queue.begin(); it != m_queue.end(); ++it) {
+    if (it->fd == fd)
+      return true;
+  }
+  return false;
 }
 
 EmbeddedFilesystem::FdSyncGuard::FdSyncGuard(EmbeddedFilesystem* fs, int fd, bool sync)
