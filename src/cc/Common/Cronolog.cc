@@ -64,7 +64,10 @@ Cronolog::Cronolog(const string &name, const string &current_dir,
   : m_name(name), m_current_dir(current_dir), m_archive_dir(archive_dir) {
   boost::trim_right_if(m_current_dir, boost::is_any_of("/"));
   boost::trim_right_if(m_archive_dir, boost::is_any_of("/"));
-  roll(time(0));
+
+  if (!FileUtils::exists(m_current_dir))
+    if (!FileUtils::mkdirs(m_current_dir))
+      HT_FATALF("Problem creating log directory '%s'", m_current_dir.c_str());
 }
 
 Cronolog::~Cronolog() {
@@ -78,11 +81,11 @@ Cronolog::~Cronolog() {
 void Cronolog::write(time_t now, const string &line) {
   lock_guard<mutex> lock(m_mutex);
 
-  if (!m_fd)
-    return;
-
   if (now >= m_roll_time)
     roll(now);
+
+  if (!m_fd)
+    return;
 
   char buf[32];
   sprintf(buf, "%d ", (int)now);

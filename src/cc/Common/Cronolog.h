@@ -114,7 +114,7 @@ namespace Hypertable {
     string m_archive_dir;
 
     /// Time (seconds since Epoch) when next roll is required
-    time_t m_roll_time;
+    time_t m_roll_time {};
 
     /// Log file descriptor
     int m_fd {};
