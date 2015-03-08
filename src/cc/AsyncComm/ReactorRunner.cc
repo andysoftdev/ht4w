@@ -297,7 +297,7 @@ void ReactorRunner::operator()() {
 
 #elif defined(_WIN32)
 
-  while (true) {
+  while (!shutdown) {
     DWORD numberOfBytes = 0;
     ULONG_PTR completionKey = 0;
     IOOP* ioop = 0;
@@ -352,9 +352,6 @@ void ReactorRunner::operator()() {
     if (!removed_handlers.empty())
       cleanup_and_remove_handlers(removed_handlers);
     m_reactor->handle_timeouts(timeout);
-
-    if (shutdown)
-      break;
   }
 
 #else

@@ -188,7 +188,7 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
   boost::xtime now, next_req_timeout;
   ExpireTimer timer;
 
-  while(true) {
+  while(!ReactorRunner::shutdown) {
     {
       ScopedLock lock(m_mutex);
       IOHandler *handler;
@@ -236,9 +236,10 @@ void Reactor::handle_timeouts(PollTimeout &next_timeout) {
      * Deliver timer events
      */
     for (size_t i=0; i<expired_timers.size(); i++) {
-      event = make_shared<Event>(Event::TIMER, Error::OK);
-      if (expired_timers[i].handler)
+      if (expired_timers[i].handler) {
+        event = make_shared<Event>(Event::TIMER, Error::OK);
         expired_timers[i].handler->handle(event);
+      }
     }
 
     {

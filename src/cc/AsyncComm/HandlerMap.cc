@@ -323,6 +323,20 @@ void HandlerMap::purge_handler(IOHandler *handler) {
   delete handler;
 }
 
+void HandlerMap::shutdown() {
+  std::set<IOHandler *> decomissioned_handlers;
+  {
+    ScopedRecLock lock(m_mutex);
+    decomissioned_handlers = m_decomissioned_handlers;
+    m_decomissioned_handlers.clear();
+  }
+  for each (IOHandler* handler in decomissioned_handlers) {
+    handler->disconnect();
+    delete handler;
+  }
+  m_cond.notify_all();
+}
+
 int HandlerMap::add_proxy(const String &proxy, const String &hostname, const InetAddr &addr) {
   ScopedRecLock lock(m_mutex);
   ProxyMapT new_map, invalidated_map;

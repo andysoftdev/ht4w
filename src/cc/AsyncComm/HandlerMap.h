@@ -283,6 +283,8 @@ namespace Hypertable {
         m_cond.timed_wait(lock, wait_duration);
     }
 
+    void shutdown();
+
     /** Adds or updates proxy information.  This method adds or updates proxy
      * information in #m_proxy_map.  For the data handler to which
      * <code>addr</code> refers, it updates its proxy name via a call to

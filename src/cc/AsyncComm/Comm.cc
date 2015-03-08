@@ -137,10 +137,13 @@ Comm::~Comm() {
   m_handler_map->decomission_all();
 
   // wait for all decomissioned handlers to get purged by Reactor
-  m_handler_map->wait_for_empty(boost::posix_time::seconds(10));
+  m_handler_map->wait_for_empty(boost::posix_time::milliseconds(250));
 
   // Since Comm is a singleton, this is OK
   ReactorFactory::destroy();
+
+  // cleanup
+  m_handler_map->shutdown();
 }
 
 

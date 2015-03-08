@@ -169,11 +169,13 @@ namespace Hypertable {
     void schedule_removal(IOHandler *handler) {
       ScopedLock lock(m_mutex);
       m_removed_handlers.insert(handler);
+#ifndef _WIN32
       ExpireTimer timer;
       boost::xtime_get(&timer.expire_time, boost::TIME_UTC_);
       timer.expire_time.nsec += 200000000LL;
       timer.handler = 0;
       m_timer_heap.push(timer);
+#endif
       poll_loop_interrupt();
     }
 
