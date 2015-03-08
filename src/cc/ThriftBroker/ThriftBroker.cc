@@ -3095,11 +3095,12 @@ int main(int argc, char **argv) {
       properties->set("Hyperspace.Session.Reconnect", true);
 
     if (get_bool("ThriftBroker.SlowQueryLog.Enable")) {
+      String dataDirectory = get_str("Hypertable.DataDirectory");
       g_log_slow_queries = true;
       g_slow_query_latency_threshold = get_i32("ThriftBroker.SlowQueryLog.LatencyThreshold");
       g_slow_query_log = new Cronolog("SlowQuery.log",
-                                      System::install_dir + "/log",
-                                      System::install_dir + "/log/archive");
+                                      dataDirectory + "/log",
+                                      dataDirectory + "/log/archive");
     }
 
     g_metrics_handler = std::make_shared<MetricsHandler>(properties, g_slow_query_log);
