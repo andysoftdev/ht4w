@@ -88,6 +88,7 @@
 #pragma warning( disable : 4003 ) // not enough actual parameters for macro
 #pragma warning( disable : 4065 ) // switch statement contains 'default' but no 'case' labels
 #pragma warning( disable : 4244 ) // conversion from 'x' to 'y', possible loss of data
+#pragma warning( disable : 4250 ) // inherits via dominance
 #pragma warning( disable : 4267 ) // 'initializing' : conversion from 'x' to 'y', possible loss of data
 #pragma warning( disable : 4309 ) // '=' : truncation of constant value
 #pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
