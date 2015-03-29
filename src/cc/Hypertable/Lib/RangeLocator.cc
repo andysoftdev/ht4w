@@ -167,13 +167,14 @@ void RangeLocator::initialize() {
   m_root_handler = new RootFileHandler(this);
 
   m_root_file_handle = m_hyperspace->open(m_toplevel_dir + "/root",
-                                          OPEN_FLAG_READ, m_root_handler);
+                                          OPEN_FLAG_READ, m_root_handler,
+                                          &timer);
 
   while (true) {
     string metadata_file = m_toplevel_dir + "/tables/" + TableIdentifier::METADATA_ID;
 
     try {
-      handle = m_hyperspace->open(metadata_file, OPEN_FLAG_READ);
+      handle = m_hyperspace->open(metadata_file, OPEN_FLAG_READ, &timer);
       break;
     }
     catch (Exception &e) {
@@ -187,7 +188,7 @@ void RangeLocator::initialize() {
 
   while (true) {
     try {
-      m_hyperspace->attr_get(handle, "schema", valbuf);
+      m_hyperspace->attr_get(handle, "schema", valbuf, &timer);
       break;
     }
     catch (Exception &) {
