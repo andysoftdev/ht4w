@@ -25,6 +25,7 @@ namespace php   Hypertable_ThriftGen
 # python doesn't like multiple top dirs with the same name (say hypertable)
 namespace py    hyperthrift.gen
 namespace rb    Hypertable.ThriftGen
+namespace csharp Hypertable.ThriftGen
 
 /** Opaque ID for a Future object 
  *

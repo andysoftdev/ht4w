@@ -24,6 +24,7 @@ namespace perl  Hypertable.ThriftGen2 # perl generator would overide types
 namespace php   Hypertable_ThriftGen2 # ditto
 namespace py    hyperthrift.gen2 # ditto
 namespace rb    Hypertable.ThriftGen
+namespace csharp Hypertable.ThriftGen
 
 /**
  * Result type of HQL queries
