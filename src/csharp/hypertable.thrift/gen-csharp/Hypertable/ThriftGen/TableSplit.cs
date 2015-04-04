@@ -43,13 +43,13 @@ namespace Hypertable.ThriftGen
   #endif
   public partial class TableSplit : TBase
   {
-    private string _start_row;
-    private string _end_row;
+    private byte[] _start_row;
+    private byte[] _end_row;
     private string _location;
     private string _ip_address;
     private string _hostname;
 
-    public string Start_row
+    public byte[] Start_row
     {
       get
       {
@@ -62,7 +62,7 @@ namespace Hypertable.ThriftGen
       }
     }
 
-    public string End_row
+    public byte[] End_row
     {
       get
       {
@@ -144,14 +144,14 @@ namespace Hypertable.ThriftGen
         {
           case 1:
             if (field.Type == TType.String) {
-              Start_row = iprot.ReadString();
+              Start_row = iprot.ReadBinary();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
           case 2:
             if (field.Type == TType.String) {
-              End_row = iprot.ReadString();
+              End_row = iprot.ReadBinary();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -195,7 +195,7 @@ namespace Hypertable.ThriftGen
         field.Type = TType.String;
         field.ID = 1;
         oprot.WriteFieldBegin(field);
-        oprot.WriteString(Start_row);
+        oprot.WriteBinary(Start_row);
         oprot.WriteFieldEnd();
       }
       if (End_row != null && __isset.end_row) {
@@ -203,7 +203,7 @@ namespace Hypertable.ThriftGen
         field.Type = TType.String;
         field.ID = 2;
         oprot.WriteFieldBegin(field);
-        oprot.WriteString(End_row);
+        oprot.WriteBinary(End_row);
         oprot.WriteFieldEnd();
       }
       if (Location != null && __isset.location) {

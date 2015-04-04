@@ -333,6 +333,9 @@ namespace Hypertable.Thrift.Test
                     client.async_scanner_close(color_scanner);
                     client.async_scanner_close(location_scanner);
                     client.async_scanner_close(energy_scanner);
+
+                    // cancelled futures cannot be used further queries and/or updates
+                    client.future_close(future);
                 }
 
                 if (num_cells != 6)
@@ -344,6 +347,8 @@ namespace Hypertable.Thrift.Test
                 try
                 {
                     show("Asynchronous scan with serialized results");
+                    future = client.future_open(0);
+
                     var ss = new ScanSpec();
                     color_scanner = client.async_scanner_open(ns, "FruitColor", future, ss);
                     location_scanner = client.async_scanner_open(ns, "FruitLocation", future, ss);

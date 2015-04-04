@@ -36,6 +36,7 @@
 #include <Hypertable/Master/OperationRenameTable.h>
 #include <Hypertable/Master/OperationSystemUpgrade.h>
 #include <Hypertable/Master/OperationToggleTableMaintenance.h>
+#include <Hypertable/Master/RecoveredServers.h>
 #include <Hypertable/Master/RangeServerConnectionManager.h>
 #include <Hypertable/Master/ReferenceManager.h>
 #include <Hypertable/Master/ResponseManager.h>
@@ -414,6 +415,8 @@ int main(int argc, char **argv) {
     context->get_balance_plan_authority(entity);
     BalancePlanAuthorityPtr bpa = static_pointer_cast<BalancePlanAuthority>(entity);
 
+    context->recovered_servers = make_shared<RecoveredServers>();
+
     FailureInducer::instance = new FailureInducer();
     context->request_timeout = 600;
 
@@ -607,8 +610,8 @@ void drop_table_test(ContextPtr &context) {
   run_test2(context, entities, "drop-table-DROP_VALUE_INDEX-2:throw:0", out);
   run_test2(context, entities, "drop-table-DROP_QUALIFIER_INDEX-1:throw:0", out);
   run_test2(context, entities, "drop-table-DROP_QUALIFIER_INDEX-2:throw:0", out);
-  run_test2(context, entities, "drop-table-UPDATE_HYPERSPACE:throw:0", out);
   run_test2(context, entities, "drop-table-SCAN_METADATA:throw:0", out);
+  run_test2(context, entities, "drop-table-ISSUE_REQUESTS:throw:0", out);
   run_test2(context, entities, "", out);
 
   context->op->wait_for_empty();

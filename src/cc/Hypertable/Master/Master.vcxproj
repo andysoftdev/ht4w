@@ -72,6 +72,7 @@
     <ClCompile Include="OperationWaitForServers.cc" />
     <ClCompile Include="RangeServerConnection.cc" />
     <ClCompile Include="RangeServerConnectionManager.cc" />
+    <ClCompile Include="RecoveredServers.cc" />
     <ClCompile Include="ResponseManager.cc" />
     <ClCompile Include="SystemState.cc" />
     <ClCompile Include="Utility.cc" />
@@ -135,6 +136,7 @@
     <ClInclude Include="RangeServerHyperspaceCallback.h" />
     <ClInclude Include="RangeServerState.h" />
     <ClInclude Include="RangeServerStatistics.h" />
+    <ClInclude Include="RecoveredServers.h" />
     <ClInclude Include="RecoveryReplayCounter.h" />
     <ClInclude Include="RecoveryStepFuture.h" />
     <ClInclude Include="ReferenceManager.h" />

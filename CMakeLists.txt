@@ -23,7 +23,7 @@ project(HYPERTABLE)
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
 set(VERSION_MICRO "8")
-set(VERSION_PATCH "6")
+set(VERSION_PATCH "7")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
@@ -133,6 +133,7 @@ set(INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
 
 find_package(Threads REQUIRED)
 message(STATUS "Use thread library: ${CMAKE_THREAD_LIBS_INIT}")
+find_package(Nodejs)
 find_package(Python)
 find_package(Boost REQUIRED)
 find_package(BerkeleyDB REQUIRED)
@@ -319,4 +320,5 @@ else ()
   install(PROGRAMS bin/ht-env.sh bin/fhsize.sh bin/rpm_pre_install.sh bin/rpm_post_install.sh DESTINATION bin)
 endif ()
 
-install(PROGRAMS "${CRONOLOG_DIR}/cronolog" DESTINATION bin)
+install(PROGRAMS "${CRONOLOG_DIR}/cronolog" DESTINATION sbin)
+install(PROGRAMS "${NODEJS_EXECUTABLE}" DESTINATION sbin)

@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-#
 # Copyright (C) 2007-2015 Hypertable, Inc.
 #
 # This file is part of Hypertable.
@@ -17,29 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Hypertable. If not, see <http://www.gnu.org/licenses/>
 #
-root=${1:-$(dirname `dirname $0`)}
-workdir=`basename $0 .sh`-$$
 
-dump_bt() {
-  mkdir -p $workdir
-  cd $workdir
+# - Find Node.js
+#  NODEJS_FOUND      - True if node.js found
+#  NODEJS_EXECUTABLE - Path to node.js executable
 
-  echo "thread apply all bt
-  quit" > bt.gdb
+exec_program(env ARGS which node OUTPUT_VARIABLE NODEJS_EXECUTABLE
+             RETURN_VALUE NODEJS_RETURN)
 
-  for pidfile in `ls $root/run/*.pid`; do
-    server=`basename $pidfile .pid`
-    case $server in
-      Hyperspace)       server=Hyperspace.Master;;
-      DfsBroker.local)  server=htFsBrokerLocal;;
-    esac
-    pid=`cat $pidfile`
-    [ -x $root/bin/$server ] && kill -0 $pid || continue
-    echo "Dumping backtraces in $server..."
-    gdb -x bt.gdb $root/bin/$server `cat $pidfile` > $server-$pid.bt
-  done 2>&1 | tee bt.log
-}
+if (NODEJS_RETURN STREQUAL "0")
 
-(dump_bt)
+  exec_program(env ARGS ${NODEJS_EXECUTABLE} --version OUTPUT_VARIABLE NODEJS_VERSION_STRING
+               RETURN_VALUE NODEJS_RETURN)
+  message(STATUS "Node.js Version: ${NODEJS_VERSION_STRING}")
+  set(NODEJS_FOUND TRUE)
+else ()
+  message(STATUS "Node.js: not found")
+  set(NODEJS_FOUND FALSE)
+endif ()
 
-tar zcvf $workdir.tgz $workdir
+mark_as_advanced(CNODEJS_EXECUTABLE)

@@ -44,6 +44,8 @@ namespace Hypertable.ThriftGen
     private bool _start_inclusive;
     private string _end_row;
     private bool _end_inclusive;
+    private byte[] _start_row_binary;
+    private byte[] _end_row_binary;
 
     public string Start_row
     {
@@ -97,6 +99,32 @@ namespace Hypertable.ThriftGen
       }
     }
 
+    public byte[] Start_row_binary
+    {
+      get
+      {
+        return _start_row_binary;
+      }
+      set
+      {
+        __isset.start_row_binary = true;
+        this._start_row_binary = value;
+      }
+    }
+
+    public byte[] End_row_binary
+    {
+      get
+      {
+        return _end_row_binary;
+      }
+      set
+      {
+        __isset.end_row_binary = true;
+        this._end_row_binary = value;
+      }
+    }
+
 
     public Isset __isset;
     #if !SILVERLIGHT
@@ -107,6 +135,8 @@ namespace Hypertable.ThriftGen
       public bool start_inclusive;
       public bool end_row;
       public bool end_inclusive;
+      public bool start_row_binary;
+      public bool end_row_binary;
     }
 
     public RowInterval() {
@@ -156,6 +186,20 @@ namespace Hypertable.ThriftGen
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
+          case 5:
+            if (field.Type == TType.String) {
+              Start_row_binary = iprot.ReadBinary();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 6:
+            if (field.Type == TType.String) {
+              End_row_binary = iprot.ReadBinary();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
           default: 
             TProtocolUtil.Skip(iprot, field.Type);
             break;
@@ -201,6 +245,22 @@ namespace Hypertable.ThriftGen
         oprot.WriteBool(End_inclusive);
         oprot.WriteFieldEnd();
       }
+      if (Start_row_binary != null && __isset.start_row_binary) {
+        field.Name = "start_row_binary";
+        field.Type = TType.String;
+        field.ID = 5;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteBinary(Start_row_binary);
+        oprot.WriteFieldEnd();
+      }
+      if (End_row_binary != null && __isset.end_row_binary) {
+        field.Name = "end_row_binary";
+        field.Type = TType.String;
+        field.ID = 6;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteBinary(End_row_binary);
+        oprot.WriteFieldEnd();
+      }
       oprot.WriteFieldStop();
       oprot.WriteStructEnd();
     }
@@ -231,6 +291,18 @@ namespace Hypertable.ThriftGen
         __first = false;
         __sb.Append("End_inclusive: ");
         __sb.Append(End_inclusive);
+      }
+      if (Start_row_binary != null && __isset.start_row_binary) {
+        if(!__first) { __sb.Append(", "); }
+        __first = false;
+        __sb.Append("Start_row_binary: ");
+        __sb.Append(Start_row_binary);
+      }
+      if (End_row_binary != null && __isset.end_row_binary) {
+        if(!__first) { __sb.Append(", "); }
+        __first = false;
+        __sb.Append("End_row_binary: ");
+        __sb.Append(End_row_binary);
       }
       __sb.Append(")");
       return __sb.ToString();
