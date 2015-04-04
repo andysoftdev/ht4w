@@ -490,6 +490,12 @@ function hyperspace_test(logfile, testName) {
     return run_target(logfile, testName);
 }
 
+function hypertable_thrift_test(logfile, testName) {
+    run_servers("--Hypertable.DataDirectory=" + targetDir);
+    var configuration = targetDir.indexOf("Release") >= 0 || targetDir.indexOf("release") >= 0 ? "Release" : "Debug";
+    return run_target(logfile, "..\\..\\..\\AnyCPU\\" + configuration + "\\tests\\Hypertable.Thrift.Test");
+}
+
 function hypertable_ldi_select_test(logfile, testName) {
     file_copy(solutionDir + "\\gzip.exe", targetDir);
     prepare_target(testName, ["hypertable_ldi_*.hql", "hypertable_*.golden", "hypertable_test.tsv.gz", "hypertable_escape_test.tsv"]);
@@ -734,6 +740,7 @@ all_tests.add("future_mutator_cancel_test", future_mutator_cancel_test);
 all_tests.add("future_test", future_test);
 all_tests.add("hash_test", run_target);
 all_tests.add("hyperspace_test", hyperspace_test);
+all_tests.add("Hypertable.Thrift.Test", hypertable_thrift_test);
 all_tests.add("hypertable_ldi_select_test", hypertable_ldi_select_test);
 all_tests.add("hypertable_test", hypertable_test);
 all_tests.add("indices_test", indices_test);
