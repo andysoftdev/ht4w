@@ -73,6 +73,7 @@
     <Compile Include="SerializedCellsReader.cs" />
     <Compile Include="SerializedCellsWriter.cs" />
     <Compile Include="SerializedCellsFlag.cs" />
+    <Compile Include="Cell.cs" />
     <Compile Include="ThriftClient.cs" />
   </ItemGroup>
   <ItemGroup>
