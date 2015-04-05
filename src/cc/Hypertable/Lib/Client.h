@@ -77,7 +77,8 @@ namespace Hypertable {
      * @param install_dir path to Hypertable installation directory
      * @param default_timeout_ms default method call timeout in milliseconds
      */
-    Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hyperspace::SessionPtr& session, PropertiesPtr &props,
+    Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hyperspace::SessionPtr& session, 
+               ApplicationQueueInterfacePtr app_queue, PropertiesPtr &props,
                uint32_t connection_timeout_ms, uint32_t default_timeout_ms=0);
 
     ~Client() {}

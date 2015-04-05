@@ -86,9 +86,11 @@ Client::Client(const string &install_dir, uint32_t default_timeout_ms)
 }
 
 
-Client::Client(const String &install_dir, ConnectionManagerPtr conn_mgr, Hyperspace::SessionPtr& session, PropertiesPtr &props, uint32_t connection_timeout_ms, uint32_t default_timeout_ms)
-: m_connection_timeout_ms(connection_timeout_ms), m_timeout_ms(default_timeout_ms),
-  m_install_dir(install_dir) {
+Client::Client(const String &install_dir, ConnectionManagerPtr conn_mgr,
+  Hyperspace::SessionPtr& session, ApplicationQueueInterfacePtr app_queue,
+  PropertiesPtr &props, uint32_t connection_timeout_ms, uint32_t default_timeout_ms)
+: m_app_queue(app_queue), m_connection_timeout_ms(connection_timeout_ms),
+  m_timeout_ms(default_timeout_ms), m_install_dir(install_dir) {
   ScopedRecLock lock(rec_mutex);
 
   if (!properties)
@@ -264,8 +266,10 @@ void Client::initialize_with_hyperspace() {
 
   m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
 
-  m_app_queue =
-    make_shared<ApplicationQueue>(m_props->get_i32("Hypertable.Client.Workers"));
+  if (!m_app_queue)
+    m_app_queue =
+      make_shared<ApplicationQueue>(m_props->get_i32("Hypertable.Client.Workers"));
+
   m_master_client =
     new Lib::Master::Client(m_conn_manager, m_hyperspace, m_toplevel_dir,
                             m_timeout_ms, m_app_queue,
