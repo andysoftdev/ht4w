@@ -193,10 +193,11 @@ void Future::register_mutator(TableMutatorAsync *mutator) {
   ScopedLock lock(m_outstanding_mutex);
   uint64_t addr = (uint64_t) mutator;
   MutatorMap::iterator it = m_mutator_map.find(addr);
-  if (m_cancelled)
+  /*if (m_cancelled)
     HT_THROWF(Error::CANCELLED,
               "Attempt to register mutator with cancelled future %lld",
-              (Lld)reinterpret_cast<int64_t>(this));
+              (Lld)reinterpret_cast<int64_t>(this));*/
+  m_cancelled = false;
   HT_ASSERT(it == m_mutator_map.end());
   m_mutator_map[addr] = mutator;
 }
@@ -213,10 +214,11 @@ void Future::register_scanner(TableScannerAsync *scanner) {
   ScopedLock lock(m_outstanding_mutex);
   uint64_t addr = (uint64_t) scanner;
   ScannerMap::iterator it = m_scanner_map.find(addr);
-  if (m_cancelled)
+  /*if (m_cancelled)
     HT_THROWF(Error::CANCELLED,
               "Attempt to register scanner with cancelled future %lld",
-              (Lld)reinterpret_cast<int64_t>(this));
+              (Lld)reinterpret_cast<int64_t>(this));*/
+  m_cancelled = false;
   HT_ASSERT(it == m_scanner_map.end());
   m_scanner_map[addr] = scanner;
   if (m_scanners_owned.insert(scanner).second)
