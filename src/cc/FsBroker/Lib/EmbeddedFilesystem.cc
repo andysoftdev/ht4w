@@ -881,10 +881,13 @@ int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
-    if (name[0] == '/')
-      abspath = m_rootdir + name;
-    else
-      abspath = m_rootdir + "/" + name;
+    {
+      ScopedRecLock lock(m_mutex);
+      if (name[0] == '/')
+        abspath = m_rootdir + name;
+      else
+        abspath = m_rootdir + "/" + name;
+    }
 
     HANDLE h;
     int fd = atomic_inc_return(&ms_next_fd);
@@ -906,10 +909,13 @@ int EmbeddedFilesystem::create(const String &name, uint32_t flags, int32_t bufsz
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
-    if (name[0] == '/')
-      abspath = m_rootdir + name;
-    else
-      abspath = m_rootdir + "/" + name;
+    {
+      ScopedRecLock lock(m_mutex);
+      if (name[0] == '/')
+        abspath = m_rootdir + name;
+      else
+        abspath = m_rootdir + "/" + name;
+    }
 
     HANDLE h;
     int fd = atomic_inc_return(&ms_next_fd);
@@ -1014,10 +1020,13 @@ void EmbeddedFilesystem::remove(const String &name, bool force, bool sync) {
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
-    if (name[0] == '/')
-      abspath = m_rootdir + name;
-    else
-      abspath = m_rootdir + "/" + name;
+    {
+      ScopedRecLock lock(m_mutex);
+      if (name[0] == '/')
+        abspath = m_rootdir + name;
+      else
+        abspath = m_rootdir + "/" + name;
+    }
 
     if (!DeleteFile(abspath.c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND)
       throw_error();
@@ -1032,10 +1041,13 @@ int64_t EmbeddedFilesystem::length(const String &name, bool sync) {
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
-    if (name[0] == '/')
-      abspath = m_rootdir + name;
-    else
-      abspath = m_rootdir + "/" + name;
+    {
+      ScopedRecLock lock(m_mutex);
+      if (name[0] == '/')
+        abspath = m_rootdir + name;
+      else
+        abspath = m_rootdir + "/" + name;
+    }
 
     uint64_t length;
     if ((length = FileUtils::length(abspath)) == (uint64_t)-1)
@@ -1067,13 +1079,16 @@ void EmbeddedFilesystem::mkdirs(const String &name, bool sync) {
   try {
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
-    String absdir;
-    if (name[0] == '/')
-      absdir = m_rootdir + name;
-    else
-      absdir = m_rootdir + "/" + name;
+    String abspath;
+    {
+      ScopedRecLock lock(m_mutex);
+      if (name[0] == '/')
+        abspath = m_rootdir + name;
+      else
+        abspath = m_rootdir + "/" + name;
+    }
 
-    if (!FileUtils::mkdirs(absdir))
+    if (!FileUtils::mkdirs(abspath))
       throw_error();
   }
   catch (Exception &e) {
@@ -1097,14 +1112,17 @@ void EmbeddedFilesystem::rmdir(const String &name, bool force, bool sync) {
   try {
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
-    String absdir;
-    if (name[0] == '/')
-      absdir = m_rootdir + name;
-    else
-      absdir = m_rootdir + "/" + name;
+    String abspath;
+    {
+      ScopedRecLock lock(m_mutex);
+      if (name[0] == '/')
+        abspath = m_rootdir + name;
+      else
+        abspath = m_rootdir + "/" + name;
+    }
 
-    if (FileUtils::exists(absdir)) {
-      if (!remove_dir(absdir))
+    if (FileUtils::exists(abspath)) {
+      if (!remove_dir(abspath))
         throw_error();
     }
   }
@@ -1117,14 +1135,17 @@ void EmbeddedFilesystem::readdir(const String &name, std::vector<Dirent> &listin
   try {
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
-    String absdir;
-    if (name[0] == '/')
-      absdir = m_rootdir + name;
-    else
-      absdir = m_rootdir + "/" + name;
+    String abspath;
+    {
+      ScopedRecLock lock(m_mutex);
+      if (name[0] == '/')
+        abspath = m_rootdir + name;
+      else
+        abspath = m_rootdir + "/" + name;
+    }
 
     WIN32_FIND_DATA ffd;
-    HANDLE hFind = FindFirstFile((absdir + "\\*").c_str(), &ffd);
+    HANDLE hFind = FindFirstFile((abspath + "\\*").c_str(), &ffd);
     if (hFind == INVALID_HANDLE_VALUE)
       throw_error();
 
@@ -1161,10 +1182,13 @@ bool EmbeddedFilesystem::exists(const String &name, bool sync) {
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
     String abspath;
-    if (name[0] == '/')
-      abspath = m_rootdir + name;
-    else
-      abspath = m_rootdir + "/" + name;
+    {
+      ScopedRecLock lock(m_mutex);
+      if (name[0] == '/')
+        abspath = m_rootdir + name;
+      else
+        abspath = m_rootdir + "/" + name;
+    }
 
     return FileUtils::exists(abspath);
   }
@@ -1178,8 +1202,13 @@ void EmbeddedFilesystem::rename(const String &src, const String &dst, bool sync)
   try {
     FdSyncGuard guard(this, Request::fdDefault, sync);
 
-    String asrc = m_rootdir + "/" + src;
-    String adst = m_rootdir + "/" + dst;
+    String asrc, adst;
+    {
+      ScopedRecLock lock(m_mutex);
+      asrc = m_rootdir + "/" + src;
+      adst = m_rootdir + "/" + dst;
+    }
+
     if (!::MoveFileEx(asrc.c_str(), adst.c_str(), MOVEFILE_COPY_ALLOWED|MOVEFILE_REPLACE_EXISTING))
       throw_error();
   }
