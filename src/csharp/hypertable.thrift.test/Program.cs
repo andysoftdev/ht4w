@@ -184,7 +184,8 @@ namespace Hypertable.Thrift.Test
                 long color_scanner = 0;
                 long location_scanner = 0;
                 long energy_scanner = 0;
-                const int expected_cells = 6;
+
+                var expected_cells = 6;
                 var num_cells = 0;
 
                 try
@@ -338,7 +339,7 @@ namespace Hypertable.Thrift.Test
                     client.future_close(future);
                 }
 
-                if (num_cells != 6)
+                if (num_cells != expected_cells)
                 {
                     show("ERROR: Expected " + expected_cells + " cells got " + num_cells);
                     return 1;
@@ -387,6 +388,158 @@ namespace Hypertable.Thrift.Test
                 client.hql_query(ns, "drop table if exists FruitColor");
                 client.hql_query(ns, "drop table if exists FruitLocation");
                 client.hql_query(ns, "drop table if exists FruitEnergy");
+
+                // serialized cells
+                mutator = client.mutator_open(ns, "thrift_test", 0, 0);
+
+                try
+                {
+                    using (var cells = new SerializedCellsWriter())
+                    {
+                        cells.Add("abc", "col", null, Encoding.UTF8.GetBytes("1"));
+                        cells.Add("abc", "col", null, Encoding.UTF8.GetBytes("2"));
+                        cells.Add("abc", "col", null, Encoding.UTF8.GetBytes("3"));
+                        cells.Add("edf", "col", "test", Encoding.UTF8.GetBytes("1"));
+                        cells.Add("edf", "col", "test", Encoding.UTF8.GetBytes("2"));
+                        cells.Add("edf", "col", "test", Encoding.UTF8.GetBytes("3"));
+                        client.mutator_set_cells_serialized(mutator, cells.ToArray(), false);
+                    }
+                }
+                finally
+                {
+                    client.mutator_close(mutator);
+                }
+
+                expected_cells = 3;
+                num_cells = 0;
+
+                scanSpec = new ScanSpec
+                {
+                    Columns = new List<string> { "col" },
+                    Row_intervals = new List<RowInterval>
+                    {
+                        new RowInterval { Start_row = "abc", End_row = "abc" }
+                    }
+                };
+                scanner = client.scanner_open(ns, "thrift_test", scanSpec);
+
+                try
+                {
+                    var cells = client.scanner_get_cells_serialized(scanner);
+                    using (var reader = new SerializedCellsReader(cells))
+                    {
+                        foreach (var cell in reader)
+                        {
+                            var s = Encoding.UTF8.GetString(cell.Value);
+                            show(s);
+
+                            if (cell.Key.Row == "abc" && 
+                                cell.Key.Column_family == "col" && 
+                                cell.Value.Length == 1)
+                            {
+                                ++num_cells;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    client.scanner_close(scanner);
+                }
+
+                if (num_cells != 3)
+                {
+                    show("ERROR: Expected " + expected_cells + " cells got " + num_cells);
+                    return 1;
+                }
+
+                expected_cells = 3;
+                num_cells = 0;
+
+                scanSpec = new ScanSpec
+                {
+                    Columns = new List<string> { "col" },
+                    Row_intervals = new List<RowInterval>
+                    {
+                        new RowInterval { Start_row = "edf", End_row = "edf" }
+                    }
+                };
+                scanner = client.scanner_open(ns, "thrift_test", scanSpec);
+
+                try
+                {
+                    var cells = client.scanner_get_cells_serialized(scanner);
+                    using (var reader = new SerializedCellsReader(cells))
+                    {
+                        foreach (var cell in reader)
+                        {
+                            var s = Encoding.UTF8.GetString(cell.Value);
+                            show(s);
+
+                            if (cell.Key.Row == "edf" && 
+                                cell.Key.Column_family == "col" &&
+                                cell.Key.Column_qualifier == "test" && 
+                                cell.Value.Length == 1)
+                            {
+                                ++num_cells;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    client.scanner_close(scanner);
+                }
+
+                if (num_cells != expected_cells)
+                {
+                    show("ERROR: Expected " + expected_cells + " cells got " + num_cells);
+                    return 1;
+                }
+
+                expected_cells = 6;
+                num_cells = 0;
+
+                scanSpec = new ScanSpec
+                {
+                    Columns = new List<string> { "col" },
+                    Row_intervals = new List<RowInterval>
+                    {
+                        new RowInterval { Start_row = "abc", End_row = "edf" }
+                    }
+                };
+                scanner = client.scanner_open(ns, "thrift_test", scanSpec);
+
+                try
+                {
+                    var cells = client.scanner_get_cells_serialized(scanner);
+                    using (var reader = new SerializedCellsReader(cells))
+                    {
+                        foreach (var cell in reader)
+                        {
+                            var s = Encoding.UTF8.GetString(cell.Value);
+                            show(s);
+
+                            if ((cell.Key.Row == "abc" || cell.Key.Row == "edf") &&
+                                 cell.Key.Column_family == "col" &&
+                                (cell.Key.Column_qualifier == null || cell.Key.Column_qualifier == "test") &&
+                                 cell.Value.Length == 1)
+                            {
+                                ++num_cells;
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    client.scanner_close(scanner);
+                }
+
+                if (num_cells != expected_cells)
+                {
+                    show("ERROR: Expected " + expected_cells + " cells got " + num_cells);
+                    return 1;
+                }
 
                 // issue 497
                 try

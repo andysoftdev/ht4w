@@ -75,6 +75,8 @@ namespace Hypertable.Thrift
 
         public IEnumerator<Cell> GetEnumerator()
         {
+            var recentRow = string.Empty;
+
             while (true)
             {
                 var flag = this.reader.ReadByte();
@@ -106,17 +108,22 @@ namespace Hypertable.Thrift
                 var baseOffset = (int)this.reader.BaseStream.Position;
                 var offset = baseOffset;
                 while (this.buffer[offset++] != 0);
-                key.Row = UTF8.GetString(this.buffer, baseOffset, offset - baseOffset);
+                if (offset - baseOffset - 1 > 0)
+                {
+                    recentRow = UTF8.GetString(this.buffer, baseOffset, offset - baseOffset - 1);
+                }
+
+                key.Row = recentRow;
 
                 // column family
                 baseOffset = offset;
                 while (this.buffer[offset++] != 0);
-                key.Column_family = offset - baseOffset > 0 ? UTF8.GetString(this.buffer, baseOffset, offset - baseOffset) : null;
+                key.Column_family = offset - baseOffset - 1 > 0 ? UTF8.GetString(this.buffer, baseOffset, offset - baseOffset - 1) : null;
 
                 // column qualifier
                 baseOffset = offset;
                 while (this.buffer[offset++] != 0);
-                key.Column_qualifier = offset - baseOffset > 0 ? UTF8.GetString(this.buffer, baseOffset, offset - baseOffset) : null;
+                key.Column_qualifier = offset - baseOffset - 1 > 0 ? UTF8.GetString(this.buffer, baseOffset, offset - baseOffset - 1) : null;
 
                 this.reader.BaseStream.Position = offset;
 
