@@ -1371,10 +1371,16 @@ Apps::RangeServer::metadata_sync(ResponseCallback *cb, const char *table_id,
     ScopedLock lock(Global::mutex);
     // double-check locking (works fine on x86 and amd64 but may fail
     // on other archs without using a memory barrier
-    if (!Global::metadata_table)
-      Global::metadata_table = new Table(m_props, m_conn_manager,
-                                         Global::hyperspace, m_namemap,
-                                         TableIdentifier::METADATA_NAME);
+    if (!Global::metadata_table) {
+      uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
+      if (!Global::range_locator)
+        Global::range_locator = new Hypertable::RangeLocator(m_props,
+                m_conn_manager, Global::hyperspace, timeout_ms);
+      ApplicationQueueInterfacePtr aq = m_app_queue;
+      Global::metadata_table = new Table(m_props, Global::range_locator,
+              m_conn_manager, Global::hyperspace, aq, m_namemap,
+              TableIdentifier::METADATA_NAME, 0, timeout_ms);
+    }
   }
 
   if (!columns.empty()) {
@@ -1823,10 +1829,16 @@ Apps::RangeServer::load_range(ResponseCallback *cb, const TableIdentifier &table
       ScopedLock lock(Global::mutex);
       // double-check locking (works fine on x86 and amd64 but may fail
       // on other archs without using a memory barrier
-      if (!Global::metadata_table)
-        Global::metadata_table = new Table(m_props, m_conn_manager,
-                                           Global::hyperspace, m_namemap,
-                                           TableIdentifier::METADATA_NAME);
+      if (!Global::metadata_table) {
+        uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
+        if (!Global::range_locator)
+          Global::range_locator = new Hypertable::RangeLocator(m_props,
+                  m_conn_manager, Global::hyperspace, timeout_ms);
+        ApplicationQueueInterfacePtr aq = m_app_queue;
+        Global::metadata_table = new Table(m_props, Global::range_locator,
+                m_conn_manager, Global::hyperspace, aq, m_namemap,
+                TableIdentifier::METADATA_NAME, 0, timeout_ms);
+      }
     }
 
     /**
@@ -3279,10 +3291,16 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
         ScopedLock lock(Global::mutex);
         // TODO double-check locking (works fine on x86 and amd64 but may fail
         // on other archs without using a memory barrier
-        if (!Global::metadata_table)
-          Global::metadata_table = new Table(m_props, m_conn_manager,
-                                             Global::hyperspace, m_namemap,
-                                             TableIdentifier::METADATA_NAME);
+        if (!Global::metadata_table) {
+          uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
+          if (!Global::range_locator)
+            Global::range_locator = new Hypertable::RangeLocator(m_props,
+                    m_conn_manager, Global::hyperspace, timeout_ms);
+          ApplicationQueueInterfacePtr aq = m_app_queue;
+          Global::metadata_table = new Table(m_props, Global::range_locator,
+                  m_conn_manager, Global::hyperspace, aq, m_namemap,
+                  TableIdentifier::METADATA_NAME, 0, timeout_ms);
+        }
       }
 
       // if we're about to move a root range: make sure that the location
