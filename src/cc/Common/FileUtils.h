@@ -182,7 +182,7 @@ namespace Hypertable {
     static ssize_t read(int fd, void *vptr, size_t n);
     static ssize_t pread(HANDLE fd, void *vptr, size_t n, uint64_t offset);
     static ssize_t pread(int fd, void *vptr, size_t n, uint64_t offset);
-    static ssize_t write(const String &fname, String &contents);
+    static ssize_t write(const String &fname, const String &contents);
     static ssize_t write(HANDLE fd, const void *vptr, size_t n);
     static ssize_t write(int fd, const void *vptr, size_t n);
     static ssize_t write(int fd, const std::string &str) {

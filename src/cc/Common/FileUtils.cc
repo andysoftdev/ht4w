@@ -634,7 +634,7 @@ ssize_t FileUtils::pread(int fd, void *vptr, size_t n, uint64_t offset) {
   return pread((HANDLE) _get_osfhandle(fd), vptr, n, offset);
 }
 
-ssize_t FileUtils::write(const String &fname, String &contents) {
+ssize_t FileUtils::write(const String &fname, const String &contents) {
   HANDLE fd = ::CreateFile(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, NULL);
   if (fd == INVALID_HANDLE_VALUE) {
     DWORD err = GetLastError();
