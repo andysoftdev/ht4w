@@ -72,14 +72,16 @@ void
 TableMutatorAsyncScatterBuffer::set(const Key &key, const void *value, uint32_t value_len,
     size_t incr_mem) {
 
-  RangeLocationInfo range_info;
+  RangeAddrInfo range_info;
   TableMutatorAsyncSendBufferMap::const_iterator iter;
   bool counter_reset = false;
 
   if (!m_location_cache->lookup(m_table_identifier.id, key.row, &range_info)) {
     Timer timer(m_timeout_ms, true);
-    m_range_locator->find_loop(&m_table_identifier, key.row, &range_info,
+    RangeLocationInfo range_loc_info;
+    m_range_locator->find_loop(&m_table_identifier, key.row, &range_loc_info,
                                timer, false);
+    range_info = range_loc_info;
   }
 
   {
@@ -143,7 +145,7 @@ TableMutatorAsyncScatterBuffer::set(const Key &key, const void *value, uint32_t 
 void TableMutatorAsyncScatterBuffer::set_delete(const Key &key, size_t incr_mem) {
   ScopedLock lock(m_mutex);
 
-  RangeLocationInfo range_info;
+  RangeAddrInfo range_info;
   TableMutatorAsyncSendBufferMap::const_iterator iter;
 
   if (key.flag == FLAG_INSERT)
@@ -151,8 +153,10 @@ void TableMutatorAsyncScatterBuffer::set_delete(const Key &key, size_t incr_mem)
 
   if (!m_location_cache->lookup(m_table_identifier.id, key.row, &range_info)) {
     Timer timer(m_timeout_ms, true);
-    m_range_locator->find_loop(&m_table_identifier, key.row, &range_info,
+    RangeLocationInfo range_loc_info;
+    m_range_locator->find_loop(&m_table_identifier, key.row, &range_loc_info,
                                timer, false);
+    range_info = range_loc_info;
   }
   iter = m_buffer_map.find(range_info.addr);
 
@@ -187,7 +191,7 @@ void
 TableMutatorAsyncScatterBuffer::set(SerializedKey key, ByteString value, size_t incr_mem) {
   ScopedLock lock(m_mutex);
 
-  RangeLocationInfo range_info;
+  RangeAddrInfo range_info;
   TableMutatorAsyncSendBufferMap::const_iterator iter;
   const uint8_t *ptr = key.ptr;
   size_t len = Serialization::decode_vi32(&ptr);
@@ -195,8 +199,10 @@ TableMutatorAsyncScatterBuffer::set(SerializedKey key, ByteString value, size_t 
   if (!m_location_cache->lookup(m_table_identifier.id, (const char *)ptr+1,
                                 &range_info)) {
     Timer timer(m_timeout_ms, true);
+    RangeLocationInfo range_loc_info;
     m_range_locator->find_loop(&m_table_identifier, (const char *)ptr+1,
-                               &range_info, timer, false);
+                               &range_loc_info, timer, false);
+    range_info = range_loc_info;
   }
 
   iter = m_buffer_map.find(range_info.addr);
@@ -222,12 +228,11 @@ namespace {
   struct SendRec {
     SerializedKey key;
     uint64_t offset;
+    const char* row;
   };
 
   inline bool operator<(const SendRec &sr1, const SendRec &sr2) {
-    const char *row1 = sr1.key.row();
-    const char *row2 = sr2.key.row();
-    int rval = strcmp(row1, row2);
+    int rval = strcmp(sr1.row, sr2.row);
     if (rval == 0)
       return sr1.offset < sr2.offset;
     return rval < 0;
@@ -274,6 +279,7 @@ void TableMutatorAsyncScatterBuffer::send(uint32_t flags) {
         send_rec.key.ptr = send_buffer->accum.base
           + send_buffer->key_offsets[i];
         send_rec.offset = send_buffer->key_offsets[i];
+        send_rec.row = send_rec.key.row();
         send_vec.push_back(send_rec);
       }
       std::stable_sort(send_vec.begin(), send_vec.end());
