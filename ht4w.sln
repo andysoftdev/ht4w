@@ -1296,6 +1296,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hypertable.Thrift", "src\csharp\hypertable.thrift\Hypertable.Thrift.csproj", "{9BA38518-7920-46A3-9FBD-A4AEA9E742F8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hypertable.Thrift.Test", "src\csharp\hypertable.thrift.test\Hypertable.Thrift.Test.csproj", "{21453F1B-488F-4015-A51B-D4A8459A82CC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{59287C1F-74B5-436A-A317-3B5EE7A08DD7} = {59287C1F-74B5-436A-A317-3B5EE7A08DD7}
+		{ED58FF8F-9E65-4ED0-ABF4-364756159EA8} = {ED58FF8F-9E65-4ED0-ABF4-364756159EA8}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
