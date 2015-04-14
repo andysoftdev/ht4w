@@ -70,6 +70,67 @@ void no_log_sync_test(Table *table) {
   check_results(table);
 }
 
+void cells_builder_test(Table *table)  {
+  TableMutatorPtr mutator = table->create_mutator();
+  mutator->set(KeySpec("1", "col", "cq"), "value1"); 
+  mutator->set(KeySpec("2", "col", ""), "value2");
+  mutator->set(KeySpec("3", "col2", "tag"), "value2");
+  mutator->set(KeySpec("4", "col2", "cq"), "value3");
+  mutator->flush();
+
+  ScanSpec ss;
+  TableScannerPtr scanner = table->create_scanner(ss);
+  CellsBuilder cb;
+  copy(scanner, cb);
+
+  // check
+  {
+    if (cb.get().size() != 4)
+      _exit(1);
+    const Cell& cell = cb.get().front();
+    if (strcmp(cell.column_family, "col"))
+      _exit(1);
+    if (cell.value_len != 6)
+      _exit(1);
+    if (memcmp(cell.value, "value1", 6) != 0)
+      _exit(1);
+  }
+
+  // clear, scan and check again
+  cb.clear();
+  scanner = table->create_scanner(ss);
+  copy(scanner, cb);
+
+  {
+    if (cb.get().size() != 4)
+      _exit(1);
+    const Cell& cell = cb.get().front();
+    if (strcmp(cell.column_family, "col"))
+      _exit(1);
+    if (cell.value_len != 6)
+      _exit(1);
+    if (memcmp(cell.value, "value1", 6) != 0)
+      _exit(1);
+  }
+
+  for (Cells::iterator it = cb.get().begin(); it != cb.get().end(); ++it)
+    mutator->set_delete(KeySpec(
+      it->row_key,
+      it->column_family, 
+      it->column_qualifier, 
+      AUTO_ASSIGN, 
+      FLAG_DELETE_CELL));
+  mutator->flush();
+
+  // clear, scan and check again
+  cb.clear();
+  scanner = table->create_scanner(ss);
+  copy(scanner, cb);
+
+ if (cb.get().size() != 0)
+    _exit(1);
+}
+
 } // local namesapce
 
 
@@ -83,10 +144,11 @@ int main(int argc, char *argv[]) {
 
     hql->execute("use '/'");
     hql->execute("drop table if exists periodic_flush_test");
-    hql->execute("create table periodic_flush_test(col)");
+    hql->execute("create table periodic_flush_test(col, col2)");
 
     TablePtr table = ns->open_table("periodic_flush_test");
 
+    cells_builder_test(table.get());
     default_test(table.get());
     no_log_sync_test(table.get());
   }
