@@ -34,41 +34,30 @@ namespace {
   const char end_root_row_chars[7] = { '0', '/', '0', ':', (char)0xff, (char)0xff, 0 };
 
   size_t
-  write_key(uint8_t *buf, uint8_t control, uint8_t flag, const char *row, size_t row_len, 
-            uint8_t column_family_code, const char *column_qualifier) {
+  write_key(uint8_t *buf, uint8_t control, uint8_t flag, const char *row, uint32_t row_len, 
+            uint8_t column_family_code, const char *column_qualifier, uint32_t column_qualifier_len) {
     uint8_t *ptr = buf;
     *ptr++ = control;
     strcpy((char *)ptr, row);
     ptr += row_len + 1;
     *ptr++ = column_family_code;
-    if (column_qualifier != 0) {
+    if (column_qualifier) {
       strcpy((char *)ptr, column_qualifier);
-      ptr += strlen(column_qualifier) + 1;
+      ptr += column_qualifier_len + 1;
     }
     else
       *ptr++ = 0;
     *ptr++ = flag;
     return ptr-buf;
   }
-}
-
-
-namespace Hypertable {
-
-  const char *Key::END_ROW_MARKER = (const char *)end_row_chars;
-  const char *Key::END_ROOT_ROW   = (const char *)end_root_row_chars;
-
 
   void
   create_key_and_append(DynamicBuffer &dst_buf, uint8_t flag, const char *row,
-      uint8_t column_family_code, const char *column_qualifier,
-      int64_t timestamp, int64_t revision, bool time_order_asc) {
-    size_t row_len = strlen(row);
-    size_t len = 1 + row_len + 4;
+      uint32_t row_len, uint8_t column_family_code, const char *column_qualifier,
+      uint32_t column_qualifier_len, int64_t timestamp, int64_t revision,
+      bool time_order_asc) {
+    size_t len = 1 + row_len + 4 + column_qualifier_len;
     uint8_t control = 0;
-
-    if (column_qualifier)
-      len += strlen(column_qualifier);
 
     if (timestamp == AUTO_ASSIGN)
       control = Key::AUTO_TIMESTAMP;
@@ -92,7 +81,7 @@ namespace Hypertable {
       dst_buf.grow(dst_buf.fill() + len + 6);
     Serialization::encode_vi32(&dst_buf.ptr, len);
     dst_buf.ptr += write_key(dst_buf.ptr, control, flag, row, row_len,
-                             column_family_code, column_qualifier);
+                             column_family_code, column_qualifier, column_qualifier_len);
 
     if (control & Key::HAVE_TIMESTAMP)
       Key::encode_ts64(&dst_buf.ptr, timestamp, time_order_asc);
@@ -103,6 +92,45 @@ namespace Hypertable {
 
     assert(dst_buf.fill() <= dst_buf.size);
 
+  }
+}
+
+
+namespace Hypertable {
+
+  const char *Key::END_ROW_MARKER = (const char *)end_row_chars;
+  const char *Key::END_ROOT_ROW   = (const char *)end_root_row_chars;
+
+  void
+  create_key_and_append(DynamicBuffer &dst_buf, const Key& key, bool time_order_asc) {
+    ::create_key_and_append(
+      dst_buf,
+      key.flag, 
+      key.row, 
+      key.row_len,
+      key.column_family_code, 
+      key.column_qualifier,
+      key.column_qualifier_len,
+      key.timestamp,
+      AUTO_ASSIGN,//key.revision,
+      time_order_asc);
+  }
+
+  void
+  create_key_and_append(DynamicBuffer &dst_buf, uint8_t flag, const char *row,
+      uint8_t column_family_code, const char *column_qualifier,
+      int64_t timestamp, int64_t revision, bool time_order_asc) {
+    ::create_key_and_append(
+      dst_buf,
+      flag,
+      row,
+      strlen(row),
+      column_family_code,
+      column_qualifier,
+      column_qualifier && *column_qualifier ? strlen(column_qualifier) : 0,
+      timestamp,
+      revision,
+      time_order_asc);
   }
 
   void create_key_and_append(DynamicBuffer &dst_buf, const char *row, bool time_order_asc) {
@@ -115,7 +143,7 @@ namespace Hypertable {
     if (dst_buf.remaining() < len + 6)
       dst_buf.grow(dst_buf.fill() + len + 6);
     Serialization::encode_vi32(&dst_buf.ptr, len);
-    dst_buf.ptr += write_key(dst_buf.ptr, control, 0, row, row_len, 0, 0);
+    dst_buf.ptr += write_key(dst_buf.ptr, control, 0, row, row_len, 0, 0, 0);
     Key::encode_ts64(&dst_buf.ptr, 0);
     assert(dst_buf.fill() <= dst_buf.size);
   }
