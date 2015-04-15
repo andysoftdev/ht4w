@@ -58,10 +58,11 @@ void ConnectionHandler::handle(EventPtr &event) {
           const uint8_t *ptr = event->payload;
           size_t remain = event->payload_len;
           flags = Serialization::decode_i16(&ptr, &remain);
-          HT_NOTICE("Exiting local broker");
         }
         if ((flags & Client::SHUTDOWN_FLAG_IMMEDIATE) != 0)
           m_app_queue->shutdown();
+        else
+          HT_NOTICE("Exiting local broker");
         m_broker->shutdown(&cb);
         if (has("pidfile"))
           FileUtils::unlink(get_str("pidfile"));
