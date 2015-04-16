@@ -25,7 +25,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hypertools", "src\cc\Tools\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RangeServer", "src\cc\Hypertable\RangeServer\RangeServer.vcxproj", "{C0147FE1-7A8D-4BB8-AA22-DEE968B5CD07}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DfsBroker", "src\cc\DfsBroker\Lib\DfsBroker.vcxproj", "{570AC1AD-A4F5-4680-839B-F0FF2C8C2796}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FsBroker", "src\cc\FsBroker\Lib\FsBroker.vcxproj", "{570AC1AD-A4F5-4680-839B-F0FF2C8C2796}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hypertable", "src\cc\Hypertable\Lib\Hypertable.vcxproj", "{0FB3EC20-0B6E-4E66-8FE2-D99E8E386BFA}"
 EndProject
