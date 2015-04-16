@@ -390,11 +390,12 @@ Apps::RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_
 
   // Create Master client
   int timeout = props->get_i32("Hypertable.Request.Timeout");
-  ApplicationQueueInterfacePtr aq = m_app_queue;
   m_master_connection_handler
     = make_shared<ConnectionHandler>(m_context->comm, m_app_queue, this);
+  ApplicationQueueInterfacePtr aq = Global::app_queue;
   m_master_client = new Lib::Master::Client(m_conn_manager, m_hyperspace,
-                                            Global::toplevel_dir, timeout, aq,
+                                            Global::toplevel_dir, timeout, 
+                                            aq,
                                             m_master_connection_handler,
                                             Global::location_initializer);
   Global::master_client = m_master_client;
@@ -1074,10 +1075,10 @@ Apps::RangeServer::replay_load_range(TableInfoMap &replay_map,
       if (!Global::range_locator)
         Global::range_locator = new Hypertable::RangeLocator(m_props,
                 m_conn_manager, Global::hyperspace, timeout_ms);
-      ApplicationQueueInterfacePtr aq = m_app_queue;
+      ApplicationQueueInterfacePtr aq = Global::app_queue;
       Global::metadata_table = new Table(m_props, Global::range_locator,
-              m_conn_manager, Global::hyperspace, aq, m_namemap,
-                           TableIdentifier::METADATA_NAME, 0, timeout_ms);
+              m_conn_manager, Global::hyperspace, aq,
+              m_namemap, TableIdentifier::METADATA_NAME, 0, timeout_ms);
     }
 
     schema = table_info->get_schema();
@@ -1376,10 +1377,10 @@ Apps::RangeServer::metadata_sync(ResponseCallback *cb, const char *table_id,
       if (!Global::range_locator)
         Global::range_locator = new Hypertable::RangeLocator(m_props,
                 m_conn_manager, Global::hyperspace, timeout_ms);
-      ApplicationQueueInterfacePtr aq = m_app_queue;
+      ApplicationQueueInterfacePtr aq = Global::app_queue;
       Global::metadata_table = new Table(m_props, Global::range_locator,
-              m_conn_manager, Global::hyperspace, aq, m_namemap,
-              TableIdentifier::METADATA_NAME, 0, timeout_ms);
+              m_conn_manager, Global::hyperspace, aq,
+              m_namemap, TableIdentifier::METADATA_NAME, 0, timeout_ms);
     }
   }
 
@@ -1834,10 +1835,10 @@ Apps::RangeServer::load_range(ResponseCallback *cb, const TableIdentifier &table
         if (!Global::range_locator)
           Global::range_locator = new Hypertable::RangeLocator(m_props,
                   m_conn_manager, Global::hyperspace, timeout_ms);
-        ApplicationQueueInterfacePtr aq = m_app_queue;
+        ApplicationQueueInterfacePtr aq = Global::app_queue;
         Global::metadata_table = new Table(m_props, Global::range_locator,
-                m_conn_manager, Global::hyperspace, aq, m_namemap,
-                TableIdentifier::METADATA_NAME, 0, timeout_ms);
+                m_conn_manager, Global::hyperspace, aq,
+                m_namemap, TableIdentifier::METADATA_NAME, 0, timeout_ms);
       }
     }
 
@@ -2303,7 +2304,7 @@ void Apps::RangeServer::dump(ResponseCallback *cb, const char *outfile,
 
     // Dump AccessGroup garbage tracker statistics
     out << "\nGarbage tracker statistics:\n";
-    foreach_ht (RangeData &rd, ranges.array) {
+    for (RangeData &rd : ranges.array) {
       for (ag_data = rd.data->agdata; ag_data; ag_data = ag_data->next)
         ag_data->ag->dump_garbage_tracker_statistics(out);
     }
@@ -2583,10 +2584,10 @@ void
         if (!Global::range_locator)
           Global::range_locator = new Hypertable::RangeLocator(m_props, m_conn_manager,
                                                                Global::hyperspace, timeout_ms);
-        ApplicationQueueInterfacePtr aq = m_app_queue;
+        ApplicationQueueInterfacePtr aq = Global::app_queue;
         Global::rs_metrics_table = new Table(m_props, Global::range_locator, m_conn_manager,
-                                             Global::hyperspace, aq, m_namemap,
-                                             "sys/RS_METRICS", 0, timeout_ms);
+                                             Global::hyperspace, aq,
+                                             m_namemap, "sys/RS_METRICS", 0, timeout_ms);
       }
       catch (Hypertable::Exception &e) {
         HT_ERRORF("Unable to open 'sys/RS_METRICS' - %s (%s)",
@@ -2993,7 +2994,7 @@ void Apps::RangeServer::replay_fragments(ResponseCallback *cb, int64_t op_id,
         ptr = base;
         end = base + len;
 
-        table_id.decode(&ptr, &len);
+        decode_table_id(&ptr, &len, &table_id);
 
         num_kv_pairs = 0;
         while (ptr < end) {
@@ -3296,10 +3297,10 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
           if (!Global::range_locator)
             Global::range_locator = new Hypertable::RangeLocator(m_props,
                     m_conn_manager, Global::hyperspace, timeout_ms);
-          ApplicationQueueInterfacePtr aq = m_app_queue;
+          ApplicationQueueInterfacePtr aq = Global::app_queue;
           Global::metadata_table = new Table(m_props, Global::range_locator,
-                  m_conn_manager, Global::hyperspace, aq, m_namemap,
-                  TableIdentifier::METADATA_NAME, 0, timeout_ms);
+                  m_conn_manager, Global::hyperspace, aq,
+                  m_namemap, TableIdentifier::METADATA_NAME, 0, timeout_ms);
         }
       }
 
