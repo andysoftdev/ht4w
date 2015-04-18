@@ -297,6 +297,9 @@ void ReactorRunner::operator()() {
 
 #elif defined(_WIN32)
 
+  bool handle_timeouts = true;
+  LARGE_INTEGER start, end, frequency;
+
   while (!shutdown) {
     DWORD numberOfBytes = 0;
     ULONG_PTR completionKey = 0;
@@ -348,10 +351,28 @@ void ReactorRunner::operator()() {
       }
 
       delete ioop;
+
+      if (!handle_timeouts) {
+        if (!QueryPerformanceCounter(&end))
+          HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
+        handle_timeouts = (end.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart >= timeout.get_millis();
+      }
     }
+    else {
+      handle_timeouts = true;
+    }
+
     if (!removed_handlers.empty())
       cleanup_and_remove_handlers(removed_handlers);
-    m_reactor->handle_timeouts(timeout);
+    if (handle_timeouts) {
+      m_reactor->handle_timeouts(timeout);
+      handle_timeouts = false;
+
+      if (!QueryPerformanceFrequency(&frequency))
+        HT_THROWF(Error::EXTERNAL, "QueryPerformanceFrequency failed, %s", winapi_strerror(::GetLastError()));
+      if (!QueryPerformanceCounter(&start))
+        HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
+    }
   }
 
 #else
