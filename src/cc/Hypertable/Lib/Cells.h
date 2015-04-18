@@ -43,7 +43,7 @@ public:
     : m_size_hint(size_hint) {
       // initialization in the initializer list it will fail on dtor
       m_cells = Cells(CellAlloc(m_arena));
-      m_str_set = CstrSet(CstrSetAlloc(m_arena));
+      m_str_set = CstrSet(LtCstr(), CstrSetAlloc(m_arena));
       m_cells.reserve(size_hint);
   }
 
