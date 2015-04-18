@@ -148,6 +148,9 @@ namespace Lib {
     void add_column(CharArena &arena, const string &str) {
       columns.push_back(arena.dup(str));
     }
+    void add_column(CharArena &arena, const char *str) {
+      columns.push_back(arena.dup(str));
+    }
 
     /**
      * Parses a column string into column family, qualifier and whether the
@@ -166,6 +169,15 @@ namespace Lib {
                              bool *is_prefix);
 
     void add_row(CharArena &arena, const string &str) {
+      if (cell_intervals.size())
+        HT_THROW(Error::BAD_SCAN_SPEC, "cell spec excludes rows");
+
+      RowInterval ri;
+      ri.start = ri.end = arena.dup(str);
+      ri.start_inclusive = ri.end_inclusive = true;
+      row_intervals.push_back(ri);
+    }
+    void add_row(CharArena &arena, const char *str) {
       if (cell_intervals.size())
         HT_THROW(Error::BAD_SCAN_SPEC, "cell spec excludes rows");
 
@@ -200,8 +212,31 @@ namespace Lib {
       ri.end_inclusive = end_inclusive;
       row_intervals.push_back(ri);
     }
+    void add_row_interval(CharArena &arena,
+                          const char *start, bool start_inclusive,
+                          const char *end, bool end_inclusive) {
+      if (cell_intervals.size())
+        HT_THROW(Error::BAD_SCAN_SPEC, "cell spec excludes rows");
+
+      RowInterval ri;
+      ri.start = arena.dup(start);
+      ri.start_inclusive = start_inclusive;
+      ri.end = arena.dup(end);
+      ri.end_inclusive = end_inclusive;
+      row_intervals.push_back(ri);
+    }
 
     void add_cell(CharArena &arena, const string &row, const string &column) {
+      if (row_intervals.size())
+        HT_THROW(Error::BAD_SCAN_SPEC, "row spec excludes cells");
+
+      CellInterval ci;
+      ci.start_row = ci.end_row = arena.dup(row);
+      ci.start_column = ci.end_column = arena.dup(column);
+      ci.start_inclusive = ci.end_inclusive = true;
+      cell_intervals.push_back(ci);
+    }
+    void add_cell(CharArena &arena, const char *row, const char *column) {
       if (row_intervals.size())
         HT_THROW(Error::BAD_SCAN_SPEC, "row spec excludes cells");
 
@@ -228,8 +263,45 @@ namespace Lib {
       ci.end_inclusive = end_inclusive;
       cell_intervals.push_back(ci);
     }
+    void add_cell_interval(CharArena &arena,
+                           const char *start_row, const char *start_column,
+                           bool start_inclusive, const char *end_row,
+                           const char *end_column, bool end_inclusive) {
+      if (row_intervals.size())
+        HT_THROW(Error::BAD_SCAN_SPEC, "row spec excludes cells");
+
+      CellInterval ci;
+      ci.start_row = arena.dup(start_row);
+      ci.start_column = arena.dup(start_column);
+      ci.start_inclusive = start_inclusive;
+      ci.end_row = arena.dup(end_row);
+      ci.end_column = arena.dup(end_column);
+      ci.end_inclusive = end_inclusive;
+      cell_intervals.push_back(ci);
+    }
 
     void add_column_predicate(CharArena &arena, const string &column_family,
+                              const char *column_qualifier, uint32_t operation,
+                              const char *value, uint32_t value_len = 0) {
+
+      // As soon as we're building with C++11 and can replace the bitset<32> in
+      // the CellPredicate class with bitset<64>, then we should change the
+      // following expression to check for size of 64
+      if (column_predicates.size() == 32)
+        HT_THROW(Error::FAILED_EXPECTATION, "Column predicate limit of 32 has been exceeded!");
+
+      ColumnPredicate cp;
+      cp.column_family = arena.dup(column_family);
+      cp.column_qualifier = arena.dup(column_qualifier);
+      cp.column_qualifier_len = column_qualifier ? strlen(column_qualifier) : 0;
+      cp.operation = operation;
+      if (value) {
+        cp.value = arena.dup(value);
+        cp.value_len = value_len ? value_len : strlen(value);
+      }
+      column_predicates.push_back(cp);
+    }
+    void add_column_predicate(CharArena &arena, const char *column_family,
                               const char *column_qualifier, uint32_t operation,
                               const char *value, uint32_t value_len = 0) {
 
@@ -407,6 +479,9 @@ namespace Lib {
     void add_column(const string &str) {
       m_scan_spec.add_column(m_arena, str);
     }
+    void add_column(const char *str) {
+      m_scan_spec.add_column(m_arena, str);
+    }
 
     void reserve_columns(size_t s) { m_scan_spec.columns.reserve(s); }
 
@@ -428,6 +503,13 @@ namespace Lib {
       m_scan_spec.add_column_predicate(m_arena, column_family, column_qualifier,
                                        operation, value, value_len);
     }
+    void
+    add_column_predicate(const char *column_family, const char *column_qualifier,
+                         uint32_t operation,  const char *value,
+                         uint32_t value_len = 0) {
+      m_scan_spec.add_column_predicate(m_arena, column_family, column_qualifier,
+                                       operation, value, value_len);
+    }
 
     void reserve_column_predicates(size_t s) { m_scan_spec.column_predicates.reserve(s); }
 
@@ -438,6 +520,9 @@ namespace Lib {
      * @param str row key
      */
     void add_row(const string &str) {
+      m_scan_spec.add_row(m_arena, str);
+    }
+    void add_row(const char *str) {
       m_scan_spec.add_row(m_arena, str);
     }
 
@@ -456,6 +541,11 @@ namespace Lib {
       m_scan_spec.add_row_interval(m_arena, start, start_inclusive,
                                    end, end_inclusive);
     }
+    void add_row_interval(const char *start, bool start_inclusive,
+                          const char *end, bool end_inclusive) {
+      m_scan_spec.add_row_interval(m_arena, start, start_inclusive,
+                                   end, end_inclusive);
+    }
 
     /**
      * Adds a cell to be returned in the scan
@@ -464,6 +554,9 @@ namespace Lib {
      * @param column column spec of the form &lt;family&gt;[:&lt;qualifier&gt;]
      */
     void add_cell(const string &row, const string &column) {
+      m_scan_spec.add_cell(m_arena, row, column);
+    }
+    void add_cell(const char *row, const char *column) {
       m_scan_spec.add_cell(m_arena, row, column);
     }
 
@@ -484,6 +577,12 @@ namespace Lib {
     void add_cell_interval(const string &start_row, const string &start_column,
                            bool start_inclusive, const string &end_row,
                            const string &end_column, bool end_inclusive) {
+      m_scan_spec.add_cell_interval(m_arena, start_row, start_column,
+                                    start_inclusive, end_row, end_column, end_inclusive);
+    }
+    void add_cell_interval(const char *start_row, const char *start_column,
+                           bool start_inclusive, const char *end_row,
+                           const char *end_column, bool end_inclusive) {
       m_scan_spec.add_cell_interval(m_arena, start_row, start_column,
                                     start_inclusive, end_row, end_column, end_inclusive);
     }
