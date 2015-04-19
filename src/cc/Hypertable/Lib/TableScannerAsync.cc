@@ -152,9 +152,9 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
           return false;
         if (index_row_buf.size < prefix_len+5)
           index_row_buf.grow(prefix_len+5);
-        sprintf((char *)index_row_buf.base, "%d,", (int)cf_spec->get_id());
-        index_row_buf.ptr =
-          index_row_buf.base + strlen((const char *)index_row_buf.base);
+        UInt8Formatter tmp(cf_spec->get_id());
+        index_row_buf.ptr = (uint8_t*)tmp.append_to((char*)index_row_buf.base);
+        *index_row_buf.ptr++  = ',';
         index_row_buf.add_unchecked(prefix, prefix_len);
         *index_row_buf.ptr = 0;
         HT_ASSERT(index_row_buf.fill() < index_row_buf.size);
@@ -174,9 +174,9 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
         if (index_row_buf.size < value_len+6)
           index_row_buf.grow(value_len+6);
         // %d,
-        sprintf((char *)index_row_buf.base, "%d,", (int)cf_spec->get_id());
-        index_row_buf.ptr =
-          index_row_buf.base + strlen((const char *)index_row_buf.base);
+        UInt8Formatter tmp(cf_spec->get_id());
+        index_row_buf.ptr = (uint8_t*)tmp.append_to((char*)index_row_buf.base);
+        *index_row_buf.ptr++  = ',';
         // value
         index_row_buf.add_unchecked(value, value_len);
         if (cp.operation & ColumnPredicate::EXACT_MATCH)
