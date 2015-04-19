@@ -77,7 +77,14 @@ namespace Hypertable {
      */
     void start() {
       if (!m_running) {
+#ifndef _WIN32
         boost::xtime_get(&start_time, boost::TIME_UTC_);
+#else
+        if (!QueryPerformanceFrequency(&frequency))
+         HT_THROWF(Error::EXTERNAL, "QueryPerformanceFrequency failed, %s", winapi_strerror(::GetLastError()));
+        if (!QueryPerformanceCounter(&start_time))
+          HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
+#endif
         m_running = true;
         if (!m_started)
           m_started = true;
@@ -89,6 +96,7 @@ namespace Hypertable {
      * remaining time (see %remaining).
      */
     void stop() {
+#ifndef _WIN32
       boost::xtime stop_time;
       boost::xtime_get(&stop_time, boost::TIME_UTC_);
       uint32_t adjustment;
@@ -106,6 +114,14 @@ namespace Hypertable {
                       / 1000000;
         m_remaining = (adjustment < m_remaining) ? m_remaining - adjustment : 0;
       }
+#else
+      assert(m_started);
+      LARGE_INTEGER end_time;
+      if (!QueryPerformanceCounter(&end_time))
+        HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
+      uint32_t elapsed = (end_time.QuadPart - start_time.QuadPart) * 1000 / frequency.QuadPart;
+      m_remaining = elapsed < m_remaining ? m_remaining - elapsed : 0;
+#endif
       m_running = false;
     }
 
@@ -125,8 +141,17 @@ namespace Hypertable {
      */
     uint32_t remaining() {
       if (m_running) {
+#ifndef _WIN32
         stop();
         start();
+#else
+        assert(m_started);
+        LARGE_INTEGER end_time;
+        if (!QueryPerformanceCounter(&end_time))
+          HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
+        uint32_t elapsed = (end_time.QuadPart - start_time.QuadPart) * 1000 / frequency.QuadPart;
+        m_remaining = elapsed < m_remaining ? m_remaining - elapsed : 0;
+#endif
       }
       return m_remaining;
     }
@@ -153,8 +178,13 @@ namespace Hypertable {
     }
 
   private:
+
+#ifndef _WIN32
     /** The time when the timer was started */
     boost::xtime start_time;
+#else
+    LARGE_INTEGER start_time, frequency;
+#endif
 
     /** True if the timer is running */
     bool m_running;
