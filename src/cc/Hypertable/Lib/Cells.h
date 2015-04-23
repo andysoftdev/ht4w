@@ -101,6 +101,8 @@ public:
     m_str_set.clear();
     m_cells.clear();
     m_arena.free();
+    m_cells = Cells(CellAlloc(m_arena));
+    m_str_set = CstrSet(LtCstr(), CstrSetAlloc(m_arena));
     m_cells.reserve(m_size_hint);
   }
 
