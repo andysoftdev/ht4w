@@ -156,8 +156,6 @@ namespace Hypertable {
             return false;
         }
       }
-      else if (*qualifier)
-        return false;
 
       // Value match
       if (cp->operation & ColumnPredicate::VALUE_MATCH) {
