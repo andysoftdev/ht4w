@@ -485,6 +485,15 @@ function future_test(logfile, testName) {
     return run_target(logfile, testName);
 }
 
+function hypertable_api_test(logfile, testName) {
+    file_copy(solutionDir + "\\sed.exe", targetDir);
+    prepare_target(testName, ["indices_test_products.tsv", "hypertable_api_test.golden"]);
+    run_servers("--Hypertable.DataDirectory=" + targetDir);
+    var status = run_target(logfile, testName);
+    files_delete(["sed.exe"]);
+    return status;
+}
+
 function hyperspace_test(logfile, testName) {
     prepare_target(testName, ["hyperspaceTest.cfg", "client1.golden", "client2.golden", "client3.golden"]);
     return run_target(logfile, testName);
@@ -739,6 +748,7 @@ all_tests.add("future_abrupt_end_test", future_abrupt_end_test);
 all_tests.add("future_mutator_cancel_test", future_mutator_cancel_test);
 all_tests.add("future_test", future_test);
 all_tests.add("hash_test", run_target);
+all_tests.add("hypertable_api_test", hypertable_api_test);
 all_tests.add("hyperspace_test", hyperspace_test);
 all_tests.add("Hypertable.Thrift.Test", hypertable_thrift_test);
 all_tests.add("hypertable_ldi_select_test", hypertable_ldi_select_test);

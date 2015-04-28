@@ -1,0 +1,175 @@
+[basic]
+Fruits
+sub	(dir)
+[set cells]
+[get cells]
+Cell(key=Key(row=apple, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The apple is the pomaceous fruit of the apple tree.)
+[set cells as arrays]
+[get cells as arrays]
+Cell(key=Key(row=apple, column_family=description, column_qualifier=, timestamp=..., revision=...<null>, flag=255), value=The apple is the pomaceous fruit of the apple tree.)
+Cell(key=Key(row=orange, column_family=description, column_qualifier=, timestamp=..., revision=...<null>, flag=255), value=The orange (specifically, the sweet orange) is the fruit of the citrus species Citrus × sinensis in the family Rutaceae.)
+[set cells serialized]
+[get cells serialized]
+Cell(key=Key(row=apple, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The apple is the pomaceous fruit of the apple tree.)
+Cell(key=Key(row=canteloupe, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=Canteloupe refers to a variety of Cucumis melo, a species in the family Cucurbitaceae.)
+Cell(key=Key(row=orange, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The orange (specifically, the sweet orange) is the fruit of the citrus species Citrus × sinensis in the family Rutaceae.)
+[create table]
+CREATE TABLE TestTable (
+  e MAX_VERSIONS 0 COUNTER true,
+  f MAX_VERSIONS 0 COUNTER false,
+  c MAX_VERSIONS 1,
+  a MAX_VERSIONS 2, INDEX a, QUALIFIER INDEX a,
+  b MAX_VERSIONS 3,
+  d MAX_VERSIONS 1,
+  ACCESS GROUP 'ag_counter' (e, f) BLOCKSIZE 65536 MAX_VERSIONS 0 COUNTER true,
+  ACCESS GROUP 'ag_fast' (c) BLOCKSIZE 131072 IN_MEMORY true,
+  ACCESS GROUP 'ag_normal' (a, b) BLOCKSIZE 65536 MAX_VERSIONS 2,
+  ACCESS GROUP 'ag_secure' (d) REPLICATION 5 BLOCKSIZE 65536,
+  ACCESS GROUP default () BLOCKSIZE 65536
+) BLOCKSIZE 65536 MAX_VERSIONS 1;
+
+[alter table]
+CREATE TABLE TestTable (
+  e MAX_VERSIONS 0 COUNTER true,
+  f MAX_VERSIONS 0 COUNTER false,
+  g MAX_VERSIONS 0 COUNTER true,
+  c MAX_VERSIONS 1,
+  a MAX_VERSIONS 2, INDEX a, QUALIFIER INDEX a,
+  z MAX_VERSIONS 3,
+  d MAX_VERSIONS 1,
+  ACCESS GROUP 'ag_counter' (e, f, g) BLOCKSIZE 65536 MAX_VERSIONS 0 COUNTER true,
+  ACCESS GROUP 'ag_fast' (c) BLOCKSIZE 131072 IN_MEMORY true,
+  ACCESS GROUP 'ag_normal' (a, z) BLOCKSIZE 65536 MAX_VERSIONS 2,
+  ACCESS GROUP 'ag_secure' (d) REPLICATION 5 BLOCKSIZE 65536,
+  ACCESS GROUP default () BLOCKSIZE 65536
+) BLOCKSIZE 65536 MAX_VERSIONS 1;
+
+[mutator]
+[scanner - full table scan]
+Cell(key=Key(row=canteloupe, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=Canteloupe refers to a variety of Cucumis melo, a species in the family Cucurbitaceae.)
+Cell(key=Key(row=canteloupe, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Cucumis)
+Cell(key=Key(row=canteloupe, column_family=tag, column_qualifier=juicy, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=lemon, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The lemon (Citrus × limon) is a small evergreen tree native to Asia.)
+Cell(key=Key(row=lemon, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Citrus)
+Cell(key=Key(row=lemon, column_family=tag, column_qualifier=bitter, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=mango, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The mango is a juicy stone fruit belonging to the genus Mangifera, consisting of numerous tropical fruiting trees, that are cultivated mostly for edible fruits. )
+Cell(key=Key(row=mango, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Mangifera)
+Cell(key=Key(row=mango, column_family=tag, column_qualifier=sweet, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=orange, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The orange (specifically, the sweet orange) is the fruit of the citrus species Citrus × sinensis in the family Rutaceae.)
+Cell(key=Key(row=orange, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Citrus)
+Cell(key=Key(row=orange, column_family=tag, column_qualifier=juicy, timestamp=..., revision=..., flag=255), value=<null>)
+[scanner - restricted scan]
+Cell(key=Key(row=lemon, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Citrus)
+Cell(key=Key(row=lemon, column_family=tag, column_qualifier=bitter, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=mango, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Mangifera)
+Cell(key=Key(row=mango, column_family=tag, column_qualifier=sweet, timestamp=..., revision=..., flag=255), value=<null>)
+[hql_query]
+Fruits
+TestTable
+^TestTable
+^^TestTable
+sub	(namespace)
+Cell(key=Key(row=mango, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The mango is a juicy stone fruit belonging to the genus Mangifera, consisting of numerous tropical fruiting trees, that are cultivated mostly for edible fruits. )
+Cell(key=Key(row=mango, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Mangifera)
+Cell(key=Key(row=mango, column_family=tag, column_qualifier=sweet, timestamp=..., revision=..., flag=255), value=<null>)
+[hql_query_as_arrays]
+CellAsArray( row='lemon' cf='description' cq='' value='The lemon (Citrus × limon) is a small evergreen tree native to Asia.' timestamp=...)
+CellAsArray( row='lemon' cf='genus' cq='' value='Citrus' timestamp=...)
+CellAsArray( row='lemon' cf='tag' cq='bitter' value='' timestamp=...)
+[hql_exec mutator]
+[hql_exec scanner]
+Cell(key=Key(row=canteloupe, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=Canteloupe refers to a variety of Cucumis melo, a species in the family Cucurbitaceae.)
+Cell(key=Key(row=canteloupe, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Cucumis)
+Cell(key=Key(row=canteloupe, column_family=tag, column_qualifier=juicy, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=lemon, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The lemon (Citrus × limon) is a small evergreen tree native to Asia.)
+Cell(key=Key(row=lemon, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Citrus)
+Cell(key=Key(row=lemon, column_family=tag, column_qualifier=bitter, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=mango, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The mango is a juicy stone fruit belonging to the genus Mangifera, consisting of numerous tropical fruiting trees, that are cultivated mostly for edible fruits. )
+Cell(key=Key(row=mango, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Mangifera)
+Cell(key=Key(row=mango, column_family=tag, column_qualifier=sweet, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=orange, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The orange (specifically, the sweet orange) is the fruit of the citrus species Citrus × sinensis in the family Rutaceae.)
+Cell(key=Key(row=orange, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Citrus)
+Cell(key=Key(row=orange, column_family=tag, column_qualifier=juicy, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=pineapple, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The pineapple (Ananas comosus) is a tropical plant with edible multiple fruit consisting of coalesced berries.)
+Cell(key=Key(row=pineapple, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Ananas)
+Cell(key=Key(row=pineapple, column_family=tag, column_qualifier=acidic, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=strawberry, column_family=description, column_qualifier=, timestamp=..., revision=..., flag=255), value=The garden strawberry is a widely grown hybrid species of the genus Fragaria)
+Cell(key=Key(row=strawberry, column_family=genus, column_qualifier=, timestamp=..., revision=..., flag=255), value=Fragaria)
+Cell(key=Key(row=strawberry, column_family=tag, column_qualifier=fibrous, timestamp=..., revision=..., flag=255), value=<null>)
+[secondary indices]
+[secondary index - SELECT title FROM products WHERE section = 'books']
+Cell(key=Key(row=0307743659, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=The Shining Mass Market Paperback)
+Cell(key=Key(row=0321321928, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=C++ Common Knowledge: Essential Intermediate Programming [Paperback])
+Cell(key=Key(row=0321776402, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=C++ Primer Plus (6th Edition) (Developer's Library))
+[secondary index - SELECT title FROM products WHERE info:actor = 'Jack Nicholson']
+Cell(key=Key(row=B00002VWE0, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=Five Easy Pieces (1970))
+Cell(key=Key(row=B002VWNIDG, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=The Shining (1980))
+[secondary index - SELECT title,info:publisher FROM products WHERE info:publisher =^ 'Addison-Wesley']
+Cell(key=Key(row=0321321928, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=C++ Common Knowledge: Essential Intermediate Programming [Paperback])
+Cell(key=Key(row=0321321928, column_family=info, column_qualifier=publisher, timestamp=..., revision=..., flag=255), value=Addison-Wesley Professional; 1 edition (March 10, 2005))
+Cell(key=Key(row=0321776402, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=C++ Primer Plus (6th Edition) (Developer's Library))
+Cell(key=Key(row=0321776402, column_family=info, column_qualifier=publisher, timestamp=..., revision=..., flag=255), value=Addison-Wesley Professional; 6 edition (October 28, 2011))
+[secondary index - SELECT title,info:publisher FROM products WHERE info:publisher =~ /^Addison-Wesley/]
+Cell(key=Key(row=0321321928, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=C++ Common Knowledge: Essential Intermediate Programming [Paperback])
+Cell(key=Key(row=0321321928, column_family=info, column_qualifier=publisher, timestamp=..., revision=..., flag=255), value=Addison-Wesley Professional; 1 edition (March 10, 2005))
+Cell(key=Key(row=0321776402, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=C++ Primer Plus (6th Edition) (Developer's Library))
+Cell(key=Key(row=0321776402, column_family=info, column_qualifier=publisher, timestamp=..., revision=..., flag=255), value=Addison-Wesley Professional; 6 edition (October 28, 2011))
+[secondary index - SELECT title FROM products WHERE Exists(info:studio)]
+Cell(key=Key(row=B00002VWE0, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=Five Easy Pieces (1970))
+Cell(key=Key(row=B000Q66J1M, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=2001: A Space Odyssey [Blu-ray])
+Cell(key=Key(row=B002VWNIDG, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=The Shining (1980))
+[secondary index - SELECT title FROM products WHERE Exists(category:/^\/Movies/)]
+Cell(key=Key(row=B00002VWE0, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=Five Easy Pieces (1970))
+Cell(key=Key(row=B000Q66J1M, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=2001: A Space Odyssey [Blu-ray])
+Cell(key=Key(row=B002VWNIDG, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=The Shining (1980))
+[secondary index - SELECT title FROM products WHERE info:author =~ /^Stephen P/ OR info:publisher =^ 'Anchor']
+Cell(key=Key(row=0307743659, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=The Shining Mass Market Paperback)
+Cell(key=Key(row=0321776402, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=C++ Primer Plus (6th Edition) (Developer's Library))
+[secondary index - SELECT title FROM products WHERE info:author =~ /^Stephen [PK]/ AND info:publisher =^ 'Anchor']
+Cell(key=Key(row=0307743659, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=The Shining Mass Market Paperback)
+[secondary index - SELECT title FROM products WHERE ROW > 'B00002VWE0' AND info:actor = 'Jack Nicholson']
+Cell(key=Key(row=B002VWNIDG, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=The Shining (1980))
+[secondary index - SELECT title FROM products WHERE ROW =^ 'B' AND info:actor = 'Jack Nicholson']
+Cell(key=Key(row=B00002VWE0, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=Five Easy Pieces (1970))
+Cell(key=Key(row=B002VWNIDG, column_family=title, column_qualifier=, timestamp=..., revision=..., flag=255), value=The Shining (1980))
+[async]
+[async mutator]
+Result is from Profile mutation
+Result is from Session mutation
+result count = 2
+[async scanner]
+Result is from Profile scan
+Cell(key=Key(row=1, column_family=info, column_qualifier=name, timestamp=..., revision=..., flag=255), value=Joe)
+Cell(key=Key(row=1, column_family=last_access, column_qualifier=, timestamp=..., revision=..., flag=255), value=2014-06-13 16:06:09)
+Result is from Session scan
+Cell(key=Key(row=0001-200238, column_family=user_id, column_qualifier=1, timestamp=..., revision=..., flag=255), value=<null>)
+Cell(key=Key(row=0001-200238, column_family=page_hit, column_qualifier=, timestamp=..., revision=..., flag=255), value=/index.html)
+[async scanner - result serialized]
+Result is from Profile scan
+Cell(key=Key(row=1, column_family=info, column_qualifier=name, timestamp=..., revision=..., flag=255), value=Joe)
+Cell(key=Key(row=1, column_family=last_access, column_qualifier=, timestamp=..., revision=..., flag=255), value=2014-06-13 16:06:09)
+Result is from Session scan
+Cell(key=Key(row=0001-200238, column_family=user_id, column_qualifier=1, timestamp=..., revision=..., flag=255), value=)
+Cell(key=Key(row=0001-200238, column_family=page_hit, column_qualifier=, timestamp=..., revision=..., flag=255), value=/index.html)
+[async scanner - result as arrays]
+Result is from Profile scan
+CellAsArray( row='1' cf='info' cq='name' value='Joe' timestamp=...)
+CellAsArray( row='1' cf='last_access' cq='' value='2014-06-13 16:06:09' timestamp=...)
+Result is from Session scan
+CellAsArray( row='0001-200238' cf='user_id' cq='1' value='' timestamp=...)
+CellAsArray( row='0001-200238' cf='page_hit' cq='' value='/index.html' timestamp=...)
+[atomic counter]
+[atomic counter - increment]
+Cell(key=Key(row=/foo/bar.html, column_family=count, column_qualifier=2014-06-14 07:31:18, timestamp=..., revision=..., flag=255), value=3)
+Cell(key=Key(row=/foo/bar.html, column_family=count, column_qualifier=2014-06-14 07:31:19, timestamp=..., revision=..., flag=255), value=1)
+Cell(key=Key(row=/index.html, column_family=count, column_qualifier=2014-06-14 07:31:18, timestamp=..., revision=..., flag=255), value=2)
+Cell(key=Key(row=/index.html, column_family=count, column_qualifier=2014-06-14 07:31:19, timestamp=..., revision=..., flag=255), value=4)
+[atomic counter - reset and subtraction]
+Cell(key=Key(row=/foo/bar.html, column_family=count, column_qualifier=2014-06-14 07:31:18, timestamp=..., revision=..., flag=255), value=2)
+Cell(key=Key(row=/foo/bar.html, column_family=count, column_qualifier=2014-06-14 07:31:19, timestamp=..., revision=..., flag=255), value=19)
+Cell(key=Key(row=/index.html, column_family=count, column_qualifier=2014-06-14 07:31:18, timestamp=..., revision=..., flag=255), value=7)
+Cell(key=Key(row=/index.html, column_family=count, column_qualifier=2014-06-14 07:31:19, timestamp=..., revision=..., flag=255), value=2)
+[unique]
+User name 'joe1987' is already taken
+Cell(key=Key(row=joe1987, column_family=id, column_qualifier=, timestamp=..., revision=..., flag=255), value=...)
+Cell(key=Key(row=mary.bellweather, column_family=id, column_qualifier=, timestamp=..., revision=..., flag=255), value=...)
