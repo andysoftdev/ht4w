@@ -724,6 +724,7 @@ all_tests.add("async_api_test", async_api_test);
 all_tests.add("bdb_fs_test", bdb_fs_test);
 all_tests.add("bloom_filter_test", run_target);
 all_tests.add("bmz_test", bmz_test);
+all_tests.add("cell_cache_test", run_target);
 all_tests.add("cellstore_scanner_delete_test", cellstore_scanner_delete_test);
 all_tests.add("cellstore_scanner_test", cellstore_scanner_test);
 //FIXME all_tests.add("cellstore64_test", cellstore64_test);
