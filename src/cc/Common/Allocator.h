@@ -207,7 +207,7 @@ class ArenaAllocatorBase : public AllocatorBase<T> {
    * @return A pointer to the allocated array
    */
   inline pointer default_allocate(size_type sz) {
-    return (pointer)(::operator new(sz * sizeof(T)));
+    return (pointer)::malloc(sz * sizeof(T));
   }
 
   /**
@@ -217,7 +217,7 @@ class ArenaAllocatorBase : public AllocatorBase<T> {
    * @param p Pointer to the object
    * @param sz Unused parameter, ignored
    */
-  void deallocate(pointer p, size_type sz) { if (!m_arenap) delete p; }
+  void deallocate(pointer p, size_type sz) { if (!m_arenap) ::free(p); }
 
   /** operator == returns true if the arena pointers are equal
    *
