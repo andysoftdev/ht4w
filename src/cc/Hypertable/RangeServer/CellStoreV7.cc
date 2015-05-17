@@ -543,7 +543,7 @@ void CellStoreV7::add(const Key &key, const ByteString value) {
     else {
       assert(!m_bloom_filter_items && m_bloom_filter);
 
-      m_bloom_filter->insert(key.row);
+      m_bloom_filter->insert(key.row, key.row_len);
 
       if (m_bloom_filter_mode == BLOOM_FILTER_ROWS_COLS)
         m_bloom_filter->insert(key.row, key.row_len + 2);
