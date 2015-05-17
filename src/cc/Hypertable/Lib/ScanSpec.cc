@@ -390,19 +390,22 @@ ostream &Hypertable::Lib::operator<<(ostream &os, const ScanSpec &scan_spec) {
 
 
 ScanSpec::ScanSpec(CharArena &arena, const ScanSpec &ss)
-  : row_limit(ss.row_limit), cell_limit(ss.cell_limit), 
+  : row_limit(ss.row_limit), cell_limit(ss.cell_limit),
     cell_limit_per_family(ss.cell_limit_per_family),
     row_offset(ss.row_offset), cell_offset(ss.cell_offset),
-    max_versions(ss.max_versions), columns(CstrAlloc(arena)), 
-    row_intervals(RowIntervalAlloc(arena)),
-    cell_intervals(CellIntervalAlloc(arena)),
-    column_predicates(ColumnPredicateAlloc(arena)),
+    max_versions(ss.max_versions),
     time_interval(ss.time_interval.first, ss.time_interval.second),
     row_regexp(arena.dup(ss.row_regexp)), value_regexp(arena.dup(ss.value_regexp)),
     return_deletes(ss.return_deletes), keys_only(ss.keys_only),
     scan_and_filter_rows(ss.scan_and_filter_rows),
     do_not_cache(ss.do_not_cache), and_column_predicates(ss.and_column_predicates),
     rebuild_indices(ss.rebuild_indices) {
+
+  columns = CstrColumns(CstrAlloc(arena));
+  row_intervals = RowIntervals(RowIntervalAlloc(arena));
+  cell_intervals = CellIntervals(CellIntervalAlloc(arena));
+  column_predicates = ColumnPredicates(ColumnPredicateAlloc(arena));
+
   columns.reserve(ss.columns.size());
   row_intervals.reserve(ss.row_intervals.size());
   cell_intervals.reserve(ss.cell_intervals.size());

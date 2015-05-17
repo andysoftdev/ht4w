@@ -56,12 +56,12 @@ namespace Lib {
   class ScanSpec : public Serializable {
   public:
     ScanSpec() : time_interval(TIMESTAMP_MIN, TIMESTAMP_MAX) { }
-    ScanSpec(CharArena &arena)
-      : columns(CstrAlloc(arena)),
-        row_intervals(RowIntervalAlloc(arena)),
-        cell_intervals(CellIntervalAlloc(arena)),
-        column_predicates(ColumnPredicateAlloc(arena)),
-        time_interval(TIMESTAMP_MIN, TIMESTAMP_MAX) { }
+    ScanSpec(CharArena &arena) : time_interval(TIMESTAMP_MIN, TIMESTAMP_MAX) {
+      columns = CstrColumns(CstrAlloc(arena));
+      row_intervals = RowIntervals(RowIntervalAlloc(arena));
+      cell_intervals = CellIntervals(CellIntervalAlloc(arena));
+      column_predicates = ColumnPredicates(ColumnPredicateAlloc(arena));
+    }
     ScanSpec(CharArena &arena, const ScanSpec &);
     ScanSpec(const uint8_t **bufp, size_t *remainp) { decode(bufp, remainp); }
 
