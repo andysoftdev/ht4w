@@ -177,6 +177,10 @@ public:
     insert(key.c_str(), key.length());
   }
 
+  void insert(const char *key) {
+    insert(key, strlen(key));
+  }
+
   /** Checks if the data set "may" contain the key. This can return false
    * positives.
    *

@@ -105,10 +105,16 @@ CellCacheScanner::CellCacheScanner(CellCachePtr &cellcache,
   }
 
   m_start_iter = m_cell_cache_ptr->m_cell_map.lower_bound(scan_ctx->start_serkey);
-  if (m_start_iter != m_cell_cache_ptr->m_cell_map.end())
-    m_end_iter = m_cell_cache_ptr->m_cell_map.lower_bound(scan_ctx->end_serkey);
+  if (m_start_iter != m_cell_cache_ptr->m_cell_map.end()) {
+    if (scan_ctx->start_serkey.compare(scan_ctx->end_serkey))
+      m_end_iter = m_cell_cache_ptr->m_cell_map.upper_bound(scan_ctx->end_serkey);
+    else {
+      m_end_iter = m_start_iter;
+      m_end_iter++;
+    }
+  }
   else
-    m_end_iter = m_cell_cache_ptr->m_cell_map.end();
+    m_end_iter = m_start_iter;
   m_cur_iter = m_start_iter;
 
   if (!m_deletes.empty()) {
@@ -212,6 +218,7 @@ void CellCacheScanner::load_entry_cache() {
   if (m_eos)
     return;
 
+  m_entry_cache.reserve(Global::cell_cache_scanner_cache_size);
   while (m_entry_cache.size() < (size_t)Global::cell_cache_scanner_cache_size) {
 
     if (!internal_get()) {

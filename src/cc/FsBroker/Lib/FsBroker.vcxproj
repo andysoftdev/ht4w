@@ -50,6 +50,7 @@
     <ClCompile Include="Request\Handler\Rmdir.cc" />
     <ClCompile Include="Request\Handler\Seek.cc" />
     <ClCompile Include="Request\Handler\Status.cc" />
+    <ClCompile Include="Request\Handler\Sync.cc" />
     <ClCompile Include="Request\Parameters\Append.cc" />
     <ClCompile Include="Request\Parameters\Close.cc" />
     <ClCompile Include="Request\Parameters\Create.cc" />
@@ -67,6 +68,7 @@
     <ClCompile Include="Request\Parameters\Rmdir.cc" />
     <ClCompile Include="Request\Parameters\Seek.cc" />
     <ClCompile Include="Request\Parameters\Shutdown.cc" />
+    <ClCompile Include="Request\Parameters\Sync.cc" />
     <ClCompile Include="Response\Callback\Append.cc" />
     <ClCompile Include="Response\Callback\Exists.cc" />
     <ClCompile Include="Response\Callback\Length.cc" />
@@ -113,6 +115,7 @@
     <ClInclude Include="Request\Handler\Rmdir.h" />
     <ClInclude Include="Request\Handler\Seek.h" />
     <ClInclude Include="Request\Handler\Status.h" />
+    <ClInclude Include="Request\Handler\Sync.h" />
     <ClInclude Include="Request\Parameters\Append.h" />
     <ClInclude Include="Request\Parameters\Close.h" />
     <ClInclude Include="Request\Parameters\Create.h" />
@@ -130,6 +133,7 @@
     <ClInclude Include="Request\Parameters\Rmdir.h" />
     <ClInclude Include="Request\Parameters\Seek.h" />
     <ClInclude Include="Request\Parameters\Shutdown.h" />
+    <ClInclude Include="Request\Parameters\Sync.h" />
     <ClInclude Include="Response\Callback\Append.h" />
     <ClInclude Include="Response\Callback\Exists.h" />
     <ClInclude Include="Response\Callback\Length.h" />

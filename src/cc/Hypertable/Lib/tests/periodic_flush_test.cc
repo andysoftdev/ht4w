@@ -1,4 +1,4 @@
-/** -*- C++ -*-
+/* -*- C++ -*-
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -29,7 +29,7 @@
 #ifdef _WIN32
 
 inline void sleep( int sec ) {
-    ::Sleep( 1000 * sec );
+  ::Sleep( 1000 * sec );
 }
 
 #endif
@@ -72,7 +72,7 @@ void no_log_sync_test(Table *table) {
 
 void cells_builder_test(Table *table)  {
   TableMutatorPtr mutator = table->create_mutator();
-  mutator->set(KeySpec("1", "col", "cq"), "value1"); 
+  mutator->set(KeySpec("1", "col", "cq"), "value1");
   mutator->set(KeySpec("2", "col", ""), "value2");
   mutator->set(KeySpec("3", "col2", "tag"), "value2");
   mutator->set(KeySpec("4", "col2", "cq"), "value3");
@@ -85,15 +85,11 @@ void cells_builder_test(Table *table)  {
 
   // check
   {
-    if (cb.get().size() != 4)
-      _exit(1);
+    HT_ASSERT(cb.get().size() == 4);
     const Cell& cell = cb.get().front();
-    if (strcmp(cell.column_family, "col"))
-      _exit(1);
-    if (cell.value_len != 6)
-      _exit(1);
-    if (memcmp(cell.value, "value1", 6) != 0)
-      _exit(1);
+    HT_ASSERT(strcmp(cell.column_family, "col") == 0);
+    HT_ASSERT(cell.value_len == 6);
+    HT_ASSERT(memcmp(cell.value, "value1", 6) == 0);
   }
 
   // clear, scan and check again
@@ -102,23 +98,19 @@ void cells_builder_test(Table *table)  {
   copy(scanner, cb);
 
   {
-    if (cb.get().size() != 4)
-      _exit(1);
+    HT_ASSERT(cb.get().size() == 4);
     const Cell& cell = cb.get().front();
-    if (strcmp(cell.column_family, "col"))
-      _exit(1);
-    if (cell.value_len != 6)
-      _exit(1);
-    if (memcmp(cell.value, "value1", 6) != 0)
-      _exit(1);
+    HT_ASSERT(strcmp(cell.column_family, "col") == 0);
+    HT_ASSERT(cell.value_len == 6);
+    HT_ASSERT(memcmp(cell.value, "value1", 6) == 0);
   }
 
   for (Cells::iterator it = cb.get().begin(); it != cb.get().end(); ++it)
     mutator->set_delete(KeySpec(
       it->row_key,
-      it->column_family, 
-      it->column_qualifier, 
-      AUTO_ASSIGN, 
+      it->column_family,
+      it->column_qualifier,
+      AUTO_ASSIGN,
       FLAG_DELETE_CELL));
   mutator->flush();
 
@@ -127,8 +119,7 @@ void cells_builder_test(Table *table)  {
   scanner = table->create_scanner(ss);
   copy(scanner, cb);
 
- if (cb.get().size() != 0)
-    _exit(1);
+  HT_ASSERT(cb.get().size() == 0);
 }
 
 } // local namesapce

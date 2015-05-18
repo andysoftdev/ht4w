@@ -318,13 +318,13 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
   const char *end_row;
   foreach_ht(const ThriftGen::RowInterval &ri, tss.row_intervals) {
     start_row = ri.__isset.start_row ?
-                ri.start_row.c_str() : 
-                ri.__isset.start_row_binary ? 
+                ri.start_row.c_str() :
+                ri.__isset.start_row_binary ?
                 ri.start_row_binary.c_str() :
                 "";
     end_row = ri.__isset.end_row ?
-              ri.end_row.c_str() : 
-              ri.__isset.end_row_binary ? 
+              ri.end_row.c_str() :
+              ri.__isset.end_row_binary ?
               ri.end_row_binary.c_str() :
               Hypertable::Key::END_ROW_MARKER;
     hss.row_intervals.push_back(Hypertable::RowInterval(
@@ -351,7 +351,7 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
       Hypertable::ColumnPredicate(
         cp.__isset.column_family ? cp.column_family.c_str() : 0,
         cp.__isset.column_qualifier ? cp.column_qualifier.c_str() : 0,
-        cp.operation, 
+        cp.operation,
         cp.__isset.value ? cp.value.c_str() : 0,
         cp.__isset.value ? cp.value.size() : 0));
   }
@@ -416,12 +416,12 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpecBuilder &s
   ssb.reserve_rows(tss.row_intervals.size());
   for (auto & ri : tss.row_intervals) {
     start_row = ri.__isset.start_row ?
-                ri.start_row.c_str() : 
-                ri.__isset.start_row_binary ? 
+                ri.start_row.c_str() :
+                ri.__isset.start_row_binary ?
                 ri.start_row_binary.c_str() : "";
     end_row = ri.__isset.end_row ?
-              ri.end_row.c_str() : 
-              ri.__isset.end_row_binary ? 
+              ri.end_row.c_str() :
+              ri.__isset.end_row_binary ?
               ri.end_row_binary.c_str() : Hypertable::Key::END_ROW_MARKER;
     ssb.add_row_interval(
       start_row, ri.__isset.start_inclusive && ri.start_inclusive,
@@ -445,7 +445,7 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpecBuilder &s
     ssb.add_column_predicate(
         cp.__isset.column_family ? cp.column_family.c_str() : 0,
         cp.__isset.column_qualifier ? cp.column_qualifier.c_str() : 0,
-        cp.operation, 
+        cp.operation,
         cp.__isset.value ? cp.value.c_str() : 0,
         cp.__isset.value ? cp.value.size() : 0);
 }

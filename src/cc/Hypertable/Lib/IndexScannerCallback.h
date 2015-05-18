@@ -99,7 +99,7 @@ namespace Hypertable {
   public:
 
     IndexScannerCallback(TableScannerAsync* primary_scanner, TablePtr primary_table,
-                         const ScanSpec &primary_spec, 
+                         const ScanSpec &primary_spec,
                          std::vector<CellPredicate> &cell_predicates,
                          ResultCallback *original_cb, uint32_t timeout_ms, 
                          bool qualifier_scan,

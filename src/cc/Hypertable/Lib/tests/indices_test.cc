@@ -58,7 +58,7 @@ value_len(const char* value) {
 }
 
 static String
-escape(const char *str, size_t len) 
+escape(const char *str, size_t len)
 {
   String ret;
   for (size_t i = 0; i < len; i++) {
@@ -640,7 +640,7 @@ test_column_predicate(void)
   }
 
   {
-    const RowInterval ri[] = { 
+    const RowInterval ri[] = {
       RowInterval("000297", true, "000500", true),
       RowInterval("009297", true, "009500", true)
     };
@@ -694,7 +694,7 @@ test_column_predicate(void)
 
   // exact qualifier match and row intervals
   {
-    const RowInterval ri[] = { 
+    const RowInterval ri[] = {
       RowInterval("002997", true, "005000", true),
       RowInterval("009297", true, "009500", true)
     };

@@ -392,7 +392,7 @@ void LocalBroker::read(Response::Callback::Read *cb, uint32_t fd, uint32_t amoun
 
 
 void LocalBroker::append(Response::Callback::Append *cb, uint32_t fd,
-                         uint32_t amount, const void *data, bool sync) {
+                         uint32_t amount, const void *data, Filesystem::Flags flags) {
   OpenFileDataLocalPtr fdata;
 #ifndef _WIN32
   ssize_t nwritten;
@@ -402,8 +402,9 @@ void LocalBroker::append(Response::Callback::Append *cb, uint32_t fd,
   uint64_t offset;
   int error;
 
-  HT_DEBUG_OUT <<"append fd="<< fd <<" amount="<< amount <<" data='"
-      << format_bytes(20, data, amount) <<" sync="<< sync << HT_END;
+  HT_DEBUG_OUT << "append fd=" << fd << " amount=" << amount << " data='"
+               << format_bytes(20, data, amount) << " flags="
+               << static_cast<uint8_t>(flags) << HT_END;
 
   if (!m_open_file_map.get(fd, fdata)) {
     char errbuf[32];
@@ -448,21 +449,23 @@ void LocalBroker::append(Response::Callback::Append *cb, uint32_t fd,
     HT_WIN32_LASTERROR("WriteFile failed");
     return;
   }
-  if (sync && m_directio && (fdata->flags & Filesystem::OPEN_FLAG_DIRECTIO))
-    sync = false; // no sync because handle has FILE_FLAG_WRITE_THROUGH
+  if (m_directio && (fdata->flags & Filesystem::OPEN_FLAG_DIRECTIO) &&
+      (flags == Filesystem::Flags::FLUSH || flags == Filesystem::Flags::SYNC))
+    flags = Filesystem::Flags::NONE; // no sync because handle has FILE_FLAG_WRITE_THROUGH
 #endif
 
-
-  int64_t start_time = get_ts64();
-  if (sync && fsync(fdata->fd) != 0) {
-    DECLARE_ERROR
-    report_error(cb);
-    m_status_manager.set_write_error(error);
-    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, strerror(errno));
-    return;
+  if (flags == Filesystem::Flags::FLUSH || flags == Filesystem::Flags::SYNC) {
+    int64_t start_time = get_ts64();
+    if (fsync(fdata->fd) != 0) {
+      DECLARE_ERROR
+      report_error(cb);
+      m_status_manager.set_write_error(error);
+      HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, strerror(errno));
+      return;
+    }
+    m_metrics_handler->add_sync(get_ts64() - start_time);
   }
 
-  m_metrics_handler->add_sync(get_ts64() - start_time);
   m_metrics_handler->add_bytes_written(nwritten);
   m_status_manager.clear_status();
 
@@ -837,9 +840,13 @@ void LocalBroker::readdir(Response::Callback::Readdir *cb, const char *dname) {
 }
 
 void LocalBroker::flush(ResponseCallback *cb, uint32_t fd) {
+  this->sync(cb, fd);
+}
+
+void LocalBroker::sync(ResponseCallback *cb, uint32_t fd) {
   OpenFileDataLocalPtr fdata;
 
-  HT_DEBUGF("flush fd=%d", fd);
+  HT_DEBUGF("sync fd=%d", fd);
 
   if (!m_open_file_map.get(fd, fdata)) {
     char errbuf[32];
@@ -853,7 +860,7 @@ void LocalBroker::flush(ResponseCallback *cb, uint32_t fd) {
     DECLARE_ERROR
     report_error(cb);
     m_status_manager.set_write_error(error);
-    HT_ERRORF("flush failed: fd=%d - %s", fdata->fd, strerror(errno));
+    HT_ERRORF("sync failed: fd=%d - %s", fdata->fd, strerror(errno));
     return;
   }
 

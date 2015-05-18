@@ -214,7 +214,7 @@ namespace Hypertable {
 
     void update_without_index(const Key &full_key, const ColumnFamilySpec *cf, const Cell &cell);
 
-    void update_without_index(const Key &full_key, const ColumnFamilySpec *cf, const void *value, 
+    void update_without_index(const Key &full_key, const ColumnFamilySpec *cf, const void *value,
             size_t value_len);
 
     enum Operation {

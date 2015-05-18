@@ -25,25 +25,32 @@
  * a %MetaLog.
  */
 
-#ifndef HYPERTABLE_METALOGWRITER_H
-#define HYPERTABLE_METALOGWRITER_H
-
-#include "Common/Filesystem.h"
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
-
-#include <vector>
+#ifndef Hypertable_Lib_MetaLogWriter_h
+#define Hypertable_Lib_MetaLogWriter_h
 
 #include "MetaLogDefinition.h"
 #include "MetaLogEntity.h"
+
+#include <Common/Filesystem.h>
+#include <Common/Mutex.h>
+#include <Common/ReferenceCount.h>
+
+#include <AsyncComm/Comm.h>
+#include <AsyncComm/DispatchHandler.h>
+
+#include <condition_variable>
+#include <deque>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 namespace Hypertable {
 
   namespace MetaLog {
 
-    /** @addtogroup libHypertable
-     * @{
-     */
+    /// @addtogroup libHypertable
+    /// @{
 
     /** Writes a %MetaLog.
      * This class is used to persist application entities to a %MetaLog.  It
@@ -144,10 +151,42 @@ namespace Hypertable {
        */
       void record_removal(std::vector<EntityPtr> &entities);
 
+      void signal_write_ready();
+
       /// Global flag to force writer to skip writing EntityRecover (testing)
       static bool skip_recover_entry;
 
     private:
+
+      /// Periodically flushes deferred writes to disk
+      class WriteScheduler : public DispatchHandler {
+      public:
+
+        /// Constructor.
+        WriteScheduler(Writer *writer);
+
+        virtual ~WriteScheduler();
+
+        void schedule();
+
+        void handle(EventPtr &event) override;
+
+      private:
+        /// %Mutex for serializing access to members
+        std::mutex m_mutex;
+        /// Condition variable to signal when timer has stopped
+        condition_variable m_cond;
+        /// Pointer to MetaLogWriter
+        Writer *m_writer {};
+        /// Pointer to Comm layer
+        Comm *m_comm {};
+        /// Timer interval
+        int32_t m_interval {};
+        /// Flag indicating that write has been scheduled
+        bool m_scheduled {};
+      };
+
+      typedef std::shared_ptr<WriteScheduler> WriteSchedulerPtr;
 
       /** Writes %MetaLog file header.
        * This method writes a %MetaLog file header to the open %MetaLog file
@@ -162,18 +201,23 @@ namespace Hypertable {
 
       /** Purges old %MetaLog files.
        * This method removes the %MetaLog files with the numerically smallest
-       * names until the number of remaining files is equal to
-       * <code>keep_count</code>.  The files are removed from the FS as well
-       * as the backup directory.  The <code>file_ids</code> parameter is
-       * adjusted to only include the numeric file names that remain after
-       * purging.
-       * @param file_ids Numeric file names in the %MetaLog directory
-       * @param keep_count Number of %MetaLog files to keep
+       * names until the number of remaining files is equal to #m_history_size.
+       * The files are removed from the FS as well as the backup directory.  The
+       * #m_file_ids member is assumed to be populated on entry with the file
+       * name IDs in the log directory and is adjusted to only include the file
+       * name IDs that remain after purging.
        */
-      void purge_old_log_files(std::vector<int32_t> &file_ids, size_t keep_count);
+      void purge_old_log_files();
+
+      void roll();
+
+      void service_write_queue();
 
       /// %Mutex for serializing access to members
-      Mutex m_mutex;
+      std::mutex m_mutex;
+
+      /// Condition variable to signal completion of deferred writes
+      condition_variable m_cond;
       
       /// Smart pointer to Filesystem object
       FilesystemPtr m_fs;
@@ -188,7 +232,7 @@ namespace Hypertable {
       std::string  m_filename;
 
       /// File descriptor of %MetaLog file in FS
-      int m_fd;
+      int m_fd {-1};
 
       /// Pathname of local log backup directory
       std::string  m_backup_path;
@@ -200,15 +244,46 @@ namespace Hypertable {
       int m_backup_fd;
 
       /// Current write offset of %MetaLog file
-      int m_offset;
+      int32_t m_offset {};
+
+      /// Deque of existing file name IDs
+      std::deque<int32_t> m_file_ids;
+
+      /// Maximum file size
+      int64_t m_max_file_size {};
+
+      /// Number of old MetaLog files to retain for historical purposes
+      size_t m_history_size {};
+
+      /// Replication factor
+      int32_t m_replication {};
+
+      /// Log flush method (FLUSH or SYNC)
+      Filesystem::Flags m_flush_method {};
+
+      // Serialized entity (length and smart pointer to buffer)
+      typedef std::pair<size_t, std::shared_ptr<uint8_t>> SerializedEntityT;
+
+      /// Map of current serialized entity data
+      std::map<int64_t, SerializedEntityT> m_entity_map;
+
+      /// Flag indicating that 
+      bool m_write_ready {};
+
+      /// Vector of pending writes
+      std::vector<StaticBufferPtr> m_write_queue;
+
+      /// Write scheduler
+      WriteSchedulerPtr m_write_scheduler;
+
     };
 
     /// Smart pointer to Writer
     typedef intrusive_ptr<Writer> WriterPtr;
     
-    /** @}*/
+    /// @}
   }
 
 }
 
-#endif // HYPERTABLE_METALOGWRITER_H
+#endif // Hypertable_Lib_MetaLogWriter_h

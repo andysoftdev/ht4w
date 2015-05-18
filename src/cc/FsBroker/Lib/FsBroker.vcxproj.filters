@@ -202,6 +202,12 @@
     <ClCompile Include="Utility.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Request\Handler\Sync.cc">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="Request\Parameters\Sync.cc">
+      <Filter>Source Files\Request\Parameters</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Broker.h">
@@ -386,6 +392,12 @@
     </ClInclude>
     <ClInclude Include="Utility.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Handler\Sync.h">
+      <Filter>Source Files\Request\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="Request\Parameters\Sync.h">
+      <Filter>Source Files\Request\Parameters</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

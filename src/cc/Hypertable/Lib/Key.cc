@@ -34,7 +34,7 @@ namespace {
   const char end_root_row_chars[7] = { '0', '/', '0', ':', (char)0xff, (char)0xff, 0 };
 
   size_t
-  write_key(uint8_t *buf, uint8_t control, uint8_t flag, const char *row, uint32_t row_len, 
+  write_key(uint8_t *buf, uint8_t control, uint8_t flag, const char *row, uint32_t row_len,
             uint8_t column_family_code, const char *column_qualifier, uint32_t column_qualifier_len) {
     uint8_t *ptr = buf;
     *ptr++ = control;
@@ -105,10 +105,10 @@ namespace Hypertable {
   create_key_and_append(DynamicBuffer &dst_buf, const Key& key, bool time_order_asc) {
     ::create_key_and_append(
       dst_buf,
-      key.flag, 
-      key.row, 
+      key.flag,
+      key.row,
       key.row_len,
-      key.column_family_code, 
+      key.column_family_code,
       key.column_qualifier,
       key.column_qualifier_len,
       key.timestamp,
@@ -198,7 +198,7 @@ namespace Hypertable {
     flag = *ptr++;
 
     if (control & HAVE_TIMESTAMP) {
-      timestamp = decode_ts64((const uint8_t **)&ptr, 
+      timestamp = decode_ts64((const uint8_t **)&ptr,
               (control&TS_CHRONOLOGICAL) == 0);
       if (control & REV_IS_TS) {
         revision = timestamp;

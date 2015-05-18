@@ -62,7 +62,7 @@ inline String operator+(const String &s1, short sval) {
   return s1 + Int16Formatter(sval).c_str();
 }
 
-/** Append operator for ushorts */ 
+/** Append operator for ushorts */
 inline String operator+(const String &s1, uint16_t sval) {
   return s1 + UInt16Formatter(sval).c_str();
 }

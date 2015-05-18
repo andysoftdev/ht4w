@@ -75,10 +75,10 @@ namespace Lib {
     virtual void decode_response_read(EventPtr &event, const void **buffer,
                                     uint64_t *offset, uint32_t *length);
 
-    virtual void append(int fd, StaticBuffer &buffer, uint32_t flags,
+    virtual void append(int fd, StaticBuffer &buffer, Flags flags,
                         DispatchHandler *handler);
     virtual size_t append(int fd, StaticBuffer &buffer,
-                          uint32_t flags = 0);
+                          Flags flags = Flags::NONE);
     virtual void decode_response_append(EventPtr &event, uint64_t *offset,
                                       uint32_t *length);
 
@@ -93,7 +93,7 @@ namespace Lib {
     virtual int64_t decode_response_length(EventPtr &event);
 
     virtual void pread(int fd, size_t len, uint64_t offset,
-                        DispatchHandler *handler);
+                        bool verify_checksum, DispatchHandler *handler);
     virtual size_t pread(int fd, void *dst, size_t len, uint64_t offset,
                           bool verify_checksum=true);
     virtual void decode_response_pread(EventPtr &event, const void **buffer,
@@ -104,6 +104,9 @@ namespace Lib {
 
     virtual void flush(int fd, DispatchHandler *handler);
     virtual void flush(int fd);
+
+    virtual void sync(int fd, DispatchHandler *handler);
+    virtual void sync(int fd);
 
     virtual void rmdir(const String &name, DispatchHandler *handler);
     virtual void rmdir(const String &name, bool force = true);
@@ -202,7 +205,7 @@ namespace Lib {
     void close(int fd, bool sync);
     void seek(int fd, uint64_t offset, bool sync);
     size_t read(int fd, void *dst, size_t amount, uint64_t* offset, bool sync);
-    size_t append(int fd, StaticBuffer &buffer, uint32_t flags, uint64_t* offset, bool sync);
+    size_t append(int fd, StaticBuffer &buffer, Flags flags, uint64_t* offset, bool sync);
     void remove(const String &name, bool force, bool sync);
     int64_t length(const String &name, bool sync);
     size_t pread(int fd, void *dst, size_t len, uint64_t offset, bool verify_checksum, bool sync);

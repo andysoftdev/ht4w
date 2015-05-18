@@ -59,7 +59,7 @@ TableScannerAsync::TableScannerAsync(Comm *comm,
   // can we optimize this query with an index?
   if (!(flags & Table::SCANNER_FLAG_IGNORE_INDEX)
       && use_index(table, scan_spec, index_spec,
-                   cell_predicates, 
+                   cell_predicates,
                    &use_qualifier,
                    &row_intervals_applied)) {
 
@@ -181,7 +181,7 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
 
         const char *escaped_qualifier;
         size_t escaped_qualifier_len = 0;
-        if ((cp.operation & ColumnPredicate::EXACT_MATCH) && 
+        if ((cp.operation & ColumnPredicate::EXACT_MATCH) &&
             (cp.operation & (ColumnPredicate::QUALIFIER_EXACT_MATCH|
                              ColumnPredicate::QUALIFIER_PREFIX_MATCH))) {
 
@@ -316,7 +316,7 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
         return false;
     }
 
-    if (row_intervals_applied) 
+    if (row_intervals_applied)
       *row_intervals_applied = row_intervals_applied_count == primary_spec.column_predicates.size();
 
     if (qualifier_match_only) {

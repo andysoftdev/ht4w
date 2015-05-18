@@ -251,7 +251,7 @@ TableMutatorAsync::update_without_index(const Cell &cell)
   k.row = cell.row_key;
   k.column_qualifier = cell.column_qualifier;
   k.row_len = cell.row_key ? strlen(cell.row_key) : 0;
-  k.column_qualifier_len = 
+  k.column_qualifier_len =
     cell.column_qualifier ? strlen(cell.column_qualifier) : 0;
   k.timestamp = cell.timestamp;
   k.revision = cell.revision;
@@ -504,7 +504,7 @@ void TableMutatorAsync::flush_with_tablequeue(TableMutator *mutator, bool sync) 
   if (is_cancelled())
     return;
 
-  uint32_t flags = sync ? 0:Table::MUTATOR_FLAG_NO_LOG_SYNC;
+  uint32_t flags = sync ? 0 : m_flags;
 
   try {
     {

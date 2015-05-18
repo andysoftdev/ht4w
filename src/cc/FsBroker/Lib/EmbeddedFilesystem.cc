@@ -48,6 +48,7 @@
 #include "Request/Parameters/Debug.h"
 #include "Request/Parameters/Exists.h"
 #include "Request/Parameters/Flush.h"
+#include "Request/Parameters/Sync.h"
 #include "Request/Parameters/Length.h"
 #include "Request/Parameters/Mkdirs.h"
 #include "Request/Parameters/Open.h"
@@ -295,7 +296,7 @@ void EmbeddedFilesystem::decode_response_read(EventPtr &event, const void **buff
   *buffer = ptr;
 }
 
-void EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags,
+void EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, Flags flags,
                DispatchHandler *handler) {
   try {
     StaticBuffer ownbuffer;
@@ -313,7 +314,7 @@ void EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags,
     header.gid = fd;
     header.alignment = HT_DIRECT_IO_ALIGNMENT;
     CommBuf *cbuf = new CommBuf(header, HT_DIRECT_IO_ALIGNMENT, *owned_buffer);
-    Lib::Request::Parameters::Append params(fd, owned_buffer->size, (bool)(flags & O_FLUSH));
+    Lib::Request::Parameters::Append params(fd, owned_buffer->size, static_cast<uint8_t>(flags));
     uint8_t *base = (uint8_t *)cbuf->get_data_ptr();
     params.encode(cbuf->get_data_ptr_address());
     size_t padding = HT_DIRECT_IO_ALIGNMENT -
@@ -330,7 +331,7 @@ void EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags,
   }
 }
 
-size_t EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags) {
+size_t EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, Flags flags) {
   return append(fd, buffer, flags, 0, m_asyncio);
 }
 
@@ -423,11 +424,11 @@ int64_t EmbeddedFilesystem::decode_response_length(EventPtr &event) {
 }
 
 void EmbeddedFilesystem::pread(int fd, size_t len, uint64_t offset,
-              DispatchHandler *handler) {
+              bool verify_checksum, DispatchHandler *handler) {
   try {
     CommHeader header(Lib::Request::Handler::Factory::FUNCTION_PREAD);
     header.gid = fd;
-    Lib::Request::Parameters::Pread params(fd, offset, len, true);
+    Lib::Request::Parameters::Pread params(fd, offset, len, verify_checksum);
     CommBufPtr cbuf( new CommBuf(header, params.encoded_length()) );
     params.encode(cbuf->get_data_ptr_address());
     enqueue_message(fd, cbuf, handler);
@@ -487,6 +488,14 @@ void EmbeddedFilesystem::flush(int fd) {
     flush(fd, (DispatchHandler*)0);
   else
     flush(fd, m_asyncio);
+}
+
+void EmbeddedFilesystem::sync(int fd, DispatchHandler *handler) {
+  flush(fd, handler);
+}
+
+void EmbeddedFilesystem::sync(int fd) {
+  flush(fd);
 }
 
 void EmbeddedFilesystem::rmdir(const String &name, DispatchHandler *handler) {
@@ -714,9 +723,9 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
         request.decode(&decode_ptr, &decode_remain);
 
         uint32_t amount = request.get_size();
-        bool flush = decode_bool(&decode_ptr, &decode_remain);
         uint64_t offset;
-        size_t written = append(request.get_fd(), cbp_request->ext, request.get_flush() ? O_FLUSH : 0, &offset, false);
+        size_t written = append(request.get_fd(), cbp_request->ext,
+          static_cast<Flags>(request.get_flags()), &offset, false);
 
         Lib::Response::Parameters::Append params(offset, static_cast<uint32_t>(written));
         response.ensure(4 + params.encoded_length());
@@ -789,6 +798,17 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
     case Lib::Request::Handler::Factory::FUNCTION_FLUSH:
       {
         Lib:: Request::Parameters::Flush request;
+        request.decode(&decode_ptr, &decode_remain);
+
+        flush(request.get_fd(), false);
+
+        response.ensure(4);
+        encode_i32(&response.ptr, Error::OK);
+      }
+      break;
+    case Lib::Request::Handler::Factory::FUNCTION_SYNC:
+      {
+        Lib:: Request::Parameters::Sync request;
         request.decode(&decode_ptr, &decode_remain);
 
         flush(request.get_fd(), false);
@@ -957,7 +977,7 @@ void EmbeddedFilesystem::close(int fd, bool sync) {
   }
 }
 
-size_t EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags, uint64_t* offset, bool sync) {
+size_t EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, Flags flags, uint64_t* offset, bool sync) {
   try {
     FdSyncGuard guard(this, fd, sync);
 
@@ -970,7 +990,8 @@ size_t EmbeddedFilesystem::append(int fd, StaticBuffer &buffer, uint32_t flags, 
     DWORD nwritten;
     if (!WriteFile(h, buffer.base, buffer.size, &nwritten, 0))
       throw_error();
-    if (flags && !(m_directio && (hflags & Filesystem::OPEN_FLAG_DIRECTIO))) { // no sync because handle has FILE_FLAG_WRITE_THROUGH
+    if ((flags == Flags::FLUSH || flags == Flags::SYNC) &&
+       !(m_directio && (hflags & Filesystem::OPEN_FLAG_DIRECTIO))) { // no sync because handle has FILE_FLAG_WRITE_THROUGH
       if (!::FlushFileBuffers(h))
         throw_error();
     }
