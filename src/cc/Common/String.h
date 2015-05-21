@@ -188,7 +188,7 @@ namespace Hypertable {
       buf[BUFFER_SIZE - 1] = '\0';
     }
     void format_unsigned(T value) {
-      s = buf + BUFFER_SIZE - 1;
+      s = &buf[BUFFER_SIZE - 1];
       while (value >= 100) {
         // Integer division is slow so do it for a group of two digits instead
         // of for every digit. The idea comes from the talk by Alexandrescu
