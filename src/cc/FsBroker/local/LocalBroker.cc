@@ -602,11 +602,7 @@ void
 LocalBroker::pread(Response::Callback::Read *cb, uint32_t fd, uint64_t offset,
                    uint32_t amount, bool) {
   OpenFileDataLocalPtr fdata;
-#ifndef _WIN32
   ssize_t nread;
-#else
-  DWORD nread;
-#endif
   int error;
 
   HT_DEBUGF("pread fd=%d offset=%llu amount=%d", fd, (Llu)offset, amount);
