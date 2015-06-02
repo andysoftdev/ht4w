@@ -224,10 +224,6 @@ bool ServerUtils::start(server_t server, const char* args, launched_server_t& la
     exe_name.append(" -l notice");
 
   HT_NOTICEF("Starting %s", server_name(server).c_str());
-  if (notify)
-    notify->server_start_pending(server);
-  bool launched = false;
-  String cmd = System::install_dir + "\\" + exe_name.c_str();
 
   STARTUPINFO si;
   ZeroMemory(&si, sizeof(si));
@@ -235,20 +231,24 @@ bool ServerUtils::start(server_t server, const char* args, launched_server_t& la
 
   String logfile;
   if (!Config::create_console()) {
-    si.dwFlags |= STARTF_USESTDHANDLES;
     logfile = Config::logging_directory();
     if (!logfile.empty()) {
       logfile += "\\" + server_log_name(server);
-      HT_INFOF("Redirect to %s", logfile.c_str());
+      exe_name.append(" -f \"" + logfile + "\"");
     }
   }
   else
     HT_INFO("Creating new console");
 
+  if (notify)
+    notify->server_start_pending(server);
+  bool launched = false;
+  String cmd = System::install_dir + "\\" + exe_name.c_str();
+
   if (ProcessUtils::create(cmd.c_str(),
                            Config::priority_class()|(Config::create_console() ? CREATE_NEW_CONSOLE : CREATE_NEW_PROCESS_GROUP|DETACHED_PROCESS),
                            si,
-                           logfile.c_str(),
+                           0,
                            true,
                            launched_server.pi,
                            launched_server.logfile)) {

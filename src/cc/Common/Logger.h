@@ -85,6 +85,7 @@ namespace Logger {
           m_priority(Priority::INFO), m_file(stdout) {
       }
 
+      void set_file(const char* logfile);
       void set_file(FILE *file);
       void add_sink(const LogSink *ls);
       void remove_sink(const LogSink *ls);
@@ -156,6 +157,9 @@ namespace Logger {
 
       /** The current priority (everything above is filtered) */
       int m_priority;
+
+      /** The logfile */
+      String m_logfile;
 
       /** The output file handle */
       FILE *m_file;

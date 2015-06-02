@@ -203,7 +203,8 @@ void DefaultPolicy::init_options() {
         "Show as little output as possible")
     ("logging-level,l", str()->default_value("info"),
         "Logging level: debug, info, notice, warn, error, crit, alert, fatal")
-    ("config", str()->default_value(default_config), "Configuration file.\n")
+    ("logfile,f", str(), "Logfile.")
+    ("config", str()->default_value(default_config), "Configuration file.")
     ("induce-failure", str(), "Arguments for inducing failure")
     ("timeout,t", i32(), "System wide timeout in milliseconds")
     ;
@@ -749,6 +750,11 @@ void sync_aliases() {
 }
 
 void DefaultPolicy::init() {
+  if (has("logfile")) {
+    String logfile = get_str("logfile");
+    if (!logfile.empty())
+      Logger::get()->set_file(logfile.c_str());
+  }
   String loglevel = get_str("logging-level");
   bool verbose = get_bool("verbose");
 

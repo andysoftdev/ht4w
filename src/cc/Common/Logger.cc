@@ -35,6 +35,7 @@
 #include "String.h"
 #include "Logger.h"
 #include "Mutex.h"
+#include "FileUtils.h"
 
 namespace Hypertable { namespace Logger {
 
@@ -66,6 +67,8 @@ void LogWriter::log_string(int priority, const char *message) {
   };
 
   ScopedLock lock(mutex);
+  int saved_errno = errno;
+
   if (m_test_mode) {
     fprintf(m_file, "%s %s : %s\n", priority_name[priority], m_name.c_str(),
             message);
@@ -107,6 +110,24 @@ void LogWriter::log_string(int priority, const char *message) {
   _fflush_nolock(m_file);
 
 #endif
+
+  if (!m_logfile.empty() && m_file != stdout) {
+    if (ftell(m_file) > 1024*1024) {
+      fclose(m_file);
+      for (int i = 1; i < 9999; ++i) {
+        String dest = format("%s.%04d", m_logfile.c_str(), i);
+        if (!FileUtils::exists(dest)) {
+          FileUtils::rename(m_logfile.c_str(), dest.c_str());
+          break;
+        }
+      }
+      m_file = fopen(m_logfile.c_str(), "a+tc");
+      if (m_file)
+        fseek(m_file, 0, SEEK_END);
+    }
+  }
+
+  errno = saved_errno;
 }
 
 void LogWriter::log_varargs(int priority, const char *format, va_list ap) {
@@ -129,9 +150,21 @@ void LogWriter::log(int priority, const char *format, ...) {
   va_end(ap);
 }
 
+void LogWriter::set_file(const char* logfile) {
+  if (logfile && *logfile) {
+    ScopedLock lock(mutex);
+    m_logfile = logfile;
+    m_file = fopen(logfile, "a+tc");
+    if (m_file)
+      fseek(m_file, 0, SEEK_END);
+  }
+}
+
 void LogWriter::set_file(FILE *file) {
-  ScopedLock lock(mutex);
-  m_file = file;
+  if (file) {
+    ScopedLock lock(mutex);
+    m_file = file;
+  }
 }
 
 void LogWriter::add_sink(const LogSink* ls) {
@@ -184,6 +217,7 @@ void LogWriter::close() {
   if (m_file != stdout) {
     fclose(m_file);
     m_file = stdout;
+    m_logfile.clear();
   }
 }
 
