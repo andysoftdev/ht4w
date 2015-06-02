@@ -197,6 +197,7 @@ inline void vfree(const uint8_t* p) {
 }
 
 inline int posix_memalign(void **memptr, size_t alignment, size_t size) {
+  errno = 0;
   *memptr = _aligned_malloc(size, alignment);
   return errno;
 }

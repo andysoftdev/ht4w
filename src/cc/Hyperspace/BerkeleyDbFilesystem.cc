@@ -771,6 +771,7 @@ BerkeleyDbFilesystem::incr_attr(BDbTxn &txn, const String &fname, const String &
                   aname.c_str(), numbuf);
       }
 
+      errno = 0;
       *valuep = strtoull(numbuf, 0, 0);
       // Sanity check value
       if (*valuep == 0 && errno == EINVAL)

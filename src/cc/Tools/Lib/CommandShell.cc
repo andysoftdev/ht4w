@@ -609,6 +609,7 @@ process_line:
           String sec_str = command.substr(5);
           boost::trim(sec_str);
           char *endptr;
+          errno = 0;
           long secs = strtol(sec_str.c_str(), &endptr, 0);
           if ((secs == 0 && errno == EINVAL) || *endptr != 0) {
             cout << "error: invalid seconds specification" << endl;
