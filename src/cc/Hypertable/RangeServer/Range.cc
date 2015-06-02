@@ -354,18 +354,18 @@ void Range::load_cell_stores() {
 	    e.code() == Error::FSBROKER_BAD_FILENAME ||
 	    e.code() == Error::FSBROKER_IO_ERROR) {
 	  if (skip_not_found) {
-	    HT_WARNF("CellStore file '%s' not found, skipping", csvec[i].c_str());
+	    HT_WARNF("CellStore file '%s' not found, skipping (%s)", csvec[i].c_str(), e.what());
 	    continue;
 	  }
         }
 	if (e.code() == Error::RANGESERVER_CORRUPT_CELLSTORE) {
 	  if (skip_bad) {
-	    HT_WARNF("CellStore file '%s' is corrupt, skipping", csvec[i].c_str());
+	    HT_WARNF("CellStore file '%s' is corrupt, skipping (%s)", csvec[i].c_str(), e.what());
 	    continue;
 	  }
 	}
-        HT_FATALF("Problem opening CellStore file '%s' - %s", csvec[i].c_str(),
-                  Error::get_text(e.code()));
+        HT_FATALF("Problem opening CellStore file '%s' - %s (%s)", csvec[i].c_str(),
+                  Error::get_text(e.code()), e.what());
       }
 
       int64_t revision = boost::any_cast<int64_t>
