@@ -777,7 +777,7 @@ void EmbeddedFilesystem::process_message(CommBufPtr &cbp_request, DispatchHandle
         uint64_t offset = request.get_offset();
         uint8_t params_length = 4 + Lib::Response::Parameters::Read(offset, amount).encoded_length();
         response.ensure(params_length + amount);
-        size_t nread = pread(request.get_fd(), response.base +  params_length, offset, amount, request.get_verify_checksum(), false);
+        size_t nread = pread(request.get_fd(), response.base +  params_length, amount, offset, request.get_verify_checksum(), false);
 
         Lib::Response::Parameters::Read params(offset, static_cast<uint32_t>(nread));
         encode_i32(&response.ptr, Error::OK);
