@@ -137,6 +137,8 @@ void AccessGroupHintsFile::read() {
   try {
 
     int64_t length = Global::dfs->length(filename);
+    if (length <= 0)
+      return;
     const char *base;
 
     dbuf.grow(length+1);
@@ -155,7 +157,7 @@ void AccessGroupHintsFile::read() {
       h.ag_name = String((const char *)base, ptr-base);
       boost::trim(h.ag_name);
       if (h.ag_name.empty())
-        HT_THROW(Error::BAD_FORMAT, "");
+        HT_THROW(Error::BAD_FORMAT, "Empty access group name");
       base = ptr+1;
       while (*base && isspace(*base))
         base++;
@@ -163,7 +165,7 @@ void AccessGroupHintsFile::read() {
         base++;
         ptr = strchr(base, '}');
         if (ptr == 0)
-          HT_THROW(Error::BAD_FORMAT, "");
+          HT_THROW(Error::BAD_FORMAT, "Not well-formed access group");
         String text = String(base, ptr-base);
         boost::trim(text);
         boost::char_separator<char> sep(",");
@@ -172,22 +174,22 @@ void AccessGroupHintsFile::read() {
           char *end;
           const char *ptr2 = strchr(mapping.c_str(), ':');
           if (ptr2 == 0)
-            HT_THROW(Error::BAD_FORMAT, "");
+            HT_THROWF(Error::BAD_FORMAT, "Not well formed token, '%s'", mapping.c_str());
           String key = String(mapping, 0, ptr2-mapping.c_str());
           boost::trim(key);
           String value = String(mapping, (ptr2-mapping.c_str())+1);
           boost::trim(value);
           if (key.empty())
-            HT_THROW(Error::BAD_FORMAT, "");            
+            HT_THROWF(Error::BAD_FORMAT, "Empty key, '%s'", mapping.c_str());
           if (key == "LatestStoredRevision") {
             h.latest_stored_revision = strtoll(value.c_str(), &end, 0);
             if (value.empty() || *end != 0)
-              HT_THROW(Error::BAD_FORMAT, "");
+              HT_THROWF(Error::BAD_FORMAT, "Invalid LatestStoredRevision, '%s'", value.c_str());
           }
           else if (key == "DiskUsage") {
             h.disk_usage = strtoull(value.c_str(), &end, 0);
             if (value.empty() || *end != 0)
-              HT_THROW(Error::BAD_FORMAT, "");
+              HT_THROWF(Error::BAD_FORMAT, "Invalid DiskUsage, '%s'", value.c_str());
           }
           else if (key == "Files")
             h.files = value;
@@ -201,7 +203,7 @@ void AccessGroupHintsFile::read() {
         base = ptr+1;
       }
       else
-        HT_THROW(Error::BAD_FORMAT, "");
+        HT_THROW(Error::BAD_FORMAT, "Not well-formed access group");
     }
   }
   catch (Exception &e) {
@@ -231,18 +233,18 @@ namespace {
     const char *ptr;
 
     if ((ptr = strchr(base, ':')) == 0)
-      HT_THROW(Error::BAD_FORMAT, "");
+      HT_THROWF(Error::BAD_FORMAT, "Not well formed token, '%s'", base);
 
     key = String((const char *)base, ptr-base);
     boost::trim(key);
     if (key.empty() || ptr[1] != ' ')
-      HT_THROW(Error::BAD_FORMAT, "");
+      HT_THROWF(Error::BAD_FORMAT, "Empty or not well formed key, '%s'", key.c_str());
     *value = ptr+2;
     ptr += 2;
     while (*ptr && *ptr != '\n')
       ptr++;
     if (*ptr != '\n')
-      HT_THROW(Error::BAD_FORMAT, "");
+      HT_THROWF(Error::BAD_FORMAT, "Not well formed token, '%s'", base);
     *value_len = ptr - *value;
     return ptr+1;
   }
