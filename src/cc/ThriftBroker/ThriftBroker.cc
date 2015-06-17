@@ -3170,12 +3170,12 @@ int main(int argc, char **argv) {
 
     boost::shared_ptr<TServerTransport> serverTransport;
 
-    if (has("thrift-timeout")) {
-      int timeout_ms = get_i32("thrift-timeout");
-      serverTransport.reset( new TServerSocket(port, timeout_ms, timeout_ms) );
-    }
-    else
-      serverTransport.reset( new TServerSocket(port) );
+    int timeout_ms = 0;
+    if (has("thrift-timeout"))
+      timeout_ms = get_i32("thrift-timeout");
+    else if (has("timeout"))
+      timeout_ms = get_i32("timeout");
+    serverTransport.reset( new TServerSocket(port, timeout_ms, timeout_ms) );
 
     boost::shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
 
