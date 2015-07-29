@@ -104,7 +104,7 @@ struct CellCacheTest {
     Key key;
     int repeats = get_i32("repeats");
     for (int r = 0; r < repeats; ++r) {
-      CellCachePtr cell_cache = new CellCache();
+      CellCachePtr cell_cache = std::make_shared<CellCache>();
       double rate;
       MEASURE("insert keys", 
         const uint8_t* ptr = keys.base;
@@ -115,13 +115,13 @@ struct CellCacheTest {
         }, nitems, rate);
       t1 += rate;
 
-      ScanContextPtr scan_ctx = new ScanContext();
+      ScanContextPtr scan_ctx = std::make_shared<ScanContext>();
       DynamicBuffer s, e;
       create_key_and_append(s, "");
       create_key_and_append(e, Key::END_ROW_MARKER);
       scan_ctx->start_serkey.ptr = s.base;
       scan_ctx->end_serkey.ptr = e.base;
-      CellListScannerPtr scanner = cell_cache->create_scanner(scan_ctx);
+      CellListScannerPtr scanner = cell_cache->create_scanner(scan_ctx.get());
       Key key; 
       ByteString value;
 
@@ -139,7 +139,7 @@ struct CellCacheTest {
         for (size_t i = 0; i < nitems; ++i) {
           scan_ctx->start_serkey.ptr = search_keys[i];
           scan_ctx->end_serkey.ptr = scan_ctx->start_serkey.ptr;
-          scanner = cell_cache->create_scanner(scan_ctx);
+          scanner = cell_cache->create_scanner(scan_ctx.get());
           if (scanner->get(key, value))
             ++cells;
         }, cells, rate);

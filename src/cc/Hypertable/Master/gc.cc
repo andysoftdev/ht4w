@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,21 +19,27 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include <iostream>
-#include "Common/Init.h"
-#include "Common/Thread.h"
-#include "Common/System.h"
-#include "Common/Logger.h"
-#include "Common/Error.h"
-#include "Hypertable/Lib/Config.h"
-#include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/Namespace.h"
-#include "FsBroker/Lib/Client.h"
+#include <Common/Compat.h>
+
 #include "GcWorker.h"
+
+#include <Hypertable/Lib/Client.h>
+#include <Hypertable/Lib/Config.h>
+#include <Hypertable/Lib/Namespace.h>
+
+#include <FsBroker/Lib/Client.h>
+
+#include <Common/Error.h>
+#include <Common/Init.h>
+#include <Common/Logger.h>
+#include <Common/System.h>
+#include <Common/Thread.h>
+
+#include <iostream>
 
 using namespace Hypertable;
 using namespace Config;
+using namespace std;
 
 namespace {
 
@@ -52,7 +58,6 @@ namespace {
 
 int
 main(int ac, char *av[]) {
-  ClientPtr client;
   NamespacePtr ns;
   ContextPtr context;
 
@@ -67,7 +72,7 @@ main(int ac, char *av[]) {
     context->toplevel_dir = String("/") + context->toplevel_dir;
     context->dfs = std::make_shared<FsBroker::Lib::Client>(context->conn_manager, context->props);
 
-    client = new Hypertable::Client("htgc");
+    ClientPtr client = make_shared<Hypertable::Client>("htgc");
     ns = client->open_namespace("sys");
     context->metadata_table = ns->open_table("METADATA");
 
@@ -78,7 +83,7 @@ main(int ac, char *av[]) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

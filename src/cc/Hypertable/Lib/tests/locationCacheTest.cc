@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,20 +19,23 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/LocationCache.h>
+
+#include <Common/StringExt.h>
+#include <Common/Usage.h>
+
+#include <cstdio>
 #include <fstream>
 #include <utility>
+
 extern "C" {
-#  include <stdio.h>
-#  include <sys/types.h>
-#  include <sys/stat.h>
-#  include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 }
 
-#include "Common/StringExt.h"
-#include "Common/Usage.h"
-
-#include "Hypertable/Lib/LocationCache.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -46,12 +49,12 @@ namespace Hypertable {
 
         if (stat(fname, &statbuf) != 0) {
           HT_ERRORF("Problem stating file '%s' - %s", fname, strerror(errno));
-          exit(1);
+          exit(EXIT_FAILURE);
         }
         if (statbuf.st_size < (off_t)sizeof(int32_t)) {
           HT_ERRORF("Number stream file '%s' is not big enough, must be at "
                   "least 4 bytes long", fname);
-          exit(1);
+          exit(EXIT_FAILURE);
         }
 
 #ifndef _WIN32
@@ -60,7 +63,7 @@ namespace Hypertable {
         if ((m_fp = fopen(fname, "rb")) == 0) {
 #endif
           HT_ERRORF("Unable to open number stream file '%s'", fname);
-          exit(1);
+          exit(EXIT_FAILURE);
         }
       }
       ~NumberStream() {
@@ -73,7 +76,7 @@ namespace Hypertable {
           fseek(m_fp, 0L, SEEK_SET);
           if (fread(&number, sizeof(int32_t), 1, m_fp) == 0) {
             HT_ERROR("Problem reading integer from number stream, exiting...");
-            exit(1);
+            exit(EXIT_FAILURE);
           }
         }
 

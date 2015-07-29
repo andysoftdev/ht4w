@@ -495,6 +495,26 @@ shared_ptr<TTransport> TServerSocket::acceptImpl() {
   }
   client->setCachedAddress((sockaddr*) &clientAddress, size);
 
+  int tcpSendBuffer_ = 4*32768;
+  int tcpRecvBuffer_ = 4*32768;
+
+  // Set TCP buffer sizes
+  if (tcpSendBuffer_ > 0) {
+    if (-1 == setsockopt(clientSocket, SOL_SOCKET, SO_SNDBUF,
+                         cast_sockopt(&tcpSendBuffer_), sizeof(tcpSendBuffer_))) {
+      int errno_copy = THRIFT_GET_SOCKET_ERROR;
+      GlobalOutput.perror("TServerSocket::acceptImpl() setsockopt(SO_SNDBUF) ", errno_copy);
+    }
+  }
+
+  if (tcpRecvBuffer_ > 0) {
+    if (-1 == setsockopt(clientSocket, SOL_SOCKET, SO_RCVBUF,
+                         cast_sockopt(&tcpRecvBuffer_), sizeof(tcpRecvBuffer_))) {
+      int errno_copy = THRIFT_GET_SOCKET_ERROR;
+      GlobalOutput.perror("TServerSocket::acceptImpl() setsockopt(SO_RCVBUF) ", errno_copy);
+    }
+  }
+
   if(acceptCallback_) acceptCallback_(clientSocket);
 
   return client;

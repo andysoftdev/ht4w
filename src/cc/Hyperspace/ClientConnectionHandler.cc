@@ -34,14 +34,13 @@
 
 using namespace Hyperspace;
 using namespace Hypertable;
-
+using namespace std;
 
 ClientConnectionHandler::ClientConnectionHandler(Comm *comm, Session *session,
                                                  uint32_t timeout_ms)
   : m_comm(comm), m_session(session), m_session_id(0), m_state(DISCONNECTED),
     m_timeout_ms(timeout_ms), m_verbose(false), m_callbacks_enabled(true) {
   memset(&m_master_addr, 0, sizeof(struct sockaddr_in));
-  return;
 }
 
 
@@ -54,7 +53,7 @@ ClientConnectionHandler::~ClientConnectionHandler() {
 
 
 void ClientConnectionHandler::handle(Hypertable::EventPtr &event_ptr) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   int error;
 
   HT_DEBUGF("%s", event_ptr->to_str().c_str());
@@ -112,8 +111,7 @@ void ClientConnectionHandler::handle(Hypertable::EventPtr &event_ptr) {
 }
 
 void ClientConnectionHandler::close() {
-  ScopedRecLock lock(m_mutex);
+  unique_lock<recursive_mutex> lock(m_mutex);
   m_comm->close_socket(m_master_addr);
-  while (m_state != DISCONNECTED)
-    m_cond.wait(lock);
+  m_cond.wait(lock, [this](){ return m_state == DISCONNECTED; });
 }

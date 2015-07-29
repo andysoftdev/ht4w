@@ -28,16 +28,18 @@
 
 #include "ScannerMap.h"
 
+#include <Common/Time.h>
+
 using namespace Hypertable;
 using namespace std;
 
-atomic<int> ScannerMap::ms_next_id {};
+atomic<int> ScannerMap::ms_next_id {0};
 
 /**
  */
 int32_t ScannerMap::put(MergeScannerRangePtr &scanner, RangePtr &range,
                          const TableIdentifier &table, ProfileDataScanner &profile_data) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   ScanInfo scaninfo;
   scaninfo.scanner = scanner;
   scaninfo.range = range;
@@ -56,7 +58,7 @@ int32_t ScannerMap::put(MergeScannerRangePtr &scanner, RangePtr &range,
 bool
 ScannerMap::get(int32_t id, MergeScannerRangePtr &scanner, RangePtr &range,
                 TableIdentifierManaged &table,ProfileDataScanner *profile_data){
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   auto iter = m_scanner_map.find(id);
   if (iter == m_scanner_map.end())
     return false;
@@ -73,13 +75,13 @@ ScannerMap::get(int32_t id, MergeScannerRangePtr &scanner, RangePtr &range,
 /**
  */
 bool ScannerMap::remove(int32_t id) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return (m_scanner_map.erase(id) == 0) ? false : true;
 }
 
 
 void ScannerMap::purge_expired(int32_t max_idle_millis) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int64_t now_millis = get_timestamp_millis();
   auto iter = m_scanner_map.begin();
   while (iter != m_scanner_map.end()) {
@@ -100,7 +102,7 @@ void ScannerMap::purge_expired(int32_t max_idle_millis) {
 
 
 void ScannerMap::get_counts(int32_t *totalp, CstrToInt32Map &table_scanner_count_map) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   CstrToInt32Map::iterator tsc_iter;
 
   *totalp = m_scanner_map.size();
@@ -113,7 +115,7 @@ void ScannerMap::get_counts(int32_t *totalp, CstrToInt32Map &table_scanner_count
 }
 
 void ScannerMap::update_profile_data(int32_t id, ProfileDataScanner &profile_data) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   auto iter = m_scanner_map.find(id);
   if (iter == m_scanner_map.end())
     HT_WARNF("Unable to locate scanner ID %u in scanner map", (unsigned)id);
@@ -123,7 +125,5 @@ void ScannerMap::update_profile_data(int32_t id, ProfileDataScanner &profile_dat
 
 
 int64_t ScannerMap::get_timestamp_millis() {
-  boost::xtime now;
-  boost::xtime_get(&now, boost::TIME_UTC_);
-  return ((int64_t)now.sec * 1000LL) + ((int64_t)now.nsec / 1000000LL);
+  return get_ts64() / 1000000LL;
 }

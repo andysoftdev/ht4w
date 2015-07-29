@@ -17,14 +17,14 @@
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#ifndef HYPERTABLE_TABLEMUTATOR_SHARED_H
-#define HYPERTABLE_TABLEMUTATOR_SHARED_H
-
-#include "Common/Time.h"
+#ifndef Hypertable_Lib_TableMutatorShared_h
+#define Hypertable_Lib_TableMutatorShared_h
 
 #include "TableMutator.h"
 
+#include <chrono>
 #include <memory>
+#include <mutex>
 
 namespace Hypertable {
 
@@ -60,7 +60,7 @@ public:
    * @see TableMutator::set
    */
   virtual void set(const KeySpec &key, const void *value, uint32_t value_len) {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     Parent::set(key, value, value_len);
   }
 
@@ -68,7 +68,7 @@ public:
    * @see TableMutator::set_delete
    */
   virtual void set_delete(const KeySpec &key) {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     Parent::set_delete(key);
   }
 
@@ -76,7 +76,7 @@ public:
    * @see TableMutator::set_cells
    */
   virtual void set_cells(const Cells &cells) {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     Parent::set_cells(cells);
   }
 
@@ -84,16 +84,16 @@ public:
    * @see TableMutator::flush
    */
   virtual void flush() {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     Parent::flush();
-    m_last_flush_ts.reset();
+    m_last_flush_ts = std::chrono::steady_clock::now();
   }
 
   /**
    * @see TableMutator::retry
    */
   virtual bool retry(uint32_t timeout_ms = 0) {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return Parent::retry(timeout_ms);
   }
 
@@ -101,7 +101,7 @@ public:
    * @see TableMutator:memory_used
    */
   virtual uint64_t memory_used() {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return Parent::memory_used();
   }
 
@@ -109,7 +109,7 @@ public:
    * @see TableMutator::get_resend_count
    */
   virtual uint64_t get_resend_count() {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return Parent::get_resend_count();
   }
 
@@ -117,7 +117,7 @@ public:
    * @see TableMutator::get_failed
    */
   virtual void get_failed(FailedMutations &failed_mutations) {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return Parent::get_failed(failed_mutations);
   }
 
@@ -125,7 +125,7 @@ public:
    * @see TableMutator::need_retry
    */
   virtual bool need_retry() {
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return Parent::need_retry();
   }
 
@@ -137,12 +137,12 @@ public:
   void interval_flush();
 
 private:
-  RecMutex      m_mutex;
-  uint32_t      m_flush_interval;
-  HiResTime     m_last_flush_ts;
+  std::recursive_mutex m_mutex;
+  uint32_t m_flush_interval;
+  std::chrono::steady_clock::time_point m_last_flush_ts;
   std::shared_ptr<TableMutatorIntervalHandler> m_tick_handler;
 };
 
-} // namespace Hypertable
+}
 
-#endif /* HYPERTABLE_TABLEMUTATOR_SHARED_H */
+#endif /* Hypertable_Lib_TableMutatorShared_h */

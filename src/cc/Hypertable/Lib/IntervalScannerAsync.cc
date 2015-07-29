@@ -38,6 +38,7 @@ extern "C" {
 
 using namespace Hypertable;
 using namespace Hypertable::Lib;
+using namespace std;
 
 namespace {
   enum {
@@ -91,7 +92,7 @@ void IntervalScannerAsync::init(const ScanSpec &scan_spec) {
   m_scan_spec_builder.set_do_not_cache(scan_spec.do_not_cache);
   m_scan_spec_builder.set_rebuild_indices(scan_spec.rebuild_indices);
 
-  foreach_ht (const ColumnPredicate &cp, scan_spec.column_predicates)
+  for (const auto &cp : scan_spec.column_predicates)
     m_scan_spec_builder.add_column_predicate(cp.column_family,
             cp.column_qualifier, cp.operation, cp.value, cp.value_len);
 
@@ -136,11 +137,11 @@ void IntervalScannerAsync::init(const ScanSpec &scan_spec) {
       m_scan_spec_builder.set_scan_and_filter_rows(true);
       // order and filter duplicated rows
       CstrSet rowset;
-      foreach_ht (const RowInterval& ri, scan_spec.row_intervals)
+      for (const auto &ri : scan_spec.row_intervals)
         rowset.insert(ri.start); // ri.start always equals to ri.end
       // setup ordered row intervals and rowset
       m_scan_spec_builder.reserve_rows(rowset.size());
-      foreach_ht (const char* r, rowset) {
+      for (auto r : rowset) {
         // end is set to "" in order to safe space
         m_scan_spec_builder.add_row_interval(r, true, "", true);
         // Cstr's must be taken from m_scan_spec_builder and not from scan_spec
@@ -445,7 +446,7 @@ bool IntervalScannerAsync::handle_result(bool *show_results, ScanCellsPtr &cells
       // scan is over but there was a create/fetch outstanding, send a ScanCells with 0 cells
       // and just the eos bit set
       *show_results = true;
-      cells = new ScanCells;
+      cells = make_shared<ScanCells>();
     }
     return !has_outstanding_requests();
   }
@@ -483,7 +484,7 @@ bool IntervalScannerAsync::handle_result(bool *show_results, ScanCellsPtr &cells
         }
         else {
           // Send back an empty ScanCells object
-          cells = new ScanCells;
+          cells = make_shared<ScanCells>();
         }
         if (!has_outstanding_requests()) {
           if (m_state == RESTART)
@@ -505,8 +506,8 @@ bool IntervalScannerAsync::handle_result(bool *show_results, ScanCellsPtr &cells
 }
 
 void IntervalScannerAsync::set_result(EventPtr &event, ScanCellsPtr &cells,
-        bool is_create) {
-  cells = new ScanCells;
+                                      bool is_create) {
+  cells = make_shared<ScanCells>();
   m_cur_scanner_finished = cells->add(event, &m_cur_scanner_id);
 
   if (is_create)

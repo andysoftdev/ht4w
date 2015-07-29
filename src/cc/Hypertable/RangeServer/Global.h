@@ -26,7 +26,6 @@
 
 #include <boost/thread/thread.hpp>
 
-#include "Common/Mutex.h"
 #include "Common/Properties.h"
 #include "Common/Filesystem.h"
 #include "Common/TimeWindow.h"
@@ -52,13 +51,15 @@
 #include "MetaLogEntityRemoveOkLogs.h"
 #include "TableInfo.h"
 
+#include <mutex>
+
 namespace Hypertable {
 
   using namespace Lib;
 
   class Global {
   public:
-    static Mutex          mutex;
+    static std::mutex mutex;
     static Hyperspace::SessionPtr hyperspace;
     static Hypertable::FilesystemPtr dfs;
     static Hypertable::FilesystemPtr log_dfs;
@@ -73,10 +74,10 @@ namespace Hypertable {
     static bool           verbose;
     static bool           row_size_unlimited;
     static bool           ignore_cells_with_clock_skew;
-    static CommitLog     *user_log;
-    static CommitLog     *system_log;
-    static CommitLog     *metadata_log;
-    static CommitLog     *root_log;
+    static CommitLogPtr user_log;
+    static CommitLogPtr system_log;
+    static CommitLogPtr metadata_log;
+    static CommitLogPtr root_log;
     static MetaLog::WriterPtr rsml_writer;
     static std::string    log_dir;
     static LocationInitializerPtr location_initializer;

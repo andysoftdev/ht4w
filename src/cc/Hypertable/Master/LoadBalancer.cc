@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
+#include <Common/Compat.h>
 
 #include "BalanceAlgorithmEvenRanges.h"
 #include "BalanceAlgorithmLoad.h"
@@ -29,6 +29,7 @@
 #include <cstring>
 
 using namespace Hypertable;
+using namespace std;
 
 LoadBalancer::LoadBalancer(ContextPtr context)
   : m_context(context), m_new_server_added(false), m_paused(false) {
@@ -57,13 +58,13 @@ LoadBalancer::LoadBalancer(ContextPtr context)
 }
 
 void LoadBalancer::signal_new_server() {
-  ScopedLock lock(m_add_mutex);
+  lock_guard<mutex> lock(m_add_mutex);
   m_new_server_added = true;
   m_next_balance_time_new_server = time(0) + m_new_server_balance_delay;
 }
 
 bool LoadBalancer::balance_needed() {
-  ScopedLock lock(m_add_mutex);
+  lock_guard<mutex> lock(m_add_mutex);
   time_t now = time(0);
   if (m_paused)
     return false;
@@ -76,7 +77,7 @@ bool LoadBalancer::balance_needed() {
 
 
 void LoadBalancer::unpause() {
-  ScopedLock lock(m_add_mutex);
+  lock_guard<mutex> lock(m_add_mutex);
   time_t now = time(0);
   m_new_server_added = false;
   if (m_context->rsc_manager->exist_unbalanced_servers()) {
@@ -89,7 +90,7 @@ void LoadBalancer::unpause() {
 
 
 void LoadBalancer::transfer_monitoring_data(vector<RangeServerStatistics> &stats) {
-  ScopedLock lock(m_add_mutex);
+  lock_guard<mutex> lock(m_add_mutex);
   m_statistics.swap(stats);
 }
 
@@ -101,7 +102,7 @@ void LoadBalancer::create_plan(BalancePlanPtr &plan,
   BalanceAlgorithmPtr algo;
 
   {
-    ScopedLock lock(m_add_mutex);
+    lock_guard<mutex> lock(m_add_mutex);
     String algorithm_spec = plan->algorithm;
 
     if (m_statistics.empty())
@@ -150,11 +151,11 @@ void LoadBalancer::create_plan(BalancePlanPtr &plan,
     HT_INFOF("LoadBalance(name='%s', args='%s')", name.c_str(), arguments.c_str());
 
     if (name == "offload")
-      algo = new BalanceAlgorithmOffload(m_context, m_statistics, arguments);
+      algo = make_shared<BalanceAlgorithmOffload>(m_context, m_statistics, arguments);
     else if (name == "table_ranges")
-      algo = new BalanceAlgorithmEvenRanges(m_context, m_statistics);
+      algo = make_shared<BalanceAlgorithmEvenRanges>(m_context, m_statistics);
     else if (name == "load")
-      algo = new BalanceAlgorithmLoad(m_context, m_statistics);
+      algo = make_shared<BalanceAlgorithmLoad>(m_context, m_statistics);
     else
       HT_THROWF(Error::MASTER_BALANCE_PREVENTED,
                 "Unrecognized algorithm - %s", name.c_str());
@@ -165,7 +166,7 @@ void LoadBalancer::create_plan(BalancePlanPtr &plan,
   algo->compute_plan(plan, balanced);
 
   {
-    ScopedLock lock(m_add_mutex);
+    lock_guard<mutex> lock(m_add_mutex);
     m_paused = true;
   }
 }

@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_CELLCACHE_H
-#define HYPERTABLE_CELLCACHE_H
+#ifndef Hypertable_RangeServer_CellCache_h
+#define Hypertable_RangeServer_CellCache_h
 
 #include <Hypertable/RangeServer/CellCacheAllocator.h>
 #include <Hypertable/RangeServer/CellListScanner.h>
@@ -28,9 +28,9 @@
 
 #include <Hypertable/Lib/SerializedKey.h>
 
-#include <Common/Mutex.h>
-
 #include <map>
+#include <memory>
+#include <mutex>
 #include <set>
 
 //#define HT_CELLCACHE_ARENA_USED
@@ -52,7 +52,7 @@ namespace Hypertable {
    * All updates get written to the CellCache and later get "compacted"
    * into a CellStore on disk.
    */
-  class CellCache : public CellList {
+  class CellCache : public CellList, public std::enable_shared_from_this<CellCache> {
 
   public:
 
@@ -84,22 +84,22 @@ namespace Hypertable {
     virtual void split_row_estimate_data(SplitRowDataMapT &split_row_data);
 
     /** Creates a CellCacheScanner object that contains an shared pointer
-     * (intrusive_ptr) to this CellCache.
+     * to this CellCache.
      */
-    virtual CellListScanner *create_scanner(ScanContextPtr &scan_ctx);
+    CellListScannerPtr create_scanner(ScanContext *scan_ctx) override;
 
     void lock()   { m_mutex.lock(); }
     void unlock() { m_mutex.unlock(); }
 
-    size_t size() { ScopedLock lock(m_mutex); return m_cell_map.size(); }
+    size_t size() { std::lock_guard<std::mutex> lock(m_mutex); return m_cell_map.size(); }
 
-    bool empty() { ScopedLock lock(m_mutex); return m_cell_map.empty(); }
+    bool empty() { std::lock_guard<std::mutex> lock(m_mutex); return m_cell_map.empty(); }
 
     /** Returns the amount of memory used by the CellCache.  This is the
      * summation of the lengths of all the keys and values in the map.
      */
     int64_t memory_used() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
 #ifdef HT_CELLCACHE_ARENA_USED
       return m_arena.used();
 #else
@@ -111,7 +111,7 @@ namespace Hypertable {
      * Returns the amount of memory allocated by the CellCache.
      */
     uint64_t memory_allocated() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
 #ifdef HT_CELLCACHE_ARENA_TOTAL
       return m_arena.total();
 #else
@@ -120,12 +120,12 @@ namespace Hypertable {
     }
 
     int64_t logical_size() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_key_bytes + m_value_bytes;
     }
 
     void add_statistics(Statistics &stats) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       stats.size += m_cell_map.size();
       stats.deletes += m_deletes;
       stats.memory_used += m_arena.used();
@@ -135,7 +135,7 @@ namespace Hypertable {
     }
 
     int32_t delete_count() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_deletes;
     }
 
@@ -162,7 +162,7 @@ namespace Hypertable {
     void inc_key_values_bytes(const CellMap::value_type& v);
     void dec_key_values_bytes(const CellMap::value_type& v);
 
-    Mutex m_mutex;
+    std::mutex m_mutex;
     CellCacheArena m_arena;
     CellMap m_cell_map;
     int32_t m_deletes {};
@@ -173,8 +173,9 @@ namespace Hypertable {
 
   };
 
-  typedef intrusive_ptr<CellCache> CellCachePtr;
+  /// Shared smart pointer to CellCache
+  typedef std::shared_ptr<CellCache> CellCachePtr;
 
-} // namespace Hypertable;
+}
 
-#endif // HYPERTABLE_CELLCACHE_H
+#endif // Hypertable_RangeServer_CellCache_h

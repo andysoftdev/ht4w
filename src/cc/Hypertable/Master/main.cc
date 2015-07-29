@@ -144,9 +144,9 @@ int main(int argc, char **argv) {
       uint16_t port = get_i16("port");
       listen_addr = InetAddr(INADDR_ANY, port);
 
-      Hyperspace::SessionPtr hyperspace = new Hyperspace::Session(Comm::instance(), properties);
-      context = new Context(properties, hyperspace);
-      context->monitoring = new Monitoring(context.get());
+      Hyperspace::SessionPtr hyperspace = make_shared<Hyperspace::Session>(Comm::instance(), properties);
+      context = make_shared<Context>(properties, hyperspace);
+      context->monitoring = make_shared<Monitoring>(context.get());
       context->op = std::make_unique<OperationProcessor>(context, get_i32("workers"));
 
       ConnectionHandlerFactoryPtr connection_handler_factory(new HandlerFactory(context));
@@ -164,9 +164,8 @@ int main(int argc, char **argv) {
       HT_INFOF("Cluster id is %llu", (Llu)ClusterId::get());
 
       context->mml_definition =
-        new MetaLog::DefinitionMaster(context, format("%s_%u", "master", port).c_str());
-      context->monitoring = new Monitoring(context.get());
-
+        make_shared<MetaLog::DefinitionMaster>(context, format("%s_%u", "master", port).c_str());
+      
       if (has("induce-failure")) {
         if (FailureInducer::instance == 0)
           FailureInducer::instance = new FailureInducer();
@@ -186,8 +185,8 @@ int main(int argc, char **argv) {
         + context->mml_definition->name();
       BalancePlanAuthority *bpa {};
 
-      mml_reader = new MetaLog::Reader(context->dfs, context->mml_definition,
-                                       log_dir);
+      mml_reader = make_shared<MetaLog::Reader>(context->dfs, context->mml_definition,
+                                                log_dir);
       mml_reader->get_entities(entities);
 
       // Uniq-ify the RangeServerConnection and BalancePlanAuthority objects
@@ -196,7 +195,7 @@ int main(int argc, char **argv) {
         std::set<RangeServerConnectionPtr, ltrsc> rsc_set;
 
         entities2.reserve(entities.size());
-        foreach_ht (MetaLog::EntityPtr &entity, entities) {
+        for (auto &entity : entities) {
           if (dynamic_cast<RangeServerConnection *>(entity.get())) {
             RangeServerConnectionPtr rsc {dynamic_pointer_cast<RangeServerConnection>(entity)};
             if (rsc_set.count(rsc) > 0)
@@ -216,7 +215,7 @@ int main(int argc, char **argv) {
           }
         }
         // Insert uniq'ed RangeServerConnections
-        foreach_ht (const RangeServerConnectionPtr &rsc, rsc_set)
+        for (const auto &rsc : rsc_set)
           entities2.push_back(rsc);
         entities.swap(entities2);
       }
@@ -227,8 +226,9 @@ int main(int argc, char **argv) {
       if (!context->recovered_servers)
         context->recovered_servers = make_shared<RecoveredServers>();
 
-      context->mml_writer = new MetaLog::Writer(context->dfs, context->mml_definition,
-                                                log_dir, entities);
+      context->mml_writer =
+        make_shared<MetaLog::Writer>(context->dfs, context->mml_definition,
+                                     log_dir, entities);
 
       if (bpa) {
         bpa->set_mml_writer(context->mml_writer);
@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
       context->op->wait_for_empty();
 
       // Then reconstruct state and start execution
-      foreach_ht (MetaLog::EntityPtr &entity, entities) {
+      for (auto &entity : entities) {
         Operation *op = dynamic_cast<Operation *>(entity.get());
         if (op) {
           operation = dynamic_pointer_cast<Operation>(entity);
@@ -276,7 +276,7 @@ int main(int argc, char **argv) {
 
       // For each RangeServerConnection that doesn't already have an
       // outstanding OperationRecover, create and add one
-      foreach_ht (MetaLog::EntityPtr &entity, entities) {
+      for (auto &entity : entities) {
         if (dynamic_cast<RangeServerConnection *>(entity.get())) {
           rsc = dynamic_pointer_cast<RangeServerConnection>(entity);
           if (recovery_ops.find(rsc->location()) == recovery_ops.end())
@@ -324,6 +324,7 @@ int main(int argc, char **argv) {
       context->op->join();
 
       HT_NOTICE("Exiting master");
+      Logger::get()->set_level(Logger::Priority::FATAL);
     }
     catch (Exception &e) {
       HT_ERROR_OUT << e << HT_END;

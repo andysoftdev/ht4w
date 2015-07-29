@@ -29,14 +29,17 @@
 
 #include "ResponseManager.h"
 
+#include <chrono>
+
 using namespace Hypertable;
+using namespace std;
 
 void ResponseManager::operator()() {
   ResponseManagerContext::OperationExpirationTimeIndex &op_expiration_time_index = m_context->expirable_ops.get<1>();
   ResponseManagerContext::OperationExpirationTimeIndex::iterator op_iter;
   ResponseManagerContext::DeliveryExpirationTimeIndex &delivery_expiration_time_index = m_context->delivery_list.get<1>();
   ResponseManagerContext::DeliveryExpirationTimeIndex::iterator delivery_iter;
-  HiResTime now, expire_time;
+  ClockT::time_point now, expire_time;
   bool timed_wait;
   bool shutdown = false;
   std::vector<OperationPtr> operations;
@@ -47,7 +50,7 @@ void ResponseManager::operator()() {
     while (!shutdown) {
 
       {
-        ScopedLock lock(m_context->mutex);
+        unique_lock<mutex> lock(m_context->mutex);
 
         timed_wait = false;
         if (!op_expiration_time_index.empty()) {
@@ -61,16 +64,14 @@ void ResponseManager::operator()() {
           timed_wait = true;
         }
 
-        if (timed_wait) {
-          boost::xtime xt = expire_time;
-          m_context->cond.timed_wait(lock, xt);
-        }
+        if (timed_wait)
+          m_context->cond.wait_until(lock, expire_time);
         else
           m_context->cond.wait(lock);
 
         shutdown = m_context->shutdown;
 
-        now.reset();
+        now = ClockT::now();
 
         op_iter = op_expiration_time_index.begin();
         while (op_iter != op_expiration_time_index.end()) {
@@ -117,7 +118,7 @@ void ResponseManager::operator()() {
 
 
 void ResponseManager::add_delivery_info(int64_t operation_id, EventPtr &event) {
-  ScopedLock lock(m_context->mutex);
+  lock_guard<mutex> lock(m_context->mutex);
   ResponseManagerContext::OperationIdentifierIndex &operation_identifier_index = m_context->expirable_ops.get<2>();
   ResponseManagerContext::OperationIdentifierIndex::iterator iter;
   ResponseManagerContext::DeliveryRec delivery_rec;
@@ -125,8 +126,8 @@ void ResponseManager::add_delivery_info(int64_t operation_id, EventPtr &event) {
   delivery_rec.id = operation_id;
   if ((iter = operation_identifier_index.find(delivery_rec.id)) == operation_identifier_index.end()) {
     delivery_rec.event = event;
-    delivery_rec.expiration_time.reset();
-    delivery_rec.expiration_time += event->header.timeout_ms;
+    delivery_rec.expiration_time = ClockT::now() +
+      chrono::milliseconds(event->header.timeout_ms);
     m_context->delivery_list.push_back(delivery_rec);
   }
   else {
@@ -147,7 +148,7 @@ void ResponseManager::add_delivery_info(int64_t operation_id, EventPtr &event) {
 
 
 void ResponseManager::add_operation(OperationPtr &operation) {
-  ScopedLock lock(m_context->mutex);
+  lock_guard<mutex> lock(m_context->mutex);
   ResponseManagerContext::DeliveryIdentifierIndex &delivery_identifier_index = m_context->delivery_list.get<2>();
   ResponseManagerContext::DeliveryIdentifierIndex::iterator iter;
 
@@ -173,7 +174,7 @@ void ResponseManager::add_operation(OperationPtr &operation) {
 
 
 void ResponseManager::shutdown() {
-  ScopedLock lock(m_context->mutex);
+  lock_guard<mutex> lock(m_context->mutex);
   m_context->shutdown = true;
   m_context->cond.notify_all();
 }

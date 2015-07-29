@@ -91,13 +91,13 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
   get_servers(servers);
   if (!servers.empty()) {
     bool shutdown = false;
-    boost::xtime recent_server_start;
+    std::chrono::system_clock::time_point recent_server_start;
 
     while (!shutdown) {
       launched_servers_t launched_servers;
       if (!start(servers, Config::server_args().c_str(), launched_servers, notify))
         break;
-      boost::xtime_get(&recent_server_start, TIME_UTC_);
+      recent_server_start = std::chrono::system_clock::now();
       HT_NOTICE("Servers started");
       joined = true;
       if (notify)
@@ -105,7 +105,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
       DWORD num_wait_handles = launched_servers.size() + 1;
       HANDLE* wait_handles = new HANDLE[num_wait_handles];
       int n = 0;
-      foreach_ht (const launched_server_t& launched_server, launched_servers)
+      for (const launched_server_t& launched_server : launched_servers)
         wait_handles[n++] = launched_server.pi.hProcess;
       wait_handles[n] = shutdown_event;
 
@@ -126,9 +126,7 @@ bool ServerUtils::join_servers(HANDLE shutdown_event, Notify* notify) {
           close_handles(launched_server);
           HT_NOTICEF("Server %s terminates unexpected", server_name(launched_server.server).c_str());
           // continuously crashing?
-          boost::xtime now;
-          boost::xtime_get(&now, TIME_UTC_);
-          if (xtime_diff_millis(recent_server_start, now) > Config::minuptime_before_restart()) {
+          if (std::chrono::system_clock::now() - recent_server_start > std::chrono::milliseconds(Config::minuptime_before_restart())) {
             // is range server or thrift broker?
             if (launched_server.server == rangeServer || launched_server.server == thriftBroker) {
               // restart server
@@ -340,7 +338,7 @@ void ServerUtils::kill(server_t server) {
   std::vector<DWORD> pids;
   find(server, pids);
   const String& exe_name = server_exe_name(server).c_str();
-  foreach_ht (DWORD pid, pids) {
+  for (DWORD pid : pids) {
     HT_NOTICEF("Killing %s (%d)", server_name(server).c_str(), pid);
     ProcessUtils::kill(pid, Config::kill_server_timeout());
   }
@@ -427,7 +425,7 @@ bool ServerUtils::shutdown_hyperspace(DWORD pid) {
       int port = Config::properties->get_i16("Hyperspace.Replica.Port");
       Comm* comm = Comm::instance();
       ConnectionManagerPtr conn_mgr = std::make_shared<ConnectionManager>(comm);
-      Hyperspace::SessionPtr hyperspace = new Hyperspace::Session(comm, Config::properties);
+      Hyperspace::SessionPtr hyperspace = std::make_shared<Hyperspace::Session>(comm, Config::properties);
 
       if (!hyperspace->wait_for_connection(Config::connection_timeout())) {
         conn_mgr->remove_all();
@@ -464,7 +462,7 @@ bool ServerUtils::shutdown_master(DWORD pid) {
     {
       Comm* comm = Comm::instance();
       ConnectionManagerPtr conn_mgr = std::make_shared<ConnectionManager>(comm);
-      Hyperspace::SessionPtr hyperspace = new Hyperspace::Session(comm, Config::properties);
+      Hyperspace::SessionPtr hyperspace = std::make_shared<Hyperspace::Session>(comm, Config::properties);
 
       if (!hyperspace->wait_for_connection(Config::connection_timeout())) {
         conn_mgr->remove_all();
@@ -475,7 +473,16 @@ bool ServerUtils::shutdown_master(DWORD pid) {
       boost::trim_if(toplevel_dir, boost::is_any_of("/"));
       toplevel_dir = String("/") + toplevel_dir;
 
-      Lib::Master::ClientPtr master = new Lib::Master::Client(conn_mgr, hyperspace, toplevel_dir, Config::connection_timeout(), app_queue, 0, 0);
+      Lib::Master::ClientPtr master =
+        std::make_shared<Lib::Master::Client>(
+          conn_mgr, 
+          hyperspace, 
+          toplevel_dir, 
+          Config::connection_timeout(), 
+          app_queue, 
+          DispatchHandlerPtr(), 
+          ConnectionInitializerPtr());
+
       master->set_verbose_flag(Config::properties->get_bool("verbose"));
       if (!master->wait_for_connection(Config::connection_timeout())) {
         conn_mgr->remove_all();

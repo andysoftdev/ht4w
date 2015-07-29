@@ -29,8 +29,8 @@
 #include <Hypertable/Lib/Schema.h>
 
 #include <Common/StringExt.h>
-#include <Common/ReferenceCount.h>
 
+#include <memory>
 #include <vector>
 
 namespace Hypertable {
@@ -43,7 +43,7 @@ namespace Lib {
    * This class takes allows vector access to a set of cells contained in an EventPtr without
    * any copying.
    */
-  class ScanCells : public ReferenceCount {
+  class ScanCells {
 
   public:
     ScanCells() : m_eos(false){}
@@ -72,7 +72,7 @@ namespace Lib {
 
     size_t memory_used() const {
       size_t mem_used=0;
-      foreach_ht(const ScanBlockPtr &v, m_scanblocks) {
+      for (const auto &v : m_scanblocks) {
         mem_used += v->memory_used();
       }
       return mem_used;
@@ -113,7 +113,7 @@ namespace Lib {
      * get number of rows that were skipped because of an OFFSET predicate
      */
     int get_skipped_rows() {
-      foreach_ht(const ScanBlockPtr &v, m_scanblocks) {
+      for (const auto &v : m_scanblocks) {
         if (v->get_skipped_rows())
           return (v->get_skipped_rows());
       }
@@ -124,7 +124,7 @@ namespace Lib {
      * get number of cells that were skipped because of a CELL_OFFSET predicate
      */
     int get_skipped_cells() {
-      foreach_ht(const ScanBlockPtr &v, m_scanblocks) {
+      for (const auto &v : m_scanblocks) {
         if (v->get_skipped_cells())
           return (v->get_skipped_cells());
       }
@@ -136,10 +136,11 @@ namespace Lib {
     vector<ScanBlockPtr> m_scanblocks;
     CellsBuilderPtr m_cells;
     ProfileDataScanner m_profile_data;
-    bool m_eos;
-  }; // ScanCells
+    bool m_eos {};
+  };
 
-  typedef intrusive_ptr<ScanCells> ScanCellsPtr;
+  /// Smart pointer to ScanCells
+  typedef std::shared_ptr<ScanCells> ScanCellsPtr;
 
 }}
 

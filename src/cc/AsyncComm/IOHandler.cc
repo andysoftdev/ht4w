@@ -25,11 +25,16 @@
  * from which I/O handlers are derived.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include "IOHandler.h"
+#include "Reactor.h"
+#include "ReactorRunner.h"
+
+#include <Common/Logger.h>
 
 #include <cstdio>
 #include <iostream>
-using namespace std;
 
 extern "C" {
 #include <errno.h>
@@ -41,17 +46,12 @@ extern "C" {
 #endif
 }
 
-#include "Common/Logger.h"
-
-#include "IOHandler.h"
-#include "Reactor.h"
-#include "ReactorRunner.h"
 #ifdef _WIN32
 #include "Comm.h"
 #include "IOOP.h"
 #endif
-
 using namespace Hypertable;
+using namespace std;
 
 #ifndef _WIN32
 
@@ -461,7 +461,7 @@ int IOHandler::start_polling() {
 }
 
 void IOHandler::close() {
-  ScopedLock lock(m_mutex);
+  std::lock_guard<std::mutex> lock(m_mutex);
   if(m_sd != INVALID_SOCKET) {
     HT_DEBUGF("closesocket(%d)", m_sd);
     closesocket(m_sd);

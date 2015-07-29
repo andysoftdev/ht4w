@@ -25,13 +25,12 @@
  * that holds Schema objects for the pseudo tables.
  */
 
-#ifndef HYPERTABLE_PSEUDOTABLE_H
-#define HYPERTABLE_PSEUDOTABLE_H
-
-#include "Common/ReferenceCount.h"
-#include "Common/Mutex.h"
+#ifndef Hypertable_Lib_PseudoTables_h
+#define Hypertable_Lib_PseudoTables_h
 
 #include "Schema.h"
+
+#include <mutex>
 
 namespace Hypertable {
 
@@ -41,7 +40,7 @@ namespace Hypertable {
 
   /** Singleton class holding Schema objects for pseudo tables.
    */
-  class PseudoTables : public ReferenceCount {
+  class PseudoTables {
 
   public:
 
@@ -63,7 +62,7 @@ namespace Hypertable {
      * calls to #destroy.
      */
     static PseudoTables *instance() {
-      ScopedLock lock(ms_mutex);
+      std::lock_guard<std::mutex> lock(ms_mutex);
 
       if (!ms_instance)
         ms_instance = new PseudoTables();
@@ -74,7 +73,7 @@ namespace Hypertable {
     /** Destroys singleton instance of the PseudoTables class.
      */
     static void destroy() {
-      ScopedLock lock(ms_mutex);
+      std::lock_guard<std::mutex> lock(ms_mutex);
       if (ms_instance) {
         delete ms_instance;
         ms_instance = 0;
@@ -95,10 +94,10 @@ namespace Hypertable {
     static PseudoTables *ms_instance;
 
     /// Mutex for serializing access to ms_instance
-    static Mutex ms_mutex;
+    static std::mutex ms_mutex;
   };
 
   /** @}*/
 }
 
-#endif // HYPERTABLE_PSEUDOTABLE_H
+#endif // Hypertable_Lib_PseudoTables_h

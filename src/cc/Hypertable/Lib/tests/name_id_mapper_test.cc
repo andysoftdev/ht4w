@@ -1,4 +1,4 @@
-/** -*- C++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -17,19 +17,20 @@
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#include "Common/Compat.h"
-#include "Common/Init.h"
-#include "Common/ServerLauncher.h"
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/Config.h>
+#include <Hypertable/Lib/NameIdMapper.h>
+#include <Hyperspace/Session.h>
+#include <Hyperspace/Config.h>
+
+#include <AsyncComm/Comm.h>
+
+#include <Common/Init.h>
+#include <Common/ServerLauncher.h>
 
 #include <vector>
 #include <unistd.h>
-
-#include "Hypertable/Lib/Config.h"
-#include "Hypertable/Lib/NameIdMapper.h"
-#include "Hyperspace/Session.h"
-#include "Hyperspace/Config.h"
-
-#include "AsyncComm/Comm.h"
 
 using namespace Hypertable;
 using namespace Hyperspace;
@@ -182,12 +183,12 @@ int main(int argc, char *argv[]) {
 
     if (system("/bin/rm -rf ./hsroot") != 0) {
       HT_ERROR("Problem removing ./hsroot directory");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
     if (system("mkdir -p ./hsroot") != 0) {
       HT_ERROR("Unable to create ./hsroot directory");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
 #endif
@@ -225,7 +226,7 @@ int main(int argc, char *argv[]) {
       {
         properties->set("Hyperspace.Replica.Port", (uint16_t)ntohs(addr.sin_port));
 
-        SessionPtr session = new Hyperspace::Session(comm, properties);
+        SessionPtr session = make_shared<Hyperspace::Session>(comm, properties);
 
         {
           NameIdMapper mapper(session, "/ht");
@@ -240,8 +241,8 @@ int main(int argc, char *argv[]) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

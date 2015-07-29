@@ -30,7 +30,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
-#include "atomic.h"
+#include <atomic>
 
 namespace Hypertable {
 
@@ -62,7 +62,6 @@ namespace Hypertable {
   public:
     /** Constructor: initializes reference count with 0 */
     ReferenceCount() {
-      atomic_set(&refcount, 0);
     }
 
     /** Destructor is virtual, can be overwritten */
@@ -73,7 +72,7 @@ namespace Hypertable {
 
   private:
     /** The reference count */
-    atomic_t refcount;
+		std::atomic<uint32_t> refcount {0};
   };
 
   /**
@@ -82,7 +81,7 @@ namespace Hypertable {
    * @param rc pointer to a ReferenceCount object
    */
   inline void intrusive_ptr_add_ref(ReferenceCount *rc) {
-    atomic_inc(&rc->refcount);
+    rc->refcount++;
   }
 
   /**
@@ -92,7 +91,7 @@ namespace Hypertable {
    * @param rc pointer to a ReferenceCount object
    */
   inline void intrusive_ptr_release(ReferenceCount *rc) {
-    if (atomic_dec_and_test(&rc->refcount))
+    if (rc->refcount.fetch_sub(1) == 1)
       delete rc;
   }
 

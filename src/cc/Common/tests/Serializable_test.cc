@@ -238,13 +238,13 @@ int main(int argc, char **argv) {
   if (argc == 2) {
     if (!strcmp(argv[1], "--help")) {
       cout << usage_str << endl;
-      _exit(0);
+      quick_exit(EXIT_SUCCESS);
     }
     golden = argv[1];
   }
   else if (argc > 2) {
     cout << usage_str << endl;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
   if (!golden.empty())
@@ -352,8 +352,8 @@ int main(int argc, char **argv) {
 #endif
     cmd.append(golden);
     if (system(cmd.c_str()))
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
   }
   
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

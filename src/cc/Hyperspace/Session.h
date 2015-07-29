@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERSPACE_SESSION_H
-#define HYPERSPACE_SESSION_H
+#ifndef Hyperspace_Session_h
+#define Hyperspace_Session_h
 
 #include <Hyperspace/ClientKeepaliveHandler.h>
 #include <Hyperspace/DirEntry.h>
@@ -37,14 +37,14 @@
 
 #include <Common/DynamicBuffer.h>
 #include <Common/Properties.h>
-#include <Common/ReferenceCount.h>
 #include <Common/Status.h>
 #include <Common/String.h>
 #include <Common/Timer.h>
 
-#include <boost/thread/condition.hpp>
-#include <boost/thread/mutex.hpp>
-
+#include <chrono>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -145,7 +145,7 @@ namespace Hyperspace {
    * Hyperspace.GracePeriod=6000
    * </pre>
    */
-  class Session : public ReferenceCount {
+  class Session {
 
   public:
 
@@ -665,14 +665,13 @@ namespace Hyperspace {
     /**
      * Creates a new Hyperspace command interpreter
      *
-     * @return HsCommandInterpreter* ptr to created Hperspace interpreter object
+     * @return HsCommandInterpreter ptr to created Hperspace interpreter object
      */
-     HsCommandInterpreter* create_hs_interpreter();
+     HsCommandInterpreterPtr create_hs_interpreter();
 
-    void advance_expire_time(boost::xtime now) {
-      ScopedLock lock(m_mutex);
-      m_expire_time = now;
-      xtime_add_millis(m_expire_time, m_lease_interval);
+    void advance_expire_time(std::chrono::steady_clock::time_point now) {
+      std::lock_guard<std::mutex> lock(m_mutex);
+      m_expire_time = now + std::chrono::milliseconds(m_lease_interval);
     }
 
     void update_master_addr(const String &host);
@@ -694,7 +693,7 @@ namespace Hyperspace {
      * @return InetAddr master address
      */
     InetAddr get_master_addr() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_master_addr;
     }
 
@@ -717,8 +716,8 @@ namespace Hyperspace {
     void normalize_name(const std::string &name, std::string &normal);
     uint64_t open(ClientHandleStatePtr &, CommBufPtr &, Timer *timer);
 
-    Mutex                     m_mutex;
-    boost::condition          m_cond;
+    std::mutex m_mutex;
+    std::condition_variable m_cond;
     Comm                      *m_comm;
     PropertiesPtr             m_cfg;
     bool                      m_verbose;
@@ -729,12 +728,12 @@ namespace Hyperspace {
     uint32_t                  m_grace_period;
     uint32_t                  m_lease_interval;
     uint32_t                  m_timeout_ms;
-    boost::xtime              m_expire_time;
+    std::chrono::steady_clock::time_point m_expire_time;
     InetAddr                  m_master_addr;
     ClientKeepaliveHandlerPtr m_keepalive_handler_ptr;
     CallbackMap               m_callbacks;
     uint64_t                  m_last_callback_id;
-    Mutex                     m_callback_mutex;
+    std::mutex m_callback_mutex;
     vector<String>            m_hyperspace_replicas;
     String                    m_hyperspace_master;
 
@@ -742,7 +741,7 @@ namespace Hyperspace {
     SleepWakeNotifier *m_sleep_wake_notifier;
   };
 
-  typedef boost::intrusive_ptr<Session> SessionPtr;
+  typedef std::shared_ptr<Session> SessionPtr;
 
   void close_handle(SessionPtr hyperspace, uint64_t handle);
   void close_handle_ptr(SessionPtr hyperspace, uint64_t *handlep);
@@ -751,4 +750,4 @@ namespace Hyperspace {
 
 } // namespace Hyperspace
 
-#endif // HYPERSPACE_SESSION_H
+#endif // Hyperspace_Session_h

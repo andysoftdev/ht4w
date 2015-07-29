@@ -50,7 +50,6 @@
 
 #include <Common/Filesystem.h>
 #include <Common/Properties.h>
-#include <Common/ReferenceCount.h>
 #include <Common/StringExt.h>
 #include <Common/Thread.h>
 
@@ -61,7 +60,9 @@
 #include <boost/multi_index/member.hpp>
 #include <boost/thread/condition.hpp>
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <unordered_map>
 
@@ -81,7 +82,7 @@ namespace Hypertable {
   class BalancePlanAuthority;
 
   /// Execution context for the Master.
-  class Context : public ReferenceCount {
+  class Context : public std::enable_shared_from_this<Context> {
 
     class RecoveryState {
       public:
@@ -102,10 +103,10 @@ namespace Hypertable {
 
         typedef std::map<int64_t, RecoveryStepFuturePtr> FutureMap;
 
-        Mutex m_mutex;
-        FutureMap m_replay_map;
-        FutureMap m_prepare_map;
-        FutureMap m_commit_map;
+      std::mutex m_mutex;
+      FutureMap m_replay_map;
+      FutureMap m_prepare_map;
+      FutureMap m_commit_map;
     };
 
   public:
@@ -137,8 +138,8 @@ namespace Hypertable {
     /// @return <i>true</i> if server is shutting down, <i>false</i> otherwise
     bool shutdown_in_progress();
 
-    Mutex mutex;
-    boost::condition cond;
+    std::mutex mutex;
+    std::condition_variable cond;
     Comm *comm {};
     SystemStatePtr system_state; //!< System state entity
     RangeServerConnectionManagerPtr rsc_manager;
@@ -238,7 +239,7 @@ namespace Hypertable {
     RecoveryState &recovery_state() { return m_recovery_state; }
 
     // Instantiate a new table object
-    Table* new_table(const std::string &name);
+    TablePtr new_table(const std::string &name);
 
   private:
 
@@ -248,7 +249,7 @@ namespace Hypertable {
     MetaLog::EntityPtr m_balance_plan_authority {};
 
     /// %Mutex for serializing access to #m_outstanding_move_ops
-    Mutex m_outstanding_move_ops_mutex;
+    std::mutex m_outstanding_move_ops_mutex;
 
     /// Map of outstanding <i>move range</i> operations
     std::unordered_map<int64_t, int64_t> m_outstanding_move_ops;
@@ -261,7 +262,7 @@ namespace Hypertable {
   };
 
   /// Smart pointer to Context
-  typedef intrusive_ptr<Context> ContextPtr;
+  typedef std::shared_ptr<Context> ContextPtr;
 
   /// @}
 

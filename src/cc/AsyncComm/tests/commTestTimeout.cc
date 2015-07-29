@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,36 +19,41 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include "CommTestThreadFunction.h"
+
+#include <AsyncComm/Comm.h>
+#include <AsyncComm/ConnectionManager.h>
+#include <AsyncComm/Event.h>
+#include <AsyncComm/ReactorFactory.h>
+
+#include <Common/Init.h>
+#include <Common/Error.h>
+#include <Common/FileUtils.h>
+#include <Common/InetAddr.h>
+#include <Common/Logger.h>
+#include <Common/TestHarness.h>
+#include <Common/System.h>
+#include <Common/Usage.h>
+
+#include <boost/thread/thread.hpp>
+
+#include <chrono>
+#include <condition_variable>
 #include <cstdlib>
+#include <mutex>
+#include <thread>
 
 extern "C" {
-#include <poll.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
 }
 
-#include <boost/thread/thread.hpp>
-
-#include "Common/Init.h"
-#include "Common/Error.h"
-#include "Common/FileUtils.h"
-#include "Common/InetAddr.h"
-#include "Common/Logger.h"
-#include "Common/TestHarness.h"
-#include "Common/System.h"
-#include "Common/Usage.h"
-
-#include "AsyncComm/Comm.h"
-#include "AsyncComm/ConnectionManager.h"
-#include "AsyncComm/Event.h"
-#include "AsyncComm/ReactorFactory.h"
-
-#include "CommTestThreadFunction.h"
-
 using namespace Hypertable;
 using namespace Serialization;
+using namespace std;
 
 namespace {
   const char *usage[] = {
@@ -122,7 +127,7 @@ namespace {
         execl("./testServer", "./testServer", DEFAULT_PORT_ARG,
               "--delay=120000", (char *)0);
       }
-      poll(0,0,2000);
+      this_thread::sleep_for(chrono::milliseconds(2000));
     }
     ~ServerLauncher() {
       if (kill(m_child_pid, 9) == -1)
@@ -139,10 +144,10 @@ namespace {
    */
   class ResponseHandler : public DispatchHandler {
   public:
-    ResponseHandler() : m_mutex(), m_cond(), m_connected(false) { return; }
+    ResponseHandler() { }
 
     virtual void handle(EventPtr &event_ptr) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       if (event_ptr->type == Event::CONNECTION_ESTABLISHED) {
         m_connected = true;
         m_cond.notify_one();
@@ -158,15 +163,14 @@ namespace {
     }
 
     void wait_for_connection() {
-      ScopedLock lock(m_mutex);
-      while (!m_connected)
-        m_cond.wait(lock);
+      std::unique_lock<std::mutex> lock(m_mutex);
+      m_cond.wait(lock, [this](){ return m_connected; });
     }
 
   private:
-    Mutex             m_mutex;
-    boost::condition  m_cond;
-    bool              m_connected;
+    std::mutex m_mutex;
+    std::condition_variable m_cond;
+    bool m_connected {};
   };
 
 }
@@ -222,21 +226,21 @@ int main(int argc, char **argv) {
     }
 
     msg = "bar";
-    cbp = new CommBuf(header, encoded_length_str16(msg));
+    cbp = make_shared<CommBuf>(header, encoded_length_str16(msg));
     cbp->append_str16(msg);
     if ((error = comm->send_request(addr, 5000, cbp, resp_handler)) != Error::OK) {
       HT_ERRORF("Problem sending request - %s", Error::get_text(error));
       return 1;
     }
 
-    poll(0, 0, 8000);
+    this_thread::sleep_for(chrono::milliseconds(8000));
 
     if (!golden)
       diff_exit = harness.validate("commTestTimeout.golden");
   }
 
   if (!golden)
-    _exit(diff_exit);
+    quick_exit(diff_exit);
   harness.regenerate_golden_file("commTestTimeout.golden");
   return 0;
 }

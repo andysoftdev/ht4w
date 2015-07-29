@@ -35,7 +35,9 @@
 #include <Common/InetAddr.h>
 #include <Common/Init.h>
 
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 using namespace Hypertable;
 using namespace Tools::client::master;
@@ -75,7 +77,7 @@ namespace {
         if (!m_connected) {
           if (!m_silent)
             cout << "Master CRITICAL - connect error" << endl;
-          _exit(2);
+          quick_exit(2);
         }
       }
       else if (event_ptr->type == Event::CONNECTION_ESTABLISHED)
@@ -102,7 +104,7 @@ int main(int argc, char **argv) {
 
     Comm *comm = Comm::instance();
 
-    Lib::Master::ClientPtr client = new Lib::Master::Client(comm, addr, timeout);
+    Lib::Master::ClientPtr client = make_shared<Lib::Master::Client>(comm, addr, timeout);
 
     DispatchHandlerPtr dispatch_handler_ptr = make_shared<MasterDispatchHandler>(silent);
 
@@ -110,14 +112,14 @@ int main(int argc, char **argv) {
     if ((error = comm->connect(addr, dispatch_handler_ptr)) != Error::OK) {
       if (!silent)
         cout << "Master CRITICAL - connect error" << endl;
-      _exit(2);
+      quick_exit(2);
     }
 
-    poll(0, 0, 100);
+    this_thread::sleep_for(chrono::milliseconds(100));
 
-    CommandInterpreterPtr interp = new MasterCommandInterpreter(client);
+    CommandInterpreterPtr interp = make_shared<MasterCommandInterpreter>(client);
 
-    CommandShellPtr shell = new CommandShell("master", "Master", interp, properties);
+    CommandShellPtr shell = make_shared<CommandShell>("master", "Master", interp, properties);
 
     error = shell->run();
   }
@@ -129,7 +131,7 @@ int main(int argc, char **argv) {
         cout << " - " << msg;
       cout << endl;
     }
-    _exit(2);
+    quick_exit(2);
   }
-  _exit(error);
+  quick_exit(error);
 }

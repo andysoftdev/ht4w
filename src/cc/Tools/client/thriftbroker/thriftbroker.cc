@@ -102,9 +102,9 @@ int main(int argc, char **argv) {
       client = make_shared<Thrift::Client>(host, port, timeout_ms);
     }
     
-    CommandInterpreterPtr interp = new thriftbroker::CommandInterpreter(client, nowait);
+    CommandInterpreterPtr interp = make_shared<thriftbroker::CommandInterpreter>(client, nowait);
 
-    CommandShellPtr shell = new CommandShell("thriftbroker", "ThriftBroker", interp, properties);
+    CommandShellPtr shell = make_shared<CommandShell>("thriftbroker", "ThriftBroker", interp, properties);
 
     error = shell->run();
   }
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
         cout << " - " << msg;
       cout << endl;
     }
-    _exit(output_only ? 0 : 2);
+    quick_exit(output_only ? 0 : 2);
   }
   catch (ThriftGen::ClientException &e) {
     if (!silent) {
@@ -127,13 +127,13 @@ int main(int argc, char **argv) {
         cout << " - " << e.message;
       cout << endl;
     }
-    _exit(output_only ? 0 : 2);
+    quick_exit(output_only ? 0 : 2);
   }
   catch (std::exception &e) {
     if (!silent)
       cout << "ThriftBroker CRITICAL - " << e.what() << endl;
-    _exit(output_only ? 0 : 2);
+    quick_exit(output_only ? 0 : 2);
   }
 
-  _exit(error);
+  quick_exit(error);
 }

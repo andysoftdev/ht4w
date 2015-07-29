@@ -49,6 +49,7 @@ extern "C" {
 using namespace Hypertable;
 using namespace Hypertable::ClusterDefinition;
 using namespace Hypertable::Config;
+using namespace std;
 
 /// @defgroup cluster cluster
 /// @ingroup Tools
@@ -66,7 +67,7 @@ namespace {
     string cmd = (string)"/bin/rm -rf " + cache_dir;
     if (system(cmd.c_str()) != 0) {
       cout << "Failed execution: " << cmd << endl;
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
   }
 
@@ -78,7 +79,7 @@ namespace {
     char cwd[1024];
     if (getcwd(cwd, 1024) == nullptr) {
       cout << "getcwd() - " << strerror(errno) << endl;
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
     fname.append(cwd);
     fname.append("/cluster.def");
@@ -92,7 +93,8 @@ namespace {
 
     cout << "Unable to locate 'cluster.def' in '.' or '" << System::install_dir 
          << "/conf'" << endl;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
+    return string();
   }
 
   bool is_environment_setting(const string &arg) {
@@ -117,7 +119,7 @@ namespace {
       argv[i] = nullptr;
       if (execv(script.c_str(), argv) < 0) {
         cout << "execv() failed - " << strerror(errno) << endl;
-        _exit(1);
+        quick_exit(EXIT_FAILURE);
       }
     }
     else {
@@ -131,7 +133,7 @@ namespace {
       argv[i] = nullptr;
       if (execvp("env", argv) < 0) {
         cout << "execv() failed - " << strerror(errno) << endl;
-        _exit(1);
+        quick_exit(EXIT_FAILURE);
       }
     }
     HT_FATAL("Should not reach here!");
@@ -194,7 +196,7 @@ int main(int argc, char **argv) {
     bool display_script {};
 
     System::initialize();
-    Config::properties = new Properties();
+    Config::properties = make_shared<Properties>();
     ReactorFactory::initialize(System::get_processor_count());
 
     // environment settings and cluster options
@@ -204,25 +206,25 @@ int main(int argc, char **argv) {
         for (size_t i=0; usage[i]; i++)
           cout << usage[i] << "\n";
         cout << flush;
-        _exit(0);
+        quick_exit(EXIT_SUCCESS);
       }
       else if (!strcmp(argv[1], "--version")) {
         cout << version_string() << endl;
-        _exit(0);
+        quick_exit(EXIT_SUCCESS);
       }
       else if (!strcmp(argv[1], "--clear-cache")) {
         clear_cache();
-        _exit(0);
+        quick_exit(EXIT_SUCCESS);
       }
       else if (!strcmp(argv[i], "-f")) {
         if (!definition_file.empty()) {
           cout << "error: -f option supplied multiple times" << endl;
-          _exit(1);
+          quick_exit(EXIT_FAILURE);
         }
         i++;
         if (i == argc) {
           cout << "error: missing argument to -f option" << endl;
-          _exit(1);
+          quick_exit(EXIT_FAILURE);
         }
         definition_file.append(argv[i]);
         i++;
@@ -251,9 +253,9 @@ int main(int argc, char **argv) {
       string cmd = (string)"cat " + compiler.output_script();
       if (system(cmd.c_str()) != 0) {
         cout << "Failed execution: " << cmd << endl;
-        _exit(1);
+        quick_exit(EXIT_FAILURE);
       }
-      _exit(0);
+      quick_exit(EXIT_SUCCESS);
     }
 
     Compiler compiler(definition_file);
@@ -261,8 +263,8 @@ int main(int argc, char **argv) {
     if (!arguments.empty())
       exec_command(compiler.output_script(), environment, arguments);
 
-    interp = new ClusterCommandInterpreter(compiler.output_script());
-    shell = new CommandShell("cluster", "Cluster", interp, properties);
+    interp = make_shared<ClusterCommandInterpreter>(compiler.output_script());
+    shell = make_shared<CommandShell>("cluster", "Cluster", interp, properties);
 
     // Entire line is command
     shell->set_line_command_mode(true);
@@ -276,5 +278,5 @@ int main(int argc, char **argv) {
     cout << Error::get_text(e.code()) << " - " << e.what() << endl;
     status = e.code();
   }
-  _exit(status);
+  quick_exit(status);
 }

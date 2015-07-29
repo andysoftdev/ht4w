@@ -25,6 +25,8 @@
 #include <Hypertable/RangeServer/UpdateRecRange.h>
 #include <Hypertable/RangeServer/UpdateRecTable.h>
 
+#include <AsyncComm/Clock.h>
+
 #include <vector>
 
 namespace Hypertable {
@@ -39,7 +41,8 @@ namespace Hypertable {
     /// Constructor.
     /// @param updates Vector of updates
     /// @param xt Expiration time
-    UpdateContext(std::vector<UpdateRecTable *> &updates, boost::xtime xt) :
+    UpdateContext(std::vector<UpdateRecTable *> &updates,
+                  std::chrono::fast_clock::time_point xt) :
       updates(updates), expire_time(xt) { }
 
     /// Destructor.
@@ -48,7 +51,7 @@ namespace Hypertable {
         delete u;
     }
     std::vector<UpdateRecTable *> updates;
-    boost::xtime expire_time;
+    std::chrono::fast_clock::time_point expire_time;
     int64_t auto_revision;
     SendBackRec send_back;
     DynamicBuffer root_buf;

@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -18,17 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
-#include "Common/FailureInducer.h"
 
-#include "Hypertable/Lib/Key.h"
+#include <Common/Compat.h>
 
 #include "Global.h"
 #include "LiveFileTracker.h"
 #include "MetadataNormal.h"
 #include "MetadataRoot.h"
 
+#include <Hypertable/Lib/Key.h>
+
+#include <Common/FailureInducer.h>
+
 using namespace Hypertable;
+using namespace std;
 
 LiveFileTracker::LiveFileTracker(const TableIdentifier *identifier,
                                  SchemaPtr &schema_ptr,
@@ -47,7 +50,7 @@ LiveFileTracker::LiveFileTracker(const TableIdentifier *identifier,
 }
 
 void LiveFileTracker::update_live(const String &add, std::vector<String> &deletes, uint32_t nextcsid, int64_t total_blocks) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   for (size_t i=0; i<deletes.size(); i++)
     m_live.erase(strip_basename(deletes[i]));
   if (add != "")
@@ -59,7 +62,7 @@ void LiveFileTracker::update_live(const String &add, std::vector<String> &delete
 
 
 void LiveFileTracker::add_references(const std::vector<String> &filev) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   FileRefCountMap::iterator iter;
   for (size_t i=0; i<filev.size(); i++) {
     iter = m_referenced.find(strip_basename(filev[i]));
@@ -76,7 +79,7 @@ void LiveFileTracker::add_references(const std::vector<String> &filev) {
  * is set to true, indicating the the column needs updating.
  */
 void LiveFileTracker::remove_references(const std::vector<String> &filev) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   FileRefCountMap::iterator iter;
   for (size_t i=0; i<filev.size(); i++) {
     iter = m_referenced.find(strip_basename(filev[i]));
@@ -107,13 +110,13 @@ void LiveFileTracker::update_files_column() {
 
   m_mutex.lock();
 
-  foreach_ht(const String &file, m_live) {
+  for (const auto &file : m_live) {
     file_list += file + ";\n";
     printable_list += file + "; ";
   }
 
   m_blocked.clear();
-  foreach_ht(const FileRefCountMap::value_type &v, m_referenced) {
+  for (const auto &v : m_referenced) {
     if (m_live.count(v.first) == 0) {
       file_list += format("#%s;\n", v.first.c_str());
       printable_list += String("#") + v.first + "; ";
@@ -153,7 +156,7 @@ void LiveFileTracker::update_files_column() {
                  << " : " << e << HT_END;
     if (retry_count < 6) {
       ++retry_count;
-      poll(0, 0, 15000);
+      this_thread::sleep_for(chrono::milliseconds(15000));
       goto try_again;
     }
       HT_THROW2(e.code(), e, "Problem updating 'Files' column of METADATA: ");
@@ -166,16 +169,16 @@ void LiveFileTracker::update_files_column() {
 
 
 void LiveFileTracker::get_file_data(String &file_list, int64_t *block_countp, bool include_blocked) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   file_list = "";
 
-  foreach_ht(const String &file, m_live)
+  for (const auto &file : m_live)
     file_list += file + ";\n";
 
   if (include_blocked) {
     m_blocked.clear();
-    foreach_ht(const FileRefCountMap::value_type &v, m_referenced) {
+    for (const auto &v : m_referenced) {
       if (m_live.count(v.first) == 0) {
         file_list += format("#%s;\n", v.first.c_str());
         m_blocked.insert(v.first);
@@ -187,9 +190,9 @@ void LiveFileTracker::get_file_data(String &file_list, int64_t *block_countp, bo
 }
 
 void LiveFileTracker::get_file_list(String &file_list) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   file_list = "";
-  foreach_ht(const String &file, m_live)
+  for (const auto &file : m_live)
     file_list += file + ";";
 }
 

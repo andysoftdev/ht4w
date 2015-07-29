@@ -38,7 +38,9 @@
 #include <Common/DynamicBuffer.h>
 #include <Common/Filesystem.h>
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 namespace Hypertable {
@@ -67,8 +69,8 @@ namespace Hypertable {
     /// @param context %Range server context
     /// @param query_cache Query cache
     /// @param timer_handler Timer handler
-    UpdatePipeline(ContextPtr &context, QueryCachePtr &query_cache,
-                   TimerHandlerPtr &timer_handler, CommitLog *log,
+    UpdatePipeline(RangeServerContextPtr &context, QueryCachePtr &query_cache,
+                   TimerHandlerPtr &timer_handler, CommitLogPtr &log,
                    Filesystem::Flags flags);
 
     /// Adds updates to pipeline
@@ -121,7 +123,7 @@ namespace Hypertable {
                        bool timeorder_desc);
 
     /// %Range server context
-    std::shared_ptr<Context> m_context;
+    std::shared_ptr<RangeServerContext> m_context;
 
     /// Pointer to query cache
     QueryCachePtr m_query_cache;
@@ -130,22 +132,22 @@ namespace Hypertable {
     TimerHandlerPtr m_timer_handler;
 
     /// Pointer to commit log
-    CommitLog *m_log {};
+    CommitLogPtr m_log {};
 
     /// %Mutex protecting stage 1 input queue
-    Mutex m_qualify_queue_mutex;
+    std::mutex m_qualify_queue_mutex;
 
     /// Condition variable signaling addition to stage 1 input queue
-    boost::condition m_qualify_queue_cond;
+    std::condition_variable m_qualify_queue_cond;
 
     /// Stage 1 input queue
     std::list<UpdateContext *> m_qualify_queue;
 
     /// %Mutex protecting stage 2 input queue
-    Mutex m_commit_queue_mutex;
+    std::mutex m_commit_queue_mutex;
 
     /// Condition variable signaling addition to stage 2 input queue
-    boost::condition m_commit_queue_cond;
+    std::condition_variable m_commit_queue_cond;
 
     /// Count of objects in stage 2 input queue
     int32_t m_commit_queue_count {};
@@ -154,10 +156,10 @@ namespace Hypertable {
     std::list<UpdateContext *> m_commit_queue;
 
     /// %Mutex protecting stage 3 input queue
-    Mutex m_response_queue_mutex;
+    std::mutex m_response_queue_mutex;
 
     /// Condition variable signaling addition to stage 3 input queue
-    boost::condition m_response_queue_cond;
+    std::condition_variable m_response_queue_cond;
 
     /// Stage 3 input queue
     std::list<UpdateContext *> m_response_queue;

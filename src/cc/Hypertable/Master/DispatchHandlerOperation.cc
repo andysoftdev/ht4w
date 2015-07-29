@@ -26,22 +26,18 @@
  * range servers.
  */
 
-
-#include "Common/Compat.h"
-#include "AsyncComm/Protocol.h"
-
-#include "Common/Error.h"
-#include "Common/Logger.h"
+#include <Common/Compat.h>
 
 #include "Context.h"
 #include "DispatchHandlerOperation.h"
 
+#include <AsyncComm/Protocol.h>
+
+#include <Common/Error.h>
+#include <Common/Logger.h>
+
 using namespace Hypertable;
 
-
-/**
- *
- */
 DispatchHandlerOperation::DispatchHandlerOperation(ContextPtr &context)
   : m_context(context), m_rsclient(Comm::instance()), m_outstanding(0), m_error_count(0) {
 }
@@ -63,7 +59,7 @@ void DispatchHandlerOperation::start(StringSet &locations) {
       if (e.code() == Error::COMM_NOT_CONNECTED ||
           e.code() == Error::COMM_INVALID_PROXY ||
           e.code() == Error::COMM_BROKEN_CONNECTION) {
-        ScopedLock lock(m_mutex);
+        lock_guard<mutex> lock(m_mutex);
         Result result(*iter);
         m_outstanding--;
         result.error = e.code();
@@ -80,7 +76,7 @@ void DispatchHandlerOperation::start(StringSet &locations) {
  *
  */
 void DispatchHandlerOperation::handle(EventPtr &event) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   if (m_events.count(event) > 0) {
     HT_INFOF("Skipping second event - %s", event->to_str().c_str());
@@ -98,7 +94,7 @@ void DispatchHandlerOperation::handle(EventPtr &event) {
 void DispatchHandlerOperation::process_events() {
   RangeServerConnectionPtr rsc;
 
-  foreach_ht (const EventPtr &event, m_events) {
+  for (const auto &event : m_events) {
 
     if (m_context->rsc_manager->find_server_by_local_addr(event->addr, rsc)) {
       Result result(rsc->location());
@@ -125,22 +121,15 @@ void DispatchHandlerOperation::process_events() {
 }
 
 
-/**
- *
- */
 bool DispatchHandlerOperation::wait_for_completion() {
-  ScopedLock lock(m_mutex);
-  while (m_outstanding > 0)
-    m_cond.wait(lock);
+  unique_lock<mutex> lock(m_mutex);
+  m_cond.wait(lock, [this](){ return m_outstanding == 0; });
   process_events();
   return m_error_count == 0;
 }
 
 
-/**
- *
- */
 void DispatchHandlerOperation::get_results(std::set<Result> &results) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   results = m_results;
 }

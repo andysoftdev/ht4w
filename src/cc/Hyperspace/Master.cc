@@ -19,18 +19,33 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include "Config.h"
+#include "Event.h"
+#include "Notification.h"
+#include "Master.h"
+#include "Session.h"
+#include "SessionData.h"
+
+#include <Common/Thread.h>
+#include <Common/Error.h>
+#include <Common/Path.h>
+#include <Common/FileUtils.h>
+#include <Common/StringExt.h>
+#include <Common/Random.h>
+#include <Common/SystemInfo.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
+
 #include <algorithm>
 #include <cstring>
 #include <sstream>
 
-
 extern "C" {
 #include <dirent.h>
 #include <fcntl.h>
-#include <poll.h>
 #include <sys/file.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -42,22 +57,6 @@ extern "C" {
 #endif
 #include <unistd.h>
 }
-
-#include "Common/Thread.h"
-#include "Common/Mutex.h"
-#include "Common/Error.h"
-#include "Common/Path.h"
-#include "Common/FileUtils.h"
-#include "Common/StringExt.h"
-#include "Common/System.h"
-#include "Common/SystemInfo.h"
-
-#include "Config.h"
-#include "Event.h"
-#include "Notification.h"
-#include "Master.h"
-#include "Session.h"
-#include "SessionData.h"
 
 using namespace Hypertable;
 using namespace Hypertable::Config;
@@ -78,7 +77,7 @@ using namespace std;
         txn_str << txn; \
         HT_INFOF("Berkeley DB deadlock encountered in txn %s", txn_str.str().c_str()); \
         txn.abort(); \
-        poll(0, 0, (System::rand32() % 3000) + 1); \
+        this_thread::sleep_for(Random::duration_millis(3000)); \
         continue; \
       }\
       else if (e.code() == Error::HYPERSPACE_BERKELEYDB_REP_HANDLE_DEAD) { \
@@ -105,7 +104,7 @@ using namespace std;
         txn_str << txn; \
         HT_INFOF("Berkeley DB deadlock encountered in txn %s", txn_str.str().c_str()); \
         txn.abort(); \
-        poll(0, 0, (System::rand32() % 3000) + 1); \
+        this_thread::sleep_for(Random::duration_millis(3000)); \
         continue; \
       }\
       else if (e.code() == Error::HYPERSPACE_BERKELEYDB_REP_HANDLE_DEAD) { \
@@ -169,7 +168,7 @@ Hyperspace::Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
       HT_ERRORF("Unable to create base directory %s - %s",
                 m_base_dir.c_str(), strerror(errno));
 #endif
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -194,13 +193,13 @@ Hyperspace::Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
        m_lock_file.c_str());
     if ((m_lock_fd = ::open(m_lock_file.c_str(), O_RDWR|O_CREAT|O_TRUNC, 0644)) < 0) {
       HT_ERRORF("Unable to create lock file '%s' - %s", m_lock_file.c_str(), strerror(errno));
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
   else {
     if ((m_lock_fd = ::open(m_lock_file.c_str(), O_RDWR)) < 0) {
       HT_ERRORF("Unable to open lock file '%s' - %s", m_lock_file.c_str(), strerror(errno));
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -227,7 +226,7 @@ Hyperspace::Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
       HT_ERRORF("Unable to lock file '%s' - %s",
                 m_lock_file.c_str(), strerror(errno));
     }
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #else
   if (flock(m_lock_fd, LOCK_EX | LOCK_NB) != 0) {
@@ -239,7 +238,7 @@ Hyperspace::Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
       HT_ERRORF("Unable to lock file '%s' - %s",
                 m_lock_file.c_str(), strerror(errno));
     }
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
 
@@ -266,7 +265,7 @@ Hyperspace::Master::Master(ConnectionManagerPtr &conn_mgr, PropertiesPtr &props,
   m_metrics_handler = std::make_shared<MetricsHandler>(props);
   m_metrics_handler->start_collecting();
 
-  boost::xtime_get(&m_last_tick, boost::TIME_UTC_);
+  m_last_tick = std::chrono::steady_clock::now();
 
   m_keepalive_handler_ptr = make_shared<ServerKeepaliveHandler>(conn_mgr->get_comm(), this, app_queue_ptr);
   m_keepalive_handler_ptr->start();
@@ -292,7 +291,7 @@ Hyperspace::Master::~Master() {
  * > insert session id & expiry time into session expiry map
  */
 uint64_t Hyperspace::Master::create_session(struct sockaddr_in &addr) {
-  ScopedLock lock(m_session_map_mutex);
+  lock_guard<mutex> lock(m_session_map_mutex);
 
   SessionDataPtr session_data;
   uint64_t session_id = 0;
@@ -304,7 +303,7 @@ uint64_t Hyperspace::Master::create_session(struct sockaddr_in &addr) {
     session_id = m_bdb_fs->get_next_id_i64(txn, SESSION, true);
     m_bdb_fs->create_session(txn, session_id, addr_str);
     // in mem updates
-    session_data = new SessionData(addr, m_lease_interval, session_id);
+    session_data = make_shared<SessionData>(addr, m_lease_interval, session_id);
     m_session_map[session_id] = session_data;
     m_session_heap.push_back(session_data);
 
@@ -320,7 +319,7 @@ uint64_t Hyperspace::Master::create_session(struct sockaddr_in &addr) {
  *
  */
 bool Hyperspace::Master::get_session(uint64_t session_id, SessionDataPtr &session_data) {
-  ScopedLock lock(m_session_map_mutex);
+  lock_guard<mutex> lock(m_session_map_mutex);
   SessionMap::iterator iter = m_session_map.find(session_id);
   if (iter == m_session_map.end())
     return false;
@@ -334,7 +333,7 @@ bool Hyperspace::Master::get_session(uint64_t session_id, SessionDataPtr &sessio
  * > Set the expiry time to now
  */
 void Hyperspace::Master::destroy_session(uint64_t session_id) {
-  ScopedLock lock(m_session_map_mutex);
+  lock_guard<mutex> lock(m_session_map_mutex);
   SessionDataPtr session_data;
   SessionMap::iterator iter = m_session_map.find(session_id);
   if (iter == m_session_map.end())
@@ -354,7 +353,7 @@ void Hyperspace::Master::destroy_session(uint64_t session_id) {
 void Hyperspace::Master::initialize_session(uint64_t session_id, const String &name) {
   SessionDataPtr session_data;
   {
-    ScopedLock lock(m_session_map_mutex);
+    lock_guard<mutex> lock(m_session_map_mutex);
     SessionMap::iterator iter = m_session_map.find(session_id);
     if (iter == m_session_map.end()) {
       HT_ERRORF("Unable to initialize session %llu (%s)", (Llu)session_id, name.c_str());
@@ -383,7 +382,7 @@ void Hyperspace::Master::initialize_session(uint64_t session_id, const String &n
  *   > (Don't delete session completely as handles etc need to be cleaned up)
  */
 int Hyperspace::Master::renew_session_lease(uint64_t session_id) {
-  ScopedLock lock(m_session_map_mutex);
+  lock_guard<mutex> lock(m_session_map_mutex);
   bool renewed = false;
   bool commited = false;
   SessionDataPtr session_data;
@@ -425,8 +424,9 @@ int Hyperspace::Master::renew_session_lease(uint64_t session_id) {
  * > else return false
  */
 bool
-Hyperspace::Master::next_expired_session(SessionDataPtr &session_data, boost::xtime &now) {
-  ScopedLock lock(m_session_map_mutex);
+Hyperspace::Master::next_expired_session(SessionDataPtr &session_data,
+                                         std::chrono::steady_clock::time_point now) {
+  lock_guard<mutex> lock(m_session_map_mutex);
   struct LtSessionData ascending;
 
   if (!m_session_heap.empty()) {
@@ -456,9 +456,8 @@ void Hyperspace::Master::remove_expired_sessions() {
   String errmsg;
   std::vector<uint64_t> handles;
   std::vector<uint64_t> expired_sessions;
-  boost::xtime now;
 
-  boost::xtime_get(&now, boost::TIME_UTC_);
+  auto now = std::chrono::steady_clock::now();
 
   // mark expired sessions
   while (next_expired_session(session_data, now)) {
@@ -482,7 +481,7 @@ void Hyperspace::Master::remove_expired_sessions() {
   }
 
   // delete handles open by expired sessions
-  foreach_ht(uint64_t handle, handles) {
+  for (auto handle : handles) {
     if (m_verbose)
       HT_INFOF("Destroying handle %llu", (Llu)handle);
     if (!destroy_handle(handle, error, errmsg, false))
@@ -493,7 +492,7 @@ void Hyperspace::Master::remove_expired_sessions() {
   // delete expired sessions from BDB
   if (expired_sessions.size() > 0) {
     HT_BDBTXN_BEGIN() {
-      foreach_ht (uint64_t expired_session, expired_sessions) {
+      for (auto expired_session : expired_sessions) {
         m_bdb_fs->delete_session(txn, expired_session);
       }
       txn.commit();
@@ -871,7 +870,7 @@ Hyperspace::Master::attr_get(ResponseCallbackAttrGet *cb, uint64_t session_id,
     ctx.reset(&txn);
     dbufs.clear();
     if (attrs.size() == 1) { // if only one attr it might return HYPERSPACE_ATTR_NOT_FOUND
-      dbufs.push_back(new DynamicBuffer());
+      dbufs.push_back(make_shared<DynamicBuffer>());
       attr_get(ctx, handle, name, attrs.front().c_str(), *dbufs.back());
     }
     else
@@ -1197,7 +1196,7 @@ void Hyperspace::Master::shutdown(ResponseCallback *cb, uint64_t session_id) {
 
   // destroy dangling sessions...
   {
-    ScopedLock lock(m_session_map_mutex);
+    lock_guard<mutex> lock(m_session_map_mutex);
     m_shutdown = true;
     SessionDataPtr session_data;
     while (m_session_map.size()) {
@@ -1347,7 +1346,7 @@ Hyperspace::Master::lock(ResponseCallbackLock *cb, uint64_t session_id, uint64_t
       event_id = m_bdb_fs->get_next_id_i64(txn, EVENT, true);
       m_bdb_fs->create_event(txn, EVENT_TYPE_LOCK_ACQUIRED, event_id, EVENT_MASK_LOCK_ACQUIRED,
                              mode);
-      lock_acquired_event = new EventLockAcquired(event_id, mode);
+      lock_acquired_event = make_shared<EventLockAcquired>(event_id, mode);
       if (m_bdb_fs->get_node_event_notification_map(txn, node, EVENT_MASK_LOCK_ACQUIRED,
                                                     lock_acquired_notifications)) {
         persist_event_notifications(txn, event_id, lock_acquired_notifications);
@@ -1560,7 +1559,7 @@ void Hyperspace::Master::release_lock(BDbTxn &txn, uint64_t handle, const String
   if (!m_bdb_fs->node_has_shared_lock_handles(txn, node)) {
     HT_INFO("Persisting lock released notifications");
     uint64_t event_id = m_bdb_fs->get_next_id_i64(txn, EVENT, true);
-    release_event = new EventLockReleased(event_id);
+    release_event = make_shared<EventLockReleased>(event_id);
     m_bdb_fs->create_event(txn, EVENT_TYPE_LOCK_RELEASED, event_id,
                            release_event->get_mask());
     if (m_bdb_fs->get_node_event_notification_map(txn, node, release_event->get_mask(),
@@ -1620,9 +1619,9 @@ void Hyperspace::Master::grant_pending_lock_reqs(BDbTxn &txn, const String &node
       m_bdb_fs->set_xattr_i64(txn, node, "lock.generation", lock_generation);
       m_bdb_fs->set_node_cur_lock_mode(txn, node, next_mode);
 
-      lock_granted_event = new EventLockGranted(event_id, next_mode, lock_generation);
+      lock_granted_event = make_shared<EventLockGranted>(event_id, next_mode, lock_generation);
 
-      foreach_ht(uint64_t handle, next_lock_handles) {
+      for (auto handle : next_lock_handles) {
         lock_handle(txn, handle, next_mode, node);
         session = m_bdb_fs->get_handle_session(txn, handle);
         lock_granted_notifications[handle] = session;
@@ -1634,7 +1633,7 @@ void Hyperspace::Master::grant_pending_lock_reqs(BDbTxn &txn, const String &node
       event_id = m_bdb_fs->get_next_id_i64(txn, EVENT, true);
       m_bdb_fs->create_event(txn, EVENT_TYPE_LOCK_ACQUIRED, event_id, EVENT_MASK_LOCK_ACQUIRED,
                              next_mode);
-      lock_acquired_event = new EventLockAcquired(event_id, next_mode);
+      lock_acquired_event = make_shared<EventLockAcquired>(event_id, next_mode);
       // persist lock acquired notifications
       if (m_bdb_fs->get_node_event_notification_map(txn, node, EVENT_MASK_LOCK_ACQUIRED,
                                                     lock_acquired_notifications))
@@ -1702,7 +1701,7 @@ Hyperspace::Master::deliver_event_notifications(HyperspaceEventPtr &event_ptr,
   if (has_notifications) {
     String sessions_str;
 
-    foreach_ht (session_id, sessions) {
+    for (auto session_id : sessions) {
       m_keepalive_handler_ptr->deliver_event_notifications(session_id);
       sessions_str += String(" ") + session_id;
     }
@@ -1826,8 +1825,8 @@ Hyperspace::Master::destroy_handle(uint64_t handle, int &error, String &errmsg,
         uint64_t event_id = m_bdb_fs->get_next_id_i64(txn, EVENT, true);
         m_bdb_fs->create_event(txn, EVENT_TYPE_NAMED, event_id,
                                EVENT_MASK_CHILD_NODE_REMOVED, child_node);
-        node_removed_event = new EventNamed(event_id, EVENT_MASK_CHILD_NODE_REMOVED,
-                                            child_node);
+        node_removed_event = make_shared<EventNamed>(event_id, EVENT_MASK_CHILD_NODE_REMOVED,
+                                                     child_node);
         if (m_bdb_fs->get_node_event_notification_map(txn, parent_node,
             EVENT_MASK_CHILD_NODE_REMOVED, node_removed_notifications)) {
           persist_event_notifications(txn, event_id, node_removed_notifications);
@@ -1858,38 +1857,36 @@ Hyperspace::Master::destroy_handle(uint64_t handle, int &error, String &errmsg,
 }
 
 void Hyperspace::Master::handle_sleep() {
-  boost::xtime_get(&m_sleep_time, boost::TIME_UTC_);
+  m_sleep_time = std::chrono::steady_clock::now();
   HT_INFO("Suspend detected.");
 }
 
 
 void Hyperspace::Master::handle_wakeup() {
-  boost::xtime now;
-  uint64_t lease_credit;
 
-  boost::xtime_get(&now, boost::TIME_UTC_);
-  lease_credit = xtime_diff_millis(m_sleep_time, now) + m_lease_interval;
+  auto now = std::chrono::steady_clock::now();
+
+  std::chrono::milliseconds lease_credit = 
+    std::chrono::duration_cast<std::chrono::milliseconds>(now - m_sleep_time) +
+    std::chrono::milliseconds(m_lease_interval);
 
   // extend all leases
   {
-    ScopedLock lock(m_session_map_mutex);
+    lock_guard<mutex> lock(m_session_map_mutex);
     if (!m_shutdown) {
       HT_INFOF("Resume detected, extending all session leases "
-               "by %lu milliseconds.", (Lu)lease_credit);
+               "by %lu milliseconds.", (Lu)lease_credit.count());
       for (SessionMap::iterator iter = m_session_map.begin();
            iter != m_session_map.end(); iter++)
-        (*iter).second->extend_lease((uint32_t)lease_credit);
+        (*iter).second->extend_lease(lease_credit);
     }
   }
 }
 
-/*
- *
- */
 void Hyperspace::Master::do_maintenance() {
 
   {
-    ScopedLock lock(m_maintenance_mutex);
+    lock_guard<mutex> lock(m_maintenance_mutex);
     if (m_maintenance_outstanding)
       return;
     m_maintenance_outstanding = true;
@@ -1898,7 +1895,7 @@ void Hyperspace::Master::do_maintenance() {
   m_bdb_fs->do_checkpoint();
 
   {
-    ScopedLock lock(m_maintenance_mutex);
+    lock_guard<mutex> lock(m_maintenance_mutex);
     m_maintenance_outstanding = false;
   }
 
@@ -2092,7 +2089,7 @@ void Hyperspace::Master::open(CommandContext &ctx, const char *name,
                               EVENT_MASK_LOCK_ACQUIRED, lock_mode);
 
       std::vector<EventContext>::iterator it = ctx.evts.insert(ctx.evts.end(),
-        EventContext(new EventLockAcquired(lock_acquired_event_id, lock_mode)));
+          EventContext(make_shared<EventLockAcquired>(lock_acquired_event_id, lock_mode)));
 
       if (m_bdb_fs->get_node_event_notification_map(txn, node, EVENT_MASK_LOCK_ACQUIRED,
                                                 it->notifications)) {
@@ -2177,7 +2174,7 @@ void Hyperspace::Master::attr_set(CommandContext &ctx, uint64_t handle,
   std::string attr_names;
   size_t total_value_len = 0;
   if (m_verbose) {
-    foreach_ht (const Attribute& attr, attrs) {
+    for (const auto &attr : attrs) {
       attr_names += attr.name;
       attr_names += ",";
       total_value_len += attr.value_len;
@@ -2194,7 +2191,7 @@ void Hyperspace::Master::attr_set(CommandContext &ctx, uint64_t handle,
     if (!get_handle_node(ctx, handle, attr_names.c_str(), node))
       return;
 
-  foreach_ht (const Attribute& attr, attrs) {
+  for (const auto &attr : attrs) {
     m_bdb_fs->set_xattr(txn, node, attr.name, attr.value, attr.value_len);
     // create event notification and persist
     create_event(ctx, node, EVENT_MASK_ATTR_SET, attr.name);
@@ -2243,8 +2240,8 @@ void Hyperspace::Master::attr_get(CommandContext &ctx, uint64_t handle,
       return;
 
   dbufs.reserve(attrs.size());
-  foreach_ht (const String &attr, attrs) {
-    dbufs.push_back(new DynamicBuffer());
+  for (const auto &attr : attrs) {
+    dbufs.push_back(make_shared<DynamicBuffer>());
     if (!m_bdb_fs->get_xattr(txn, node, attr, *dbufs.back()))
       dbufs.back() = 0; // attr not found
   }
@@ -2512,7 +2509,7 @@ void Hyperspace::Master::create_event(CommandContext &ctx, const String &node, u
   m_bdb_fs->create_event(txn, EVENT_TYPE_NAMED, event_id, event_mask, name);
 
   std::vector<EventContext>::iterator it = ctx.evts.insert(ctx.evts.end(),
-    EventContext(new EventNamed(event_id, event_mask, name)));
+       EventContext(make_shared<EventNamed>(event_id, event_mask, name)));
 
   if (m_bdb_fs->get_node_event_notification_map(txn, node, event_mask,
                                                 it->notifications)) {
@@ -2526,7 +2523,7 @@ void Hyperspace::Master::create_event(CommandContext &ctx, const String &node, u
 /*
  */
 void Hyperspace::Master::deliver_event_notifications(CommandContext &ctx, bool wait_for_notify) {
-  foreach_ht(EventContext& evt, ctx.evts)
+  for (auto &evt : ctx.evts)
     if (evt.persisted_notifications)
       deliver_event_notifications(evt, wait_for_notify);
 }

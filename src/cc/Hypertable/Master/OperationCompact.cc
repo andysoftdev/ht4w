@@ -43,12 +43,12 @@
 
 #include <boost/algorithm/string.hpp>
 
-extern "C" {
-#include <poll.h>
-}
+#include <chrono>
+#include <thread>
 
 using namespace Hypertable;
 using namespace Hyperspace;
+using namespace std;
 
 OperationCompact::OperationCompact(ContextPtr &context,
                                    const MetaLog::EntityHeader &header_)
@@ -93,7 +93,7 @@ void OperationCompact::execute() {
       }
     }
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_dependencies.clear();
       m_dependencies.insert(Dependency::METADATA);
     }
@@ -106,7 +106,7 @@ void OperationCompact::execute() {
     else
       m_context->get_available_servers(servers);
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_servers.clear();
       m_dependencies.clear();
       for (StringSet::iterator iter=servers.begin(); iter!=servers.end(); ++iter) {
@@ -128,10 +128,10 @@ void OperationCompact::execute() {
     if (!op_handler->wait_for_completion()) {
       std::set<DispatchHandlerOperation::Result> results;
       op_handler->get_results(results);
-      foreach_ht (const DispatchHandlerOperation::Result &result, results) {
+      for (const auto &result : results) {
         if (result.error == Error::OK ||
             result.error == Error::TABLE_NOT_FOUND) {
-          ScopedLock lock(m_mutex);
+          lock_guard<mutex> lock(m_mutex);
           m_completed.insert(result.location);
         }
         else
@@ -140,14 +140,14 @@ void OperationCompact::execute() {
       }
 
       {
-        ScopedLock lock(m_mutex);
+        lock_guard<mutex> lock(m_mutex);
         m_servers.clear();
         m_dependencies.clear();
         m_dependencies.insert(Dependency::METADATA);
         m_state = OperationState::SCAN_METADATA;
       }
       // Sleep a little bit to prevent busy wait
-      poll(0, 0, 5000);
+      this_thread::sleep_for(chrono::milliseconds(5000));
       m_context->mml_writer->record_state(shared_from_this());
       return;
     }
@@ -178,10 +178,10 @@ size_t OperationCompact::encoded_length_state() const {
   size_t length = m_params.encoded_length() +
     Serialization::encoded_length_vstr(m_id);
   length += 4;
-  foreach_ht (const String &location, m_completed)
+  for (auto &location : m_completed)
     length += Serialization::encoded_length_vstr(location);
   length += 4;
-  foreach_ht (const String &location, m_servers)
+  for (auto &location : m_servers)
     length += Serialization::encoded_length_vstr(location);
   return length;
 }
@@ -190,10 +190,10 @@ void OperationCompact::encode_state(uint8_t **bufp) const {
   m_params.encode(bufp);
   Serialization::encode_vstr(bufp, m_id);
   Serialization::encode_i32(bufp, m_completed.size());
-  foreach_ht (const String &location, m_completed)
+  for (auto &location : m_completed)
     Serialization::encode_vstr(bufp, location);
   Serialization::encode_i32(bufp, m_servers.size());
-  foreach_ht (const String &location, m_servers)
+  for (auto &location : m_servers)
     Serialization::encode_vstr(bufp, location);
 }
 

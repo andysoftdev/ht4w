@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -18,24 +18,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
 
-#include <ctime>
-#include <cmath>
-
-#include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/DataGenerator.h"
-#include "Hypertable/Lib/Config.h"
-#include "Hypertable/Lib/Cells.h"
+#include <Common/Compat.h>
 
 #include "QueryThread.h"
 
+#include <Hypertable/Lib/Client.h>
+#include <Hypertable/Lib/DataGenerator.h>
+#include <Hypertable/Lib/Config.h>
+#include <Hypertable/Lib/Cells.h>
+
+#include <chrono>
+#include <cmath>
+#include <ctime>
+#include <thread>
+
 using namespace Hypertable;
+using namespace std;
 
 void QueryThread::operator()() {
   double clocks_per_usec = (double)CLOCKS_PER_SEC / 1000000.0;
 
-  ScopedLock lock(m_state.mutex);
+  std::lock_guard<std::mutex> lock(m_state.mutex);
 
   m_state.total_cells = 0;
   m_state.total_bytes = 0;
@@ -57,8 +61,9 @@ void QueryThread::operator()() {
     DataGenerator dg(m_props, true);
 
     for (DataGenerator::iterator iter = dg.begin(); iter != dg.end(); iter++) {
+
       if (delay)
-        poll(0, 0, delay);
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 
       scan_spec.clear();
       scan_spec.add_column((*iter).column_family);
@@ -92,7 +97,7 @@ void QueryThread::operator()() {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   m_state.elapsed_time = stopwatch.elapsed();

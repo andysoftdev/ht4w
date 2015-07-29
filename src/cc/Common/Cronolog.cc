@@ -43,7 +43,6 @@ extern "C" {
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 }
 
@@ -58,6 +57,7 @@ void fsync(int fd) {
 #endif
 
 using namespace Hypertable;
+using namespace std;
 
 Cronolog::Cronolog(const string &name, const string &current_dir,
                    const string &archive_dir) 

@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,30 +19,30 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include "Common/Init.h"
-#include "Common/DynamicBuffer.h"
-#include "Common/FileUtils.h"
-#include "Common/InetAddr.h"
-#include "Common/System.h"
-#include "Common/Usage.h"
-
-#include <iostream>
-#include <fstream>
-
-#include "AsyncComm/ConnectionManager.h"
-
-#include "FsBroker/Lib/Client.h"
-
-#include "Hypertable/Lib/Key.h"
-#include "Hypertable/Lib/Schema.h"
-#include "Hypertable/Lib/SerializedKey.h"
+#include <Common/Compat.h>
 
 #include "../CellStoreFactory.h"
 #include "../CellStoreV7.h"
 #include "../Global.h"
 
+#include <Hypertable/Lib/Key.h>
+#include <Hypertable/Lib/Schema.h>
+#include <Hypertable/Lib/SerializedKey.h>
+
+#include <FsBroker/Lib/Client.h>
+
+#include <AsyncComm/ConnectionManager.h>
+
+#include <Common/Init.h>
+#include <Common/DynamicBuffer.h>
+#include <Common/FileUtils.h>
+#include <Common/InetAddr.h>
+#include <Common/System.h>
+#include <Common/Usage.h>
+
 #include <cstdlib>
+#include <iostream>
+#include <fstream>
 
 using namespace Hypertable;
 using namespace std;
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
     Config::properties->set("Hypertable.RangeServer.CellStore.DefaultCompressor", String("none"));
     Config::properties->set("Hypertable.RangeServer.CellStore.DefaultBlockSize", 4*1024*1024);
 
-    cs = new CellStoreV7(Global::dfs.get());
+    cs = std::make_shared<CellStoreV7>(Global::dfs.get());
     HT_TRY("creating cellstore", cs->create(csname.c_str(), 4096, Config::properties, &table_id));
 
     // setup value
@@ -156,8 +156,7 @@ int main(int argc, char **argv) {
 
     std::ofstream out(output_file.c_str(), ios_base::out|ios_base::app);
 
-    SchemaPtr schema = Schema::new_instance(schema_str);
-    schema->validate();
+    SchemaPtr schema( Schema::new_instance(schema_str) );
 
     RangeSpec range_spec;
     range_spec.start_row = "";
@@ -171,8 +170,8 @@ int main(int argc, char **argv) {
 
     ssbuilder.add_row("0000004135");
 
-    scan_context = new ScanContext(TIMESTAMP_MAX, &(ssbuilder.get()), &range_spec, schema);
-    scanner = cs->create_scanner(scan_context);
+    scan_context = make_shared<ScanContext>(TIMESTAMP_MAX, &(ssbuilder.get()), &range_spec, schema);
+    scanner = cs->create_scanner(scan_context.get());
     while (scanner->get(key_comps, value)) {
       out << key_comps << endl;
       scanner->forward();
@@ -181,8 +180,8 @@ int main(int argc, char **argv) {
     ssbuilder.clear();
     ssbuilder.add_row("0000004136");
 
-    scan_context = new ScanContext(TIMESTAMP_MAX, &(ssbuilder.get()), &range_spec, schema);
-    scanner = cs->create_scanner(scan_context);
+    scan_context = make_shared<ScanContext>(TIMESTAMP_MAX, &(ssbuilder.get()), &range_spec, schema);
+    scanner = cs->create_scanner(scan_context.get());
     while (scanner->get(key_comps, value)) {
       out << key_comps << endl;
       scanner->forward();
@@ -191,8 +190,8 @@ int main(int argc, char **argv) {
     ssbuilder.clear();
     ssbuilder.add_row_interval("0000004135", true, "0000004143", true);
 
-    scan_context = new ScanContext(TIMESTAMP_MAX, &(ssbuilder.get()), &range_spec, schema);
-    scanner = cs->create_scanner(scan_context);
+    scan_context = make_shared<ScanContext>(TIMESTAMP_MAX, &(ssbuilder.get()), &range_spec, schema);
+    scanner = cs->create_scanner(scan_context.get());
     while (scanner->get(key_comps, value)) {
       out << key_comps << endl;
       scanner->forward();
@@ -201,8 +200,8 @@ int main(int argc, char **argv) {
     ssbuilder.clear();
     ssbuilder.add_row_interval("0000004136", true, "0000004144", true);
 
-    scan_context = new ScanContext(TIMESTAMP_MAX, &(ssbuilder.get()), &range_spec, schema);
-    scanner = cs->create_scanner(scan_context);
+    scan_context = make_shared<ScanContext>(TIMESTAMP_MAX, &(ssbuilder.get()), &range_spec, schema);
+    scanner = cs->create_scanner(scan_context.get());
     while (scanner->get(key_comps, value)) {
       out << key_comps << endl;
       scanner->forward();
@@ -220,9 +219,9 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
-  return 0;
+  quick_exit(EXIT_SUCCESS);
 }
 

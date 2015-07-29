@@ -19,13 +19,12 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_CELLCACHESCANNER_H
-#define HYPERTABLE_CELLCACHESCANNER_H
+#ifndef Hypertable_RangeServer_CellCacheScanner_h
+#define Hypertable_RangeServer_CellCacheScanner_h
 
 #include "CellCache.h"
 #include "CellListScanner.h"
 #include "ScanContext.h"
-
 
 namespace Hypertable {
 
@@ -34,7 +33,7 @@ namespace Hypertable {
    */
   class CellCacheScanner : public CellListScanner {
   public:
-    CellCacheScanner(CellCachePtr &cellcache, ScanContextPtr &scan_ctx);
+    CellCacheScanner(CellCachePtr cellcache, ScanContext *scan_ctx);
     virtual ~CellCacheScanner() { return; }
     virtual void forward();
     virtual bool get(Key &key, ByteString &value);
@@ -61,16 +60,16 @@ namespace Hypertable {
     CellCache::CellMap::iterator   m_cur_iter;
     CellCacheMap::iterator         m_delete_iter;
     CellCachePtr                   m_cell_cache_ptr;
-    Mutex                         &m_cell_cache_mutex;
+    std::mutex                    &m_cell_cache_mutex;
     CellCacheEntry                 m_cur_entry;
     std::vector<CellCacheEntry>    m_entry_cache;
-    size_t                         m_entry_cache_next;
+    size_t                         m_entry_cache_next {};
     CellCacheMap                   m_deletes;
-    bool                           m_in_deletes;
-    bool                           m_eos;
-    bool                           m_keys_only;
+    bool                           m_in_deletes {};
+    bool                           m_eos {};
+    bool                           m_keys_only {};
   };
 }
 
-#endif // HYPERTABLE_CELLCACHESCANNER_H
+#endif // Hypertable_RangeServer_CellCacheScanner_h
 

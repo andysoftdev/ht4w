@@ -25,8 +25,8 @@
  * implements the Hyperspace filesystem on top of BerkeleyDB.
  */
 
-#ifndef HT_BERKELEYDBFILESYSTEM_H
-#define HT_BERKELEYDBFILESYSTEM_H
+#ifndef Hyperspace_BerkeleyDbFilesystem_h
+#define Hyperspace_BerkeleyDbFilesystem_h
 
 #include <Common/Compat.h>
 
@@ -38,7 +38,6 @@
 #include <Common/FileUtils.h>
 #include <Common/InetAddr.h>
 #include <Common/InetAddr.h>
-#include <Common/Mutex.h>
 #include <Common/Properties.h>
 #include <Common/String.h>
 #include <Common/StringExt.h>
@@ -55,9 +54,12 @@
 #pragma warning( pop )
 #endif
 
-#include <boost/thread/condition.hpp>
+#include <chrono>
+#include <condition_variable>
 
 #include <map>
+#include <memory>
+#include <mutex>
 #include <ostream>
 #include <unordered_map>
 #include <vector>
@@ -96,19 +98,17 @@ namespace Hyperspace {
   class ReplicationInfo {
   public:
     /** Constructor. */
-    ReplicationInfo(): do_replication(true), is_master(false), master_eid(-1),
-                       num_replicas(0), m_election_done(false) {}
+    ReplicationInfo() : do_replication(true) { }
 
     /** Waits for master election to finish. */
     void wait_for_election() {
-      ScopedLock lock(m_election_mutex);
-      while (!m_election_done)
-        m_election_cond.wait(lock);
+      std::unique_lock<std::mutex> lock(m_election_mutex);
+      m_election_cond.wait(lock, [this](){ return m_election_done; });
     }
 
     /** Finish master election. */
     void finish_election() {
-      ScopedLock lock(m_election_mutex);
+      std::lock_guard<std::mutex> lock(m_election_mutex);
       if (!m_election_done) {
         m_election_done = true;
         m_election_cond.notify_all();
@@ -119,31 +119,31 @@ namespace Hyperspace {
      * @return <i>true</i> if master election has finished, <i>false</i> otherwise
      */
     bool election_finished() {
-      ScopedLock lock(m_election_mutex);
+      std::lock_guard<std::mutex> lock(m_election_mutex);
       return m_election_done;
     }
 
-    bool do_replication;
-    bool is_master;
-    int master_eid;
-    uint32_t num_replicas;
+    bool do_replication {};
+    bool is_master {};
+    int master_eid {-1};
+    uint32_t num_replicas {};
     String localhost;
     std::unordered_map<int, String> replica_map;
 
   private:
 
     /// %Mutex for serializing access to #m_election_done
-    Mutex m_election_mutex;
+    std::mutex m_election_mutex;
 
     /// Condition variable for signaling change to #m_election_done
-    boost::condition m_election_cond;
+    std::condition_variable m_election_cond;
 
     /// Indicates if master election has finished
-    bool m_election_done;
+    bool m_election_done {};
   };
 
   /** Manages <i>namespace</i> and transient <i>state</i> database handles */
-  class BDbHandles: public ReferenceCount {
+  class BDbHandles {
   public:
 
     /** Constructor. */
@@ -186,7 +186,7 @@ namespace Hyperspace {
   };
 
   /// Smart pointer to BDbHandles
-  typedef intrusive_ptr<BDbHandles> BDbHandlesPtr;
+  typedef std::shared_ptr<BDbHandles> BDbHandlesPtr;
 
   /** Manages transaction state */
   class BDbTxn {
@@ -812,7 +812,7 @@ namespace Hyperspace {
     ReplicationInfo m_replication_info;
     String m_base_dir;
     DbEnv  m_env;
-    uint32_t m_db_flags;
+    uint32_t m_db_flags {};
     static const char *ms_name_namespace_db;
     static const char *ms_name_state_db;
     typedef std::map<Thread::id, BDbHandlesPtr> ThreadHandleMap;
@@ -820,13 +820,13 @@ namespace Hyperspace {
 
     /// Checkpoint size threshold in kilobytes
     uint32_t m_checkpoint_size_kb;
-    uint32_t  m_log_gc_interval;
     uint32_t m_max_unused_logs;
-    boost::xtime m_last_log_gc_time;
+    std::chrono::steady_clock::duration m_log_gc_interval;
+    std::chrono::steady_clock::time_point m_last_log_gc_time;
   };
 
   /** @} */
 
 } // namespace Hyperspace
 
-#endif // HT_BERKELEYDBFILESYSTEM_H
+#endif // Hyperspace_BerkeleyDbFilesystem_h

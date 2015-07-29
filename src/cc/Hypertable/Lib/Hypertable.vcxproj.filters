@@ -463,6 +463,9 @@
     <ClCompile Include="RangeSpec.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DataGeneratorRandom.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">

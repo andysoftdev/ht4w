@@ -26,21 +26,19 @@
  */
 
 
-#ifndef AsyncComm_REACTORFACTORY_H
-#define AsyncComm_REACTORFACTORY_H
+#ifndef AsyncComm_ReactorFactory_h
+#define AsyncComm_ReactorFactory_h
 
-#include <boost/random.hpp>
-#include <boost/random/uniform_01.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
-
-#include <cassert>
-#include <set>
-#include <vector>
-
-#include "Common/atomic.h"
 #include "Reactor.h"
 
+#include <boost/thread/thread.hpp>
+
+#include <atomic>
+#include <cassert>
+#include <mutex>
+#include <random>
+#include <set>
+#include <vector>
 
 namespace Hypertable {
 
@@ -70,6 +68,9 @@ namespace Hypertable {
      */
     static void destroy();
 
+    /// Joins with reactor threads
+    static void join();
+
     /** This method returns the 'next' reactor.  It returns pointers to
      * reactors in round-robin fashion and is used by the Comm subsystem to
      * evenly distribute descriptors across all of the reactors.  The
@@ -79,8 +80,7 @@ namespace Hypertable {
      */
     static void get_reactor(ReactorPtr &reactor) {
       assert(ms_reactors.size() > 0);
-      reactor = ms_reactors[atomic_inc_return(&ms_next_reactor)
-                            % (ms_reactors.size() - 1)];
+      reactor = ms_reactors[ms_next_reactor++ % (ms_reactors.size() - 1)];
     }
 
     /** This method returns the timer reactor.
@@ -97,14 +97,21 @@ namespace Hypertable {
     /// Boost thread_group for managing reactor threads
     static boost::thread_group ms_threads;
 
-    static boost::mt19937 rng; //!< Pseudo random number generator
+    /// Pseudo random number generator
+    static std::default_random_engine rng;
+    
 #ifdef _WIN32
     static HANDLE hIOCP;
 #else
-    static bool ms_epollet;    //!< Use "edge triggered" epoll
-    static bool use_poll;      //!< Use POSIX poll() as polling mechanism
+
+    /// Use "edge triggered" epoll
+    static bool ms_epollet;
+
+    // Use POSIX poll() as polling mechanism
+    static bool use_poll;
+
 #endif
-    
+
     /// Set to <i>true</i> if this process is acting as "Proxy Master"       
     static bool proxy_master;
 
@@ -114,14 +121,14 @@ namespace Hypertable {
   private:
 
     /// Mutex to serialize calls to #initialize
-    static Mutex ms_mutex;
+    static std::mutex ms_mutex;
 
     /// Atomic integer used for round-robin assignment of reactors
-    static atomic_t ms_next_reactor;
+    static std::atomic<int> ms_next_reactor;
 
   };
   /** @}*/
 }
 
-#endif // AsyncComm_REACTORFACTORY_H
+#endif // AsyncComm_ReactorFactory_h
 

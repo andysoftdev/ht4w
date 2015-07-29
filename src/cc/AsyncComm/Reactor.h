@@ -28,15 +28,15 @@
 #ifndef AsyncComm_Reactor_h
 #define AsyncComm_Reactor_h
 
+#include "Clock.h"
 #include "PollTimeout.h"
 #include "RequestCache.h"
 #include "ExpireTimer.h"
 
-#include <Common/Mutex.h>
-
 #include <boost/thread/thread.hpp>
 
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <set>
 #include <vector>
@@ -50,7 +50,7 @@ namespace Hypertable {
   /** @addtogroup AsyncComm
    *  @{
    */
-   
+
 #ifndef _WIN32
 
   /** Socket descriptor poll state for use with POSIX <code>poll()</code>
@@ -98,10 +98,10 @@ namespace Hypertable {
      * @param expire Absolute expiration time
      */
     void add_request(uint32_t id, IOHandler *handler, DispatchHandler *dh,
-                     boost::xtime &expire) {
-      ScopedLock lock(m_mutex);
+                     ClockT::time_point expire) {
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_request_cache.insert(id, handler, dh, expire);
-      if (m_next_wakeup.sec == 0 || xtime_cmp(expire, m_next_wakeup) < 0)
+      if (m_next_wakeup == ClockT::time_point() || expire < m_next_wakeup)
         poll_loop_interrupt();
     }
 
@@ -111,7 +111,7 @@ namespace Hypertable {
      * @return <i>true</i> if request removed, <i>false</i> otherwise
      */
     bool remove_request(uint32_t id, DispatchHandler *&handler) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_request_cache.remove(id, handler);
     }
 
@@ -121,7 +121,7 @@ namespace Hypertable {
      * @param error Error code to deliver with ERROR events
      */
     void cancel_requests(IOHandler *handler, int32_t error=Error::COMM_BROKEN_CONNECTION) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_request_cache.purge_requests(handler, error);
     }
 
@@ -131,7 +131,7 @@ namespace Hypertable {
      * @param timer Reference to ExpireTimer object
      */
     void add_timer(ExpireTimer &timer) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_timer_heap.push(timer);
       poll_loop_interrupt();
     }
@@ -141,7 +141,7 @@ namespace Hypertable {
      * cancelled
      */
     void cancel_timer(const DispatchHandlerPtr &handler) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       typedef TimerHeap::container_type container_t;
       container_t container;
       container.reserve(m_timer_heap.size());
@@ -152,7 +152,7 @@ namespace Hypertable {
           container.push_back(timer);
         m_timer_heap.pop();
       }
-      foreach_ht (const ExpireTimer &t, container)
+      for (const auto &t : container)
         m_timer_heap.push(t);
     }
 
@@ -167,12 +167,11 @@ namespace Hypertable {
      * @param handler I/O handler to schedule for removal
      */
     void schedule_removal(IOHandler *handler) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_removed_handlers.insert(handler);
 #ifndef _WIN32
       ExpireTimer timer;
-      boost::xtime_get(&timer.expire_time, boost::TIME_UTC_);
-      timer.expire_time.nsec += 200000000LL;
+      timer.expire_time = ClockT::now() + std::chrono::milliseconds(200);
       timer.handler = 0;
       m_timer_heap.push(timer);
 #endif
@@ -185,7 +184,7 @@ namespace Hypertable {
      * @param dst reference to set filled in with removed handlers
      */
     void get_removed_handlers(std::set<IOHandler *> &dst) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       dst = m_removed_handlers;
       m_removed_handlers.clear();
     }
@@ -248,10 +247,14 @@ namespace Hypertable {
      * @param handlers Vector of corresponding I/O handlers
      */
     void fetch_poll_array(std::vector<struct pollfd> &fdarray,
-			  std::vector<IOHandler *> &handlers);
+                          std::vector<IOHandler *> &handlers);
+
+#else
+
+    static void destroy();
 
 #endif
-			  
+
     /** Forces polling interface wait call to return.
      * @return Error::OK on success, or Error code on failure
      */
@@ -282,40 +285,40 @@ namespace Hypertable {
       
 #ifndef _WIN32
 
-    Mutex m_mutex;                //!< Mutex to protect members
-    Mutex m_polldata_mutex;       //!< Mutex to protect #m_polldata member
+    std::mutex m_mutex;           //!< Mutex to protect members
+    std::mutex m_polldata_mutex;  //!< Mutex to protect #m_polldata member
     RequestCache m_request_cache; //!< Request cache
     TimerHeap m_timer_heap;       //!< ExpireTimer heap
     int m_interrupt_sd;           //!< Interrupt socket
 
     /// Set to <i>true</i> if poll loop interrupt in progress
-    bool m_interrupt_in_progress;
+    bool m_interrupt_in_progress {};
 
     /// Vector of poll descriptor state structures for use with POSIX
     /// <code>poll()</code>.
     std::vector<PollDescriptorT> m_polldata;
 
     /// Next polling interface wait timeout (absolute)
-    boost::xtime m_next_wakeup;
+    ClockT::time_point m_next_wakeup;
 
     /// Set of IOHandler objects scheduled for removal
     std::set<IOHandler *> m_removed_handlers;
 
 #else
 
-    static Mutex           m_mutex;
-    static RequestCache    m_request_cache;
-    static TimerHeap       m_timer_heap;
-    static boost::xtime    m_next_wakeup;
+    static std::mutex m_mutex;
+    static RequestCache m_request_cache;
+    static TimerHeap m_timer_heap;
+    static ClockT::time_point m_next_wakeup;
     static std::set<IOHandler *> m_removed_handlers;
 
 #endif
 
   };
 
-  /// Smart pointer to Reactor
+  /// Shared smart pointer to Reactor
   typedef std::shared_ptr<Reactor> ReactorPtr;
-  /** @}*/
+  /// @}
 }
 
 #endif // AsyncComm_Reactor_h

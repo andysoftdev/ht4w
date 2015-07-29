@@ -42,7 +42,8 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include <poll.h>
+#include <chrono>
+#include <thread>
 
 using namespace Hypertable;
 using namespace Hypertable::Lib;
@@ -114,7 +115,7 @@ void OperationToggleTableMaintenance::execute() {
     }
     HT_MAYBE_FAIL("toggle-table-maintenance-UPDATE_HYPERSPACE-1");
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_dependencies.erase(Dependency::INIT);
       m_dependencies.insert(Dependency::METADATA);
       m_dependencies.insert(m_id + " move range");
@@ -136,7 +137,7 @@ void OperationToggleTableMaintenance::execute() {
 
       // Populate m_servers and m_dependencies
       {
-        ScopedLock lock(m_mutex);
+        lock_guard<mutex> lock(m_mutex);
         m_servers.clear();
         for (auto &server : servers) {
           if (m_completed.count(server))
@@ -166,7 +167,7 @@ void OperationToggleTableMaintenance::execute() {
         op_handler->get_results(results);
         for (auto &result : results) {
           if (result.error == Error::OK) {
-            ScopedLock lock(m_mutex);
+            lock_guard<mutex> lock(m_mutex);
             m_completed.insert(result.location);
           }
           else
@@ -175,14 +176,14 @@ void OperationToggleTableMaintenance::execute() {
         }
 
         {
-          ScopedLock lock(m_mutex);
+          lock_guard<mutex> lock(m_mutex);
           for (auto s : m_servers)
             m_dependencies.erase(s);
           m_dependencies.insert(Dependency::METADATA);
           m_servers.clear();
           m_state = OperationState::SCAN_METADATA;
         }
-        poll(0, 0, 5000);
+        this_thread::sleep_for(chrono::milliseconds(5000));
         m_context->mml_writer->record_state(shared_from_this());
         break;
       }
@@ -214,10 +215,10 @@ size_t OperationToggleTableMaintenance::encoded_length_state() const {
   size_t length = 1 + Serialization::encoded_length_vstr(m_name) +
     Serialization::encoded_length_vstr(m_id);
   length += 4;
-  foreach_ht (const String &location, m_servers)
+  for (const auto &location : m_servers)
     length += Serialization::encoded_length_vstr(location);
   length += 4;
-  foreach_ht (const String &location, m_completed)
+  for (const auto &location : m_completed)
     length += Serialization::encoded_length_vstr(location);
   return length;
 }
@@ -227,10 +228,10 @@ void OperationToggleTableMaintenance::encode_state(uint8_t **bufp) const {
   Serialization::encode_vstr(bufp, m_id);
   Serialization::encode_bool(bufp, m_toggle_on);
   Serialization::encode_i32(bufp, m_servers.size());
-  foreach_ht (const String &location, m_servers)
+  for (const auto &location : m_servers)
     Serialization::encode_vstr(bufp, location);
   Serialization::encode_i32(bufp, m_completed.size());
-  foreach_ht (const String &location, m_completed)
+  for (const auto &location : m_completed)
     Serialization::encode_vstr(bufp, location);
 }
 

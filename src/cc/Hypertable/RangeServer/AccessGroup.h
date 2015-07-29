@@ -40,16 +40,18 @@
 #include <Hypertable/Lib/TableIdentifier.h>
 
 #include <Common/PageArena.h>
-#include <Common/ReferenceCount.h>
 #include <Common/String.h>
 #include <Common/StringExt.h>
 
 #include <boost/thread/condition.hpp>
 
+#include <condition_variable>
 #include <cstdio>
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <queue>
 #include <set>
 #include <vector>
@@ -60,7 +62,7 @@ namespace Hypertable {
   /// @{
 
   /// Access group
-  class AccessGroup : public ReferenceCount {
+  class AccessGroup {
 
   public:
 
@@ -132,7 +134,7 @@ namespace Hypertable {
 
     AccessGroup(const TableIdentifier *identifier, SchemaPtr &schema,
                 AccessGroupSpec *ag_spec, const RangeSpec *range,
-                const Hints *hints=0);
+                const Hints *hints=nullptr);
 
     /// Adds a key/value pair
     /// @param key Key
@@ -164,9 +166,9 @@ namespace Hypertable {
       m_mutex.unlock();
     }
 
-    MergeScannerAccessGroup *create_scanner(ScanContextPtr &scan_ctx);
+    MergeScannerAccessGroup *create_scanner(ScanContext *scan_ctx);
 
-    bool include_in_scan(ScanContextPtr &scan_ctx);
+    bool include_in_scan(ScanContext *scan_ctx);
     uint64_t disk_usage();
     uint64_t memory_usage();
     void space_usage(int64_t *memp, int64_t *diskp);
@@ -174,7 +176,7 @@ namespace Hypertable {
     void load_cellstore(CellStorePtr &cellstore);
 
     void pre_load_cellstores() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_latest_stored_revision = TIMESTAMP_MIN;
     }
 
@@ -262,10 +264,10 @@ namespace Hypertable {
 
     void sort_cellstores_by_timestamp();
 
-    Mutex m_mutex;
-    Mutex m_schema_mutex;
-    Mutex m_outstanding_scanner_mutex;
-    boost::condition m_outstanding_scanner_cond;
+    std::mutex m_mutex;
+    std::mutex m_schema_mutex;
+    std::mutex m_outstanding_scanner_mutex;
+    std::condition_variable m_outstanding_scanner_cond;
     int32_t m_outstanding_scanner_count {};
     TableIdentifierManaged m_identifier;
     SchemaPtr m_schema;
@@ -297,7 +299,8 @@ namespace Hypertable {
     bool m_dirty {};
     bool m_cellcache_needs_compaction {};
   };
-  typedef boost::intrusive_ptr<AccessGroup> AccessGroupPtr;
+
+  typedef std::shared_ptr<AccessGroup> AccessGroupPtr;
 
   std::ostream &operator<<(std::ostream &os, const AccessGroup::MaintenanceData &mdata);
 

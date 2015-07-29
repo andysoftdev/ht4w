@@ -60,7 +60,8 @@ using namespace std;
 #ifndef _WIN32
 
 bool
-IOHandlerRaw::handle_event(struct pollfd *event, time_t arrival_time) {
+IOHandlerRaw::handle_event(struct pollfd *event,
+                           ClockT::time_point arrival_time) {
 
   //DisplayEvent(event);
 
@@ -106,7 +107,8 @@ IOHandlerRaw::handle_event(struct pollfd *event, time_t arrival_time) {
 #if defined(__linux__)
 
 bool
-IOHandlerRaw::handle_event(struct epoll_event *event, time_t arrival_time) {
+IOHandlerRaw::handle_event(struct epoll_event *event,
+                           ClockT::time_point arrival_time) {
 
   //display_event(event);
 
@@ -158,7 +160,8 @@ IOHandlerRaw::handle_event(struct epoll_event *event, time_t arrival_time) {
 
 #elif defined(__sun__)
 
-bool IOHandlerRaw::handle_event(port_event_t *event, time_t arrival_time) {
+bool IOHandlerRaw::handle_event(port_event_t *event,
+                                ClockT::time_point arrival_time) {
 
   //display_event(event);
 
@@ -211,7 +214,8 @@ bool IOHandlerRaw::handle_event(port_event_t *event, time_t arrival_time) {
 
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 
-bool IOHandlerRaw::handle_event(struct kevent *event, time_t arrival_time) {
+bool IOHandlerRaw::handle_event(struct kevent *event,
+                                ClockT::time_point arrival_time) {
 
   //DisplayEvent(event);
 
@@ -279,7 +283,7 @@ void IOHandlerRaw::update_poll_interest() {
 
 #else
 
-bool IOHandlerRaw::handle_event(IOOP *ioop, time_t arrival_time) {
+bool IOHandlerRaw::handle_event(IOOP *ioop, ClockT::time_point arival_time) {
   try {
     int events {};
 

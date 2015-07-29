@@ -20,13 +20,14 @@
  */
 
 #include <Common/Compat.h>
+
+#include <Hypertable/Lib/Schema.h>
+
 #include <Common/FileUtils.h>
 #include <Common/Logger.h>
 #include <Common/TestHarness.h>
 #include <Common/Time.h>
 #include <Common/Usage.h>
-
-#include <Hypertable/Lib/Schema.h>
 
 extern "C" {
 #include <errno.h>
@@ -78,7 +79,7 @@ int main(int argc, char **argv) {
     end += strlen("</Schema>");
     string schema_str(test_schemas, begin, end-begin);
     try {
-      schema = Schema::new_instance(schema_str);
+      schema.reset( Schema::new_instance(schema_str) );
       schema_str = schema->render_xml(true);
       FileUtils::write(harness.get_log_file_descriptor(), schema_str);
     }
@@ -88,8 +89,7 @@ int main(int argc, char **argv) {
     }
   }
 
-
-  schema = new Schema();
+  schema = make_shared<Schema>();
   AccessGroupOptions ag_defaults;
   ag_defaults.set_blocksize(65000);
   schema->set_access_group_defaults(ag_defaults);
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
   str = schema->render_xml(true);
   FileUtils::write(harness.get_log_file_descriptor(), str);
 
-  SchemaPtr orig_schema = new Schema(*schema);
+  SchemaPtr orig_schema = make_shared<Schema>(*schema);
   cf_spec->set_option_max_versions(2);
   HT_ASSERT(schema->clear_generation_if_changed(*orig_schema));
   str = schema->render_xml(true);

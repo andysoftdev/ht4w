@@ -38,14 +38,13 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
-#include <time.h>
 }
 
 using namespace Hypertable;
 using namespace Hypertable::FsBroker;
 using namespace KFS;
 
-std::atomic<int> QfsBroker::ms_next_fd {};
+std::atomic<int> QfsBroker::ms_next_fd {0};
 
 OpenFileDataQfs::~OpenFileDataQfs() {
   HT_INFOF("close(%d) file: %s", fd, fname.c_str());

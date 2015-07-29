@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2011 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,11 +19,13 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/Client.h>
+
 #include <iostream>
 #include <map>
 #include <cassert>
-#include "Hypertable/Lib/Client.h"
 
 using namespace Hypertable;
 
@@ -206,7 +208,7 @@ test_escaped_regexps(void)
   // now make sure that the values were correctly escaped
   Cell cell;
   FILE *fout=fopen("indices_test.output", "wt");
-  foreach_ht (Query &q, queries) {
+  for (auto &q : queries) {
     ScanSpecBuilder ssb;
     ssb.add_column_predicate("a", "", q.second, q.first);
     String s=escape(q.first, strlen(q.first));
@@ -230,7 +232,7 @@ test_escaped_regexps(void)
 #endif
   if (system(cmd) != 0) {
     printf("diff failed\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -261,7 +263,7 @@ assert_scan(
 
   int cell_count = 0;
   {
-    TableScannerPtr s = table->create_scanner(ssb.get());
+    TableScannerPtr s(table->create_scanner(ssb.get()));
     Cell cell;
     while (s->next(cell)) {
       HT_ASSERT(validate(cell));
@@ -283,7 +285,7 @@ test_column_predicate(void)
     char rowbuf[100];
     char valbuf[100];
 
-    TableMutatorPtr tm = table->create_mutator();
+    TableMutatorPtr tm(table->create_mutator());
 
     for (int i = 0; i < 10000; i++) {
       int mod100 = i % 100;

@@ -32,8 +32,6 @@
 #include "MetaLogEntity.h"
 
 #include <Common/Filesystem.h>
-#include <Common/Mutex.h>
-#include <Common/ReferenceCount.h>
 
 #include <AsyncComm/Comm.h>
 #include <AsyncComm/DispatchHandler.h>
@@ -65,7 +63,7 @@ namespace Hypertable {
      * MetaLog::Writer writer = new MetaLog::Writer(log_fs, definition, log_dir, entities);
      * </pre>
      */
-    class Writer : public ReferenceCount {
+    class Writer {
     public:
 
       /** Constructor.
@@ -175,7 +173,7 @@ namespace Hypertable {
         /// %Mutex for serializing access to members
         std::mutex m_mutex;
         /// Condition variable to signal when timer has stopped
-        condition_variable m_cond;
+        std::condition_variable m_cond;
         /// Pointer to MetaLogWriter
         Writer *m_writer {};
         /// Pointer to Comm layer
@@ -279,7 +277,7 @@ namespace Hypertable {
     };
 
     /// Smart pointer to Writer
-    typedef intrusive_ptr<Writer> WriterPtr;
+    typedef std::shared_ptr<Writer> WriterPtr;
     
     /// @}
   }

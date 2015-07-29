@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/* -*- c++ -*-
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,14 +19,15 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/Client.h>
+
+#include <Common/md5.h>
+#include <Common/Usage.h>
+
 #include <cstdlib>
 #include <iostream>
-
-#include "Common/md5.h"
-#include "Common/Usage.h"
-
-#include "Hypertable/Lib/Client.h"
 
 #ifdef _WIN32
 #define random rand
@@ -109,7 +110,7 @@ int main(int argc, char **argv) {
 
     table_ptr = ns->open_table("BigTest");
 
-    mutator_ptr = table_ptr->create_mutator();
+    mutator_ptr.reset(table_ptr->create_mutator());
 
     key.column_family = "data";
     key.column_qualifier = 0;
@@ -130,9 +131,9 @@ int main(int argc, char **argv) {
 
     mutator_ptr->flush();
 
-    mutator_ptr = 0;
+    mutator_ptr.reset();
 
-    scanner_ptr = table_ptr->create_scanner(scan_spec);
+    scanner_ptr.reset( table_ptr->create_scanner(scan_spec) );
 
     memset(&md5_ctx, 0, sizeof(md5_ctx));
     md5_starts(&md5_ctx);
@@ -144,12 +145,11 @@ int main(int argc, char **argv) {
 
     if (memcmp(sent_digest, received_digest, 16)) {
       HT_ERROR("MD5 digest mismatch between sent and received");
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
 
-    scanner_ptr = 0;
-    table_ptr = 0;
-
+    scanner_ptr.reset();
+    table_ptr.reset();
 
     /**
      * Validate large object returned by FETCH_SCANBLOCK
@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
 
     table_ptr = ns->open_table("BigTest");
 
-    mutator_ptr = table_ptr->create_mutator();
+    mutator_ptr.reset(table_ptr->create_mutator());
 
     key.column_family = "data";
     key.column_qualifier = 0;
@@ -190,9 +190,9 @@ int main(int argc, char **argv) {
 
     mutator_ptr->flush();
 
-    mutator_ptr = 0;
+    mutator_ptr.reset();
 
-    scanner_ptr = table_ptr->create_scanner(scan_spec);
+    scanner_ptr.reset(table_ptr->create_scanner(scan_spec));
 
     memset(&md5_ctx, 0, sizeof(md5_ctx));
     md5_starts(&md5_ctx);
@@ -204,16 +204,16 @@ int main(int argc, char **argv) {
 
     if (memcmp(sent_digest, received_digest, 16)) {
       HT_ERROR("MD5 digest mismatch between sent and received");
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
 
-    scanner_ptr = 0;
-    table_ptr = 0;
+    scanner_ptr.reset();
+    table_ptr.reset();
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

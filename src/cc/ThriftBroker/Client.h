@@ -50,6 +50,7 @@ struct ClientHelper {
     socket->setConnTimeout(conn_timeout_ms);
     socket->setSendTimeout(timeout_ms);
     socket->setRecvTimeout(timeout_ms);
+    socket->setKeepAlive(true);
   }
 };
 
@@ -58,7 +59,14 @@ struct ClientHelper {
    */
 class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
   public:
-  Client(const std::string &host, int port, int conn_timeout_ms = 30000, int timeout_ms = 600000,
+
+  enum {
+    ConnectionTimeout  = 30000,
+    SendReceiveTimeout = 600000
+  };
+
+  Client(const std::string &host, int port,
+           int conn_timeout_ms = ConnectionTimeout, int timeout_ms = SendReceiveTimeout,
            bool open = true)
     : ClientHelper(host, port, conn_timeout_ms, timeout_ms), HqlServiceClient(protocol),
         m_do_close(false) {
@@ -91,7 +99,9 @@ class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
 
   class ThriftClient : public Client {
     public:
-      ThriftClient(const std::string &_host, int _port, int _conn_timeout_ms = 30000, int _timeout_ms = 600000, bool open = true) 
+      ThriftClient(const std::string &_host, int _port, 
+                   int _conn_timeout_ms = ConnectionTimeout, int _timeout_ms = SendReceiveTimeout,
+                   bool open = true) 
       : Client(_host, _port, _conn_timeout_ms, _timeout_ms, open)
       , host(_host), port(_port), conn_timeout_ms(_conn_timeout_ms), timeout_ms(_timeout_ms), locked(0), next_client(0) {
         ::InitializeCriticalSection(&cs);
@@ -153,6 +163,7 @@ class Client : protected ClientHelper, public ThriftGen::HqlServiceClient {
           socket->setConnTimeout(conn_timeout_ms);
           socket->setSendTimeout(timeout_ms);
           socket->setRecvTimeout(timeout_ms);
+          socket->setKeepAlive(true);
 
           if (transport) {
             for (int retry = 0; true; ++retry) {

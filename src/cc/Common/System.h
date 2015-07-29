@@ -23,18 +23,14 @@
  * Retrieves system information (hardware, installation directory, etc)
  */
 
-#ifndef HYPERTABLE_SYSTEM_H
-#define HYPERTABLE_SYSTEM_H
+#ifndef Common_System_h
+#define Common_System_h
 
 #include <Common/Version.h>
-#include <Common/Mutex.h>
 #include <Common/String.h>
 
-#include <boost/random.hpp>
-
-extern "C" {
-#include <time.h>
-}
+#include <ctime>
+#include <mutex>
 
 namespace Hypertable {
 
@@ -72,7 +68,7 @@ namespace Hypertable {
      *      in combination with some heuristics
      */
     static inline void initialize(const String &install_directory = String()) {
-      ScopedLock lock(ms_mutex);
+      std::lock_guard<std::mutex> lock(ms_mutex);
 
       if (ms_initialized)
         return;
@@ -137,15 +133,6 @@ namespace Hypertable {
     /** The pid of the current process */
     static int32_t get_pid();
 
-    /** Sets the random seed of the random number generator */
-    static void seed(uint32_t seed) { ms_rng.seed(seed); }
-
-    /** Returns a random 32bit number */
-    static uint32_t rand32() { return ms_rng(); }
-
-    /** Returns a random 64bit number */
-    static uint64_t rand64() { return (uint64_t)rand32() << 32 | rand32(); }
-
     /** Returns the number of drives */
     static int32_t get_drive_count();
 
@@ -196,14 +183,12 @@ namespace Hypertable {
     static bool ms_initialized;
 
     /** a %Mutex to protect the static members */
-    static Mutex ms_mutex;
+    static std::mutex ms_mutex;
 
-    /** Random number generator */
-    static boost::mt19937 ms_rng;
   };
 
   /** @} */
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_SYSTEM_H
+#endif // Common_System_h

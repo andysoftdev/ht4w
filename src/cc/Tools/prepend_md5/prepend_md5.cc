@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -18,25 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <AsyncComm/Config.h>
+
+#include <Common/DynamicBuffer.h>
+#include <Common/Init.h>
+#include <Common/Logger.h>
+#include <Common/md5.h>
+#include <Common/SystemInfo.h>
 
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <string>
-
-extern "C" {
-#include <time.h>
-#include <sys/time.h>
-}
-
-#include "AsyncComm/Config.h"
-#include "Common/DynamicBuffer.h"
-#include "Common/Init.h"
-#include "Common/Logger.h"
-#include "Common/md5.h"
-#include "Common/SystemInfo.h"
 
 using namespace Hypertable;
 using namespace Hypertable::Config;
@@ -91,7 +87,7 @@ int main(int argc, char **argv) {
     int32_t checksum_chars = get_i32("md5-chars");
     if (checksum_chars < 1 || checksum_chars > 32) {
       cerr << "Invalid value for md5-chars, must be from 1 to 32" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
     while (!cin.eof()) {
@@ -117,6 +113,6 @@ int main(int argc, char **argv) {
   }
   catch (std::exception &e) {
     cerr << "Error - " << e.what() << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 }

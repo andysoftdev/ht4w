@@ -1,4 +1,4 @@
-/*
+/* -*- c++ -*-
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,27 +19,26 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_COMMITLOGBASE_H
-#define HYPERTABLE_COMMITLOGBASE_H
-
-#include <deque>
-
-#include <boost/algorithm/string.hpp>
-
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
-#include "Common/String.h"
-#include "Common/StringExt.h"
+#ifndef Hypertable_Lib_CommitLogBase_h
+#define Hypertable_Lib_CommitLogBase_h
 
 #include "KeySpec.h"
 #include "CommitLogBlockStream.h"
+
+#include <Common/String.h>
+#include <Common/StringExt.h>
+
+#include <boost/algorithm/string.hpp>
+
+#include <deque>
+#include <memory>
+#include <mutex>
 
 namespace Hypertable {
 
   class CommitLogFileInfo {
   public:
-    CommitLogFileInfo() : num(0), size(0), revision(0), log_dir_hash(0), references(0), block_stream(0), parent(0), verification(123456789LL) {
-    }
+    CommitLogFileInfo() { }
     ~CommitLogFileInfo() { verify(); verification = 0; }
     void verify() {
       HT_ASSERT(verification == 123456789LL);
@@ -57,16 +56,16 @@ namespace Hypertable {
                       (int)parent->references, (int)remove_ok_logs.count(parent->log_dir));
       return msg;
     }
-    std::string     log_dir;
-    uint32_t   num;
-    uint64_t   size;
-    int64_t    revision;
-    int64_t    log_dir_hash;
-    size_t     references;
-    CommitLogBlockStream *block_stream;
-    CommitLogFileInfo *parent;
+    std::string log_dir;
+    uint32_t num {};
+    uint64_t size {};
+    int64_t revision {};
+    int64_t log_dir_hash {};
+    size_t references {};
+    CommitLogBlockStream *block_stream {};
+    CommitLogFileInfo *parent {};
     StringSet  purge_dirs;
-    int64_t verification;
+    int64_t verification {123456789LL};
   };
 
   struct LtClfip {
@@ -79,7 +78,7 @@ namespace Hypertable {
 
   /**
    */
-  class CommitLogBase : public ReferenceCount {
+  class CommitLogBase {
   public:
     CommitLogBase(const std::string &log_dir)
       : m_log_dir(log_dir), m_latest_revision(TIMESTAMP_MIN),
@@ -98,7 +97,7 @@ namespace Hypertable {
      * concurrently used which is why it doesn't lock it's mutex
      */
     void stitch_in(CommitLogBase *other) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex>lock(m_mutex);
       for (LogFragmentQueue::iterator iter = other->m_fragment_queue.begin();
            iter != other->m_fragment_queue.end(); iter++)
         m_fragment_queue.push_back(*iter);
@@ -109,7 +108,7 @@ namespace Hypertable {
 
     int64_t get_latest_revision() { return m_latest_revision; }
 
-    bool empty() { ScopedLock lock(m_mutex); return m_fragment_queue.empty(); }
+    bool empty() { std::lock_guard<std::mutex>lock(m_mutex); return m_fragment_queue.empty(); }
 
     bool range_reference_required() { return m_range_reference_required; }
 
@@ -122,18 +121,18 @@ namespace Hypertable {
     }
 
   protected:
-    Mutex             m_mutex;
-    std::string            m_log_dir;
-    std::string            m_log_name;
-    LogFragmentQueue  m_fragment_queue;
-    int64_t           m_latest_revision;
+    std::mutex m_mutex;
+    std::string m_log_dir;
+    std::string m_log_name;
+    LogFragmentQueue m_fragment_queue;
+    int64_t m_latest_revision;
     std::set<int64_t> m_linked_log_hashes;
     bool m_range_reference_required;
   };
 
-  typedef intrusive_ptr<CommitLogBase> CommitLogBasePtr;
+  typedef std::shared_ptr<CommitLogBase> CommitLogBasePtr;
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_COMMITLOGBASE_H
+#endif // Hypertable_Lib_CommitLogBase_h
 

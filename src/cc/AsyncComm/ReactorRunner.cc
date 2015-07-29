@@ -25,10 +25,24 @@
  * functor class used to wait for and react to I/O events.
  */
 
-#include "Common/Compat.h"
-#include "Common/Config.h"
-#include "Common/FileUtils.h"
-#include "Common/Time.h"
+#include <Common/Compat.h>
+
+#define HT_DISABLE_LOG_DEBUG 1
+
+#include "Clock.h"
+#include "HandlerMap.h"
+#include "IOHandler.h"
+#include "IOHandlerData.h"
+#include "ReactorFactory.h"
+#include "ReactorRunner.h"
+
+#include <Common/Config.h>
+#include <Common/FileUtils.h>
+#include <Common/Logger.h>
+#include <Common/Time.h>
+
+#include <chrono>
+#include <thread>
 
 extern "C" {
 #include <errno.h>
@@ -42,20 +56,12 @@ extern "C" {
 #endif
 }
 
-#define HT_DISABLE_LOG_DEBUG 1
-
-#include "Common/Logger.h"
-
-#include "HandlerMap.h"
-#include "IOHandler.h"
-#include "IOHandlerData.h"
-#include "ReactorFactory.h"
-#include "ReactorRunner.h"
 #ifdef _WIN32
 #include "IOOP.h"
 #endif
 
 using namespace Hypertable;
+using namespace std;
 
 bool Hypertable::ReactorRunner::shutdown = false;
 bool Hypertable::ReactorRunner::record_arrival_time = false;
@@ -71,7 +77,7 @@ void ReactorRunner::operator()() {
   PollTimeout timeout;
 #ifndef _WIN32
   bool did_delay = false;
-  time_t arrival_time = 0;
+  ClockT::time_point arrival_time;
   bool got_arrival_time = false;
   std::vector<struct pollfd> pollfds;
 #endif
@@ -114,19 +120,19 @@ void ReactorRunner::operator()() {
           if ((nread = FileUtils::recv(pollfds[i].fd, buf, 8)) == -1 &&
               errno != EAGAIN && errno != EINTR) {
             HT_ERRORF("recv(interrupt_sd) failed - %s", strerror(errno));
-            exit(1);
+            exit(EXIT_FAILURE);
           }
         }
         
         if (handlers[i] && removed_handlers.count(handlers[i]) == 0) {
           // dispatch delay for testing
           if (dispatch_delay && !did_delay && (pollfds[i].revents & POLLIN)) {
-            poll(0, 0, (int)dispatch_delay);
+            this_thread::sleep_for(chrono::milliseconds((int)dispatch_delay));
             did_delay = true;
           }
           if (record_arrival_time && !got_arrival_time
               && (pollfds[i].revents & POLLIN)) {
-            arrival_time = time(0);
+            arrival_time = ClockT::now();
             got_arrival_time = true;
           }
           if (handlers[i]->handle_event(&pollfds[i], arrival_time))
@@ -171,12 +177,12 @@ void ReactorRunner::operator()() {
       if (handler && removed_handlers.count(handler) == 0) {
         // dispatch delay for testing
         if (dispatch_delay && !did_delay && (events[i].events & EPOLLIN)) {
-          poll(0, 0, (int)dispatch_delay);
+          this_thread::sleep_for(chrono::milliseconds((int)dispatch_delay));
           did_delay = true;
         }
         if (record_arrival_time && !got_arrival_time
             && (events[i].events & EPOLLIN)) {
-          arrival_time = time(0);
+          arrival_time = ClockT::now();
           got_arrival_time = true;
         }
         if (handler->handle_event(&events[i], arrival_time))
@@ -227,11 +233,11 @@ void ReactorRunner::operator()() {
       if (handler && removed_handlers.count(handler) == 0) {
         // dispatch delay for testing
         if (dispatch_delay && !did_delay && events[i].portev_events == POLLIN) {
-          poll(0, 0, (int)dispatch_delay);
+          this_thread::sleep_for(chrono::milliseconds((int)dispatch_delay));
           did_delay = true;
         }
         if (record_arrival_time && !got_arrival_time && events[i].portev_events == POLLIN) {
-          arrival_time = time(0);
+          arrival_time = ClockT::now();
           got_arrival_time = true;
         }
         if (handler->handle_event(&events[i], arrival_time))
@@ -274,11 +280,11 @@ void ReactorRunner::operator()() {
       if (handler && removed_handlers.count(handler) == 0) {
         // dispatch delay for testing
         if (dispatch_delay && !did_delay && events[i].filter == EVFILT_READ) {
-          poll(0, 0, (int)dispatch_delay);
+          this_thread::sleep_for(chrono::milliseconds((int)dispatch_delay));
           did_delay = true;
         }
         if (record_arrival_time && !got_arrival_time && events[i].filter == EVFILT_READ) {
-          arrival_time = time(0);
+          arrival_time = ClockT::now();
           got_arrival_time = true;
         }
         if (handler->handle_event(&events[i], arrival_time))
@@ -299,6 +305,7 @@ void ReactorRunner::operator()() {
 
   bool handle_timeouts = true;
   LARGE_INTEGER start, end, frequency;
+  ClockT::time_point arrival_time;
 
   while (!shutdown) {
     DWORD numberOfBytes = 0;
@@ -346,8 +353,9 @@ void ReactorRunner::operator()() {
         }
 
 #endif
-
-        handler->handle_event(ioop, record_arrival_time ? time(0) : 0);
+        if (record_arrival_time)
+          arrival_time = ClockT::now();
+        handler->handle_event(ioop, arrival_time);
       }
 
       delete ioop;
@@ -384,7 +392,7 @@ void ReactorRunner::operator()() {
 
 void ReactorRunner::cleanup_and_remove_handlers(std::set<IOHandler *> &handlers) {
 
-  foreach_ht(IOHandler *handler, handlers) {
+  for (auto handler : handlers) {
 
     HT_ASSERT(handler);
 

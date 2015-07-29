@@ -23,23 +23,24 @@
 /// Declarations for MaintenanceQueue
 /// This file contains the type declarations for the MaintenanceQueue
 
-#ifndef HYPERTABLE_MAINTENANCEQUEUE_H
-#define HYPERTABLE_MAINTENANCEQUEUE_H
-
-#include <cassert>
-#include <queue>
-#include <set>
-
-#include <boost/thread/condition.hpp>
-
-#include "Common/Mutex.h"
-#include "Common/Thread.h"
-#include "Common/Error.h"
-#include "Common/Logger.h"
-#include "Common/ReferenceCount.h"
+#ifndef Hypertable_RangeServer_MaintenanceQueue_h
+#define Hypertable_RangeServer_MaintenanceQueue_h
 
 #include "MaintenanceTask.h"
 #include "MaintenanceTaskMemoryPurge.h"
+
+#include <AsyncComm/Clock.h>
+
+#include <Common/Error.h>
+#include <Common/Logger.h>
+#include <Common/Thread.h>
+
+#include <cassert>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <set>
 
 #define MAX_LEVELS 4
 
@@ -51,10 +52,10 @@ namespace Hypertable {
 
   /** Queue for periodic maintenance work
    */
-  class MaintenanceQueue : public ReferenceCount {
+  class MaintenanceQueue {
 
-    static int              ms_pause;
-    static boost::condition ms_cond;
+    static int ms_pause;
+    static std::condition_variable ms_cond;
 
     struct LtMaintenanceTask {
       bool
@@ -63,7 +64,7 @@ namespace Hypertable {
             return sm1->level > sm2->level;
           if (sm1->priority != sm2->priority)
             return sm1->priority > sm2->priority;
-          return xtime_cmp(sm1->start_time, sm2->start_time) > 0;
+        return sm1->start_time >= sm2->start_time;
       }
     };
 
@@ -72,19 +73,19 @@ namespace Hypertable {
 
     class MaintenanceQueueState {
     public:
-      MaintenanceQueueState() : shutdown(false), inflight(0), generation(0) {
+      MaintenanceQueueState() {
         memset(inflight_levels, 0, MAX_LEVELS*sizeof(int));
         return;
       }
-      TaskQueue          queue;
-      Mutex              mutex;
-      boost::condition   cond;
-      boost::condition   empty_cond;
-      bool               shutdown;
+      TaskQueue queue;
+      std::mutex mutex;
+      std::condition_variable cond;
+      std::condition_variable empty_cond;
+      bool shutdown {};
       std::set<Range *>  ranges;
-      uint32_t           inflight_levels[MAX_LEVELS];
-      uint32_t           inflight;
-      int64_t            generation;
+      uint32_t inflight_levels[MAX_LEVELS];
+      uint32_t inflight {};
+      int64_t generation {};
     };
 
     class Worker {
@@ -94,16 +95,15 @@ namespace Hypertable {
       Worker(MaintenanceQueueState &state) : m_state(state) { return; }
 
       void operator()() {
-        boost::xtime now, next_work;
         MaintenanceTask *task = 0;
 
         while (true) {
 
           {
-            ScopedLock lock(m_state.mutex);
+            std::unique_lock<std::mutex> lock(m_state.mutex);
             uint32_t inflight_level = lowest_inflight_level();
 
-            now = get_xtime();
+            auto now = std::chrono::steady_clock::now();
 
 	    // Block in the following circumstances:
 	    // 1. Queue is empty
@@ -113,7 +113,7 @@ namespace Hypertable {
 
             while (m_state.queue.empty() || 
 		   (m_state.inflight && ((m_state.queue.top())->level > inflight_level)) ||
-		   xtime_cmp((m_state.queue.top())->start_time, now) > 0) {
+                   (m_state.queue.top())->start_time > now) {
 
               if (m_state.shutdown)
                 return;
@@ -121,12 +121,11 @@ namespace Hypertable {
               if (m_state.queue.empty() || 
 		  (m_state.inflight && (m_state.queue.top())->level > inflight_level))
                 m_state.cond.wait(lock);
-              else {
-                next_work = (m_state.queue.top())->start_time;
-                m_state.cond.timed_wait(lock, next_work);
-              }
+              else
+                m_state.cond.wait_until(lock, (m_state.queue.top())->start_time);
+
               inflight_level = lowest_inflight_level();
-              now = get_xtime();
+              now = std::chrono::steady_clock::now();
             }
 
             task = m_state.queue.top();
@@ -142,9 +141,8 @@ namespace Hypertable {
 
             // maybe pause
             {
-              ScopedLock lock(m_state.mutex);
-              while (ms_pause)
-                ms_cond.wait(lock);
+              std::unique_lock<std::mutex> lock(m_state.mutex);
+              ms_cond.wait(lock, [](){ return !ms_pause; });
             }
 
             if (m_state.shutdown)
@@ -162,12 +160,12 @@ namespace Hypertable {
                 message_logged = true;
               }
               if (task->retry()) {
-                ScopedLock lock(m_state.mutex);
+                std::lock_guard<std::mutex> lock(m_state.mutex);
                 HT_INFOF("Maintenance Task '%s' aborted, will retry in %u "
                          "milliseconds ...", task->description().c_str(),
                         task->get_retry_delay());
-                task->start_time = get_xtime();
-                task->start_time.sec += task->get_retry_delay() / 1000;
+                task->start_time = std::chrono::steady_clock::now();
+                task->start_time += std::chrono::milliseconds(task->get_retry_delay());
                 m_state.queue.push(task);
                 HT_ASSERT(m_state.inflight_levels[task->level] > 0);
                 m_state.inflight_levels[task->level]--;
@@ -182,7 +180,7 @@ namespace Hypertable {
           }
 
           {
-            ScopedLock lock(m_state.mutex);
+            std::lock_guard<std::mutex> lock(m_state.mutex);
             HT_ASSERT(m_state.inflight_levels[task->level] > 0);
             m_state.inflight_levels[task->level]--;
             m_state.inflight--;
@@ -263,7 +261,7 @@ namespace Hypertable {
     /** Stops (suspends) queue processing
      */
     void stop() {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       HT_INFO("Stopping maintenance queue");
       ms_pause++;
     }
@@ -271,7 +269,7 @@ namespace Hypertable {
     /** Starts queue processing
      */
     void start() {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       HT_ASSERT(ms_pause > 0);
       ms_pause--;
       if (ms_pause == 0) {
@@ -286,7 +284,7 @@ namespace Hypertable {
     /// drop
     template<typename _Function>
     void drop_range_tasks(_Function __f) {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       TaskQueue filtered_queue;
       MaintenanceTask *task = 0;
       while (!m_state.queue.empty()) {
@@ -310,7 +308,7 @@ namespace Hypertable {
      * <code>range</code>, <i>false</i> otherwise.
      */
     bool contains(Range *range) {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       return m_state.ranges.count(range) > 0;
     }
 
@@ -319,7 +317,7 @@ namespace Hypertable {
      * @param task Maintenance task to add
      */
     void add(MaintenanceTask *task) {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       m_state.queue.push(task);
       if (task->get_range())
 	m_state.ranges.insert(task->get_range());
@@ -332,7 +330,7 @@ namespace Hypertable {
      * @return Size of queue
      */
     size_t size() {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       return (size_t)m_state.queue.size() + (size_t)m_state.inflight;
     }
 
@@ -343,7 +341,7 @@ namespace Hypertable {
      * @return Generation number
      */
     int64_t generation() {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       return m_state.generation;
     }
 
@@ -352,7 +350,7 @@ namespace Hypertable {
      * @return <i>true</i> if queue is full, <i>false</i> otherwise
      */
     bool full() {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       return (m_state.queue.size() + (size_t)m_state.inflight) >=
         (size_t)m_worker_count;
     }
@@ -361,29 +359,26 @@ namespace Hypertable {
      * @return <i>true</i> if queue is empty, <i>false</i> otherwise
      */
     bool empty() {
-      ScopedLock lock(m_state.mutex);
+      std::lock_guard<std::mutex> lock(m_state.mutex);
       return m_state.queue.empty() && m_state.inflight == 0;
     }
 
     /** Waits for queue to become empty
      */
     void wait_for_empty() {
-      ScopedLock lock(m_state.mutex);
-      while (!m_state.queue.empty() || (m_state.inflight > 0))
-	m_state.empty_cond.wait(lock);
+      std::unique_lock<std::mutex> lock(m_state.mutex);
+      m_state.empty_cond.wait(lock, [this](){
+          return m_state.queue.empty() && m_state.inflight == 0; });
     }
 
     /** Waits for queue to become empty with deadline
      * @param deadline Return if queue not empty by this absolute time
      * @return <i>true</i> if queue empty, <i>false</i> if deadline reached
      */
-    bool wait_for_empty(boost::xtime deadline) {
-      ScopedLock lock(m_state.mutex);
-      while (!m_state.queue.empty() || (m_state.inflight > 0)) {
-	if (!m_state.empty_cond.timed_wait(lock, deadline))
-          return false;
-      }
-      return true;
+    bool wait_for_empty(ClockT::time_point deadline) {
+      std::unique_lock<std::mutex> lock(m_state.mutex);
+      return m_state.empty_cond.wait_until(lock, deadline, [this](){
+          return m_state.queue.empty() && m_state.inflight == 0; });
     }
 
     /** Returns the number of worker threads configured for the queue.
@@ -394,8 +389,10 @@ namespace Hypertable {
   };
 
   /// Smart pointer to MaintenanceQueue
-  typedef boost::intrusive_ptr<MaintenanceQueue> MaintenanceQueuePtr;
+  typedef std::shared_ptr<MaintenanceQueue> MaintenanceQueuePtr;
+
   /** @}*/
+
 } // namespace Hypertable
 
-#endif // HYPERTABLE_MAINTENANCEQUEUE_H
+#endif // Hypertable_RangeServer_MaintenanceQueue_h

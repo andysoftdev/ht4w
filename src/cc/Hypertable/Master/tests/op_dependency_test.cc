@@ -19,25 +19,28 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include "Common/Logger.h"
-#include "Common/Init.h"
-#include "Common/Thread.h"
-
-#include <iostream>
-#include <set>
-
-#include "FsBroker/Lib/Client.h"
-
-#include "Hypertable/Lib/Config.h"
-
-#include "Hypertable/Master/Context.h"
-#include "Hypertable/Master/MetaLogDefinitionMaster.h"
-#include "Hypertable/Master/OperationProcessor.h"
-#include "Hypertable/Master/ReferenceManager.h"
-#include "Hypertable/Master/ResponseManager.h"
+#include <Common/Compat.h>
 
 #include "OperationTest.h"
+
+#include <Hypertable/Master/Context.h>
+#include <Hypertable/Master/MetaLogDefinitionMaster.h>
+#include <Hypertable/Master/OperationProcessor.h>
+#include <Hypertable/Master/ReferenceManager.h>
+#include <Hypertable/Master/ResponseManager.h>
+
+#include <Hypertable/Lib/Config.h>
+
+#include <FsBroker/Lib/Client.h>
+
+#include <Common/Logger.h>
+#include <Common/Init.h>
+#include <Common/Thread.h>
+
+#include <chrono>
+#include <iostream>
+#include <set>
+#include <thread>
 
 using namespace Hypertable;
 using namespace Config;
@@ -122,7 +125,7 @@ int main(int argc, char **argv) {
     init_with_policies<Policies>(argc, argv);
     DependencySet dependencies, exclusivities, obstructions;
     std::vector<OperationPtr> operations;
-    ContextPtr context = new Context(properties);
+    ContextPtr context = make_shared<Context>(properties);
     OperationPtr operation;
     std::vector<String> results;
     std::set<String> seen;
@@ -132,10 +135,11 @@ int main(int argc, char **argv) {
     String log_dir = context->toplevel_dir + "/servers/master/log";
     boost::trim_if(context->toplevel_dir, boost::is_any_of("/"));
     context->toplevel_dir = String("/") + context->toplevel_dir;
-    context->mml_definition = new MetaLog::DefinitionMaster(context, "master");
-    context->mml_writer = new MetaLog::Writer(context->dfs, context->mml_definition,
-                                              log_dir + "/" + context->mml_definition->name(),
-                                              entities);
+    context->mml_definition = make_shared<MetaLog::DefinitionMaster>(context, "master");
+    context->mml_writer =
+      make_shared<MetaLog::Writer>(context->dfs, context->mml_definition,
+                                   log_dir + "/" + context->mml_definition->name(),
+                                   entities);
 
     context->response_manager->set_mml_writer(context->mml_writer);
 
@@ -330,7 +334,7 @@ int main(int argc, char **argv) {
 
     operation_foo->unblock();
     context->op->wake_up();
-    poll(0, 0, 1000);
+    this_thread::sleep_for(chrono::milliseconds(1000));
     context->op->wait_for_idle();
     
     HT_ASSERT(context->op->size() == 1);
@@ -369,11 +373,11 @@ int main(int argc, char **argv) {
     operation = operation_foo;
     context->op->add_operation(operation);
 
-    poll(0, 0, 2000);
+    this_thread::sleep_for(chrono::milliseconds(2000));
     HT_ASSERT(context->op->size() == 3);
 
     context->op->unblock("baz");
-    poll(0, 0, 2000);
+    this_thread::sleep_for(chrono::milliseconds(2000));
     HT_ASSERT(context->op->size() == 2);
 
     context->op->unblock("bar");
@@ -401,11 +405,11 @@ int main(int argc, char **argv) {
     operation = operation_foo;
     context->op->add_operation(operation);
 
-    poll(0, 0, 2000);
+    this_thread::sleep_for(chrono::milliseconds(2000));
     HT_ASSERT(context->op->size() == 3);
 
     context->op->unblock("bar");
-    poll(0, 0, 2000);
+    this_thread::sleep_for(chrono::milliseconds(2000));
     HT_ASSERT(context->op->size() == 3);
 
     context->op->unblock("baz");
@@ -441,7 +445,7 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
-  return 0;
+  quick_exit(EXIT_SUCCESS);
 }

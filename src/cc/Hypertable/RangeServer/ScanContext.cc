@@ -32,6 +32,7 @@
 #include <Hypertable/Lib/Key.h>
 
 #include <Common/Logger.h>
+#include <Common/Time.h>
 
 #include <algorithm>
 #include <cassert>
@@ -48,16 +49,13 @@ ScanContext::initialize(int64_t rev, const ScanSpec *ss,
                         std::set<uint8_t> *columns) {
   ColumnFamilySpec *cf_spec;
   int32_t max_versions = 0;
-  boost::xtime xtnow;
-  int64_t now;
   String family;
   const char *qualifier;
   size_t qualifier_len;
   size_t id = 0;
   bool is_regexp, is_prefix;
 
-  boost::xtime_get(&xtnow, boost::TIME_UTC_);
-  now = ((int64_t)xtnow.sec * 1000000000LL) + (int64_t)xtnow.nsec;
+  int64_t now = get_ts64();
 
   revision = (rev == TIMESTAMP_NULL) ? TIMESTAMP_MAX : rev;
 
@@ -87,7 +85,7 @@ ScanContext::initialize(int64_t rev, const ScanSpec *ss,
     if (spec && spec->columns.size() > 0) {
       bool has_qualifier;
 
-      foreach_ht(const char *cfstr, spec->columns) {
+      for (auto cfstr : spec->columns) {
 
         cfstr = (const char *)arena.dup(cfstr);
 
@@ -200,7 +198,7 @@ ScanContext::initialize(int64_t rev, const ScanSpec *ss,
       }
 
       if (spec->scan_and_filter_rows) {
-        foreach_ht (const RowInterval& ri, spec->row_intervals) {
+        for (const auto &ri : spec->row_intervals) {
           rowset.insert(arena.dup(ri.start)); // ri.end is set to "" in order to safe space
         }
         end_row = *rowset.rbegin();
@@ -382,7 +380,7 @@ ScanContext::initialize(int64_t rev, const ScanSpec *ss,
       }
     }
 
-    foreach_ht (const ColumnPredicate& cp, spec->column_predicates) {
+    for (const auto& cp : spec->column_predicates) {
       if (cp.column_family && *cp.column_family) {
         cf_spec = schema->get_column_family(cp.column_family);
         if (cf_spec == 0) {

@@ -25,8 +25,8 @@
 /// class from which is derived concrete classes for creating and loading
 /// cell store files.
 
-#ifndef HYPERTABLE_CELLSTORE_H
-#define HYPERTABLE_CELLSTORE_H
+#ifndef Hypertable_RangeServer_CellStore_h
+#define Hypertable_RangeServer_CellStore_h
 
 #include <Hypertable/RangeServer/CellList.h>
 #include <Hypertable/RangeServer/CellListScannerBuffer.h>
@@ -37,11 +37,12 @@
 #include <Hypertable/Lib/BlockCompressionCodec.h>
 #include <Hypertable/Lib/TableIdentifier.h>
 
-#include <Common/Mutex.h>
 #include <Common/String.h>
 #include <Common/ByteString.h>
 #include <Common/Filesystem.h>
 
+#include <memory>
+#include <mutex>
 #include <vector>
 
 namespace Hypertable {
@@ -53,7 +54,7 @@ namespace Hypertable {
    * Abstract base class for persistent cell lists (ones that are stored on
    * disk).
    */
-  class CellStore : public CellList {
+  class CellStore : public CellList, public std::enable_shared_from_this<CellStore> {
   public:
 
     class IndexMemoryStats {
@@ -94,8 +95,8 @@ namespace Hypertable {
     /// @return Number of key/value pairs in list
     virtual int64_t get_total_entries() = 0;
 
-    virtual CellListScanner *
-    create_scanner(ScanContextPtr &scan_ctx) { return 0; }
+    virtual CellListScannerPtr
+      create_scanner(ScanContext *scan_ctx) { return CellListScannerPtr(); }
 
     /**
      * Creates a new cell store.
@@ -155,7 +156,7 @@ namespace Hypertable {
      * @return true if cell store may contain row referenced by
      * <code>scan_ctx</code>
      */
-    virtual bool may_contain(ScanContextPtr &scan_ctx) = 0;
+    virtual bool may_contain(ScanContext *scan_ctx) = 0;
 
     /**
      * Returns the disk used by this cell store.  If the cell store is opened
@@ -171,7 +172,7 @@ namespace Hypertable {
      * @return block count
      */
     virtual size_t block_count() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_block_count;
     }
 
@@ -290,7 +291,7 @@ namespace Hypertable {
      * Returns amount of purgeable index memory available
      */
     virtual void get_index_memory_stats(IndexMemoryStats *statsp) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       memcpy(statsp, &m_index_stats, sizeof(IndexMemoryStats));
     }
 
@@ -308,14 +309,14 @@ namespace Hypertable {
      * @return number of uncompressed bytes read from filesystem
      */
     uint64_t bytes_read() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_bytes_read;
     }
 
     /** Decrement index reference count.
      */
     void decrement_index_refcount() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_index_refcount--;
     }
 
@@ -327,7 +328,7 @@ namespace Hypertable {
 
   protected:
 
-    Mutex m_mutex;
+    std::mutex m_mutex;
     IndexMemoryStats m_index_stats;
     std::vector <String> m_replaced_files;
     uint64_t m_bytes_read;
@@ -335,10 +336,11 @@ namespace Hypertable {
     uint32_t m_index_refcount;
   };
 
-  typedef intrusive_ptr<CellStore> CellStorePtr;
+  /// Smart pointer to CellStore
+  typedef std::shared_ptr<CellStore> CellStorePtr;
 
   /// @}
 
 } // namespace Hypertable
 
-#endif // HYPERTABLE_CELLSTORE_H
+#endif // Hypertable_RangeServer_CellStore_h

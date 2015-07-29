@@ -61,7 +61,7 @@ struct AppPolicy : Config::Policy {
 
     if (has("ceph-version")) {
       cout <<"  Ceph: "<< ceph_version(NULL, NULL, NULL) << endl;
-      _exit(0);
+      quick_exit(EXIT_SUCCESS);
     }
   }
 };
@@ -85,7 +85,7 @@ int main (int argc, char **argv) {
     Comm *comm = Comm::instance();
     ApplicationQueuePtr app_queue = make_shared<ApplicationQueue>(worker_count);
     HT_INFOF("attemping to create new CephBroker with address %s", properties->get_str("CephBroker.MonAddr").c_str());
-    BrokerPtr broker = new CephBroker(properties);
+    BrokerPtr broker = make_shared<CephBroker>(properties);
     HT_INFO("Created CephBroker!");
     ConnectionHandlerFactoryPtr chfp =
       make_shared<FsBroker::Lib::ConnectionHandlerFactory>(comm, app_queue, broker);

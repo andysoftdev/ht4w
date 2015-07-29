@@ -37,6 +37,7 @@
     <ClCompile Include="ColumnPredicate.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="DataGenerator.cc" />
+    <ClCompile Include="DataGeneratorRandom.cc" />
     <ClCompile Include="FixedRandomStringGenerator.cc" />
     <ClCompile Include="Future.cc" />
     <ClCompile Include="FutureCallback.cc" />

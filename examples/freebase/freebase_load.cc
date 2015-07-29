@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -18,19 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
+
+#include <Common/Compat.h>
+
+#include "freebase_parser.h"
+
+#include <Hypertable/Lib/Client.h>
+#include <Hypertable/Lib/KeySpec.h>
+
+#include <Common/Error.h>
+#include <Common/System.h>
 
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-
-#include "Common/Error.h"
-#include "Common/System.h"
-
-#include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/KeySpec.h"
-
-#include "freebase_parser.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -88,7 +89,7 @@ int main(int argc, char **argv) {
   try {
 
     // Create Hypertable client object
-    client_ptr = new Client( System::locate_install_dir(argv[0]) );
+    client_ptr = make_shared<Client>( System::locate_install_dir(argv[0]) );
 
     // Open the root namespace
     namespace_ptr = client_ptr->open_namespace("/");
@@ -98,7 +99,7 @@ int main(int argc, char **argv) {
 
     // Create a mutator object on the
     // 'LogDb' table
-    mutator_ptr = table_ptr->create_mutator();
+    mutator_ptr.reset(table_ptr->create_mutator());
 
   }
   catch (Exception &e) {
@@ -113,7 +114,7 @@ int main(int argc, char **argv) {
       }
       catch (Exception &e) {
         HT_ERROR_OUT << e << HT_END;
-        _exit(1);
+        quick_exit(EXIT_FAILURE);
       }
     }
   }
@@ -124,8 +125,7 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     cerr << "Exception caught: " << Error::get_text(e.code()) << endl;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
-  return 0;
 }

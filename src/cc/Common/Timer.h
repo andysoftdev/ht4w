@@ -1,4 +1,4 @@
-/*
+/* -*- c++ -*-
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -23,13 +23,14 @@
  * A timer class to keep timeout states across AsyncComm related calls.
  */
 
-#ifndef HYPERTABLE_TIMER_H
-#define HYPERTABLE_TIMER_H
+#ifndef Common_Timer_h
+#define Common_Timer_h
 
+#include <Common/fast_clock.h>
+
+#include <cassert>
+#include <chrono>
 #include <cstring>
-
-#include "Logger.h"
-#include "Time.h"
 
 namespace Hypertable {
 
@@ -50,26 +51,11 @@ namespace Hypertable {
      * @param start_timer If true, timer is started immediately; otherwise
      *      start with %start
      */
-    Timer(uint32_t millis, bool start_timer = false)
-      : m_running(false), m_started(false),
-        m_duration(millis), m_remaining(millis) {
+  Timer(uint32_t millis, bool start_timer = false)
+    : m_duration(std::chrono::milliseconds(millis)),
+      m_remaining(std::chrono::milliseconds(millis)) {
       if (start_timer)
         start();
-    }
-
-    /**
-     * Assignment operator copies state but does not start immediately
-     *
-     * @param src Reference to the other timer object which is copied
-     */
-    Timer& operator=(Timer &src) {
-      if (&src != this) {
-        m_running = false;
-        m_started = false;
-        m_duration = src.duration();
-        m_remaining = src.remaining();
-      }
-      return *this;
     }
 
     /**
@@ -78,7 +64,7 @@ namespace Hypertable {
     void start() {
       if (!m_running) {
 #ifndef _WIN32
-        boost::xtime_get(&start_time, boost::TIME_UTC_);
+        start_time = std::chrono::fast_clock::now();
 #else
         if (!QueryPerformanceFrequency(&frequency))
          HT_THROWF(Error::EXTERNAL, "QueryPerformanceFrequency failed, %s", winapi_strerror(::GetLastError()));
@@ -97,31 +83,19 @@ namespace Hypertable {
      */
     void stop() {
 #ifndef _WIN32
-      boost::xtime stop_time;
-      boost::xtime_get(&stop_time, boost::TIME_UTC_);
-      uint32_t adjustment;
-
       assert(m_started);
-
-      if (start_time.sec == stop_time.sec) {
-        adjustment = uint32_t((stop_time.nsec - start_time.nsec) / 1000000);
-        m_remaining = (adjustment < m_remaining) ? m_remaining - adjustment : 0;
-      }
-      else {
-        adjustment = uint32_t(((stop_time.sec - start_time.sec) - 1) * 1000);
-        m_remaining = (adjustment < m_remaining) ? m_remaining - adjustment : 0;
-        adjustment = ((1000000000 - start_time.nsec) + stop_time.nsec)
-                      / 1000000;
-        m_remaining = (adjustment < m_remaining) ? m_remaining - adjustment : 0;
-      }
+      auto adjustment = std::chrono::fast_clock::now() - start_time;
 #else
       assert(m_started);
       LARGE_INTEGER end_time;
       if (!QueryPerformanceCounter(&end_time))
         HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
-      uint32_t elapsed = (end_time.QuadPart - start_time.QuadPart) * 1000 / frequency.QuadPart;
-      m_remaining = elapsed < m_remaining ? m_remaining - elapsed : 0;
+      std::chrono::fast_clock::duration adjustment =
+        std::chrono::milliseconds((end_time.QuadPart - start_time.QuadPart) * 1000 / frequency.QuadPart);
 #endif
+      m_remaining = (adjustment < m_remaining) ?
+        m_remaining - adjustment :
+        std::chrono::fast_clock::duration::zero();
       m_running = false;
     }
 
@@ -138,6 +112,7 @@ namespace Hypertable {
 
     /**
      * Returns the remaining time till expiry
+     * @return Remaining time in milliseconds
      */
     uint32_t remaining() {
       if (m_running) {
@@ -149,11 +124,12 @@ namespace Hypertable {
         LARGE_INTEGER end_time;
         if (!QueryPerformanceCounter(&end_time))
           HT_THROWF(Error::EXTERNAL, "QueryPerformanceCounter failed, %s", winapi_strerror(::GetLastError()));
-        uint32_t elapsed = (end_time.QuadPart - start_time.QuadPart) * 1000 / frequency.QuadPart;
-        m_remaining = elapsed < m_remaining ? m_remaining - elapsed : 0;
+        std::chrono::fast_clock::duration elapsed =
+          std::chrono::milliseconds((end_time.QuadPart - start_time.QuadPart) * 1000 / frequency.QuadPart);
+        m_remaining = elapsed < m_remaining ? m_remaining - elapsed : std::chrono::fast_clock::duration::zero();;
 #endif
       }
-      return m_remaining;
+     return std::chrono::duration_cast<std::chrono::milliseconds>(m_remaining).count();
     }
 
     /**
@@ -172,35 +148,37 @@ namespace Hypertable {
 
     /**
      * Returns the duration of the timer
+     * @return Timer duration in milliseconds
      */
     uint32_t duration() {
-      return m_duration;
+      return (uint32_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_duration).count();
     }
+
 
   private:
 
 #ifndef _WIN32
     /** The time when the timer was started */
-    boost::xtime start_time;
+    std::chrono::fast_clock::time_point start_time;
 #else
     LARGE_INTEGER start_time, frequency;
 #endif
 
-    /** True if the timer is running */
-    bool m_running;
+    /// True if the timer is running
+    bool m_running {};
 
-    /** True if the timer was started */
-    bool m_started;
+    /// True if the timer was started
+    bool m_started {};
 
-    /** The duration of the timer (in milliseconds) */
-    uint32_t m_duration;
+    /// The duration of the timer
+    std::chrono::fast_clock::duration m_duration;
 
-    /** The remaining time till expiration (in milliseconds) */
-    uint32_t m_remaining;
+    /// The remaining time till expiration
+    std::chrono::fast_clock::duration m_remaining;
   };
 
   /** @} */
 
 }
 
-#endif // HYPERTABLE_TIMER_H
+#endif // Common_Timer_h

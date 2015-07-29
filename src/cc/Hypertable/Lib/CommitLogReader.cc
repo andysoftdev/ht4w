@@ -1,4 +1,4 @@
-/* -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -150,8 +150,8 @@ CommitLogReader::next_raw_block(CommitLogBlockInfo *infop,
 }
 
 void CommitLogReader::get_init_fragment_ids(vector<uint32_t> &ids) {
-  foreach_ht(uint32_t id, m_init_fragments) {
-    ids.push_back(id);
+  for (auto id : m_init_fragments) {
+    ids.push_back((uint32_t)id);
   }
 }
 
@@ -307,31 +307,28 @@ void CommitLogReader::load_fragments(String log_dir, CommitLogFileInfo *parent) 
     parent->purge_dirs.insert(log_dir);
   else {
     m_init_fragments.clear();
-    foreach_ht(const CommitLogFileInfo *fragment, m_fragment_queue)
+    for (const auto fragment : m_fragment_queue)
       m_init_fragments.push_back(fragment->num);
   }
 
 }
 
 void CommitLogReader::load_compressor(uint16_t ztype) {
-  BlockCompressionCodecPtr compressor_ptr;
 
-  if (m_compressor != 0 && ztype == m_compressor_type)
+  if (m_compressor && ztype == m_compressor_type)
     return;
 
   if (ztype >= BlockCompressionCodec::COMPRESSION_TYPE_LIMIT)
     HT_THROWF(Error::BLOCK_COMPRESSOR_UNSUPPORTED_TYPE,
               "Invalid compression type '%d'", (int)ztype);
 
-  compressor_ptr = m_compressor_map[ztype];
+  m_compressor = m_compressor_map[ztype];
 
-  if (!compressor_ptr) {
-    compressor_ptr = CompressorFactory::create_block_codec(
-        (BlockCompressionCodec::Type)ztype);
-    m_compressor_map[ztype] = compressor_ptr;
+  if (!m_compressor) {
+    m_compressor.reset(CompressorFactory::create_block_codec((BlockCompressionCodec::Type)ztype));
+    m_compressor_map[ztype] = m_compressor;
   }
 
   m_compressor_type = ztype;
-  m_compressor = compressor_ptr.get();
 }
 

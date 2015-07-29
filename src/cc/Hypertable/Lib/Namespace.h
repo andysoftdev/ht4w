@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_NAMESPACE_H
-#define HYPERTABLE_NAMESPACE_H
+#ifndef Hypertable_Lib_Namespace_h
+#define Hypertable_Lib_Namespace_h
 
 #include <Hypertable/Lib/ClientObject.h>
 #include <Hypertable/Lib/Master/Client.h>
@@ -39,11 +39,11 @@
 #include <AsyncComm/ApplicationQueueInterface.h>
 #include <AsyncComm/ConnectionManager.h>
 
-#include <Common/Mutex.h>
-#include <Common/ReferenceCount.h>
 #include <Common/String.h>
 
 #include <boost/tokenizer.hpp>
+
+#include <memory>
 
 namespace Hypertable {
 
@@ -324,16 +324,16 @@ namespace Hypertable {
     RangeLocatorPtr         m_range_locator;
     std::string                  m_toplevel_dir;
     bool                    m_hyperspace_reconnect;
-    Mutex                   m_mutex;
     TableCachePtr           m_table_cache;
     uint32_t                m_timeout_ms;
     Client                 *m_client;
   };
 
-  typedef intrusive_ptr<Namespace> NamespacePtr;
+  /// Shared smart pointer to Namespace
+  typedef std::shared_ptr<Namespace> NamespacePtr;
 
   /// @}
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_NAMESPACE_H
+#endif // Hypertable_Lib_Namespace_h

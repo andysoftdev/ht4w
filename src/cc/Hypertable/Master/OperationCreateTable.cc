@@ -45,6 +45,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <chrono>
+#include <thread>
 #include <vector>
 
 using namespace Hypertable;
@@ -94,7 +96,7 @@ void OperationCreateTable::execute() {
 
     // Update table/schema generation number
     {
-      SchemaPtr schema = Schema::new_instance(m_params.schema());
+      SchemaPtr schema( Schema::new_instance(m_params.schema()) );
       int64_t generation = get_ts64();
       schema->update_generation(generation);
       m_schema = schema->render_xml(true);
@@ -222,7 +224,7 @@ void OperationCreateTable::execute() {
 
     range_name = format("%s[..%s]", m_table.id, Key::END_ROW_MARKER);
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_dependencies.insert(Dependency::SERVERS);
       m_dependencies.insert(Dependency::METADATA);
       m_dependencies.insert(Dependency::SYSTEM);
@@ -242,7 +244,7 @@ void OperationCreateTable::execute() {
     range.end_row = Key::END_ROW_MARKER;
     m_context->get_balance_plan_authority()->get_balance_destination(m_table, range, m_location);
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_dependencies.erase(Dependency::SERVERS);
       m_state = OperationState::LOAD_RANGE;
     }
@@ -259,7 +261,7 @@ void OperationCreateTable::execute() {
     }
     catch (Exception &e) {
       HT_INFOF("%s - %s", Error::get_text(e.code()), e.what());
-      poll(0, 0, 5000);
+      this_thread::sleep_for(chrono::milliseconds(5000));
       set_state(OperationState::ASSIGN_LOCATION);
       break;
     }
@@ -283,7 +285,7 @@ void OperationCreateTable::execute() {
       HT_INFOF("Problem acknowledging load range %s: %s - %s (dest %s)",
                range_name.c_str(), Error::get_text(e.code()),
                e.what(), m_location.c_str());
-      poll(0, 0, 5000);
+      this_thread::sleep_for(chrono::milliseconds(5000));
       // Fetch new destination, if changed, and then try again
       range.start_row = 0;
       range.end_row = Key::END_ROW_MARKER;

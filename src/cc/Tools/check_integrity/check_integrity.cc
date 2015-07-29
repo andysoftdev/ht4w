@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,32 +19,34 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include <cstdlib>
-#include <iostream>
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/Config.h>
+#include <Hypertable/Lib/Client.h>
+#include <Hypertable/Lib/NameIdMapper.h>
+
+#include <Common/Config.h>
+#include <Common/Error.h>
+#include <Common/InetAddr.h>
+#include <Common/Logger.h>
+#include <Common/Init.h>
+#include <Common/Timer.h>
+#include <Common/Usage.h>
 
 #include <boost/progress.hpp>
-
 #include <boost/algorithm/string.hpp>
+
+#include <chrono>
+#include <cstdlib>
+#include <iostream>
+#include <mutex>
+#include <thread>
 
 extern "C" {
 #include <netdb.h>
 #include <sys/types.h>
 #include <signal.h>
 }
-
-#include "Common/Config.h"
-#include "Common/Error.h"
-#include "Common/InetAddr.h"
-#include "Common/Logger.h"
-#include "Common/Init.h"
-#include "Common/Timer.h"
-#include "Common/Usage.h"
-
-
-#include "Hypertable/Lib/Config.h"
-#include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/NameIdMapper.h"
 
 using namespace Hypertable;
 using namespace Config;
@@ -95,12 +97,12 @@ struct RangeInfo
 typedef std::vector<RangeInfo> RangeInfoVec;
 
 std::vector<String> errors;
-Mutex error_mutex;
+std::mutex error_mutex;
 
 void add_error(const String &msg)
 {
   cout << msg << endl;
-  ScopedLock lock(error_mutex);
+  lock_guard<mutex> lock(error_mutex);
   errors.push_back(msg);
 }
 
@@ -174,7 +176,7 @@ class LocationThread
           continue;
         }
         if (m_sleep_ms)
-          ::poll(0, 0, m_sleep_ms);
+          this_thread::sleep_for(chrono::milliseconds(m_sleep_ms));
 
         previous_end = m_ranges[i].endrow;
       }
@@ -247,12 +249,11 @@ int main(int argc, char **argv) {
   
   if (errors.size()) {
     cout << endl << endl << "Got " << errors.size() << " errors: " << endl;
-    foreach_ht (const String &s, errors) {
+    for (const auto &s : errors)
       cout << "   " << s << endl;
-    }
   }
   else
     cout << "Success - all ranges are available." << endl;
 
-  _exit(errors.size());   // ditto
+  quick_exit(errors.size());   // ditto
 }

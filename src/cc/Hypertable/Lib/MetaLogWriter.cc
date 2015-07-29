@@ -129,7 +129,7 @@ Writer::~Writer() {
 }
 
 void Writer::close() {
-  unique_lock<mutex> lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   try {
     if (m_fd != -1) {
       m_fs->close(m_fd);
@@ -272,7 +272,7 @@ Writer::WriteScheduler::~WriteScheduler() {
 
 
 void Writer::WriteScheduler::schedule() {
-  unique_lock<mutex> lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (m_scheduled)
     return;
   auto duration = chrono::system_clock::now().time_since_epoch();
@@ -287,7 +287,7 @@ void Writer::WriteScheduler::schedule() {
 
 void Writer::WriteScheduler::handle(EventPtr &event) {
   {
-    unique_lock<mutex> lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     m_scheduled = false;
   }
   m_writer->signal_write_ready();
@@ -332,7 +332,7 @@ void Writer::record_state(EntityPtr entity) {
     HT_THROWF(Error::CLOSED, "MetaLog '%s' has been closed", m_path.c_str());
 
   {
-    Locker<Entity> lock(*entity);
+    lock_guard<Entity> lock(*entity);
     length = EntityHeader::LENGTH + (entity->marked_for_removal() ? 0 : entity->encoded_length());
     buf = make_shared<StaticBuffer>(length);
     uint8_t *ptr = buf->base;
@@ -379,7 +379,7 @@ void Writer::record_state(std::vector<EntityPtr> &entities) {
 
   size_t i=0;
   for (auto & entity : entities) {
-    Locker<Entity> lock(*entity);
+    lock_guard<Entity> lock(*entity);
     length = EntityHeader::LENGTH + (entity->marked_for_removal() ? 0 : entity->encoded_length());
     buffers.get()[i].set(new uint8_t [length], length);
     ptr = buffers.get()[i].base;
@@ -485,7 +485,7 @@ void Writer::record_removal(std::vector<EntityPtr> &entities) {
 
 
 void Writer::signal_write_ready() {
-  unique_lock<mutex> lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   m_write_ready = true;
   m_cond.notify_all();
 }

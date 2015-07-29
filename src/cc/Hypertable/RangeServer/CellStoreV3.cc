@@ -1,4 +1,4 @@
-/* -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -29,6 +29,7 @@
 #include "Common/Error.h"
 #include "Common/Logger.h"
 #include "Common/System.h"
+#include "Common/Time.h"
 
 #include "AsyncComm/Protocol.h"
 
@@ -56,18 +57,17 @@ namespace {
 }
 
 
-CellStoreV3::CellStoreV3(Filesystem *filesys, Schema *schema)
-  : m_filesys(filesys), m_schema(schema), m_fd(-1), m_filename(),
-    m_64bit_index(false), m_compressor(0), m_buffer(0),
-    m_outstanding_appends(0), m_offset(0), m_file_length(0),
-    m_disk_usage(0), m_file_id(0), m_uncompressed_blocksize(0),
-    m_bloom_filter_mode(BLOOM_FILTER_DISABLED), m_bloom_filter(0),
-    m_bloom_filter_items(0), m_filter_false_positive_prob(0.0),
-    m_restricted_range(false), m_column_ttl(0) {
+CellStoreV3::CellStoreV3(Filesystem *filesys)
+  : m_filesys(filesys) {
   m_file_id = FileBlockCache::get_next_file_id();
   assert(sizeof(float) == 4);
 }
 
+CellStoreV3::CellStoreV3(Filesystem *filesys, SchemaPtr &schema)
+  : m_filesys(filesys), m_schema(schema) {
+  m_file_id = FileBlockCache::get_next_file_id();
+  assert(sizeof(float) == 4);
+}
 
 CellStoreV3::~CellStoreV3() {
   try {
@@ -98,7 +98,7 @@ KeyDecompressor *CellStoreV3::create_key_decompressor() {
 }
 
 
-CellListScanner *CellStoreV3::create_scanner(ScanContextPtr &scan_ctx) {
+CellListScannerPtr CellStoreV3::create_scanner(ScanContext *scan_ctx) {
   bool need_index =  m_restricted_range || scan_ctx->restricted_range || scan_ctx->single_row;
 
   if (need_index) {
@@ -108,8 +108,8 @@ CellListScanner *CellStoreV3::create_scanner(ScanContextPtr &scan_ctx) {
   }
 
   if (m_64bit_index)
-    return new CellStoreScanner<CellStoreBlockIndexArray<int64_t> >(this, scan_ctx, need_index ? &m_index_map64 : 0);
-  return new CellStoreScanner<CellStoreBlockIndexArray<uint32_t> >(this, scan_ctx, need_index ? &m_index_map32 : 0);
+    return make_shared<CellStoreScanner<CellStoreBlockIndexArray<int64_t>>>(shared_from_this(), scan_ctx, need_index ? &m_index_map64 : 0);
+  return make_shared<CellStoreScanner<CellStoreBlockIndexArray<uint32_t>>>(shared_from_this(), scan_ctx, need_index ? &m_index_map32 : 0);
 }
 
 
@@ -120,7 +120,7 @@ CellStoreV3::create(const char *fname, size_t max_entries,
   int64_t blocksize = props->get("blocksize", 0);
   String compressor = props->get("compressor", String());
 
-  m_key_compressor = new KeyCompressorPrefix();
+  m_key_compressor = make_shared<KeyCompressorPrefix>();
 
   assert(Config::properties); // requires Config::init* first
 
@@ -232,7 +232,7 @@ void CellStoreV3::create_bloom_filter(bool is_approx) {
                  << m_trailer.filter_items_estimate << " items - "<< e << HT_END;
   }
 
-  foreach_ht(const Blob &blob, *m_bloom_filter_items)
+  for (const auto &blob : *m_bloom_filter_items)
     m_bloom_filter->insert(blob.start, blob.size);
 
   delete m_bloom_filter_items;
@@ -562,11 +562,7 @@ void CellStoreV3::finalize(TableIdentifier *table_identifier) {
   // Add table information
   m_trailer.table_id = table_identifier->index();
   m_trailer.table_generation = table_identifier->generation;
-  {
-    boost::xtime now;
-    boost::xtime_get(&now, boost::TIME_UTC_);
-    m_trailer.create_time = ((int64_t)now.sec * 1000000000LL) + (int64_t)now.nsec;
-  }
+  m_trailer.create_time = get_ts64();
 
   // write trailer
   zbuf.clear();
@@ -792,7 +788,7 @@ void CellStoreV3::load_block_index() {
 }
 
 
-bool CellStoreV3::may_contain(ScanContextPtr &scan_context) {
+bool CellStoreV3::may_contain(ScanContext *scan_ctx) {
 
   if (m_bloom_filter_mode == BLOOM_FILTER_DISABLED)
     return true;
@@ -805,15 +801,15 @@ bool CellStoreV3::may_contain(ScanContextPtr &scan_context) {
 
   switch (m_bloom_filter_mode) {
     case BLOOM_FILTER_ROWS:
-      return may_contain(scan_context->start_row);
+      return may_contain(scan_ctx->start_row);
     case BLOOM_FILTER_ROWS_COLS:
-      if (may_contain(scan_context->start_row)) {
-        SchemaPtr &schema = scan_context->schema;
-        size_t rowlen = scan_context->start_row.length();
+      if (may_contain(scan_ctx->start_row)) {
+        SchemaPtr &schema = scan_ctx->schema;
+        size_t rowlen = scan_ctx->start_row.length();
         boost::scoped_array<char> rowcol(new char[rowlen + 2]);
-        memcpy(rowcol.get(), scan_context->start_row.c_str(), rowlen + 1);
+        memcpy(rowcol.get(), scan_ctx->start_row.c_str(), rowlen + 1);
 
-        foreach_ht(const char *col, scan_context->spec->columns) {
+        for (auto col : scan_ctx->spec->columns) {
           uint8_t column_family_id = schema->get_column_family(col)->get_id();
           rowcol[rowlen + 1] = column_family_id;
 

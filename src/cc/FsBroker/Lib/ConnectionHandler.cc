@@ -61,12 +61,14 @@ void ConnectionHandler::handle(EventPtr &event) {
         }
         if ((flags & Client::SHUTDOWN_FLAG_IMMEDIATE) != 0)
           m_app_queue->shutdown();
-        else
+        else {
           HT_NOTICE("Exiting local broker");
+          Logger::get()->set_level(Logger::Priority::FATAL);
+        }
         m_broker->shutdown(&cb);
         if (has("pidfile"))
           FileUtils::unlink(get_str("pidfile"));
-        _exit(0);
+        quick_exit(EXIT_SUCCESS);
       }
       m_app_queue->add(Request::Handler::Factory::create(m_comm, m_broker.get(),
                                                          event));

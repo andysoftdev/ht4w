@@ -19,29 +19,27 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERSPACE_EVENT_H
-#define HYPERSPACE_EVENT_H
+#ifndef Hyperspace_Event_h
+#define Hyperspace_Event_h
 
-#include "Common/Compat.h"
-
-extern "C" {
-#include <poll.h>
-}
-
-#include <iostream>
-#include <string>
-
-#include <boost/thread/condition.hpp>
-
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
-#include "Common/Serialization.h"
-#include "Common/System.h"
-
-#include "AsyncComm/CommBuf.h"
+#include <Common/Compat.h>
 
 #include "HandleCallback.h"
 #include "BerkeleyDbFilesystem.h"
+
+#include <AsyncComm/CommBuf.h>
+
+#include <Common/Random.h>
+#include <Common/Serialization.h>
+#include <Common/System.h>
+
+#include <condition_variable>
+#include <chrono>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
 
 #define HT_BDBTXN_EVT_BEGIN(parent_txn) \
   do { \
@@ -62,7 +60,7 @@ extern "C" {
       } \
       HT_WARN_OUT << "Berkeley DB deadlock encountered in txn "<< txn << HT_END; \
       txn.abort(); \
-      poll(0, 0, (System::rand32() % 3000) + 1); \
+      std::this_thread::sleep_for(Random::duration_millis(3000)); \
       continue; \
     } \
     break; \
@@ -80,7 +78,7 @@ extern "C" {
       } \
       HT_WARN_OUT << "Berkeley DB deadlock encountered in txn "<< txn << HT_END; \
       txn.abort(); \
-      poll(0, 0, (System::rand32() % 3000) + 1); \
+      std::this_thread::sleep_for(Random::duration_millis(3000)); \
       continue; \
     } \
     break; \
@@ -95,23 +93,22 @@ namespace Hyperspace {
     EVENT_TYPE_LOCK_GRANTED
   };
 
-  class Event : public ReferenceCount {
+  class Event {
   public:
-    Event(uint64_t id, uint32_t mask) : m_id(id), m_mask(mask), m_notification_count(0) {
-    }
-    virtual ~Event() { return; }
+    Event(uint64_t id, uint32_t mask) : m_id(id), m_mask(mask) { }
+    virtual ~Event() { }
 
     uint64_t get_id() { return m_id; }
 
     uint32_t get_mask() { return m_mask; }
 
     void increment_notification_count() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_notification_count++;
     }
 
     void decrement_notification_count() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_notification_count--;
       if (m_notification_count == 0) {
         // all notifications received, so delete event from BDB
@@ -125,9 +122,8 @@ namespace Hyperspace {
     }
 
     void wait_for_notifications() {
-      ScopedLock lock(m_mutex);
-      if (m_notification_count != 0)
-        m_cond.wait(lock);
+      std::unique_lock<std::mutex> lock(m_mutex);
+      m_cond.wait(lock, [this](){ return m_notification_count == 0;});
     }
 
     virtual uint32_t encoded_length() = 0;
@@ -138,16 +134,15 @@ namespace Hyperspace {
     }
 
   protected:
-    static            BerkeleyDbFilesystem *ms_bdb_fs;
-    Mutex             m_mutex;
-    boost::condition  m_cond;
-    uint64_t m_id;
-    uint32_t m_mask;
-    uint32_t m_notification_count;
+    static BerkeleyDbFilesystem *ms_bdb_fs;
+    std::mutex m_mutex;
+    std::condition_variable m_cond;
+    uint64_t m_id {};
+    uint32_t m_mask {};
+    uint32_t m_notification_count {};
   };
 
-  typedef boost::intrusive_ptr<Event> HyperspaceEventPtr;
-
+  typedef std::shared_ptr<Event> HyperspaceEventPtr;
 
   /*
    * EventNamed class.  Encapsulates named events (e.g. ATTR_SET,
@@ -229,4 +224,4 @@ namespace Hyperspace {
   };
 } // namespace Hyperspace
 
-#endif // HYPERSPACE_EVENT_H
+#endif // Hyperspace_Event_h

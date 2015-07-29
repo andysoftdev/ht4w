@@ -36,20 +36,21 @@
 #include <boost/algorithm/string.hpp>
 
 #include <cassert>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <thread>
 #include <vector>
 
 extern "C" {
 #include <limits.h>
-#include <poll.h>
 #include <string.h>
 }
 
 // convenient local macros to record errors for debugging
 #define SAVE_ERR(_code_, _msg_) \
   do { \
-    ScopedLock lock(m_mutex); \
+    lock_guard<mutex> lock(m_mutex); \
     m_last_errors.push_back(HT_EXCEPTION(_code_, _msg_)); \
     while (m_last_errors.size() > m_max_error_queue_length) \
       m_last_errors.pop_front(); \
@@ -57,7 +58,7 @@ extern "C" {
 
 #define SAVE_ERR2(_code_, _ex_, _msg_) \
   do { \
-    ScopedLock lock(m_mutex); \
+    lock_guard<mutex> lock(m_mutex); \
     m_last_errors.push_back(HT_EXCEPTION2(_code_, _ex_, _msg_)); \
     while (m_last_errors.size() > m_max_error_queue_length) \
       m_last_errors.pop_front(); \
@@ -130,7 +131,7 @@ RangeLocator::RangeLocator(PropertiesPtr &cfg, ConnectionManagerPtr &conn_mgr,
   boost::trim_if(m_toplevel_dir, boost::is_any_of("/"));
   m_toplevel_dir = String("/") + m_toplevel_dir;
 
-  m_cache = new LocationCache(cache_size);
+  m_cache = make_shared<LocationCache>(cache_size);
   // register hyperspace session callback
   m_hyperspace_session_callback.m_rangelocator = this;
   m_hyperspace->add_callback(&m_hyperspace_session_callback);
@@ -140,14 +141,14 @@ RangeLocator::RangeLocator(PropertiesPtr &cfg, ConnectionManagerPtr &conn_mgr,
 
 void RangeLocator::hyperspace_disconnected()
 {
-  ScopedLock lock(m_hyperspace_mutex);
+  lock_guard<mutex> lock(m_hyperspace_mutex);
   m_hyperspace_init = false;
   m_hyperspace_connected = false;
 }
 
 void RangeLocator::hyperspace_reconnected()
 {
-  ScopedLock lock(m_hyperspace_mutex);
+  lock_guard<mutex> lock(m_hyperspace_mutex);
   HT_ASSERT(!m_hyperspace_init);
   m_hyperspace_connected = true;
 }
@@ -164,7 +165,7 @@ void RangeLocator::initialize() {
     return;
   HT_ASSERT(m_hyperspace_connected);
 
-  m_root_handler = new RootFileHandler(this);
+  m_root_handler = make_shared<RootFileHandler>(this);
 
   m_root_file_handle = m_hyperspace->open(m_toplevel_dir + "/root",
                                           OPEN_FLAG_READ, m_root_handler,
@@ -180,7 +181,7 @@ void RangeLocator::initialize() {
     catch (Exception &e) {
       if (timer.expired())
         HT_THROW2(Error::HYPERSPACE_FILE_NOT_FOUND, e, metadata_file);
-      poll(0, 0, 3000);
+      this_thread::sleep_for(chrono::milliseconds(3000));
     }
   }
 
@@ -196,11 +197,11 @@ void RangeLocator::initialize() {
         m_hyperspace->close_nowait(handle);
         throw;
       }
-      poll(0, 0, 3000);
+      this_thread::sleep_for(chrono::milliseconds(3000));
     }
   }
 
-  SchemaPtr schema = Schema::new_instance((const char *)valbuf.base);
+  SchemaPtr schema( Schema::new_instance((const char *)valbuf.base) );
 
   m_metadata_table.id = TableIdentifier::METADATA_ID;
   m_metadata_table.generation = schema->get_generation();
@@ -251,7 +252,7 @@ RangeLocator::find_loop(const TableIdentifier *table, const char *row_key,
     }
 
     // wait a bit
-    poll(0, 0, (int)wait_time);
+    this_thread::sleep_for(chrono::milliseconds(wait_time));
     total_wait_time += wait_time;
     wait_time = (wait_time * 3) / 2;
 
@@ -293,7 +294,7 @@ RangeLocator::find(const TableIdentifier *table, const char *row_key,
   }
 
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     addr = m_root_range_info.addr;
   }
 
@@ -616,7 +617,7 @@ int RangeLocator::read_root_location(Timer &timer) {
   CommAddress old_addr;
 
   {
-    ScopedLock lock(m_hyperspace_mutex);
+    lock_guard<mutex> lock(m_hyperspace_mutex);
     if (m_hyperspace_init)
       m_hyperspace->attr_get(m_root_file_handle, "Location", value);
     else if (m_hyperspace_connected) {
@@ -628,7 +629,7 @@ int RangeLocator::read_root_location(Timer &timer) {
   }
 
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     old_addr = m_root_range_info.addr;
     m_root_range_info.start_row  = "";
     m_root_range_info.end_row    = Key::END_ROOT_ROW;

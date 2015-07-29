@@ -1,4 +1,4 @@
-/* -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -18,27 +18,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
  * 02110-1301, USA.
  */
-#include "Common/Compat.h"
-#include "Common/Error.h"
-#include "Common/FileUtils.h"
-#include "Common/Logger.h"
-#include "Common/Path.h"
-#include "Common/md5.h"
+
+#include <Common/Compat.h>
+
+#include "Context.h"
+#include "Monitoring.h"
+#include "RangeServerConnection.h"
+
+#include <Common/Error.h>
+#include <Common/FileUtils.h>
+#include <Common/Logger.h>
+#include <Common/Path.h>
+#include <Common/md5.h>
+
+#include <boost/algorithm/string.hpp>
 
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
 
-#include <boost/algorithm/string.hpp>
-
-#include "RangeServerConnection.h"
-#include "Context.h"
-
 extern "C" {
 #include <unistd.h>
 }
-
-#include "Monitoring.h"
 
 using namespace Hypertable;
 using namespace std;
@@ -76,23 +77,23 @@ void Monitoring::create_dir(const String &dir) {
 }
 
 void Monitoring::add_server(const String &location, const StatsSystem &system_info) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   RangeServerMap::iterator iter = m_server_map.find(location);
 
   if (iter != m_server_map.end()) {
-    (*iter).second->system_info = new StatsSystem(system_info);
+    (*iter).second->system_info = make_shared<StatsSystem>(system_info);
     return;
   }
 
   m_server_map[location] = new RangeServerStatistics();
   m_server_map[location]->location = location;
-  m_server_map[location]->system_info = new StatsSystem(system_info);
+  m_server_map[location]->system_info = make_shared<StatsSystem>(system_info);
 }
 
 
 void Monitoring::drop_server(const String &location) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   RangeServerMap::iterator iter = m_server_map.find(location);
   if (iter != m_server_map.end())
@@ -115,7 +116,7 @@ namespace {
 }
 
 void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   struct rangeserver_rrd_data rrd_data;
   RangeServerMap::iterator iter;
   double numerator, denominator;
@@ -260,7 +261,7 @@ void Monitoring::add(std::vector<RangeServerStatistics> &stats) {
   // Calculate "server set" MD5 digest
   md5_context md5_ctx;
   md5_starts(&md5_ctx);
-  foreach_ht(const char *server, server_set)
+  for (auto server : server_set)
     md5_update(&md5_ctx, (const unsigned char *)server, strlen(server));
   unsigned char server_set_digest[16];
   md5_finish(&md5_ctx, server_set_digest);
@@ -825,7 +826,7 @@ void Monitoring::run_rrdtool(std::vector<String> &command) {
 
   String cmd = "env LD_LIBRARY_PATH= DYLD_LIBRARY_PATH= rrdtool";
 
-  foreach_ht (const String &s, command) {
+  for (auto &s : command) {
     cmd += " \"";
     cmd += s;
     cmd += "\" ";

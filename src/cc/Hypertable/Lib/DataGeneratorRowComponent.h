@@ -22,6 +22,8 @@
 #ifndef Hypertable_Lib_DataGeneratorRowComponent_h
 #define Hypertable_Lib_DataGeneratorRowComponent_h
 
+#include "DataGeneratorRandom.h"
+
 #include <Hypertable/Lib/Cell.h>
 
 #include <Common/Config.h>
@@ -90,16 +92,16 @@ namespace Hypertable {
 
       if (length_min == 0 && length_max == 0) {
         cout << "ERROR: length.min and/or length.max must be specified for row component type 'string'" << endl;
-        _exit(1);
+        std::quick_exit(EXIT_FAILURE);
       }
       else if (length_max < length_min) {
         cout << "ERROR: length.max must be less than length.min for row component" << endl;
-        _exit(1);
+        std::quick_exit(EXIT_FAILURE);
       }
 
       if (order != RANDOM) {
         cout << "ERROR: 'random' is the only currently supported row component type" << endl;
-        _exit(1);
+        std::quick_exit(EXIT_FAILURE);
       }
 
       m_render_buf.reset( new char [length_max+1] );
@@ -107,7 +109,7 @@ namespace Hypertable {
     }
     virtual ~RowComponentString() { }
     virtual bool next() {
-      Random::fill_buffer_with_random_ascii(m_render_buf.get(), length_max);
+      random_fill_with_chars(m_render_buf.get(), length_max);
       return false;
     }
     virtual void render(String &dst) {

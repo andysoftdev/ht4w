@@ -64,7 +64,8 @@ using namespace std;
 #ifndef _WIN32
 
 bool
-IOHandlerAccept::handle_event(struct pollfd *event, time_t arrival_time) {
+IOHandlerAccept::handle_event(struct pollfd *event,
+                              ClockT::time_point) {
   if (event->revents & POLLIN)
     return handle_incoming_connection();
   ReactorRunner::handler_map->decomission_handler(this);
@@ -77,7 +78,8 @@ IOHandlerAccept::handle_event(struct pollfd *event, time_t arrival_time) {
  *
  */
 #if defined(__APPLE__) || defined(__FreeBSD__)
-bool IOHandlerAccept::handle_event(struct kevent *event, time_t) {
+bool IOHandlerAccept::handle_event(struct kevent *event,
+                                   ClockT::time_point) {
   //DisplayEvent(event);
   if (event->filter == EVFILT_READ)
     return handle_incoming_connection();
@@ -85,12 +87,14 @@ bool IOHandlerAccept::handle_event(struct kevent *event, time_t) {
   return true;
 }
 #elif defined(__linux__)
-bool IOHandlerAccept::handle_event(struct epoll_event *event, time_t) {
+bool IOHandlerAccept::handle_event(struct epoll_event *event,
+                                   ClockT::time_point) {
   //DisplayEvent(event);
   return handle_incoming_connection();
 }
 #elif defined(__sun__)
-bool IOHandlerAccept::handle_event(port_event_t *event, time_t) {
+bool IOHandlerAccept::handle_event(port_event_t *event,
+                                   ClockT::time_point) {
   if (event->portev_events == POLLIN)
     return handle_incoming_connection();
   ReactorRunner::handler_map->decomission_handler(this);
@@ -98,7 +102,7 @@ bool IOHandlerAccept::handle_event(port_event_t *event, time_t) {
 }
 #elif defined(_WIN32)
 
-bool IOHandlerAccept::handle_event(IOOP *ioop, time_t) {
+bool IOHandlerAccept::handle_event(IOOP *ioop, ClockT::time_point arival_time) {
   const socket_t sd = ioop->sd;
   const int one = 1;
 
@@ -269,7 +273,10 @@ bool IOHandlerAccept::async_accept() {
     }
   }
   else {
-    handle_event(ioop, 0);
+    ClockT::time_point arrival_time;
+    if (ReactorRunner::record_arrival_time)
+      arrival_time = ClockT::now();
+    handle_event(ioop, arrival_time);
     delete ioop;
   }
   return true;

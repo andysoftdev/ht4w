@@ -36,16 +36,17 @@
 #include <boost/algorithm/string.hpp>
 
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <thread>
 #include <vector>
 
 extern "C" {
 #include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <poll.h>
 #include <sys/types.h>
 #if defined(__sun__)
 #include <sys/fcntl.h>
@@ -58,7 +59,7 @@ using namespace Hypertable;
 using namespace Hypertable::FsBroker;
 using namespace std;
 
-atomic_t MaprBroker::ms_next_fd = ATOMIC_INIT(0);
+atomic<int> MaprBroker::ms_next_fd {0};
 
 MaprBroker::MaprBroker(PropertiesPtr &cfg) {
   m_verbose = cfg->get_bool("verbose");
@@ -93,7 +94,7 @@ MaprBroker::open(Response::Callback::Open *cb, const char *fname,
 
   HT_DEBUGF("open file='%s' flags=%u bufsz=%d", fname, flags, bufsz);
 
-  fd = atomic_inc_return(&ms_next_fd);
+  fd = ++ms_next_fd;
 
   int oflags = O_RDONLY;
 
@@ -135,7 +136,7 @@ MaprBroker::create(Response::Callback::Open *cb, const char *fname, uint32_t fla
   HT_DEBUGF("create file='%s' flags=%u bufsz=%d replication=%d blksz=%lld",
             fname, flags, bufsz, (int)replication, (Lld)blksz);
 
-  fd = atomic_inc_return(&ms_next_fd);
+  fd = ++ms_next_fd;
 
   if ((flags & Filesystem::OPEN_FLAG_OVERWRITE) == 0)
     oflags |= O_APPEND;
@@ -556,7 +557,7 @@ void MaprBroker::status(Response::Callback::Status *cb) {
 void MaprBroker::shutdown(ResponseCallback *cb) {
   m_open_file_map.remove_all();
   cb->response_ok();
-  poll(0, 0, 2000);
+  this_thread::sleep_for(chrono::milliseconds(2000));
 }
 
 

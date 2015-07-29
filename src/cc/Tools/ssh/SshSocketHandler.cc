@@ -34,12 +34,13 @@
 #include <AsyncComm/PollEvent.h>
 
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <set>
+#include <thread>
 
 #include <fcntl.h>
-#include <poll.h>
 #include <strings.h>
 #include <sys/ioctl.h>
 
@@ -136,7 +137,7 @@ void SshSocketHandler::set_libssh_verbosity(const std::string &value) {
     ms_libssh_verbosity = SSH_LOG_FUNCTIONS;
   else {
     cout << "Unrecognized libssh logging level: " << value << endl;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 }
 
@@ -178,7 +179,7 @@ SshSocketHandler::SshSocketHandler(const string &hostname)
 
   while (connect(m_sd, (struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) {
     if (errno == EINTR) {
-      poll(0, 0, 1000);
+      this_thread::sleep_for(chrono::milliseconds(1000));
       continue;
     }
     else if (errno != EINPROGRESS) {

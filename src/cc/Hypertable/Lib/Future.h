@@ -17,20 +17,20 @@
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#ifndef HYPERTABLE_FUTURE_H
-#define HYPERTABLE_FUTURE_H
-
-#include <boost/thread/condition.hpp>
-#include <list>
-#include <map>
-#include <set>
+#ifndef Hypertable_Lib_Future_h
+#define Hypertable_Lib_Future_h
 
 #include "ResultCallback.h"
 #include "Result.h"
 
+#include <list>
+#include <map>
+#include <memory>
+
 namespace Hypertable {
 
   using namespace std;
+
   class Future : public ResultCallback {
   public:
 
@@ -40,8 +40,8 @@ namespace Hypertable {
      *     enqueued if the amount of memory used by the existing enqueued results exceeds
      *     this amount. Defaults to zero, making the queue capacity unbounded.
      */
-    Future(size_t capacity=0) : m_capacity(capacity), m_memory_used(0), m_cancelled(false)
-        { }
+    Future(size_t capacity=0) : m_capacity(capacity) { }
+
     virtual ~Future();
 
     /**
@@ -79,7 +79,7 @@ namespace Hypertable {
      * Checks whether the Future result queue is full
      */
     bool is_full() {
-      ScopedLock lock(m_outstanding_mutex);
+      std::lock_guard<std::mutex> lock(m_outstanding_mutex);
       return !has_remaining_capacity();
     }
 
@@ -87,7 +87,7 @@ namespace Hypertable {
      * Checks whether the Future result queue is empty
      */
     bool is_empty() {
-      ScopedLock lock(m_outstanding_mutex);
+      std::lock_guard<std::mutex> lock(m_outstanding_mutex);
       return _is_empty();
     }
 
@@ -95,7 +95,7 @@ namespace Hypertable {
      * Checks whether the Future object has been cancelled
      */
     bool is_cancelled() {
-      ScopedLock lock(m_outstanding_mutex);
+      std::lock_guard<std::mutex> lock(m_outstanding_mutex);
       return _is_cancelled();
     }
 
@@ -141,18 +141,15 @@ namespace Hypertable {
     void enqueue(ResultPtr &result);
 
     ResultQueue m_queue;
-    size_t m_capacity;
-    size_t m_memory_used;
-    bool m_cancelled;
+    size_t m_capacity {};
+    size_t m_memory_used {};
+    bool m_cancelled {};
     typedef map<uint64_t, TableScannerAsync *> ScannerMap;
     typedef map<uint64_t, TableMutatorAsync *> MutatorMap;
     ScannerMap m_scanner_map;
     MutatorMap m_mutator_map;
-
-    typedef set<TableScannerAsync *> ScannerSet;
-    ScannerSet m_scanners_owned;
   };
-  typedef intrusive_ptr<Future> FuturePtr;
+  typedef std::shared_ptr<Future> FuturePtr;
 }
 
-#endif // HYPERTABLE_FUTURE_H
+#endif // Hypertable_Lib_Future_h

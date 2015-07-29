@@ -32,6 +32,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <mutex>
 #include <stack>
 #include <utility>
 
@@ -41,7 +42,7 @@ using namespace std;
 
 namespace {
 
-  Mutex desc_mutex;
+  mutex desc_mutex;
   bool desc_inited = false;
 
   PropertiesDesc
@@ -56,7 +57,7 @@ namespace {
   PositionalDesc compressor_pos_desc, bloomfilter_pos_desc;
 
   void init_schema_options_desc() {
-    ScopedLock lock(desc_mutex);
+    lock_guard<mutex> lock(desc_mutex);
 
     if (desc_inited)
       return;
@@ -96,7 +97,7 @@ namespace {
 
     try {
       init_schema_options_desc();
-      PropertiesPtr props = new Properties();
+      PropertiesPtr props = make_shared<Properties>();
       vector<std::string> args;
       boost::split(args, compressor, boost::is_any_of(" \t"));
       HT_TRY("parsing compressor spec",
@@ -115,7 +116,7 @@ namespace {
 
     try {
       init_schema_options_desc();
-      PropertiesPtr props = new Properties();
+      PropertiesPtr props = make_shared<Properties>();
       vector<std::string> args;
 
       boost::split(args, bloomfilter, boost::is_any_of(" \t"));

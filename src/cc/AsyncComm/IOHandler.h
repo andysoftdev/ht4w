@@ -28,21 +28,22 @@
 #ifndef AsyncComm_IOHandler_h
 #define AsyncComm_IOHandler_h
 
+#include "Clock.h"
 #include "DispatchHandler.h"
 #include "PollEvent.h"
 #include "ReactorFactory.h"
 #include "ExpireTimer.h"
 
 #include <Common/Logger.h>
-#include <Common/Mutex.h>
 #include <Common/Time.h>
+
+#include <mutex>
+#include <atomic>
 
 extern "C" {
 #include <errno.h>
-#include <time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <poll.h>
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/event.h>
@@ -57,14 +58,6 @@ extern "C" {
 #include <unistd.h>
 #endif
 }
-
-
-#ifdef _WIN32
-
-#include "Common/Atomic.h"
-#include "CommBuf.h"
-
-#endif
 
 namespace Hypertable {
 
@@ -102,19 +95,6 @@ namespace Hypertable {
       : m_free_flag(0), m_error(Error::OK),
         m_sd(sd), m_dispatch_handler(dhp), m_decomissioned(false) {
       ReactorFactory::get_reactor(m_reactor);
-
-#ifndef _WIN32
-
-      m_reference_count = 0;
-      m_poll_interest = 0;
-
-#else
-
-      atomic_set(&m_reference_count, 0);
-      m_handler_map = 0;
-
-#endif
-
       socklen_t namelen = sizeof(m_local_addr);
       getsockname(m_sd, (sockaddr *)&m_local_addr, &namelen);
       memset(&m_alias, 0, sizeof(m_alias));
@@ -129,19 +109,6 @@ namespace Hypertable {
                         m_error(Error::OK), m_sd(sd),
                         m_decomissioned(false) {
       ReactorFactory::get_reactor(m_reactor);
-
-#ifndef _WIN32
-
-      m_reference_count = 0;
-      m_poll_interest = 0;
-
-#else
-
-      atomic_set(&m_reference_count, 0);
-      m_handler_map = 0;
-
-#endif
-
       socklen_t namelen = sizeof(m_local_addr);
       getsockname(m_sd, (sockaddr *)&m_local_addr, &namelen);
       memset(&m_alias, 0, sizeof(m_alias));
@@ -154,8 +121,8 @@ namespace Hypertable {
      * @param arrival_time Arrival time of event
      * @return <i>true</i> if socket should be closed, <i>false</i> otherwise
      */
-    virtual bool handle_event(struct pollfd *event, time_t arrival_time=0) = 0;
-
+    virtual bool handle_event(struct pollfd *event,
+                              ClockT::time_point arrival_time) = 0;
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
@@ -164,23 +131,27 @@ namespace Hypertable {
      * @param arrival_time Arrival time of event
      * @return <i>true</i> if socket should be closed, <i>false</i> otherwise
      */
-    virtual bool handle_event(struct kevent *event, time_t arrival_time=0) = 0;
+    virtual bool handle_event(struct kevent *event,
+                              ClockT::time_point arrival_time) = 0;
 #elif defined(__linux__)
     /** Event handler method for Linux <i>epoll</i> interface.
      * @param event Pointer to <code>epoll_event</code> structure describing event
      * @param arrival_time Arrival time of event
      * @return <i>true</i> if socket should be closed, <i>false</i> otherwise
      */
-    virtual bool handle_event(struct epoll_event *event, time_t arrival_time=0) = 0;
+    virtual bool handle_event(struct epoll_event *event,
+                              ClockT::time_point arrival_time) = 0;
 #elif defined(__sun__)
     /** Event handler method for <i>port_associate</i> interface (Solaris).
      * @param event Pointer to <code>port_event_t</code> structure describing event
      * @param arrival_time Arrival time of event
      * @return <i>true</i> if socket should be closed, <i>false</i> otherwise
      */
-    virtual bool handle_event(port_event_t *event, time_t arrival_time=0) = 0;
+    virtual bool handle_event(port_event_t *event,
+                              ClockT::time_point arrival_time) = 0;
 #elif defined(_WIN32)
-    virtual bool handle_event(IOOP *event, time_t arival_time) = 0;
+    virtual bool handle_event(IOOP *event,
+                              ClockT::time_point arival_time) = 0;
 #else
     // Implement me!!!
 #endif
@@ -294,7 +265,7 @@ namespace Hypertable {
      * @param proxy Proxy name to set for this connection.
      */
     void set_proxy(const String &proxy) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_proxy = proxy;
     }
 
@@ -302,7 +273,7 @@ namespace Hypertable {
      * @return Proxy name for this connection.
      */
     const String& get_proxy() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_proxy;
     }
 
@@ -364,7 +335,7 @@ namespace Hypertable {
      * <i>false</i> otherwise.
      */
     bool test_and_set_error(int32_t error) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       if (m_error == Error::OK) {
         m_error = error;
         return true;
@@ -380,7 +351,7 @@ namespace Hypertable {
      * no error has been encountered
      */
     int32_t get_error() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_error;
     }
 
@@ -413,7 +384,7 @@ namespace Hypertable {
 
     void increment_reference_count(HandlerMap* handler_map) {
       m_handler_map = handler_map;
-      atomic_inc(&m_reference_count);
+      m_reference_count++;
     }
 
 #endif
@@ -427,21 +398,8 @@ namespace Hypertable {
      * @see #increment_reference_count, #reference_count, and #decomission
      */
     void decrement_reference_count() {
-
-#ifndef _WIN32
-
-      HT_ASSERT(m_reference_count > 0);
-      m_reference_count--;
-      if (m_reference_count == 0 && m_decomissioned)
+      if (m_reference_count.fetch_sub(1) == 1 && m_decomissioned)
         m_reactor->schedule_removal(this);
-
-#else
-
-      if (atomic_dec_and_test(&m_reference_count) && m_decomissioned)
-        m_reactor->schedule_removal(this);
-
-#endif
-
     }
 
     /** Return reference count
@@ -450,17 +408,8 @@ namespace Hypertable {
      * @see #increment_reference_count, #decrement_reference_count, and
      * #decomission
      */
-    size_t reference_count() {
-
-#ifndef _WIN32
-
+    uint32_t reference_count() const {
       return m_reference_count;
-
-#else
-
-       return atomic_read(&m_reference_count);
-
-#endif
     }
 
     /** Decomission handler.
@@ -526,7 +475,7 @@ namespace Hypertable {
       if (epoll_ctl(m_reactor->poll_fd, EPOLL_CTL_DEL, m_sd, &event) < 0) {
         HT_ERRORF("epoll_ctl(%d, EPOLL_CTL_DEL, %d) failed : %s",
                      m_reactor->poll_fd, m_sd, strerror(errno));
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       m_poll_interest = 0;
 #endif
@@ -535,21 +484,12 @@ namespace Hypertable {
 #endif
 
     /// %Mutex for serializing concurrent access
-
-    Mutex m_mutex;
+    std::mutex m_mutex;
 
     /** Reference count.  Calls to methods that reference this member
      * must be mutex protected by caller.
      */
-#ifndef _WIN32
-
-    size_t m_reference_count;
-
-#else
-
-    atomic_t m_reference_count;
-
-#endif
+    std::atomic<uint32_t> m_reference_count {0};
 
     /// Free flag (for testing)
     uint32_t m_free_flag;
@@ -584,11 +524,11 @@ namespace Hypertable {
      * combination of the flags PollEvent::READ and
      * PollEvent::WRITE.
      */
-    int m_poll_interest;
+    int m_poll_interest {0};
 
 #else
 
-    HandlerMap* m_handler_map;
+    HandlerMap* m_handler_map {0};
 
     friend void intrusive_ptr_add_ref(IOHandler *handler);
     friend void intrusive_ptr_release(IOHandler *handler);

@@ -94,7 +94,7 @@ TableScannerAsync::TableScannerAsync(Comm *comm,
 }
 
 
-bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec, 
+bool TableScannerAsync::use_index(Table *table, const ScanSpec &primary_spec, 
                                   ScanSpecBuilder &index_spec,
                                   std::vector<CellPredicate> &cell_predicates,
                                   bool *use_qualifier,
@@ -128,7 +128,7 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
   if (!primary_spec.column_predicates.empty()) {
     size_t id = 0;
 
-    foreach_ht (const ColumnPredicate &cp, primary_spec.column_predicates) {
+    for (const auto &cp : primary_spec.column_predicates) {
 
       if ((cf_spec = table->schema()->get_column_family(cp.column_family)) == 0)
         return false;
@@ -217,7 +217,7 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
                 has_row_interval = true;
                 ++row_intervals_applied_count;
                 index_row_prefix = (const char *)index_row_buf.base;
-                foreach_ht (const RowInterval &primary_ri, primary_spec.row_intervals) {
+                for (const auto &primary_ri : primary_spec.row_intervals) {
                   index_spec.add_row_interval(
                     index_row_prefix + primary_ri.start, primary_ri.start_inclusive,
                     index_row_prefix + primary_ri.end, primary_ri.end_inclusive);
@@ -227,7 +227,7 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
               else if (primary_spec.cell_intervals.size()) {
                 has_row_interval = true;
                 index_row_prefix = (const char *)index_row_buf.base;
-                foreach_ht (const CellInterval &primary_ci, primary_spec.cell_intervals) {
+                for (const auto &primary_ci : primary_spec.cell_intervals) {
                   index_spec.add_row_interval(
                     index_row_prefix + primary_ci.start_row, true,
                     index_row_prefix + primary_ci.end_row, true);
@@ -291,7 +291,7 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
           // primary row intervals
           if (primary_spec.row_intervals.size()) {
             ++row_intervals_applied_count;
-            foreach_ht (const RowInterval &primary_ri, primary_spec.row_intervals) {
+            for (const auto &primary_ri : primary_spec.row_intervals) {
               index_spec.add_row_interval(
                 index_row_prefix + primary_ri.start, primary_ri.start_inclusive,
                 index_row_prefix + primary_ri.end, primary_ri.end_inclusive);
@@ -299,7 +299,7 @@ bool TableScannerAsync::use_index(TablePtr table, const ScanSpec &primary_spec,
           }
           // primary cell intervals
           else if (primary_spec.cell_intervals.size()) {
-            foreach_ht (const CellInterval &primary_ci, primary_spec.cell_intervals) {
+            for (const auto &primary_ci : primary_spec.cell_intervals) {
               index_spec.add_row_interval(
                 index_row_prefix + primary_ci.start_row, true,
                 index_row_prefix + primary_ci.end_row, true);
@@ -342,13 +342,12 @@ void TableScannerAsync::transform_primary_scan_spec(ScanSpecBuilder &primary_spe
 
     // Load predicate_columns set
     CstrSet predicate_columns;
-    foreach_ht (const ColumnPredicate &predicate,
-                primary_spec.get().column_predicates)
+    for (const auto &predicate : primary_spec.get().column_predicates)
       predicate_columns.insert(predicate.column_family);
 
     // If selected columns empty, add all columns referenced in predicates
     if (primary_spec.get().columns.empty()) {
-      foreach_ht (const char *column, predicate_columns)
+      for (auto column : predicate_columns)
         primary_spec.add_column(column);
     }
     else {
@@ -356,7 +355,7 @@ void TableScannerAsync::transform_primary_scan_spec(ScanSpecBuilder &primary_spe
       const char *colon;
       StringSet selected_columns;
       // If columns selected that are not referenced in predicate, throw error
-      foreach_ht (const char *column, primary_spec.get().columns) {
+      for (auto column : primary_spec.get().columns) {
         family.clear();
         if ((colon = strchr(column, ':')) != 0)
           family.append(column, colon-column);
@@ -370,8 +369,7 @@ void TableScannerAsync::transform_primary_scan_spec(ScanSpecBuilder &primary_spe
       }
 
       // Add predicate columns that are missing from selection set
-      foreach_ht (const ColumnPredicate &predicate,
-                  primary_spec.get().column_predicates)
+      for (const auto &predicate : primary_spec.get().column_predicates)
         if (selected_columns.count(predicate.column_family) == 0)
           primary_spec.add_column(predicate.column_family);
     }
@@ -420,14 +418,15 @@ void TableScannerAsync::init(Comm *comm, ApplicationQueueInterfacePtr &app_queue
 
   m_cb->increment_outstanding();
   m_cb->register_scanner(this);
+  m_registered = true;
 
   try {
     if (scan_spec.row_intervals.empty()) {
       if (scan_spec.cell_intervals.empty()) {
-        ri_scanner = 0;
-        ri_scanner = new IntervalScannerAsync(comm, app_queue, table, 
-                        range_locator, scan_spec, timeout_ms, 
-                        !current_set, this, scanner_id++);
+        ri_scanner =
+          make_shared<IntervalScannerAsync>(comm, app_queue, table, range_locator,
+                                            scan_spec, timeout_ms, !current_set,
+                                            this, scanner_id++);
 
         current_set = true;
         m_interval_scanners.push_back(ri_scanner);
@@ -439,10 +438,10 @@ void TableScannerAsync::init(Comm *comm, ApplicationQueueInterfacePtr &app_queue
           scan_spec.base_copy(interval_scan_spec);
           interval_scan_spec.cell_intervals.push_back(
               scan_spec.cell_intervals[i]);
-          ri_scanner = 0;
-          ri_scanner = new IntervalScannerAsync(comm, app_queue, table, 
-                        range_locator, interval_scan_spec, timeout_ms,
-                        !current_set, this, scanner_id++);
+          ri_scanner =
+            make_shared<IntervalScannerAsync>(comm, app_queue, table, range_locator,
+                                              interval_scan_spec, timeout_ms,
+                                              !current_set, this, scanner_id++);
           current_set = true;
           m_interval_scanners.push_back(ri_scanner);
           m_outstanding++;
@@ -453,15 +452,15 @@ void TableScannerAsync::init(Comm *comm, ApplicationQueueInterfacePtr &app_queue
       ScanSpec rowset_scan_spec;
       scan_spec.base_copy(rowset_scan_spec);
       rowset_scan_spec.row_intervals.reserve(scan_spec.row_intervals.size());
-      foreach_ht (const RowInterval& ri, scan_spec.row_intervals) {
+      for (const auto &ri : scan_spec.row_intervals) {
         if (ri.start != ri.end && strcmp(ri.start, ri.end) != 0) {
           scan_spec.base_copy(interval_scan_spec);
           interval_scan_spec.scan_and_filter_rows = false;
           interval_scan_spec.row_intervals.push_back(ri);
-          ri_scanner = 0;
-          ri_scanner = new IntervalScannerAsync(comm, app_queue, table,
-                        range_locator, interval_scan_spec, timeout_ms,
-                        !current_set, this, scanner_id++);
+          ri_scanner =
+            make_shared<IntervalScannerAsync>(comm, app_queue, table, range_locator,
+                                              interval_scan_spec, timeout_ms,
+                                              !current_set, this, scanner_id++);
           current_set = true;
           m_interval_scanners.push_back(ri_scanner);
           m_outstanding++;
@@ -470,10 +469,10 @@ void TableScannerAsync::init(Comm *comm, ApplicationQueueInterfacePtr &app_queue
           rowset_scan_spec.row_intervals.push_back(ri);
       }
       if (rowset_scan_spec.row_intervals.size()) {
-        ri_scanner = 0;
-        ri_scanner = new IntervalScannerAsync(comm, app_queue, table, 
-                        range_locator, rowset_scan_spec, timeout_ms, 
-                        !current_set, this, scanner_id++);
+        ri_scanner =
+          make_shared<IntervalScannerAsync>(comm, app_queue, table, range_locator,
+                                            rowset_scan_spec, timeout_ms, 
+                                            !current_set, this, scanner_id++);
         current_set = true;
         m_interval_scanners.push_back(ri_scanner);
         m_outstanding++;
@@ -484,10 +483,10 @@ void TableScannerAsync::init(Comm *comm, ApplicationQueueInterfacePtr &app_queue
       for (size_t i=0; i<scan_spec.row_intervals.size(); i++) {
         scan_spec.base_copy(interval_scan_spec);
         interval_scan_spec.row_intervals.push_back(scan_spec.row_intervals[i]);
-        ri_scanner = 0;
-        ri_scanner = new IntervalScannerAsync(comm, app_queue, table, 
-                        range_locator, interval_scan_spec, timeout_ms, 
-                        !current_set, this, scanner_id++);
+        ri_scanner =
+          make_shared<IntervalScannerAsync>(comm, app_queue, table, range_locator,
+                                            interval_scan_spec, timeout_ms, 
+                                            !current_set, this, scanner_id++);
         current_set = true;
         m_interval_scanners.push_back(ri_scanner);
         m_outstanding++;
@@ -514,6 +513,8 @@ TableScannerAsync::~TableScannerAsync() {
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
   }
+  if (m_registered)
+   m_cb->deregister_scanner(this);
   if (m_use_index) {
     ((IndexScannerCallback *)m_cb)->shutdown();
     delete m_cb;
@@ -646,7 +647,7 @@ void TableScannerAsync::handle_result(int scanner_id, EventPtr &event, bool is_c
         // scanner was cancelled and is over
         if (next && m_outstanding==1) {
           do_callback = true;
-          cells = new ScanCells;
+          cells = make_shared<ScanCells>();
         }
         else
           do_callback = false;
@@ -693,6 +694,7 @@ void TableScannerAsync::maybe_callback_error(int scanner_id, bool next) {
 
   if (eos) {
     m_cb->deregister_scanner(this);
+    m_registered = false;
     m_cb->decrement_outstanding();
     m_cond.notify_all();
   }
@@ -722,6 +724,7 @@ void TableScannerAsync::maybe_callback_ok(int scanner_id, bool next, bool do_cal
 
   if (m_outstanding==0) {
     m_cb->deregister_scanner(this);
+    m_registered = false;
     m_cb->decrement_outstanding();
     m_cond.notify_all();
   }
@@ -729,8 +732,7 @@ void TableScannerAsync::maybe_callback_ok(int scanner_id, bool next, bool do_cal
 
 void TableScannerAsync::wait_for_completion() {
   unique_lock<mutex> lock(m_mutex);
-  while (m_outstanding != 0)
-    m_cond.wait(lock);
+  m_cond.wait(lock, [this](){ return m_outstanding == 0; });
 }
 
 String TableScannerAsync::get_table_name() const {
@@ -764,7 +766,7 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner) {
           && ((cancelled && m_error == Error::OK)
             || m_error != Error::OK)) {
         do_callback = true;
-        cells = new ScanCells;
+        cells = make_shared<ScanCells>();
       }
       maybe_callback_ok(m_current_scanner, next, do_callback, cells);
     }
@@ -776,7 +778,7 @@ void TableScannerAsync::move_to_next_interval_scanner(int current_scanner) {
       && m_outstanding == 1
       && current_scanner == ((int)m_interval_scanners.size() - 1) 
       && !cells) {
-    cells = new ScanCells;
+    cells = make_shared<ScanCells>();
     maybe_callback_ok(m_current_scanner, true, true, cells);
     m_current_scanner = (int)m_interval_scanners.size() - 1;
   }

@@ -137,7 +137,6 @@
     <ClInclude Include="RangeServerState.h" />
     <ClInclude Include="RangeServerStatistics.h" />
     <ClInclude Include="RecoveredServers.h" />
-    <ClInclude Include="RecoveryReplayCounter.h" />
     <ClInclude Include="RecoveryStepFuture.h" />
     <ClInclude Include="ReferenceManager.h" />
     <ClInclude Include="ResponseManager.h" />

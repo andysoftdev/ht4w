@@ -37,6 +37,7 @@
 #include "Common/System.h"
 #include "Common/StringCompressorPrefix.h"
 #include "Common/StringDecompressorPrefix.h"
+#include "Common/Time.h"
 
 #include "AsyncComm/Protocol.h"
 
@@ -65,18 +66,17 @@ namespace {
 }
 
 
-CellStoreV7::CellStoreV7(Filesystem *filesys, Schema *schema)
-  : m_filesys(filesys), m_schema(schema), m_fd(-1), m_filename(),
-    m_64bit_index(false), m_compressor(0), m_buffer(0),
-    m_outstanding_appends(0), m_offset(0), m_file_length(0),
-    m_disk_usage(0), m_file_id(0), m_uncompressed_blocksize(0),
-    m_bloom_filter_mode(BLOOM_FILTER_DISABLED), m_bloom_filter_items(0),
-    m_filter_false_positive_prob(0.0), m_restricted_range(false),
-    m_column_ttl(0), m_replaced_files_loaded(false), m_bloom_filter(0) {
+CellStoreV7::CellStoreV7(Filesystem *filesys)
+  : m_filesys(filesys) {
   m_file_id = FileBlockCache::get_next_file_id();
   assert(sizeof(float) == 4);
 }
 
+CellStoreV7::CellStoreV7(Filesystem *filesys, SchemaPtr &schema)
+  : m_filesys(filesys), m_schema(schema) {
+  m_file_id = FileBlockCache::get_next_file_id();
+  assert(sizeof(float) == 4);
+}
 
 CellStoreV7::~CellStoreV7() {
   try {
@@ -106,7 +106,7 @@ KeyDecompressor *CellStoreV7::create_key_decompressor() {
 }
 
 void CellStoreV7::split_row_estimate_data(SplitRowDataMapT &split_row_data) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (m_index_stats.block_index_memory == 0)
     load_block_index();
   if (m_trailer.index_entries == 0) {
@@ -121,7 +121,7 @@ void CellStoreV7::split_row_estimate_data(SplitRowDataMapT &split_row_data) {
 }
 
 void CellStoreV7::populate_index_pseudo_table_scanner(CellListScannerBuffer *scanner) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (m_index_stats.block_index_memory == 0) {
     load_block_index();
     scanner->add_disk_read(m_trailer.filter_offset-m_trailer.fix_index_offset);
@@ -140,12 +140,12 @@ void CellStoreV7::populate_index_pseudo_table_scanner(CellListScannerBuffer *sca
 }
 
 
-CellListScanner *CellStoreV7::create_scanner(ScanContextPtr &scan_ctx) {
+CellListScannerPtr CellStoreV7::create_scanner(ScanContext *scan_ctx) {
   bool need_index =  m_restricted_range || scan_ctx->restricted_range ||
     scan_ctx->single_row || scan_ctx->has_cell_interval;
 
   if (need_index) {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     m_index_stats.block_index_access_counter = ++Global::access_counter;
     if (m_index_stats.block_index_memory == 0)
       load_block_index();
@@ -153,8 +153,8 @@ CellListScanner *CellStoreV7::create_scanner(ScanContextPtr &scan_ctx) {
   }
 
   if (m_64bit_index)
-    return new CellStoreScanner<CellStoreBlockIndexArray<int64_t> >(this, scan_ctx, need_index ? &m_index_map64 : 0);
-  return new CellStoreScanner<CellStoreBlockIndexArray<uint32_t> >(this, scan_ctx, need_index ? &m_index_map32 : 0);
+    return make_shared<CellStoreScanner<CellStoreBlockIndexArray<int64_t>>>(shared_from_this(), scan_ctx, need_index ? &m_index_map64 : 0);
+  return make_shared<CellStoreScanner<CellStoreBlockIndexArray<uint32_t>>>(shared_from_this(), scan_ctx, need_index ? &m_index_map32 : 0);
 }
 
 namespace {
@@ -181,7 +181,7 @@ CellStoreV7::create(const char *fname, size_t max_entries,
   int64_t blocksize = props->get("blocksize", 0);
   String compressor = props->get("compressor", String());
 
-  m_key_compressor = new KeyCompressorPrefix();
+  m_key_compressor = make_shared<KeyCompressorPrefix>();
 
   assert(Config::properties); // requires Config::init* first
   int32_t replication = get_replication(props, table_id);
@@ -292,7 +292,7 @@ void CellStoreV7::create_bloom_filter(bool is_approx) {
                  << m_trailer.filter_items_estimate << " items - "<< e << HT_END;
   }
 
-  foreach_ht(const Blob &blob, *m_bloom_filter_items)
+  for (const auto &blob : *m_bloom_filter_items)
     m_bloom_filter->insert(blob.start, blob.size);
 
   delete m_bloom_filter_items;
@@ -303,7 +303,7 @@ void CellStoreV7::create_bloom_filter(bool is_approx) {
 }
 
 const std::vector<String> &CellStoreV7::get_replaced_files() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (!m_replaced_files_loaded)
     load_replaced_files();
   return m_replaced_files;
@@ -417,7 +417,7 @@ uint64_t CellStoreV7::purge_indexes() {
   uint64_t memory_purged = 0;
 
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
 
     if (m_index_stats.bloom_filter_memory > 0) {
       memory_purged = m_index_stats.bloom_filter_memory;
@@ -751,11 +751,7 @@ void CellStoreV7::finalize(TableIdentifier *table_identifier) {
   // Add table information
   m_trailer.table_id = table_identifier->index();
   m_trailer.table_generation = table_identifier->generation;
-  {
-    boost::xtime now;
-    boost::xtime_get(&now, boost::TIME_UTC_);
-    m_trailer.create_time = ((int64_t)now.sec * 1000000000LL) + (int64_t)now.nsec;
-  }
+  m_trailer.create_time = get_ts64();
 
   m_trailer.block_header_version = BLOCK_HEADER_VERSION;
 
@@ -904,7 +900,7 @@ CellStoreV7::open(const String &fname, const String &start_row,
 
 void
 CellStoreV7::rescope(const String &start_row, const String &end_row) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   HT_ASSERT(m_start_row.compare(start_row)<0 || m_end_row.compare(end_row)>0);
   m_start_row = start_row;
   m_end_row = end_row;
@@ -938,7 +934,6 @@ CellStoreV7::rescope(const String &start_row, const String &end_row) {
 void CellStoreV7::load_block_index() {
   int64_t amount, index_amount;
   int64_t len = 0;
-  BlockCompressionCodecPtr compressor;
   BlockHeaderCellStore header(BLOCK_HEADER_VERSION);
   SerializedKey key;
   bool inflating_fixed=true;
@@ -946,7 +941,7 @@ void CellStoreV7::load_block_index() {
 
   HT_ASSERT(m_index_stats.block_index_memory == 0);
 
-  compressor = create_block_compression_codec();
+  unique_ptr<BlockCompressionCodec> compressor(create_block_compression_codec());
 
   amount = index_amount = m_trailer.filter_offset - m_trailer.fix_index_offset;
 
@@ -1034,7 +1029,7 @@ void CellStoreV7::load_block_index() {
 }
 
 
-bool CellStoreV7::may_contain(ScanContextPtr &scan_context) {
+bool CellStoreV7::may_contain(ScanContext *scan_ctx) {
 
   if (m_bloom_filter_mode == BLOOM_FILTER_DISABLED)
     return true;
@@ -1042,7 +1037,7 @@ bool CellStoreV7::may_contain(ScanContextPtr &scan_context) {
     return false;
 
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     if (m_bloom_filter == 0)
       load_bloom_filter();
 
@@ -1051,20 +1046,20 @@ bool CellStoreV7::may_contain(ScanContextPtr &scan_context) {
     switch (m_bloom_filter_mode) {
     case BLOOM_FILTER_ROWS:
       m_index_stats.bloom_filter_access_counter = ++Global::access_counter;
-      return m_bloom_filter->may_contain(scan_context->start_row.data(),
-                                         scan_context->start_row.size());
+      return m_bloom_filter->may_contain(scan_ctx->start_row.data(),
+                                         scan_ctx->start_row.size());
     case BLOOM_FILTER_ROWS_COLS:
       m_index_stats.bloom_filter_access_counter = ++Global::access_counter;
-      if (m_bloom_filter->may_contain(scan_context->start_row.data(),
-                                      scan_context->start_row.size())) {
-        SchemaPtr &schema = scan_context->schema;
-        size_t rowlen = scan_context->start_row.length();
+      if (m_bloom_filter->may_contain(scan_ctx->start_row.data(),
+                                      scan_ctx->start_row.size())) {
+        SchemaPtr &schema = scan_ctx->schema;
+        size_t rowlen = scan_ctx->start_row.length();
         uint8_t column_family_id;
         const char *ptr;
         boost::scoped_array<char> rowcol(new char[rowlen + 2]);
-        memcpy(rowcol.get(), scan_context->start_row.c_str(), rowlen + 1);
+        memcpy(rowcol.get(), scan_ctx->start_row.c_str(), rowlen + 1);
 
-        foreach_ht(const char *col, scan_context->spec->columns) {
+        for (auto col : scan_ctx->spec->columns) {
           if ((ptr = strchr(col, ':')) != 0) {
             String family(col, (size_t)(ptr-col));
             column_family_id = schema->get_column_family(family.c_str())->get_id();
@@ -1090,7 +1085,7 @@ bool CellStoreV7::may_contain(ScanContextPtr &scan_context) {
 
 
 void CellStoreV7::display_block_info() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (m_index_stats.block_index_memory == 0)
     load_block_index();
   if (m_64bit_index)

@@ -25,23 +25,26 @@
  * for mapping socket addresses to I/O handlers.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
 
 #include "IOHandlerAccept.h"
 #include "HandlerMap.h"
 #include "ReactorFactory.h"
 
+#include <chrono>
+
 using namespace Hypertable;
+using namespace std;
 
 void HandlerMap::insert_handler(IOHandlerAccept *handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   HT_ASSERT(m_accept_handler_map.find(handler->get_address()) 
             == m_accept_handler_map.end());
   m_accept_handler_map[handler->get_local_address()] = handler;
 }
 
 void HandlerMap::insert_handler(IOHandlerData *handler, bool checkout) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   HT_ASSERT(m_data_handler_map.find(handler->get_address())
             == m_data_handler_map.end());
   m_data_handler_map[handler->get_address()] = handler;
@@ -54,14 +57,14 @@ void HandlerMap::insert_handler(IOHandlerData *handler, bool checkout) {
 }
 
 void HandlerMap::insert_handler(IOHandlerDatagram *handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   HT_ASSERT(m_datagram_handler_map.find(handler->get_local_address())
             == m_datagram_handler_map.end());
   m_datagram_handler_map[handler->get_local_address()] = handler;
 }
 
 void HandlerMap::insert_handler(IOHandlerRaw *handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   HT_ASSERT(m_raw_handler_map.find(handler->get_address())
             == m_raw_handler_map.end());
   m_raw_handler_map[handler->get_address()] = handler;
@@ -70,7 +73,7 @@ void HandlerMap::insert_handler(IOHandlerRaw *handler) {
 
 int HandlerMap::checkout_handler(const CommAddress &addr,
                                  IOHandlerAccept **handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
 
   if ((*handler = lookup_accept_handler(addr.inet)) == 0)
     return Error::COMM_NOT_CONNECTED;
@@ -89,7 +92,7 @@ int HandlerMap::checkout_handler(const CommAddress &addr,
 
 int HandlerMap::checkout_handler(const CommAddress &addr,
                                  IOHandlerData **handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   InetAddr inet_addr;
   int error;
 
@@ -112,7 +115,7 @@ int HandlerMap::checkout_handler(const CommAddress &addr,
 
 int HandlerMap::checkout_handler(const CommAddress &addr,
                                  IOHandlerDatagram **handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
 
   if ((*handler = lookup_datagram_handler(addr.inet)) == 0)
     return Error::COMM_NOT_CONNECTED;
@@ -130,7 +133,7 @@ int HandlerMap::checkout_handler(const CommAddress &addr,
 
 int HandlerMap::checkout_handler(const CommAddress &addr,
                                  IOHandlerRaw **handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
 
   if ((*handler = lookup_raw_handler(addr.inet)) == 0)
     return Error::COMM_NOT_CONNECTED;
@@ -147,21 +150,21 @@ int HandlerMap::checkout_handler(const CommAddress &addr,
 }
 
 void HandlerMap::decrement_reference_count(IOHandler *handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   handler->decrement_reference_count();
 }
 
 #ifdef _WIN32
 
 void HandlerMap::increment_reference_count(IOHandler *handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   handler->increment_reference_count(this);
 }
 
 #endif
 
 int HandlerMap::contains_data_handler(const CommAddress &addr) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   IOHandlerData *handler;
   InetAddr inet_addr;
   int error;
@@ -176,7 +179,7 @@ int HandlerMap::contains_data_handler(const CommAddress &addr) {
 }
 
 int HandlerMap::set_alias(const InetAddr &addr, const InetAddr &alias) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   SockAddrMap<IOHandlerData *>::iterator iter;
 
   if (m_data_handler_map.find(alias) != m_data_handler_map.end())
@@ -233,7 +236,7 @@ int HandlerMap::remove_handler_unlocked(IOHandler *handler) {
 }
 
 int HandlerMap::remove_handler(IOHandler *handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   return remove_handler_unlocked(handler);
 }
 
@@ -247,7 +250,7 @@ void HandlerMap::decomission_handler_unlocked(IOHandler *handler) {
 }
 
 void HandlerMap::decomission_all() {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   SockAddrMap<IOHandlerAccept *>::iterator aiter;
   SockAddrMap<IOHandlerData *>::iterator diter;
   SockAddrMap<IOHandlerDatagram *>::iterator dgiter;
@@ -287,7 +290,7 @@ void HandlerMap::decomission_all() {
 }
 
 bool HandlerMap::destroy_ok(IOHandler *handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   bool is_decomissioned = m_decomissioned_handlers.count(handler) > 0;
   HT_ASSERT(!is_decomissioned || handler->is_decomissioned());
   return is_decomissioned && handler->reference_count() == 0;
@@ -305,14 +308,18 @@ bool HandlerMap::translate_proxy_address(const CommAddress &proxy_addr, InetAddr
 }
 
 void HandlerMap::wait_for_empty() {
-  ScopedRecLock lock(m_mutex);
-  while (!m_decomissioned_handlers.empty())
-    m_cond.wait(lock);
+  unique_lock<recursive_mutex> lock(m_mutex);
+  m_cond.wait(lock, [this](){ return m_decomissioned_handlers.empty(); });
+}
+
+void HandlerMap::wait_for_empty(std::chrono::steady_clock::duration duration) {
+  unique_lock<recursive_mutex> lock(m_mutex);
+  m_cond.wait_for(lock, duration, [this](){ return m_decomissioned_handlers.empty(); });
 }
 
 void HandlerMap::purge_handler(IOHandler *handler) {
   {
-    ScopedRecLock lock(m_mutex);
+    lock_guard<recursive_mutex> lock(m_mutex);
     HT_ASSERT(m_decomissioned_handlers.count(handler) > 0);
     HT_ASSERT(handler->reference_count() == 0);
     m_decomissioned_handlers.erase(handler);
@@ -326,7 +333,7 @@ void HandlerMap::purge_handler(IOHandler *handler) {
 void HandlerMap::shutdown() {
   std::set<IOHandler *> decomissioned_handlers;
   {
-    ScopedRecLock lock(m_mutex);
+    lock_guard<recursive_mutex> lock(m_mutex);
     decomissioned_handlers = m_decomissioned_handlers;
     m_decomissioned_handlers.clear();
   }
@@ -338,12 +345,12 @@ void HandlerMap::shutdown() {
 }
 
 int HandlerMap::add_proxy(const String &proxy, const String &hostname, const InetAddr &addr) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   ProxyMapT new_map, invalidated_map;
 
   m_proxy_map.update_mapping(proxy, hostname, addr, invalidated_map, new_map);
 
-  foreach_ht(const ProxyMapT::value_type &v, new_map) {
+  for (const auto &v : new_map) {
     IOHandler *handler = lookup_data_handler(v.second.addr);
     if (handler)
       handler->set_proxy(v.first);
@@ -353,12 +360,12 @@ int HandlerMap::add_proxy(const String &proxy, const String &hostname, const Ine
 }
 
 int HandlerMap::remove_proxy(const String &proxy) {
- ScopedRecLock lock(m_mutex);
+ lock_guard<recursive_mutex> lock(m_mutex);
  ProxyMapT remove_map;
  m_proxy_map.remove_mapping(proxy, remove_map);
  if (!remove_map.empty()) {
    IOHandler *handler;
-   foreach_ht(const ProxyMapT::value_type &v, remove_map) {
+   for (const auto &v : remove_map) {
      handler = lookup_data_handler(v.second.addr);
      if (handler)
        decomission_handler_unlocked(handler);
@@ -375,7 +382,7 @@ void HandlerMap::get_proxy_map(ProxyMapT &proxy_map) {
 
 
 void HandlerMap::update_proxy_map(const char *message, size_t message_len) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   String mappings(message, message_len);
   ProxyMapT new_map, invalidated_map;
 
@@ -383,7 +390,7 @@ void HandlerMap::update_proxy_map(const char *message, size_t message_len) {
 
   m_proxy_map.update_mappings(mappings, invalidated_map, new_map);
 
-  foreach_ht(const ProxyMapT::value_type &v, invalidated_map) {
+  for (const auto &v : invalidated_map) {
     IOHandler *handler = lookup_data_handler(v.second.addr);
     if (handler) {
       if (v.second.hostname == "--DELETED--")
@@ -391,7 +398,7 @@ void HandlerMap::update_proxy_map(const char *message, size_t message_len) {
     }
   }
 
-  foreach_ht(const ProxyMapT::value_type &v, new_map) {
+  for (const auto &v : new_map) {
     IOHandler *handler = lookup_data_handler(v.second.addr);
     if (handler)
       handler->set_proxy(v.first);
@@ -404,7 +411,7 @@ void HandlerMap::update_proxy_map(const char *message, size_t message_len) {
 }
 
 int32_t HandlerMap::propagate_proxy_map(IOHandlerData *handler) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   HT_ASSERT(ReactorFactory::proxy_master);
   CommBufPtr comm_buf = m_proxy_map.create_update_message();
   comm_buf->write_header_and_reset();
@@ -413,18 +420,12 @@ int32_t HandlerMap::propagate_proxy_map(IOHandlerData *handler) {
 
 
 bool HandlerMap::wait_for_proxy_map(Timer &timer) {
-  ScopedRecLock lock(m_mutex);
-  boost::xtime drop_time;
-
+  unique_lock<recursive_mutex> lock(m_mutex);
   timer.start();
-
-  while (!m_proxies_loaded) {
-    boost::xtime_get(&drop_time, boost::TIME_UTC_);
-    xtime_add_millis(drop_time, timer.remaining());
-    if (!m_cond_proxy.timed_wait(lock, drop_time))
-      return false;
-  }
-  return true;
+  auto drop_time = chrono::steady_clock::now() +
+    chrono::milliseconds(timer.remaining());
+  return m_cond_proxy.wait_until(lock, drop_time,
+                                 [this](){ return m_proxies_loaded; });
 }
 
 int HandlerMap::propagate_proxy_map(ProxyMapT &mappings) {
@@ -436,7 +437,7 @@ int HandlerMap::propagate_proxy_map(ProxyMapT &mappings) {
   SockAddrMap<IOHandlerData *>::iterator iter;
   String mapping;
 
-  foreach_ht(const ProxyMapT::value_type &v, mappings)
+  for (const auto &v : mappings)
     mapping += v.first + "\t" + v.second.hostname + "\t" + InetAddr::format(v.second.addr) + "\n";
 
   uint8_t *buffer = new uint8_t [ mapping.length() + 1 ];
@@ -448,7 +449,7 @@ int HandlerMap::propagate_proxy_map(ProxyMapT &mappings) {
   for (iter = m_data_handler_map.begin(); iter != m_data_handler_map.end(); ++iter) {
     IOHandlerData *handler = iter->second;
     if (handler) {
-      CommBufPtr comm_buf = new CommBuf(header, 0, payload, mapping.length()+1);
+      CommBufPtr comm_buf = make_shared<CommBuf>(header, 0, payload, mapping.length()+1);
       comm_buf->write_header_and_reset();
       int error = handler->send_message(comm_buf);
       if (error != Error::OK) {
@@ -462,7 +463,7 @@ int HandlerMap::propagate_proxy_map(ProxyMapT &mappings) {
   }
 
   // Decomission any handlers that failed
-  foreach_ht (IOHandler *handler, decomission)
+  for (auto handler : decomission)
     decomission_handler_unlocked(handler);
 
   return last_error;

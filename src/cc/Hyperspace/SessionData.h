@@ -19,35 +19,31 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERSPACE_SESSIONDATA_H
-#define HYPERSPACE_SESSIONDATA_H
-
-#include <list>
-#include <set>
-
-#include <boost/thread/mutex.hpp>
-
-#include "Common/ReferenceCount.h"
-#include "Common/Time.h"
+#ifndef Hyperspace_SessionData_h
+#define Hyperspace_SessionData_h
 
 #include "Notification.h"
 
+#include <chrono>
+#include <list>
+#include <memory>
+#include <mutex>
+#include <set>
 
 namespace Hyperspace {
 
   using namespace Hypertable;
 
-  class SessionData : public ReferenceCount {
+  class SessionData {
   public:
     SessionData(const sockaddr_in &_addr, uint32_t lease_interval, uint64_t _id)
-      : addr(_addr), m_lease_interval(lease_interval), id(_id), expired(false) {
-      boost::xtime_get(&expire_time, boost::TIME_UTC_);
-      xtime_add_millis(expire_time, lease_interval);
-      return;
+      : addr(_addr), m_lease_interval(lease_interval), id(_id) {
+      expire_time = std::chrono::steady_clock::now() +
+        std::chrono::milliseconds(lease_interval);
     }
 
     void add_notification(Notification *notification) {
-      ScopedLock lock(mutex);
+      std::lock_guard<std::mutex> lock(mutex);
 
       if (expired) {
         notification->event_ptr->decrement_notification_count();
@@ -58,7 +54,7 @@ namespace Hyperspace {
     }
 
     void purge_notifications(std::set<uint64_t> &delivered_events) {
-      ScopedLock lock(mutex);
+      std::lock_guard<std::mutex> lock(mutex);
       std::list<Notification *>::iterator iter = notifications.begin();
       while (iter != notifications.end()) {
         if (delivered_events.count((*iter)->event_ptr->get_id()) > 0) {
@@ -78,7 +74,7 @@ namespace Hyperspace {
 
     CommBuf * serialize_notifications_for_keepalive(CommHeader &header, uint32_t &len)
     {
-      ScopedLock lock(mutex);
+      std::lock_guard<std::mutex> lock(mutex);
       std::list<Notification *>::iterator iter;
       CommBuf *cbuf =0;
       for (iter = notifications.begin(); iter != notifications.end(); ++iter) {
@@ -98,13 +94,11 @@ namespace Hyperspace {
     }
 
     bool renew_lease() {
-      ScopedLock lock(mutex);
-      boost::xtime now;
-      boost::xtime_get(&now, boost::TIME_UTC_);
-      if (xtime_cmp(expire_time, now) < 0)
+      std::lock_guard<std::mutex> lock(mutex);
+      auto now = std::chrono::steady_clock::now();
+      if (expire_time < now)
         return false;
-      memcpy(&expire_time, &now, sizeof(boost::xtime));
-      xtime_add_millis(expire_time, m_lease_interval);
+      expire_time = now + std::chrono::milliseconds(m_lease_interval);
       return true;
     }
 
@@ -112,18 +106,18 @@ namespace Hyperspace {
 
     const struct sockaddr_in& get_addr() const { return addr; }
 
-    void extend_lease(uint32_t millis) {
-      ScopedLock lock(mutex);
-      xtime_add_millis(expire_time, millis);
+    void extend_lease(std::chrono::milliseconds millis) {
+      std::lock_guard<std::mutex> lock(mutex);
+      expire_time += millis;
     }
 
-    bool is_expired(const boost::xtime &now) {
-      ScopedLock lock(mutex);
-      return expired || xtime_cmp(expire_time, now) < 0;
+    bool is_expired(std::chrono::steady_clock::time_point now) {
+      std::lock_guard<std::mutex> lock(mutex);
+      return expired || expire_time < now;
     }
 
     void expire() {
-      ScopedLock lock(mutex);
+      std::lock_guard<std::mutex> lock(mutex);
       if (expired)
         return;
       expired = true;
@@ -136,12 +130,12 @@ namespace Hyperspace {
     }
 
     void set_expire_time_now() {
-      ScopedLock lock(mutex);
-      boost::xtime_get(&expire_time, boost::TIME_UTC_);
+      std::lock_guard<std::mutex> lock(mutex);
+      expire_time = std::chrono::steady_clock::now();
     }
 
     void set_name(const String &name_) {
-      ScopedLock lock(mutex);
+      std::lock_guard<std::mutex> lock(mutex);
       name = name_;
     }
 
@@ -149,24 +143,24 @@ namespace Hyperspace {
 
   private:
 
-    Mutex mutex;
+    std::mutex mutex;
     struct sockaddr_in addr;
-    boost::xtime expire_time;
-    uint32_t m_lease_interval;
+    std::chrono::steady_clock::time_point expire_time;
+    uint32_t m_lease_interval {};
     uint64_t id;
-    bool expired;
+    bool expired {};
     std::list<Notification *> notifications;
     String name;
   };
 
-  typedef boost::intrusive_ptr<SessionData> SessionDataPtr;
+  typedef std::shared_ptr<SessionData> SessionDataPtr;
 
   struct LtSessionData {
     bool operator()(const SessionDataPtr &x, const SessionDataPtr &y) const {
-      return xtime_cmp(x->expire_time, y->expire_time) > 0;
+      return CHRONO_OPERATOR>(x->expire_time, y->expire_time);
     }
   };
 
 }
 
-#endif // HYPERSPACE_SESSIONDATA_H
+#endif // Hyperspace_SessionData_h

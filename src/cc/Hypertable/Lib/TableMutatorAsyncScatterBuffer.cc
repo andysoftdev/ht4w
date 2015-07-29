@@ -1,4 +1,4 @@
-/* -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -29,6 +29,7 @@
 #include "TableMutatorAsyncScatterBuffer.h"
 
 #include <Common/Config.h>
+#include <Common/Random.h>
 #include <Common/Timer.h>
 
 #include <Hypertable/Lib/ClusterId.h>
@@ -38,26 +39,26 @@
 #include <Hypertable/Lib/TableMutatorAsyncDispatchHandler.h>
 #include <Hypertable/Lib/TableMutatorAsyncHandler.h>
 
-#include <poll.h>
-
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
 using namespace Hypertable;
+using namespace std;
 
 TableMutatorAsyncScatterBuffer::TableMutatorAsyncScatterBuffer(Comm *comm,
     ApplicationQueueInterfacePtr &app_queue, TableMutatorAsync *mutator,
     const TableIdentifier *table_identifier, SchemaPtr &schema,
     RangeLocatorPtr &range_locator, bool auto_refresh, uint32_t timeout_ms, uint32_t id)
   : m_comm(comm), m_app_queue(app_queue), m_mutator(mutator), m_schema(schema),
-    m_range_locator(range_locator), m_range_server(comm, timeout_ms),
-    m_table_identifier(*table_identifier),
-    m_full(false), m_resends(0), m_rng(1), m_auto_refresh(auto_refresh), m_timeout_ms(timeout_ms),
-    m_counter_value(9), m_timer(timeout_ms), m_id(id), m_memory_used(0), m_outstanding(false),
-    m_send_flags(0), m_wait_time(ms_init_redo_wait_time), dead(false) {
+    m_range_locator(range_locator),
+    m_location_cache(range_locator->location_cache()),
+    m_range_server(comm, timeout_ms), m_table_identifier(*table_identifier),
+    m_auto_refresh(auto_refresh), m_timeout_ms(timeout_ms),
+    m_counter_value(9), m_timer(timeout_ms), m_id(id),
+    m_wait_time(ms_init_redo_wait_time) {
 
   HT_ASSERT(Config::properties);
-
-  m_location_cache = m_range_locator->location_cache();
 
   m_server_flush_limit = Config::properties->get_i32(
       "Hypertable.Mutator.ScatterBuffer.FlushLimit.PerServer");
@@ -84,7 +85,7 @@ TableMutatorAsyncScatterBuffer::set(const Key &key, const ColumnFamilySpec *cf, 
   }
 
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
 
     bool is_counter = false;
     if (key.column_family_code) {
@@ -118,7 +119,7 @@ TableMutatorAsyncScatterBuffer::set(const Key &key, const ColumnFamilySpec *cf, 
     iter = m_buffer_map.find(range_info.addr);
 
     if (iter == m_buffer_map.end()) {
-      iter = m_buffer_map.insert(std::make_pair(range_info.addr, new TableMutatorAsyncSendBuffer(&m_table_identifier,
+      iter = m_buffer_map.insert(std::make_pair(range_info.addr, make_shared<TableMutatorAsyncSendBuffer>(&m_table_identifier,
                                  &m_completion_counter, m_range_locator.get()))).first;
       (*iter).second->addr = range_info.addr;
     }
@@ -146,7 +147,7 @@ TableMutatorAsyncScatterBuffer::set(const Key &key, const ColumnFamilySpec *cf, 
 
 
 void TableMutatorAsyncScatterBuffer::set_delete(const Key &key, size_t incr_mem) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   RangeAddrInfo range_info;
   TableMutatorAsyncSendBufferMap::const_iterator iter;
@@ -164,7 +165,7 @@ void TableMutatorAsyncScatterBuffer::set_delete(const Key &key, size_t incr_mem)
   iter = m_buffer_map.find(range_info.addr);
 
   if (iter == m_buffer_map.end()) {
-    iter = m_buffer_map.insert(std::make_pair(range_info.addr, new TableMutatorAsyncSendBuffer(&m_table_identifier,
+    iter = m_buffer_map.insert(std::make_pair(range_info.addr, make_shared<TableMutatorAsyncSendBuffer>(&m_table_identifier,
                                  &m_completion_counter, m_range_locator.get()))).first;
     (*iter).second->addr = range_info.addr;
   }
@@ -191,7 +192,7 @@ void TableMutatorAsyncScatterBuffer::set_delete(const Key &key, size_t incr_mem)
 
 void
 TableMutatorAsyncScatterBuffer::set(SerializedKey key, ByteString value, size_t incr_mem) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   RangeAddrInfo range_info;
   TableMutatorAsyncSendBufferMap::const_iterator iter;
@@ -210,7 +211,7 @@ TableMutatorAsyncScatterBuffer::set(SerializedKey key, ByteString value, size_t 
   iter = m_buffer_map.find(range_info.addr);
 
   if (iter == m_buffer_map.end()) {
-    iter = m_buffer_map.insert(std::make_pair(range_info.addr, new TableMutatorAsyncSendBuffer(&m_table_identifier,
+    iter = m_buffer_map.insert(std::make_pair(range_info.addr, make_shared<TableMutatorAsyncSendBuffer>(&m_table_identifier,
                                &m_completion_counter, m_range_locator.get()))).first;
     (*iter).second->addr = range_info.addr;
   }
@@ -239,7 +240,7 @@ namespace {
 
 
 void TableMutatorAsyncScatterBuffer::send(uint32_t flags) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   bool outstanding=false;
 
   m_timer.start();
@@ -331,7 +332,7 @@ void TableMutatorAsyncScatterBuffer::send(uint32_t flags) {
         else
           outstanding = true;
         // Random wait between 0 and 5 seconds
-        poll(0, 0, m_rng()%5000);
+        this_thread::sleep_for(Random::duration_millis(5000));
       }
       else {
         HT_FATALF("Problem sending updates to %s - %s (%s)",
@@ -350,17 +351,15 @@ void TableMutatorAsyncScatterBuffer::send(uint32_t flags) {
 
 
 void TableMutatorAsyncScatterBuffer::wait_for_completion() {
-  ScopedLock lock(m_mutex);
-
-  while(m_outstanding)
-    m_cond.wait(lock);
+  unique_lock<mutex> lock(m_mutex);
+  m_cond.wait(lock, [this](){ return m_outstanding == 0; });
 }
 
 
-TableMutatorAsyncScatterBuffer *
+TableMutatorAsyncScatterBufferPtr
 TableMutatorAsyncScatterBuffer::create_redo_buffer(uint32_t id) {
   TableMutatorAsyncSendBufferPtr send_buffer;
-  TableMutatorAsyncScatterBuffer *redo_buffer = 0;
+  TableMutatorAsyncScatterBufferPtr redo_buffer;
   SerializedKey key;
   ByteString value, bs;
   size_t incr_mem;
@@ -374,9 +373,9 @@ TableMutatorAsyncScatterBuffer::create_redo_buffer(uint32_t id) {
     }
 
     m_timer.start();
-    poll(0,0, m_wait_time);
+    this_thread::sleep_for(chrono::milliseconds(m_wait_time));
     m_timer.stop();
-    redo_buffer = new TableMutatorAsyncScatterBuffer(m_comm, m_app_queue, m_mutator,
+    redo_buffer = make_shared<TableMutatorAsyncScatterBuffer>(m_comm, m_app_queue, m_mutator,
         &m_table_identifier, m_schema, m_range_locator, m_auto_refresh, m_timeout_ms, id);
     redo_buffer->m_timer = m_timer;
     redo_buffer->m_wait_time = m_wait_time + 2000;
@@ -403,10 +402,6 @@ TableMutatorAsyncScatterBuffer::create_redo_buffer(uint32_t id) {
     }
   }
   catch (Exception &e) {
-    if (redo_buffer != 0) {
-      delete redo_buffer;
-      redo_buffer=0;
-    }
     set_retries_to_fail(e.code());
     HT_THROW(e.code(), e.what());
   }
@@ -518,7 +513,7 @@ void TableMutatorAsyncScatterBuffer::finish() {
   m_mutator->buffer_finish(m_id, error, has_retries);
 
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     m_outstanding = false;
     m_cond.notify_all();
   }

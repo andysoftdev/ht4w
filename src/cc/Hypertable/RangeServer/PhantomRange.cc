@@ -25,12 +25,14 @@
 /// "phantom" range (i.e. one that is being recovered by a RangeServer).
 
 #include <Common/Compat.h>
+
 #include "PhantomRange.h"
 
 #include <Hypertable/RangeServer/Global.h>
 
 #include <Common/md5.h>
 
+#include <mutex>
 #include <sstream>
 
 using namespace Hypertable;
@@ -44,18 +46,17 @@ PhantomRange::PhantomRange(const QualifiedRangeSpec &spec,
     m_outstanding(fragments.size()), m_state(LOADED) {
   for (int32_t fragment : fragments) {
     HT_ASSERT(m_fragments.count(fragment) == 0);
-    FragmentDataPtr data = new FragmentData();
-    m_fragments[fragment] = data;
+    m_fragments[fragment] = make_shared<FragmentData>();
   }
 }
 
 int PhantomRange::get_state() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return m_state;
 }
 
 bool PhantomRange::add(int32_t fragment, EventPtr &event) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   FragmentMap::iterator it = m_fragments.find(fragment);
 
   HT_ASSERT(it != m_fragments.end());
@@ -67,7 +68,7 @@ bool PhantomRange::add(int32_t fragment, EventPtr &event) {
 }
 
 void PhantomRange::purge_incomplete_fragments() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   FragmentMap::iterator it = m_fragments.begin();
   for(; it != m_fragments.end(); ++it)
     it->second->clear();
@@ -75,10 +76,11 @@ void PhantomRange::purge_incomplete_fragments() {
 
 void PhantomRange::create_range(Lib::Master::ClientPtr &master_client, 
         TableInfoPtr &table_info, FilesystemPtr &log_dfs) { 
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
-  m_range = new Range(master_client, m_range_spec.table, m_schema,
-                      m_range_spec.range, table_info.get(), m_range_state, true);
+  m_range = make_shared<Range>(master_client, m_range_spec.table, m_schema,
+                               m_range_spec.range, table_info.get(),
+                               m_range_state, true);
   m_range->deferred_initialization();
   m_range->metalog_entity()->set_state_bits(RangeState::PHANTOM);
   m_range_state.state |= RangeState::PHANTOM;
@@ -87,7 +89,7 @@ void PhantomRange::create_range(Lib::Master::ClientPtr &master_client,
 void PhantomRange::populate_range_and_log(FilesystemPtr &log_dfs, 
                                           int64_t recovery_id,
                                           bool *is_empty) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   m_range->recovery_initialize();
 
@@ -97,11 +99,11 @@ void PhantomRange::populate_range_and_log(FilesystemPtr &log_dfs,
 
   m_phantom_logname = create_log(log_dfs, recovery_id, metalog_entity);
 
-  CommitLogPtr phantom_log = new CommitLog(log_dfs, m_phantom_logname,
+  CommitLogPtr phantom_log = make_shared<CommitLog>(log_dfs, m_phantom_logname,
                                            m_range_spec.table.is_metadata());
 
   {
-    Locker<Range> range_lock(*(m_range.get()));
+    lock_guard<Range> range_lock(*m_range);
     for (auto &entry : m_fragments)
       entry.second->merge(m_range_spec.table, m_range, phantom_log);
   }
@@ -121,7 +123,7 @@ void PhantomRange::populate_range_and_log(FilesystemPtr &log_dfs,
   HT_INFOF("%s", sout.str().c_str());
 
   // Scan log to load blocks and determine if log is empty
-  m_phantom_log = new CommitLogReader(log_dfs, m_phantom_logname);
+  m_phantom_log = make_shared<CommitLogReader>(log_dfs, m_phantom_logname);
   BlockHeaderCommitLog header;
   const uint8_t *base;
   size_t len;
@@ -132,46 +134,46 @@ void PhantomRange::populate_range_and_log(FilesystemPtr &log_dfs,
 }
 
 const String & PhantomRange::get_phantom_logname() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return m_phantom_logname;
 }
 
 CommitLogReaderPtr PhantomRange::get_phantom_log() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return m_phantom_log;
 }
 
 
 void PhantomRange::set_replayed() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   HT_ASSERT((m_state & REPLAYED) == 0);
   m_state |= REPLAYED;
 }
 
 bool PhantomRange::replayed() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return (m_state & REPLAYED) == REPLAYED;
 }
 
 void PhantomRange::set_prepared() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   HT_ASSERT((m_state & PREPARED) == 0);
   m_state |= PREPARED;
 }
 
 bool PhantomRange::prepared() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return (m_state & PREPARED) == PREPARED;
 }
 
 void PhantomRange::set_committed() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   HT_ASSERT((m_state & COMMITTED) == 0);
   m_state |= COMMITTED;
 }
 
 bool PhantomRange::committed() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return (m_state & COMMITTED) == COMMITTED;
 }
 

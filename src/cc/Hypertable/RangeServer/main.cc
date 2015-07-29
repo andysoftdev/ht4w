@@ -19,26 +19,7 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <string>
-
-#include "Common/FailureInducer.h"
-#include "Common/Init.h"
-#include "Common/InetAddr.h"
-#include "Common/Logger.h"
-#include "Common/System.h"
-#include "Common/Usage.h"
-
-#include "AsyncComm/ApplicationQueue.h"
-#include "AsyncComm/Comm.h"
-#include "AsyncComm/ConnectionManager.h"
-#include "AsyncComm/ReactorFactory.h"
-#include "AsyncComm/ReactorRunner.h"
-
-#include <Hypertable/Lib/ClusterId.h>
+#include <Common/Compat.h>
 
 #include "Config.h"
 #include "ConnectionHandler.h"
@@ -46,6 +27,26 @@
 #include "HyperspaceSessionHandler.h"
 #include "RangeServer.h"
 #include "IndexUpdater.h"
+
+#include <Hypertable/Lib/ClusterId.h>
+
+#include <AsyncComm/ApplicationQueue.h>
+#include <AsyncComm/Comm.h>
+#include <AsyncComm/ConnectionManager.h>
+#include <AsyncComm/ReactorFactory.h>
+#include <AsyncComm/ReactorRunner.h>
+
+#include <Common/FailureInducer.h>
+#include <Common/Init.h>
+#include <Common/InetAddr.h>
+#include <Common/Logger.h>
+#include <Common/System.h>
+#include <Common/Usage.h>
+
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <string>
 
 #ifdef _WIN32
 #include "Common/ServerLaunchEvent.h"
@@ -96,13 +97,13 @@ int main(int argc, char **argv) {
      * Connect to Hyperspace
      */
     HyperspaceSessionHandler hs_handler;
-    Global::hyperspace = new Hyperspace::Session(comm, properties);
+    Global::hyperspace = make_shared<Hyperspace::Session>(comm, properties);
     Global::hyperspace->add_callback(&hs_handler);
     int hyperspace_timeout = get_i32("Hyperspace.Timeout");
 
     if (!Global::hyperspace->wait_for_connection(hyperspace_timeout)) {
       HT_ERROR("Unable to connect to hyperspace, exiting...");
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
 
     #ifdef _WIN32
@@ -128,7 +129,7 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    return 1;
+    quick_exit(EXIT_FAILURE);
   }
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

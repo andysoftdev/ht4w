@@ -19,18 +19,17 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_RESULTCALLBACKINTERFACE_H
-#define HYPERTABLE_RESULTCALLBACKINTERFACE_H
-
-#include <vector>
-#include <map>
-#include <boost/thread/condition.hpp>
-
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
+#ifndef Hypertable_Lib_ResultCallback_h
+#define Hypertable_Lib_ResultCallback_h
 
 #include "ClientObject.h"
 #include "ScanCells.h"
+
+#include <condition_variable>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <vector>
 
 namespace Hypertable {
 
@@ -45,7 +44,7 @@ namespace Hypertable {
 
   public:
 
-    ResultCallback() : m_outstanding(0) { }
+    ResultCallback() { }
 
     virtual ~ResultCallback() {
       wait_for_completion();
@@ -116,16 +115,15 @@ namespace Hypertable {
      * Blocks till outstanding == 0
      */
     void wait_for_completion() {
-      ScopedLock lock(m_outstanding_mutex);
-      while (m_outstanding)
-        m_outstanding_cond.wait(lock);
+      std::unique_lock<std::mutex> lock(m_outstanding_mutex);
+      m_outstanding_cond.wait(lock, [this](){ return m_outstanding == 0; });
     }
 
     /**
      *
      */
     void increment_outstanding() {
-      ScopedLock lock(m_outstanding_mutex);
+      std::lock_guard<std::mutex> lock(m_outstanding_mutex);
       m_outstanding++;
     }
 
@@ -133,7 +131,7 @@ namespace Hypertable {
      *
      */
     void decrement_outstanding() {
-      ScopedLock lock(m_outstanding_mutex);
+      std::lock_guard<std::mutex> lock(m_outstanding_mutex);
       HT_ASSERT(m_outstanding > 0);
       m_outstanding--;
       if (m_outstanding == 0) {
@@ -146,16 +144,19 @@ namespace Hypertable {
      *
      */
     bool is_done() {
-      ScopedLock lock(m_outstanding_mutex);
+      std::lock_guard<std::mutex> lock(m_outstanding_mutex);
       return m_outstanding == 0;
     }
 
   protected:
-    int m_outstanding;
-    Mutex m_outstanding_mutex;
-    boost::condition m_outstanding_cond;
+    int m_outstanding {};
+    std::mutex m_outstanding_mutex;
+    std::condition_variable m_outstanding_cond;
   };
-  typedef intrusive_ptr<ResultCallback> ResultCallbackPtr;
-} // namespace Hypertable
+ 
+  /// Shared smart pointer to ResultCallback
+  typedef std::shared_ptr<ResultCallback> ResultCallbackPtr;
 
-#endif // HYPERTABLE_RESULTCALLBACKINTERFACE_H
+}
+
+#endif // Hypertable_Lib_ResultCallback_h

@@ -40,25 +40,28 @@
 #include <AsyncComm/ApplicationQueueInterface.h>
 #include <AsyncComm/Event.h>
 
-#include <Common/atomic.h>
 #include <Common/ByteString.h>
 #include <Common/FlyweightString.h>
-#include <Common/ReferenceCount.h>
 #include <Common/StringExt.h>
 #include <Common/Timer.h>
 #include <Common/InetAddr.h>
 
-#include <boost/random.hpp>
-#include <boost/random/uniform_01.hpp>
-#include <boost/thread/condition.hpp>
-#include <boost/thread/mutex.hpp>
-
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <random>
 #include <vector>
 
 namespace Hypertable {
 
   class TableMutatorAsync;
-  class TableMutatorAsyncScatterBuffer : public ReferenceCount {
+
+  class TableMutatorAsyncScatterBuffer;
+
+  /// Smart pointer to TableMutatorAsyncScatterBuffer
+  typedef std::shared_ptr<TableMutatorAsyncScatterBuffer> TableMutatorAsyncScatterBufferPtr;
+
+  class TableMutatorAsyncScatterBuffer {
 
   public:
     TableMutatorAsyncScatterBuffer(Comm *comm, ApplicationQueueInterfacePtr &app_queue,
@@ -72,10 +75,10 @@ namespace Hypertable {
              uint32_t value_len, size_t incr_mem);
     void set_delete(const Key &key, size_t incr_mem);
     void set(SerializedKey key, ByteString value, size_t incr_mem);
-    bool full() { ScopedLock lock(m_mutex); return m_full; }
+    bool full() { std::lock_guard<std::mutex> lock(m_mutex); return m_full; }
     void send(uint32_t flags);
     void wait_for_completion();
-    TableMutatorAsyncScatterBuffer *create_redo_buffer(uint32_t id);
+    TableMutatorAsyncScatterBufferPtr create_redo_buffer(uint32_t id);
     uint64_t get_resend_count() { return m_resends; }
     void
     get_failed_mutations(FailedMutations &failed_mutations) {
@@ -114,11 +117,10 @@ namespace Hypertable {
     TableIdentifierManaged m_table_identifier;
     TableMutatorAsyncSendBufferMap m_buffer_map;
     TableMutatorAsyncCompletionCounter m_completion_counter;
-    bool                 m_full;
-    uint64_t             m_resends;
+    bool                 m_full {};
+    uint64_t             m_resends {};
     FailedMutations      m_failed_mutations;
     FlyweightString      m_constant_strings;
-    boost::mt19937       m_rng;
     bool                 m_auto_refresh;
     uint32_t             m_timeout_ms;
     uint32_t             m_server_flush_limit;
@@ -126,17 +128,15 @@ namespace Hypertable {
     Timer                m_timer;
     uint32_t             m_id;
     CommAddressSet       m_unsynced_rangeservers;
-    size_t               m_memory_used;
-    Mutex                m_mutex;
-    boost::condition     m_cond;
-    bool                 m_outstanding;
-    uint32_t             m_send_flags;
+    size_t               m_memory_used {};
+    std::mutex m_mutex;
+    std::condition_variable m_cond;
+    bool                 m_outstanding {};
+    uint32_t             m_send_flags {};
     uint32_t             m_wait_time;
     const static uint32_t ms_init_redo_wait_time=1000;
-    bool dead;
+    bool dead {};
   };
-
-  typedef intrusive_ptr<TableMutatorAsyncScatterBuffer> TableMutatorAsyncScatterBufferPtr;
 
 }
 

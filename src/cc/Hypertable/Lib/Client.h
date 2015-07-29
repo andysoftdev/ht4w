@@ -19,22 +19,23 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_CLIENT_H
-#define HYPERTABLE_CLIENT_H
-
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
-#include "Common/String.h"
-
-#include "AsyncComm/ApplicationQueueInterface.h"
-#include "AsyncComm/ConnectionManager.h"
-#include "Hyperspace/Session.h"
+#ifndef Hypertable_Lib_Client_h
+#define Hypertable_Lib_Client_h
 
 #include "Master/Client.h"
 #include "NameIdMapper.h"
+#include "Namespace.h"
 #include "NamespaceCache.h"
 #include "TableCache.h"
-#include "Namespace.h"
+
+#include <Hyperspace/Session.h>
+
+#include <AsyncComm/ApplicationQueueInterface.h>
+#include <AsyncComm/ConnectionManager.h>
+
+#include <Common/String.h>
+
+#include <memory>
 
 namespace Hypertable {
 
@@ -50,7 +51,7 @@ namespace Hypertable {
   class Comm;
   class HqlInterpreter;
 
-  class Client : public ReferenceCount {
+  class Client {
   public:
 
     /**
@@ -161,13 +162,12 @@ namespace Hypertable {
     std::string                  m_install_dir;
     TableCachePtr           m_table_cache;
     NamespaceCachePtr       m_namespace_cache;
-    Mutex                   m_mutex;
     bool                    m_hyperspace_reconnect;
     std::string                  m_toplevel_dir;
   };
 
-  typedef intrusive_ptr<Client> ClientPtr;
+  typedef std::shared_ptr<Client> ClientPtr;
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_CLIENT_H
+#endif // Hypertable_Lib_Client_h

@@ -19,15 +19,12 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_FIXEDRANDOMSTRINGGENERATOR_H
-#define HYPERTABLE_FIXEDRANDOMSTRINGGENERATOR_H
+#ifndef Hypertable_Lib_FixedRandomStringGenerator_h
+#define Hypertable_Lib_FixedRandomStringGenerator_h
 
+#include <cstdint>
 #include <cstring>
 #include <vector>
-
-extern "C" {
-#include <stdint.h>
-}
 
 namespace Hypertable {
 
@@ -38,9 +35,9 @@ namespace Hypertable {
   private:
     size_t m_nchars;
     size_t m_nints;
-    std::vector<uint32_t>  m_ivec;
+    std::vector<uint32_t> m_ivec;
   };
 
 }
 
-#endif // HYPERTABLE_FIXEDRANDOMSTRINGGENERATOR_H
+#endif // Hypertable_Lib_FixedRandomStringGenerator_h

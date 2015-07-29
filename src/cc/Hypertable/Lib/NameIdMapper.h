@@ -19,18 +19,20 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_NAMEIDMAPPER_H
-#define HYPERTABLE_NAMEIDMAPPER_H
+#ifndef Hypertable_Lib_NameIdMapper_h
+#define Hypertable_Lib_NameIdMapper_h
 
-#include "Common/Compat.h"
-#include <vector>
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
-#include "Common/String.h"
-
-#include "Hyperspace/Session.h"
+#include <Common/Compat.h>
 
 #include "NamespaceListing.h"
+
+#include <Hyperspace/Session.h>
+
+#include <Common/String.h>
+
+#include <memory>
+#include <mutex>
+#include <vector>
 
 namespace Hyperspace {
   class Session;
@@ -40,7 +42,7 @@ namespace Hypertable {
 
   /** Easy mapping between a Table/Namespace name string to ids and vice versa.
    */
-  class NameIdMapper: public ReferenceCount {
+  class NameIdMapper {
 
   public:
 
@@ -107,7 +109,7 @@ namespace Hypertable {
     bool do_mapping(const std::string &input, bool id_in, std::string &output, bool *is_namespacep);
     static void get_namespace_listing(const std::vector<Hyperspace::DirEntryAttr> &dir_listing, std::vector<NamespaceListing> &listing);
 
-    Mutex m_mutex;
+    std::mutex m_mutex;
     Hyperspace::SessionPtr m_hyperspace;
     std::string m_toplevel_dir;
     std::string m_names_dir;
@@ -115,8 +117,9 @@ namespace Hypertable {
     size_t m_prefix_components;
   };
 
-  typedef intrusive_ptr<NameIdMapper> NameIdMapperPtr;
+  /// Smart pointer to NameIdMapper
+  typedef std::shared_ptr<NameIdMapper> NameIdMapperPtr;
 
-} // namesapce Hypertable
+}
 
-#endif // HYPERTABLE_NAMEIDMAPPER_H
+#endif // Hypertable_Lib_NameIdMapper_h

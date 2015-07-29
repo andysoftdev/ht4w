@@ -120,11 +120,11 @@ Apps::RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_
   m_ganglia_collector =
     std::make_shared<MetricsCollectorGanglia>("rangeserver", props);
 
-  m_context = std::make_shared<Context>();
+  m_context = std::make_shared<RangeServerContext>();
   m_context->props = props;
   m_context->comm = conn_mgr->get_comm();
   m_context->server_state = std::make_shared<ServerState>();
-  m_context->live_map = new TableInfoMap();
+  m_context->live_map = make_shared<TableInfoMap>();
 
   m_log_replay_barrier = std::make_shared<LogReplayBarrier>();
 
@@ -162,7 +162,7 @@ Apps::RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_
   port = cfg.get_i16("Port");
 
   m_control_file_check_interval = cfg.get_i32("ControlFile.CheckInterval");
-  boost::xtime_get(&m_last_control_file_check, boost::TIME_UTC_);
+  m_last_control_file_check = chrono::steady_clock::now();
 
   // Initialize "low activity" window
   {
@@ -194,11 +194,11 @@ Apps::RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_
 
   int64_t interval = (int64_t)cfg.get_i32("Maintenance.Interval");
 
-  Global::load_statistics = new LoadStatistics(interval);
+  Global::load_statistics = make_shared<LoadStatistics>(interval);
 
-  m_stats = new StatsRangeServer(m_props);
+  m_stats = make_shared<StatsRangeServer>(m_props);
 
-  m_namemap = new NameIdMapper(m_hyperspace, Global::toplevel_dir);
+  m_namemap = make_shared<NameIdMapper>(m_hyperspace, Global::toplevel_dir);
 
   m_scanner_ttl = (time_t)cfg.get_i32("Scanner.Ttl");
 
@@ -362,7 +362,7 @@ Apps::RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_
     Global::log_dfs = Global::dfs;
 
   // Create the maintenance queue
-  Global::maintenance_queue = new MaintenanceQueue(maintenance_threads);
+  Global::maintenance_queue = make_shared<MaintenanceQueue>(maintenance_threads);
 
   /**
    * Listen for incoming connections
@@ -377,7 +377,7 @@ Apps::RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_
   catch (Exception &e) {
     HT_ERRORF("Unable to listen on port %u - %s - %s",
               port, Error::get_text(e.code()), e.what());
-    _exit(0);
+    quick_exit(EXIT_SUCCESS);
   }
 
   Global::location_initializer = make_shared<LocationInitializer>(m_context);
@@ -385,7 +385,7 @@ Apps::RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_
   if(Global::location_initializer->is_removed(Global::toplevel_dir+"/servers", m_hyperspace)) {
     HT_ERROR_OUT << "location " << Global::location_initializer->get()
         << " has been marked removed in hyperspace" << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
   // Create Master client
@@ -393,11 +393,11 @@ Apps::RangeServer::RangeServer(PropertiesPtr &props, ConnectionManagerPtr &conn_
   m_master_connection_handler
     = make_shared<ConnectionHandler>(m_context->comm, m_app_queue, this);
   ApplicationQueueInterfacePtr aq = Global::app_queue;
-  m_master_client = new Lib::Master::Client(m_conn_manager, m_hyperspace,
-                                            Global::toplevel_dir, timeout,
-                                            aq,
-                                            m_master_connection_handler,
-                                            Global::location_initializer);
+  m_master_client =
+    make_shared<Lib::Master::Client>(m_conn_manager, m_hyperspace,
+                                     Global::toplevel_dir, timeout, aq,
+                                     m_master_connection_handler,
+                                     Global::location_initializer);
   Global::master_client = m_master_client;
 
   Global::location_initializer->wait_for_handshake();
@@ -480,12 +480,12 @@ void Apps::RangeServer::shutdown() {
 
     // stop application queue
     m_app_queue->stop();
-    boost::xtime deadline;
-    boost::xtime_get(&deadline, boost::TIME_UTC_);
-    deadline.sec += 30;  // wait no more than 30 seconds
+
+    // wait no more than 30 seconds
+    auto deadline = chrono::steady_clock::now() + chrono::seconds(30);
     m_app_queue->wait_for_idle(deadline, 1);
 
-    ScopedLock lock(m_stats_mutex);
+    lock_guard<mutex> lock(m_stats_mutex);
 
     if (m_group_commit_timer_handler)
       m_group_commit_timer_handler->shutdown();
@@ -497,55 +497,40 @@ void Apps::RangeServer::shutdown() {
     if (m_update_pipeline_metadata)
       m_update_pipeline_metadata->shutdown();
 
-    Global::range_locator = 0;
+    Global::range_locator.reset();
 
     if (Global::rsml_writer) {
       Global::rsml_writer->close();
-      Global::rsml_writer = 0;
+      //Global::rsml_writer.reset();
     }
     if (Global::root_log) {
       Global::root_log->close();
-      /*
-      delete Global::root_log;
-      Global::root_log = 0;
-      */
+      //Global::root_log.reset();
     }
     if (Global::metadata_log) {
       Global::metadata_log->close();
-      /*
-      delete Global::metadata_log;
-      Global::metadata_log = 0;
-      */
+      //Global::metadata_log.reset();
     }
     if (Global::system_log) {
       Global::system_log->close();
-      /*
-      delete Global::system_log;
-      Global::system_log = 0;
-      */
+      //Global::system_log.reset();
     }
     if (Global::user_log) {
       Global::user_log->close();
-      /*
-      delete Global::user_log;
-      Global::user_log = 0;
-      */
+      //Global::user_log.reset();
     }
 
+    /*
     if (Global::block_cache) {
       delete Global::block_cache;
       Global::block_cache = 0;
     }
-
-    /*
     Global::maintenance_queue = 0;
     Global::metadata_table = 0;
     Global::rs_metrics_table = 0;
     Global::hyperspace = 0;
-
     Global::log_dfs = 0;
     Global::dfs = 0;
-
     delete Global::memory_tracker;
     Global::memory_tracker = 0;
     */
@@ -553,12 +538,13 @@ void Apps::RangeServer::shutdown() {
     m_app_queue->shutdown();
 
     HT_NOTICE("Exiting range server");
+    Logger::get()->set_level(Logger::Priority::FATAL);
 
     _exit(0);
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
 }
@@ -644,7 +630,7 @@ namespace {
     sort(listing.begin(), listing.end(), ByFragmentNumber());
 
     // Remove zero-length files
-    foreach_ht (Filesystem::Dirent &entry, listing) {
+    for (auto &entry : listing) {
       String fragment_file = logdir + "/" + entry.name;
       try {
         if (Global::log_dfs->length(fragment_file) == 0) {
@@ -684,7 +670,7 @@ namespace {
 
 void Apps::RangeServer::local_recover() {
   MetaLog::DefinitionPtr rsml_definition =
-      new MetaLog::DefinitionRangeServer(Global::location_initializer->get().c_str());
+    make_shared<MetaLog::DefinitionRangeServer>(Global::location_initializer->get().c_str());
   MetaLog::ReaderPtr rsml_reader;
   CommitLogReaderPtr root_log_reader;
   CommitLogReaderPtr system_log_reader;
@@ -693,13 +679,13 @@ void Apps::RangeServer::local_recover() {
   Ranges ranges;
   std::vector<MetaLog::EntityPtr> entities, stripped_entities;
   StringSet transfer_logs;
-  TableInfoMap replay_map(new HyperspaceTableCache(m_hyperspace, Global::toplevel_dir));
+  TableInfoMap replay_map(make_shared<HyperspaceTableCache>(m_hyperspace, Global::toplevel_dir));
   int priority = 0;
   String rsml_dir = Global::log_dir + "/" + rsml_definition->name();
 
   try {
     rsml_reader = 
-      new MetaLog::Reader(Global::log_dfs, rsml_definition, rsml_dir);
+      make_shared<MetaLog::Reader>(Global::log_dfs, rsml_definition, rsml_dir);
   }
   catch (Exception &e) {
     HT_FATALF("Problem reading RSML %s:  %s - %s", rsml_dir.c_str(),
@@ -708,8 +694,7 @@ void Apps::RangeServer::local_recover() {
 
   try {
     std::vector<MaintenanceTask*> maintenance_tasks;
-    boost::xtime now;
-    boost::xtime_get(&now, boost::TIME_UTC_);
+    auto now = chrono::steady_clock::now();
 
     rsml_reader->get_entities(entities);
 
@@ -762,9 +747,10 @@ void Apps::RangeServer::local_recover() {
 
       entities.swap(stripped_entities);
 
-      Global::rsml_writer = new MetaLog::Writer(Global::log_dfs,
-              rsml_definition, Global::log_dir + "/" + rsml_definition->name(),
-              entities);
+      Global::rsml_writer =
+        make_shared<MetaLog::Writer>(Global::log_dfs, rsml_definition,
+                                     Global::log_dir + "/" + rsml_definition->name(),
+                                     entities);
 
       replay_map.clear();
       for (auto & entity : entities) {
@@ -779,7 +765,7 @@ void Apps::RangeServer::local_recover() {
       }
 
       if (!replay_map.empty()) {
-        root_log_reader = new CommitLogReader(Global::log_dfs,
+        root_log_reader = make_shared<CommitLogReader>(Global::log_dfs,
                                               Global::log_dir + "/root");
         replay_log(replay_map, root_log_reader);
 
@@ -788,7 +774,7 @@ void Apps::RangeServer::local_recover() {
         // Perform any range specific post-replay tasks
         ranges.array.clear();
         replay_map.get_ranges(ranges);
-        foreach_ht(RangeData &rd, ranges.array) {
+        for (auto &rd : ranges.array) {
           rd.range->recovery_finalize();
           if (rd.range->get_state() == RangeState::SPLIT_LOG_INSTALLED ||
               rd.range->get_state() == RangeState::SPLIT_SHRUNK)
@@ -803,7 +789,7 @@ void Apps::RangeServer::local_recover() {
       m_context->live_map->merge(&replay_map);
 
       if (root_log_reader)
-        Global::root_log = new CommitLog(Global::log_dfs, Global::log_dir
+        Global::root_log = make_shared<CommitLog>(Global::log_dfs, Global::log_dir
                                          + "/root", m_props, root_log_reader.get());
 
       m_log_replay_barrier->set_root_complete();
@@ -829,7 +815,7 @@ void Apps::RangeServer::local_recover() {
 
       if (!replay_map.empty()) {
         metadata_log_reader =
-          new CommitLogReader(Global::log_dfs, Global::log_dir + "/metadata");
+          make_shared<CommitLogReader>(Global::log_dfs, Global::log_dir + "/metadata");
 
         replay_log(replay_map, metadata_log_reader);
 
@@ -838,7 +824,7 @@ void Apps::RangeServer::local_recover() {
         // Perform any range specific post-replay tasks
         ranges.array.clear();
         replay_map.get_ranges(ranges);
-        foreach_ht(RangeData &rd, ranges.array) {
+        for (auto &rd : ranges.array) {
           rd.range->recovery_finalize();
           if (rd.range->get_state() == RangeState::SPLIT_LOG_INSTALLED ||
               rd.range->get_state() == RangeState::SPLIT_SHRUNK)
@@ -853,7 +839,7 @@ void Apps::RangeServer::local_recover() {
       m_context->live_map->merge(&replay_map);
 
       if (root_log_reader || metadata_log_reader) {
-        Global::metadata_log = new CommitLog(Global::log_dfs,
+        Global::metadata_log = make_shared<CommitLog>(Global::log_dfs,
                                              Global::log_dir + "/metadata",
                                              m_props, metadata_log_reader.get());
         m_update_pipeline_metadata =
@@ -883,7 +869,7 @@ void Apps::RangeServer::local_recover() {
 
       if (!replay_map.empty()) {
         system_log_reader =
-          new CommitLogReader(Global::log_dfs, Global::log_dir + "/system");
+          make_shared<CommitLogReader>(Global::log_dfs, Global::log_dir + "/system");
 
         replay_log(replay_map, system_log_reader);
 
@@ -892,7 +878,7 @@ void Apps::RangeServer::local_recover() {
         // Perform any range specific post-replay tasks
         ranges.array.clear();
         replay_map.get_ranges(ranges);
-        foreach_ht (RangeData &rd, ranges.array) {
+        for (auto &rd : ranges.array) {
           rd.range->recovery_finalize();
           if (rd.range->get_state() == RangeState::SPLIT_LOG_INSTALLED ||
               rd.range->get_state() == RangeState::SPLIT_SHRUNK)
@@ -909,7 +895,7 @@ void Apps::RangeServer::local_recover() {
       // Create system log and wake up anybody waiting for system replay to
       // complete
       if (system_log_reader) {
-        Global::system_log = new CommitLog(Global::log_dfs,
+        Global::system_log = make_shared<CommitLog>(Global::log_dfs,
                                            Global::log_dir + "/system", m_props,
                                            system_log_reader.get());
         m_update_pipeline_system =
@@ -941,7 +927,7 @@ void Apps::RangeServer::local_recover() {
       }
 
       if (!replay_map.empty()) {
-        user_log_reader = new CommitLogReader(Global::log_dfs,
+        user_log_reader = make_shared<CommitLogReader>(Global::log_dfs,
                                               Global::log_dir + "/user");
 
         replay_log(replay_map, user_log_reader);
@@ -951,7 +937,7 @@ void Apps::RangeServer::local_recover() {
         // Perform any range specific post-replay tasks
         ranges.array.clear();
         replay_map.get_ranges(ranges);
-        foreach_ht(RangeData &rd, ranges.array) {
+        for (auto &rd : ranges.array) {
           rd.range->recovery_finalize();
           if (rd.range->get_state() == RangeState::SPLIT_LOG_INSTALLED ||
               rd.range->get_state() == RangeState::SPLIT_SHRUNK)
@@ -966,7 +952,7 @@ void Apps::RangeServer::local_recover() {
 
       m_context->live_map->merge(&replay_map);
 
-      Global::user_log = new CommitLog(Global::log_dfs, Global::log_dir
+      Global::user_log = make_shared<CommitLog>(Global::log_dfs, Global::log_dir
                                        + "/user", m_props, user_log_reader.get(), false);
 
       m_update_pipeline_user =
@@ -986,18 +972,18 @@ void Apps::RangeServer::local_recover() {
 
     }
     else {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
 
       /**
        *  Create the logs
        */
 
       if (root_log_reader)
-        Global::root_log = new CommitLog(Global::log_dfs, Global::log_dir
+        Global::root_log = make_shared<CommitLog>(Global::log_dfs, Global::log_dir
             + "/root", m_props, root_log_reader.get());
 
       if (root_log_reader || metadata_log_reader) {
-        Global::metadata_log = new CommitLog(Global::log_dfs, Global::log_dir
+        Global::metadata_log = make_shared<CommitLog>(Global::log_dfs, Global::log_dir
             + "/metadata", m_props, metadata_log_reader.get());
         m_update_pipeline_metadata =
           make_shared<UpdatePipeline>(m_context, m_query_cache, m_timer_handler,
@@ -1005,23 +991,24 @@ void Apps::RangeServer::local_recover() {
       }
 
       if (system_log_reader) {
-        Global::system_log = new CommitLog(Global::log_dfs, Global::log_dir
+        Global::system_log = make_shared<CommitLog>(Global::log_dfs, Global::log_dir
             + "/system", m_props, system_log_reader.get());
         m_update_pipeline_system =
           make_shared<UpdatePipeline>(m_context, m_query_cache, m_timer_handler,
                                       Global::system_log, m_log_flush_method_user);
       }
 
-      Global::user_log = new CommitLog(Global::log_dfs, Global::log_dir
+      Global::user_log = make_shared<CommitLog>(Global::log_dfs, Global::log_dir
           + "/user", m_props, user_log_reader.get(), false);
 
       m_update_pipeline_user =
         make_shared<UpdatePipeline>(m_context, m_query_cache, m_timer_handler,
                                     Global::user_log, m_log_flush_method_user);
-
-      Global::rsml_writer = new MetaLog::Writer(Global::log_dfs, rsml_definition,
-                                                Global::log_dir + "/" + rsml_definition->name(),
-                                                entities);
+      
+      Global::rsml_writer =
+        make_shared<MetaLog::Writer>(Global::log_dfs, rsml_definition,
+                                     Global::log_dir + "/" + rsml_definition->name(),
+                                     entities);
 
       m_log_replay_barrier->set_root_complete();
       m_log_replay_barrier->set_metadata_complete();
@@ -1102,21 +1089,21 @@ Apps::RangeServer::replay_load_range(TableInfoMap &replay_map,
      * Lazily create sys/METADATA table pointer
      */
     if (!Global::metadata_table) {
-      ScopedLock lock(Global::mutex);
+      lock_guard<mutex> lock(Global::mutex);
       uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
       if (!Global::range_locator)
-        Global::range_locator = new Hypertable::RangeLocator(m_props,
+        Global::range_locator = make_shared<Hypertable::RangeLocator>(m_props,
                 m_conn_manager, Global::hyperspace, timeout_ms);
       ApplicationQueueInterfacePtr aq = Global::app_queue;
-      Global::metadata_table = new Table(m_props, Global::range_locator,
+      Global::metadata_table = make_shared<Table>(m_props, Global::range_locator,
               m_conn_manager, Global::hyperspace, aq,
               m_namemap, TableIdentifier::METADATA_NAME, 0, timeout_ms);
     }
 
     schema = table_info->get_schema();
 
-    range = new Range(m_master_client, schema, range_entity,
-                      live_table_info.get());
+    range = make_shared<Range>(m_master_client, schema, range_entity,
+                               live_table_info.get());
 
     range->recovery_initialize();
 
@@ -1186,7 +1173,7 @@ void Apps::RangeServer::replay_log(TableInfoMap &replay_map,
           pair_loaded = false;
           continue;
         }
-        Locker<Range> lock(*range);
+        lock_guard<Range> lock(*range);
         do {
           range->add(key, value);
           if (ptr == end) {
@@ -1268,7 +1255,7 @@ Apps::RangeServer::compact(ResponseCallback *cb, const TableIdentifier &table,
       else {
         ranges.array.clear();
         table_info->get_ranges(ranges);
-        foreach_ht(RangeData &rd, ranges.array)
+        for (auto &rd : ranges.array)
           rd.range->set_compaction_type_needed(compaction_type);
         range_count = ranges.array.size();
       }
@@ -1286,7 +1273,7 @@ Apps::RangeServer::compact(ResponseCallback *cb, const TableIdentifier &table,
               Lib::RangeServer::Protocol::COMPACT_FLAG_METADATA) {
             ranges.array.clear();
             tables[i]->get_ranges(ranges);
-            foreach_ht(RangeData &rd, ranges.array)
+            for (auto &rd : ranges.array)
               rd.range->set_compaction_type_needed(compaction_type);
             range_count += ranges.array.size();
           }
@@ -1294,7 +1281,7 @@ Apps::RangeServer::compact(ResponseCallback *cb, const TableIdentifier &table,
                    Lib::RangeServer::Protocol::COMPACT_FLAG_ROOT) {
             ranges.array.clear();
             tables[i]->get_ranges(ranges);
-            foreach_ht(RangeData &rd, ranges.array) {
+            for (auto &rd : ranges.array) {
               if (rd.range->is_root()) {
                 rd.range->set_compaction_type_needed(compaction_type);
                 range_count++;
@@ -1307,7 +1294,7 @@ Apps::RangeServer::compact(ResponseCallback *cb, const TableIdentifier &table,
           if ((flags & Lib::RangeServer::Protocol::COMPACT_FLAG_SYSTEM) == Lib::RangeServer::Protocol::COMPACT_FLAG_SYSTEM) {
             ranges.array.clear();
             tables[i]->get_ranges(ranges);
-            foreach_ht(RangeData &rd, ranges.array)
+            for (auto &rd : ranges.array)
               rd.range->set_compaction_type_needed(compaction_type);
             range_count += ranges.array.size();
           }
@@ -1316,7 +1303,7 @@ Apps::RangeServer::compact(ResponseCallback *cb, const TableIdentifier &table,
           if ((flags & Lib::RangeServer::Protocol::COMPACT_FLAG_USER) == Lib::RangeServer::Protocol::COMPACT_FLAG_USER) {
             ranges.array.clear();
             tables[i]->get_ranges(ranges);
-            foreach_ht(RangeData &rd, ranges.array)
+            for (auto &rd : ranges.array)
               rd.range->set_compaction_type_needed(compaction_type);
             range_count += ranges.array.size();
           }
@@ -1367,7 +1354,7 @@ namespace {
 
   void do_metadata_sync(Ranges &ranges, TableMutatorPtr &mutator,
                         const char *table_id, bool do_start_row, bool do_location) {
-    foreach_ht(RangeData &rd, ranges.array)
+    for (auto &rd : ranges.array)
       do_metadata_sync(rd, mutator, table_id, do_start_row, do_location);
   }
 
@@ -1401,16 +1388,16 @@ Apps::RangeServer::metadata_sync(ResponseCallback *cb, const char *table_id,
     return;
 
   if (!Global::metadata_table) {
-    ScopedLock lock(Global::mutex);
+    lock_guard<mutex> lock(Global::mutex);
     // double-check locking (works fine on x86 and amd64 but may fail
     // on other archs without using a memory barrier
     if (!Global::metadata_table) {
       uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
       if (!Global::range_locator)
-        Global::range_locator = new Hypertable::RangeLocator(m_props,
+        Global::range_locator = make_shared<Hypertable::RangeLocator>(m_props,
                 m_conn_manager, Global::hyperspace, timeout_ms);
       ApplicationQueueInterfacePtr aq = Global::app_queue;
-      Global::metadata_table = new Table(m_props, Global::range_locator,
+      Global::metadata_table = make_shared<Table>(m_props, Global::range_locator,
               m_conn_manager, Global::hyperspace, aq,
               m_namemap, TableIdentifier::METADATA_NAME, 0, timeout_ms);
     }
@@ -1437,7 +1424,7 @@ Apps::RangeServer::metadata_sync(ResponseCallback *cb, const char *table_id,
         return;
       }
 
-      mutator = Global::metadata_table->create_mutator();
+      mutator.reset( Global::metadata_table->create_mutator() );
 
       ranges.array.clear();
       table_info->get_ranges(ranges);
@@ -1451,7 +1438,7 @@ Apps::RangeServer::metadata_sync(ResponseCallback *cb, const char *table_id,
 
       m_context->live_map->get_all(tables);
 
-      mutator = Global::metadata_table->create_mutator();
+      mutator.reset( Global::metadata_table->create_mutator() );
 
       for (size_t i=0; i<tables.size(); i++) {
 
@@ -1597,13 +1584,13 @@ Apps::RangeServer::create_scanner(Response::Callback::CreateScanner *cb,
                 != Error::OK)
           HT_ERRORF("Problem sending OK response - %s", Error::get_text(error));
         range->decrement_scan_counter();
-        Locker<LoadStatistics> lock(*Global::load_statistics);
+        lock_guard<LoadStatistics> lock(*Global::load_statistics);
         Global::load_statistics->add_cached_scan_data(1, cell_count, ext_len);
         return;
       }
     }
     std::set<uint8_t> columns;
-    scan_ctx = new ScanContext(range->get_scan_revision(cb->event()->header.timeout_ms),
+    scan_ctx = make_shared<ScanContext>(range->get_scan_revision(cb->event()->header.timeout_ms),
                                &scan_spec, &range_spec, schema, &columns);
     scan_ctx->timeout_ms = cb->event()->header.timeout_ms;
 
@@ -1625,7 +1612,7 @@ Apps::RangeServer::create_scanner(Response::Callback::CreateScanner *cb,
     int64_t output_cells = scanner->get_output_cells();
 
     {
-      Locker<LoadStatistics> lock(*Global::load_statistics);
+      lock_guard<LoadStatistics> lock(*Global::load_statistics);
       Global::load_statistics->add_scan_data(1,
                                              profile_data.cells_scanned,
                                              profile_data.cells_returned,
@@ -1770,7 +1757,7 @@ Apps::RangeServer::fetch_scanblock(Response::Callback::CreateScanner *cb,
     //HT_INFOF("scanner=%d cell_count=%d %s", (int)scanner_id, (int)cell_count, profile_data.to_string().c_str());
 
     {
-      Locker<LoadStatistics> lock(*Global::load_statistics);
+      lock_guard<LoadStatistics> lock(*Global::load_statistics);
       Global::load_statistics->add_scan_data(0,
                                              profile_data.cells_scanned,
                                              profile_data.cells_returned,
@@ -1859,16 +1846,16 @@ Apps::RangeServer::load_range(ResponseCallback *cb, const TableIdentifier &table
 
     // Lazily create sys/METADATA table pointer
     if (!Global::metadata_table) {
-      ScopedLock lock(Global::mutex);
+      lock_guard<mutex> lock(Global::mutex);
       // double-check locking (works fine on x86 and amd64 but may fail
       // on other archs without using a memory barrier
       if (!Global::metadata_table) {
         uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
         if (!Global::range_locator)
-          Global::range_locator = new Hypertable::RangeLocator(m_props,
+          Global::range_locator = make_shared<Hypertable::RangeLocator>(m_props,
                   m_conn_manager, Global::hyperspace, timeout_ms);
         ApplicationQueueInterfacePtr aq = Global::app_queue;
-        Global::metadata_table = new Table(m_props, Global::range_locator,
+        Global::metadata_table = make_shared<Table>(m_props, Global::range_locator,
                 m_conn_manager, Global::hyperspace, aq,
                 m_namemap, TableIdentifier::METADATA_NAME, 0, timeout_ms);
       }
@@ -1878,7 +1865,7 @@ Apps::RangeServer::load_range(ResponseCallback *cb, const TableIdentifier &table
      * Queue "range_start_row" update for sys/RS_METRICS table
      */
     {
-      ScopedLock lock(m_pending_metrics_mutex);
+      lock_guard<mutex> lock(m_pending_metrics_mutex);
       Cell cell;
 
       if (m_pending_metrics_updates == 0)
@@ -1915,23 +1902,23 @@ Apps::RangeServer::load_range(ResponseCallback *cb, const TableIdentifier &table
 
     HT_MAYBE_FAIL_X("metadata-load-range-1", table.is_metadata());
 
-    range = new Range(m_master_client, table, schema, range_spec,
-            table_info.get(), range_state, needs_compaction);
+    range = make_shared<Range>(m_master_client, table, schema, range_spec,
+                               table_info.get(), range_state, needs_compaction);
 
     HT_MAYBE_FAIL_X("metadata-load-range-2", table.is_metadata());
 
     // Create ROOT, METADATA, or SYSTEM log if necessary
     if (!table.is_user()) {
-      ScopedLock lock(Global::mutex);
+      lock_guard<mutex> lock(Global::mutex);
       if (table.is_metadata()) {
         if (is_root) {
           Global::log_dfs->mkdirs(Global::log_dir + "/root");
-          Global::root_log = new CommitLog(Global::log_dfs, Global::log_dir
+          Global::root_log = make_shared<CommitLog>(Global::log_dfs, Global::log_dir
                                            + "/root", m_props);
         }
         if (Global::metadata_log == 0) {
           Global::log_dfs->mkdirs(Global::log_dir + "/metadata");
-          Global::metadata_log = new CommitLog(Global::log_dfs,
+          Global::metadata_log = make_shared<CommitLog>(Global::log_dfs,
                                                Global::log_dir + "/metadata", m_props);
           m_update_pipeline_metadata =
             make_shared<UpdatePipeline>(m_context, m_query_cache, m_timer_handler,
@@ -1940,7 +1927,7 @@ Apps::RangeServer::load_range(ResponseCallback *cb, const TableIdentifier &table
       }
       else if (table.is_system() && Global::system_log == 0) {
         Global::log_dfs->mkdirs(Global::log_dir + "/system");
-        Global::system_log = new CommitLog(Global::log_dfs,
+        Global::system_log = make_shared<CommitLog>(Global::log_dfs,
                                            Global::log_dir + "/system", m_props);
         m_update_pipeline_system =
           make_shared<UpdatePipeline>(m_context, m_query_cache, m_timer_handler,
@@ -1960,7 +1947,7 @@ Apps::RangeServer::load_range(ResponseCallback *cb, const TableIdentifier &table
       /**
        * Take ownership of the range
        */
-      mutator = Global::metadata_table->create_mutator();
+      mutator.reset(Global::metadata_table->create_mutator());
 
       key.row = metadata_key_str.c_str();
       key.row_len = strlen(metadata_key_str.c_str());
@@ -1992,7 +1979,7 @@ Apps::RangeServer::load_range(ResponseCallback *cb, const TableIdentifier &table
     HT_MAYBE_FAIL_X("metadata-load-range-3", table.is_metadata());
 
     // make sure that we don't have a clock skew
-    // poll() timeout is in milliseconds, revision and now is in nanoseconds
+    // timeout is in milliseconds, revision and now is in nanoseconds
     int64_t now = Hypertable::get_ts64();
     int64_t revision = range->get_scan_revision(cb->event()->header.timeout_ms);
     if (revision > now) {
@@ -2032,7 +2019,7 @@ Apps::RangeServer::acknowledge_load(Response::Callback::AcknowledgeLoad *cb,
   RangePtr range;
   map<QualifiedRangeSpec, int> error_map;
 
-  foreach_ht (const QualifiedRangeSpec &rr, specs) {
+  for (const auto &rr : specs) {
 
     if (!m_log_replay_barrier->wait(cb->event()->deadline(),
                                     rr.table, rr.range))
@@ -2082,18 +2069,14 @@ Apps::RangeServer::acknowledge_load(Response::Callback::AcknowledgeLoad *cb,
 void
 Apps::RangeServer::update_schema(ResponseCallback *cb, 
         const TableIdentifier &table, const char *schema_str) {
-  TableInfoPtr table_info;
-  SchemaPtr schema;
 
   HT_INFOF("Updating schema for: %s schema = %s", table.id, schema_str);
 
   try {
-
-    schema = Schema::new_instance(schema_str);
-
+    SchemaPtr schema( Schema::new_instance(schema_str) );
+    TableInfoPtr table_info;
     if (m_context->live_map->lookup(table.id, table_info))
       table_info->update_schema(schema);
-
   }
   catch(Exception &e) {
     HT_ERROR_OUT << e << HT_END;
@@ -2236,7 +2219,8 @@ Apps::RangeServer::update(Response::Callback::Update *cb, uint64_t cluster_id,
 }
 
 void
-Apps::RangeServer::batch_update(std::vector<UpdateRecTable *> &updates, boost::xtime expire_time) {
+Apps::RangeServer::batch_update(std::vector<UpdateRecTable *> &updates,
+                                ClockT::time_point expire_time) {
   UpdateContext *uc = new UpdateContext(updates, expire_time);
   m_update_pipeline_user->add(uc);
 }
@@ -2269,11 +2253,11 @@ Apps::RangeServer::drop_table(ResponseCallback *cb, const TableIdentifier &table
   // Set "drop" bit on all ranges
   ranges.array.clear();
   table_info->get_ranges(ranges);
-  foreach_ht(RangeData &rd, ranges.array)
+  for (auto &rd : ranges.array)
     rd.range->drop();
 
   // Disable maintenance for range and remove the range from the RSML
-  foreach_ht(RangeData &rd, ranges.array) {
+  for (auto &rd : ranges.array) {
     rd.range->disable_maintenance();
     try {
       MetaLogEntityRangePtr entity = rd.range->metalog_entity();
@@ -2289,7 +2273,7 @@ Apps::RangeServer::drop_table(ResponseCallback *cb, const TableIdentifier &table
   AccessGroupSpecs &ag_specs = schema->get_access_groups();
 
   // create METADATA table mutator for clearing 'Location' columns
-  mutator = Global::metadata_table->create_mutator();
+  mutator.reset(Global::metadata_table->create_mutator());
 
   KeySpec key;
 
@@ -2297,7 +2281,7 @@ Apps::RangeServer::drop_table(ResponseCallback *cb, const TableIdentifier &table
     // For each range in dropped table, Set the 'drop' bit and clear
     // the 'Location' column of the corresponding METADATA entry
     metadata_prefix = String("") + table.id + ":";
-    foreach_ht (RangeData &rd, ranges.array) {
+    for (auto &rd : ranges.array) {
       // Mark Location column
       metadata_key = metadata_prefix + rd.range->end_row();
       key.row = metadata_key.c_str();
@@ -2337,7 +2321,7 @@ void Apps::RangeServer::dump(ResponseCallback *cb, const char *outfile,
 
     m_context->live_map->get_ranges(ranges);
     time_t now = time(0);
-    foreach_ht (RangeData &rd, ranges.array) {
+    for (auto &rd : ranges.array) {
       rd.data = rd.range->get_maintenance_data(ranges.arena, now, 0);
       out << "RANGE " << rd.range->get_name() << "\n";
       out << *rd.data << "\n";
@@ -2347,7 +2331,7 @@ void Apps::RangeServer::dump(ResponseCallback *cb, const char *outfile,
 
     // dump keys
     if (!nokeys) {
-      foreach_ht (RangeData &rd, ranges.array)
+      for (auto &rd : ranges.array)
         for (ag_data = rd.data->agdata; ag_data; ag_data = ag_data->next)
           ag_data->ag->dump_keys(out);
     }
@@ -2406,7 +2390,7 @@ Apps::RangeServer::dump_pseudo_table(ResponseCallback *cb, const TableIdentifier
     Ranges ranges;
     TableInfoPtr table_info;
     CellListScanner *scanner;
-    ScanContextPtr scan_ctx = new ScanContext();
+    ScanContextPtr scan_ctx = make_shared<ScanContext>();
     Key key;
     ByteString value;
     ColumnFamilySpec *cf_spec;
@@ -2423,7 +2407,7 @@ Apps::RangeServer::dump_pseudo_table(ResponseCallback *cb, const TableIdentifier
     scan_ctx->timeout_ms = cb->event()->header.timeout_ms;
 
     table_info->get_ranges(ranges);
-    foreach_ht(RangeData &rd, ranges.array) {
+    for (auto &rd : ranges.array) {
       scanner = rd.range->create_scanner_pseudo_table(scan_ctx, pseudo_table);
       while (scanner->get(key, value)) {
         cf_spec = Global::pseudo_tables->cellstore_index->get_column_family(key.column_family_code);
@@ -2560,7 +2544,7 @@ void
 
   HT_ON_OBJ_SCOPE_EXIT(*this, &Apps::RangeServer::test_and_set_get_statistics_outstanding, false);
 
-  ScopedLock lock(m_stats_mutex);
+  lock_guard<mutex> lock(m_stats_mutex);
   RangesPtr ranges = Global::get_ranges();
   int64_t timestamp = Hypertable::get_ts64();
   time_t now = (time_t)(timestamp/1000000000LL);
@@ -2583,7 +2567,7 @@ void
 
   uint64_t disk_total = 0;
   uint64_t disk_avail = 0;
-  foreach_ht (struct FsStat &fss, m_stats->system.fs_stat) {
+  for (auto &fss : m_stats->system.fs_stat) {
     disk_total += fss.total;
     disk_avail += fss.avail;
   }
@@ -2632,14 +2616,14 @@ void
   TableMutatorPtr mutator;
   if (now > m_next_metrics_update) {
     if (!Global::rs_metrics_table) {
-      ScopedLock lock(Global::mutex);
+      lock_guard<mutex> lock(Global::mutex);
       try {
         uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
         if (!Global::range_locator)
-          Global::range_locator = new Hypertable::RangeLocator(m_props, m_conn_manager,
+          Global::range_locator = make_shared<Hypertable::RangeLocator>(m_props, m_conn_manager,
                                                                Global::hyperspace, timeout_ms);
         ApplicationQueueInterfacePtr aq = Global::app_queue;
-        Global::rs_metrics_table = new Table(m_props, Global::range_locator, m_conn_manager,
+        Global::rs_metrics_table = make_shared<Table>(m_props, Global::range_locator, m_conn_manager,
                                              Global::hyperspace, aq,
                                              m_namemap, "sys/RS_METRICS", 0, timeout_ms);
       }
@@ -2650,10 +2634,10 @@ void
     }
     if (Global::rs_metrics_table) {
       CellsBuilder *pending_metrics_updates = 0;
-      mutator = Global::rs_metrics_table->create_mutator();
+      mutator.reset(Global::rs_metrics_table->create_mutator());
 
       {
-        ScopedLock lock(m_pending_metrics_mutex);
+        lock_guard<mutex> lock(m_pending_metrics_mutex);
         pending_metrics_updates = m_pending_metrics_updates;
         m_pending_metrics_updates = 0;
       }
@@ -2684,10 +2668,10 @@ void
   m_stats->tables.clear();
 
   if (mutator || !ranges) {
-    ranges = new Ranges();
+    ranges = make_shared<Ranges>();
     m_context->live_map->get_ranges(*ranges);
   }
-  foreach_ht (RangeData &rd, ranges->array) {
+  for (auto &rd : ranges->array) {
 
     if (rd.data == 0)
       rd.data = rd.range->get_maintenance_data(ranges->arena, now, 0, mutator.get());
@@ -3001,13 +2985,13 @@ void Apps::RangeServer::replay_fragments(ResponseCallback *cb, int64_t op_id,
   cb->response_ok();
 
   try {
-    log_reader = new CommitLogReader(Global::log_dfs, log_dir, fragments);
+    log_reader = make_shared<CommitLogReader>(Global::log_dfs, log_dir, fragments);
     StringSet receivers;
     receiver_plan.get_locations(receivers);
     CommAddress addr;
     uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
     Timer timer(replay_timeout, true);
-    foreach_ht(const String &receiver, receivers) {
+    for (const auto &receiver : receivers) {
       addr.set_proxy(receiver);
       m_conn_manager->add(addr, timeout_ms, "RangeServer");
       if (!m_conn_manager->wait_for_connection(addr, timer.remaining())) {
@@ -3144,10 +3128,10 @@ void Apps::RangeServer::phantom_load(ResponseCallback *cb, const String &locatio
   HT_MAYBE_FAIL_X("phantom-load-user", specs[0].table.is_user());
 
   {
-    ScopedLock lock(m_failover_mutex);
+    lock_guard<mutex> lock(m_failover_mutex);
     failover_map_it = m_failover_map.find(location);
     if (failover_map_it == m_failover_map.end()) {
-      phantom_range_map = new PhantomRangeMap(plan_generation);
+      phantom_range_map = make_shared<PhantomRangeMap>(plan_generation);
       m_failover_map[location] = phantom_range_map;
     }
     else
@@ -3155,7 +3139,7 @@ void Apps::RangeServer::phantom_load(ResponseCallback *cb, const String &locatio
   }
 
   {
-    Locker<PhantomRangeMap> lock(*phantom_range_map);
+    lock_guard<PhantomRangeMap> lock(*phantom_range_map);
 
     // check for out-of-order phantom_load requests
     if (plan_generation < phantom_range_map->get_plan_generation())
@@ -3222,7 +3206,7 @@ void Apps::RangeServer::phantom_update(Response::Callback::PhantomUpdate *cb,
   HT_MAYBE_FAIL_X("phantom-update-metadata", range.table.is_metadata());
 
   {
-    ScopedLock lock(m_failover_mutex);
+    lock_guard<mutex> lock(m_failover_mutex);
     failover_map_it = m_failover_map.find(location);
     if (failover_map_it == m_failover_map.end()) {
       HT_THROW(Error::RANGESERVER_PHANTOM_RANGE_MAP_NOT_FOUND,
@@ -3232,7 +3216,7 @@ void Apps::RangeServer::phantom_update(Response::Callback::PhantomUpdate *cb,
   }
 
   {
-    Locker<PhantomRangeMap> lock(*phantom_range_map);
+    lock_guard<PhantomRangeMap> lock(*phantom_range_map);
 
     // verify plan generation
     if (plan_generation != phantom_range_map->get_plan_generation())
@@ -3282,7 +3266,7 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
   cb->response_ok();
 
   {
-    ScopedLock lock(m_failover_mutex);
+    lock_guard<mutex> lock(m_failover_mutex);
     failover_map_it = m_failover_map.find(location);
     if (failover_map_it == m_failover_map.end()) {
       try {
@@ -3300,7 +3284,7 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
   }
 
   try {
-    Locker<PhantomRangeMap> lock(*phantom_range_map);
+    lock_guard<PhantomRangeMap> lock(*phantom_range_map);
 
     if (phantom_range_map->prepared()) {
       try {
@@ -3316,7 +3300,7 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
 
     phantom_map = phantom_range_map->get_tableinfo_map();
 
-    foreach_ht(const QualifiedRangeSpec &rr, specs) {
+    for (const auto &rr : specs) {
       phantom_table_info = 0;
       HT_ASSERT(phantom_map->lookup(rr.table.id, phantom_table_info));
       TableInfoPtr table_info;
@@ -3341,16 +3325,16 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
         continue;
 
       if (!Global::metadata_table) {
-        ScopedLock lock(Global::mutex);
+        lock_guard<mutex> lock(Global::mutex);
         // TODO double-check locking (works fine on x86 and amd64 but may fail
         // on other archs without using a memory barrier
         if (!Global::metadata_table) {
           uint32_t timeout_ms = m_props->get_i32("Hypertable.Request.Timeout");
           if (!Global::range_locator)
-            Global::range_locator = new Hypertable::RangeLocator(m_props,
+            Global::range_locator = make_shared<Hypertable::RangeLocator>(m_props,
                     m_conn_manager, Global::hyperspace, timeout_ms);
           ApplicationQueueInterfacePtr aq = Global::app_queue;
-          Global::metadata_table = new Table(m_props, Global::range_locator,
+          Global::metadata_table = make_shared<Table>(m_props, Global::range_locator,
                   m_conn_manager, Global::hyperspace, aq,
                   m_namemap, TableIdentifier::METADATA_NAME, 0, timeout_ms);
         }
@@ -3369,7 +3353,7 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
       HT_DEBUG_OUT << "Range object created for range " << rr << HT_END;
     }
 
-    CommitLog *log {};
+    CommitLogPtr log;
     for (const QualifiedRangeSpec &rr : specs) {
       bool is_empty = true;
 
@@ -3385,19 +3369,19 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
 
       RangePtr range = phantom_range->get_range();
       if (!rr.table.is_user()) {
-        ScopedLock lock(Global::mutex);
+        lock_guard<mutex> lock(Global::mutex);
         if (rr.table.is_metadata()) {
           if (rr.is_root()) {
             if (!Global::root_log) {
               Global::log_dfs->mkdirs(Global::log_dir + "/root");
               if (!Global::root_log)
-                Global::root_log = new CommitLog(Global::log_dfs,
+                Global::root_log = make_shared<CommitLog>(Global::log_dfs,
                                                  Global::log_dir + "/root", m_props);
             }
           }
           if (!Global::metadata_log) {
             Global::log_dfs->mkdirs(Global::log_dir + "/metadata");
-            Global::metadata_log = new CommitLog(Global::log_dfs,
+            Global::metadata_log = make_shared<CommitLog>(Global::log_dfs,
                                                  Global::log_dir + "/metadata", m_props);
             m_update_pipeline_metadata =
               make_shared<UpdatePipeline>(m_context, m_query_cache, m_timer_handler,
@@ -3408,7 +3392,7 @@ void Apps::RangeServer::phantom_prepare_ranges(ResponseCallback *cb, int64_t op_
         else if (rr.table.is_system()) {
           if (!Global::system_log) {
             Global::log_dfs->mkdirs(Global::log_dir + "/system");
-            Global::system_log = new CommitLog(Global::log_dfs,
+            Global::system_log = make_shared<CommitLog>(Global::log_dfs,
                                                Global::log_dir + "/system", m_props);
             m_update_pipeline_system =
               make_shared<UpdatePipeline>(m_context, m_query_cache, m_timer_handler,
@@ -3510,7 +3494,7 @@ void Apps::RangeServer::phantom_commit_ranges(ResponseCallback *cb, int64_t op_i
   if (live(specs)) {
     // Remove phantom map
     {
-      ScopedLock lock(m_failover_mutex);
+      lock_guard<mutex> lock(m_failover_mutex);
       m_failover_map.erase(location);
     }
     // Report success
@@ -3527,7 +3511,7 @@ void Apps::RangeServer::phantom_commit_ranges(ResponseCallback *cb, int64_t op_i
   }
 
   {
-    ScopedLock lock(m_failover_mutex);
+    lock_guard<mutex> lock(m_failover_mutex);
     failover_map_it = m_failover_map.find(location);
     if (failover_map_it == m_failover_map.end()) {
       try {
@@ -3546,7 +3530,7 @@ void Apps::RangeServer::phantom_commit_ranges(ResponseCallback *cb, int64_t op_i
   }
 
   try {
-    Locker<PhantomRangeMap> lock(*phantom_range_map);
+    lock_guard<PhantomRangeMap> lock(*phantom_range_map);
 
     // Double-check to see if concurrent method call flipped them live
     if (live(specs))
@@ -3557,7 +3541,7 @@ void Apps::RangeServer::phantom_commit_ranges(ResponseCallback *cb, int64_t op_i
 
     phantom_map = phantom_range_map->get_tableinfo_map();
 
-    foreach_ht(const QualifiedRangeSpec &rr, specs) {
+    for (const auto &rr : specs) {
 
       RangePtr range;
       PhantomRangePtr phantom_range;
@@ -3598,7 +3582,7 @@ void Apps::RangeServer::phantom_commit_ranges(ResponseCallback *cb, int64_t op_i
         String metadata_key_str = format("%s:%s", rr.table.id,rr.range.end_row);
 
         if (!mutator)
-          mutator = Global::metadata_table->create_mutator();
+          mutator.reset(Global::metadata_table->create_mutator());
 
         // Take ownership of the range
         key.row = metadata_key_str.c_str();
@@ -3650,7 +3634,7 @@ void Apps::RangeServer::phantom_commit_ranges(ResponseCallback *cb, int64_t op_i
              location.c_str(), (Lld)op_id);
 
     {
-      ScopedLock lock(m_failover_mutex);
+      lock_guard<mutex> lock(m_failover_mutex);
       m_failover_map.erase(location);
     }
 
@@ -3695,7 +3679,7 @@ void Apps::RangeServer::phantom_commit_ranges(ResponseCallback *cb, int64_t op_i
 bool Apps::RangeServer::live(const vector<QualifiedRangeSpec> &ranges) {
   TableInfoPtr table_info;
   size_t live_count = 0;
-  foreach_ht (const QualifiedRangeSpec &qrs, ranges) {
+  for (const auto &qrs : ranges) {
     if (m_context->live_map->lookup(qrs.table.id, table_info)) {
       if (table_info->has_range(qrs.range))
         live_count++;
@@ -3728,8 +3712,8 @@ void Apps::RangeServer::verify_schema(TableInfoPtr &table_info, uint32_t generat
   DynamicBuffer valbuf;
   SchemaPtr schema = table_info->get_schema();
 
-  if (schema.get() == 0 || schema->get_generation() < generation) {
-    schema = 0;
+  if (!schema || schema->get_generation() < generation) {
+    schema.reset();
     TableSchemaMap::const_iterator it;
     if (table_schemas &&
         (it = table_schemas->find(table_info->identifier().id))
@@ -3740,7 +3724,7 @@ void Apps::RangeServer::verify_schema(TableInfoPtr &table_info, uint32_t generat
       String tablefile = Global::toplevel_dir + "/tables/"
           + table_info->identifier().id;
       m_hyperspace->attr_get(tablefile, "schema", valbuf);
-      schema = Schema::new_instance((const char *)valbuf.base);
+      schema.reset( Schema::new_instance((const char *)valbuf.base) );
     }
 
     table_info->update_schema(schema);
@@ -3763,7 +3747,6 @@ void Apps::RangeServer::do_maintenance() {
   HT_ASSERT(m_timer_handler);
 
   try {
-    boost::xtime now;
 
     // Purge expired scanners
     m_scanner_map.purge_expired(m_scanner_ttl);
@@ -3777,8 +3760,8 @@ void Apps::RangeServer::do_maintenance() {
     m_maintenance_scheduler->schedule();
 
     // Check for control files
-    boost::xtime_get(&now, TIME_UTC_);
-    if (xtime_diff_millis(m_last_control_file_check, now) >= (int64_t)m_control_file_check_interval) {
+    auto now = chrono::steady_clock::now();
+    if (now - m_last_control_file_check >= chrono::milliseconds(m_control_file_check_interval)) {
 #ifndef _WIN32
       if (FileUtils::exists(System::install_dir + "/run/query-profile")) {
 #else
@@ -3787,7 +3770,7 @@ void Apps::RangeServer::do_maintenance() {
       if (FileUtils::exists(data_dir.string() + "/query-profile")) {
 #endif
         if (!m_profile_query) {
-          ScopedLock lock(m_profile_mutex);
+          lock_guard<mutex> lock(m_profile_mutex);
 #ifndef _WIN32
           String output_fname = System::install_dir + "/run/query-profile.output";
 #else
@@ -3799,7 +3782,7 @@ void Apps::RangeServer::do_maintenance() {
       }
       else {
 	if (m_profile_query) {
-          ScopedLock lock(m_profile_mutex);
+          lock_guard<mutex> lock(m_profile_mutex);
 	  m_profile_query_out.close();
 	  m_profile_query = false;
 	}
@@ -3823,7 +3806,7 @@ Apps::RangeServer::group_commit_add(EventPtr &event, uint64_t cluster_id,
                               SchemaPtr &schema, const TableIdentifier &table,
                               uint32_t count, StaticBuffer &buffer,
                               uint32_t flags) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (!m_group_commit) {
     m_group_commit = std::make_shared<GroupCommit>(this);
     HT_ASSERT(!m_group_commit_timer_handler);

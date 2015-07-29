@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,7 +19,7 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
 
 #include "TableCache.h"
 
@@ -44,7 +44,7 @@ TableCache::~TableCache() {
 }
 
 TablePtr TableCache::get(const string &table_name, int32_t flags) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return get_unlocked(table_name, flags);
 }
 
@@ -58,9 +58,10 @@ TablePtr TableCache::get_unlocked(const string &table_name, int32_t flags) {
     return it->second;
   }
 
-  TablePtr table = new Table(m_props, m_range_locator, m_conn_manager, 
-                             m_hyperspace, m_app_queue, m_namemap, table_name, 
-                             flags, m_timeout_ms);
+  TablePtr table = 
+    make_shared<Table>(m_props, m_range_locator, m_conn_manager, 
+                       m_hyperspace, m_app_queue, m_namemap, table_name, 
+                       flags, m_timeout_ms);
 
   m_table_map.insert(make_pair(table_name, table));
 
@@ -69,7 +70,7 @@ TablePtr TableCache::get_unlocked(const string &table_name, int32_t flags) {
 
 bool TableCache::get_schema_str(const string &table_name, string &schema, bool with_ids)
 {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   TableMap::const_iterator it = m_table_map.find(table_name);
 
   if (it == m_table_map.end())
@@ -79,17 +80,17 @@ bool TableCache::get_schema_str(const string &table_name, string &schema, bool w
 }
 
 bool TableCache::get_schema(const string &table_name, SchemaPtr &output_schema) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   TableMap::const_iterator it = m_table_map.find(table_name);
 
   if (it == m_table_map.end())
     return false;
-  output_schema = new Schema(*(it->second->schema()));
+  output_schema = make_shared<Schema>(*(it->second->schema()));
   return true;
 }
 
 bool TableCache::remove(const string &table_name) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   bool found = false;
   TableMap::iterator it = m_table_map.find(table_name);
 
@@ -101,7 +102,7 @@ bool TableCache::remove(const string &table_name) {
 }
 
 void TableCache::reconnected() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   for( TableMap::iterator it = m_table_map.begin(); it != m_table_map.end(); ++it)
     (*it).second->invalidate();
 }

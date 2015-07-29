@@ -50,7 +50,7 @@ namespace Hypertable {
     void cancel();
 
     bool is_cancelled() {
-      ScopedLock lock(m_outstanding_mutex);
+      std::lock_guard<std::mutex> lock(m_outstanding_mutex);
       return _is_cancelled();
     }
 
@@ -72,12 +72,11 @@ namespace Hypertable {
     bool m_cancelled;
     typedef std::set<TableScannerAsync*> ScannerSet;
     ScannerSet m_scanner_set;
-    ScannerSet m_scanners_owned;
 
     typedef set<TableMutatorAsync*> MutatorSet;
     MutatorSet m_mutator_set;
   };
-  typedef intrusive_ptr<FutureCallback> FutureCallbackPtr;
+  typedef std::shared_ptr<FutureCallback> FutureCallbackPtr;
 }
 
 #endif // HYPERTABLE_FUTURECALLBACK_H

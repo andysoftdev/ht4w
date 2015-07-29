@@ -19,22 +19,26 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include "Common/Init.h"
-#include <cstdio>
-#include <string>
-#include <vector>
+#include <Common/Compat.h>
+
+#include <Hyperspace/Config.h>
+#include <Hyperspace/Session.h>
+#include <Hyperspace/HsCommandInterpreter.h>
+#include <Hyperspace/HsClientState.h>
+
+#include <Tools/Lib/CommandShell.h>
+
+#include <AsyncComm/Comm.h>
+
+#include <Common/FailureInducer.h>
+#include <Common/Init.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/thread/exceptions.hpp>
 
-#include "Common/FailureInducer.h"
-#include "Hyperspace/Config.h"
-#include "Hyperspace/Session.h"
-#include "Hyperspace/HsCommandInterpreter.h"
-#include "Hyperspace/HsClientState.h"
-#include "Tools/Lib/CommandShell.h"
-#include "AsyncComm/Comm.h"
+#include <cstdio>
+#include <string>
+#include <vector>
 
 using namespace Hypertable;
 using namespace Config;
@@ -71,11 +75,11 @@ int main(int argc, char **argv) {
     int32_t timeout = has("timeout") ? get_i32("timeout") : 10000;
     silent = has("silent") && get_bool("silent");
 
-    session_ptr = new Hyperspace::Session(comm, properties);
+    session_ptr = make_shared<Hyperspace::Session>(comm, properties);
     session_ptr->add_callback(&session_handler);
 
     interp = session_ptr->create_hs_interpreter();
-    shell = new CommandShell("hyperspace", "Hyperspace", interp, properties);
+    shell = make_shared<CommandShell>("hyperspace", "Hyperspace", interp, properties);
     interp->set_silent(shell->silent());
     interp->set_test_mode(shell->test_mode());
 
@@ -88,7 +92,7 @@ int main(int argc, char **argv) {
     if(!session_ptr->wait_for_connection(timeout)) {
       if (!silent)
         cout << "Hyperspace CRITICAL - connect error" << endl;
-      _exit(2);
+      quick_exit(2);
     }
 
     HsClientState::exit_status = shell->run();
@@ -102,7 +106,7 @@ int main(int argc, char **argv) {
         cout << " - " << msg;
       cout << endl;
     }
-    _exit(2);
+    quick_exit(2);
   }
   return 0;
 }

@@ -19,25 +19,24 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_LOADBALANCER_H
-#define HYPERTABLE_LOADBALANCER_H
-
-#include "Common/Crontab.h"
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
-
-#include "Hypertable/Lib/BalancePlan.h"
+#ifndef Hypertable_Master_LoadBalancer_h
+#define Hypertable_Master_LoadBalancer_h
 
 #include "RangeServerConnection.h"
 #include "RangeServerStatistics.h"
 #include "Context.h"
 
+#include <Hypertable/Lib/BalancePlan.h>
+
+#include <Common/Crontab.h>
+
+#include <ctime>
+#include <mutex>
 #include <vector>
-#include <time.h>
 
 namespace Hypertable {
 
-  class LoadBalancer : public ReferenceCount {
+  class LoadBalancer {
   public:
     LoadBalancer(ContextPtr context);
 
@@ -53,9 +52,9 @@ namespace Hypertable {
     void transfer_monitoring_data(vector<RangeServerStatistics> &stats);
 
   private:
-    Mutex m_mutex;
+    std::mutex m_mutex;
     ContextPtr m_context;
-    Mutex m_add_mutex;
+    std::mutex m_add_mutex;
     Crontab m_crontab;
     time_t m_next_balance_time_load;
     time_t m_next_balance_time_new_server;
@@ -67,11 +66,7 @@ namespace Hypertable {
     std::vector <RangeServerStatistics> m_statistics;
   };
 
-  typedef intrusive_ptr<LoadBalancer> LoadBalancerPtr;
-
   void reenable_balancer(LoadBalancer *balancer);
-  
+}
 
-} // namespace Hypertable
-
-#endif // HYPERTABLE_LOADBALANCER_H
+#endif // Hypertable_Master_LoadBalancer_h

@@ -58,7 +58,8 @@ using namespace std;
 #ifndef _WIN32
 
 bool 
-IOHandlerDatagram::handle_event(struct pollfd *event, time_t arrival_time) {
+IOHandlerDatagram::handle_event(struct pollfd *event,
+                                ClockT::time_point arrival_time) {
   int error;
 
   //DisplayEvent(event);
@@ -124,7 +125,7 @@ IOHandlerDatagram::handle_event(struct pollfd *event, time_t arrival_time) {
 #if defined(__linux__)
 
 bool IOHandlerDatagram::handle_event(struct epoll_event *event,
-                                     time_t arrival_time) {
+                                     ClockT::time_point arrival_time) {
   int error;
 
   //DisplayEvent(event);
@@ -192,7 +193,8 @@ bool IOHandlerDatagram::handle_event(struct epoll_event *event,
 
 #elif defined(__sun__)
 bool
-IOHandlerDatagram::handle_event(port_event_t *event, time_t arrival_time) {
+IOHandlerDatagram::handle_event(port_event_t *event,
+                                ClockT::time_point arrival_time) {
   int error;
 
   //DisplayEvent(event);
@@ -272,7 +274,8 @@ IOHandlerDatagram::handle_event(port_event_t *event, time_t arrival_time) {
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 
 bool
-IOHandlerDatagram::handle_event(struct kevent *event, time_t arrival_time) {
+IOHandlerDatagram::handle_event(struct kevent *event,
+                                ClockT::time_point arrival_time) {
   int error;
 
   //DisplayEvent(event);
@@ -350,7 +353,7 @@ bool IOHandlerDatagram::async_recvfrom() {
   return true;
 }
 
-bool IOHandlerDatagram::handle_event(IOOP *ioop, time_t) {
+bool IOHandlerDatagram::handle_event(IOOP *ioop, ClockT::time_point arival_time) {
   if (ioop->op == IOOP::RECVFROM) {
     if (ioop->err != NOERROR) {
       HT_INFOF("IOOP::RECVFROM - %s", winapi_strerror(ioop->err));
@@ -388,7 +391,7 @@ ImplementMe;
 #ifndef _WIN32
 
 int IOHandlerDatagram::handle_write_readiness() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int error;
 
   if ((error = flush_send_queue()) != Error::OK) {
@@ -410,7 +413,7 @@ int IOHandlerDatagram::handle_write_readiness() {
 
 
 int IOHandlerDatagram::send_message(const InetAddr &addr, CommBufPtr &cbp) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int error = Error::OK;
   bool initially_empty = m_send_queue.empty() ? true : false;
 

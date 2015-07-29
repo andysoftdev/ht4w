@@ -33,10 +33,9 @@
 
 #include <Hypertable/Lib/MetaLogWriter.h>
 
+#include <AsyncComm/Clock.h>
 #include <AsyncComm/Comm.h>
 
-#include <Common/Mutex.h>
-#include <Common/Time.h>
 #include <Common/Thread.h>
 
 #include <boost/graph/adjacency_list.hpp>
@@ -47,10 +46,12 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/thread/condition.hpp>
 
+#include <chrono>
 #include <condition_variable>
 #include <list>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 namespace Hypertable {
@@ -92,7 +93,7 @@ namespace Hypertable {
       /** Returns expiration time of completed operation
        * @return %Operation expiration time
        */
-      HiResTime expiration_time() const { return op->expiration_time(); }
+      ClockT::time_point expiration_time() const { return op->expiration_time(); }
 
       /** Returns unique ID for completed operation.
        * @return Unique operation identifier
@@ -111,7 +112,7 @@ namespace Hypertable {
       OperationRec,
       indexed_by<
       sequenced<>,
-      ordered_non_unique<const_mem_fun<OperationRec, HiResTime,
+      ordered_non_unique<const_mem_fun<OperationRec, ClockT::time_point,
                                        &OperationRec::expiration_time> >,
       hashed_unique<const_mem_fun<OperationRec, int64_t,
                                   &OperationRec::id> >
@@ -127,7 +128,7 @@ namespace Hypertable {
     class DeliveryRec {
     public:
       /** Delivery expiration time specified by client. */
-      HiResTime expiration_time;
+      ClockT::time_point expiration_time;
       /** Corresponding operation identifier */
       int64_t id;
       /** Event object containing return address for operation result */
@@ -142,7 +143,7 @@ namespace Hypertable {
       DeliveryRec,
       indexed_by<
       sequenced<>,
-      ordered_non_unique<member<DeliveryRec, HiResTime,
+      ordered_non_unique<member<DeliveryRec, ClockT::time_point,
                                 &DeliveryRec::expiration_time> >,
       hashed_unique<member<DeliveryRec, int64_t,
                            &DeliveryRec::id> > 
@@ -154,13 +155,13 @@ namespace Hypertable {
     typedef DeliveryList::nth_index<2>::type DeliveryIdentifierIndex;
 
     /// %Mutex for serializing concurrent access
-    Mutex mutex;
+    std::mutex mutex;
 
     /// Condition variable used to wait for operations to expire
-    boost::condition cond;
+    std::condition_variable cond;
 
     /// Pointer to comm layer
-    Comm *comm;
+    Comm *comm {};
 
     /// MML writer
     MetaLog::WriterPtr mml_writer;
@@ -276,7 +277,7 @@ namespace Hypertable {
     /// Sets MML writer
     /// @param mml_writer MML writer object
     void set_mml_writer(MetaLog::WriterPtr &mml_writer) {
-      ScopedLock lock(m_context->mutex);
+      std::lock_guard<std::mutex> lock(m_context->mutex);
       m_context->mml_writer = mml_writer;
     }
 

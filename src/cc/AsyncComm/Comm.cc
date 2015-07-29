@@ -27,7 +27,7 @@
 
 //#define HT_DISABLE_LOG_DEBUG
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
 
 #include "ReactorFactory.h"
 #include "ReactorRunner.h"
@@ -44,7 +44,9 @@
 #include <Common/Time.h>
 
 #include <cassert>
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 extern "C" {
 #if defined(__APPLE__) || defined(__sun__) || defined(__FreeBSD__)
@@ -56,7 +58,6 @@ extern "C" {
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
@@ -69,10 +70,10 @@ extern "C" {
 using namespace Hypertable;
 using namespace std;
 
-atomic_t Comm::ms_next_request_id = ATOMIC_INIT(1);
+atomic<uint32_t> Comm::ms_next_request_id(1);
 
 Comm *Comm::ms_instance = 0;
-Mutex Comm::ms_mutex;
+mutex Comm::ms_mutex;
 
 #ifdef _WIN32
 
@@ -137,7 +138,7 @@ Comm::~Comm() {
   m_handler_map->decomission_all();
 
   // wait for all decomissioned handlers to get purged by Reactor
-  m_handler_map->wait_for_empty(boost::posix_time::milliseconds(250));
+  m_handler_map->wait_for_empty(std::chrono::milliseconds(250));
 
   // Since Comm is a singleton, this is OK
   ReactorFactory::destroy();
@@ -203,7 +204,7 @@ Comm::connect(const CommAddress &addr, const DispatchHandlerPtr &default_handler
     }
 
     // Get arbitray ephemeral port that won't conflict with our reserved ports
-    port = (uint16_t)(49152 + (ReactorFactory::rng() % 16383));
+    port = (uint16_t)(49152 + std::uniform_int_distribution<>(0, 16382)(ReactorFactory::rng));
     m_local_addr.sin_port = htons(port);
 
     // bind socket to local address
@@ -379,7 +380,7 @@ Comm::listen(const CommAddress &addr, ConnectionHandlerFactoryPtr &chf,
     if (m_verbose)
       HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
                addr.to_str().c_str(), strerror(errno));
-    poll(0, 0, 10000);
+    this_thread::sleep_for(chrono::milliseconds(10000));
     bind_attempts++;
   }
 
@@ -452,9 +453,9 @@ int Comm::send_request(IOHandlerData *data_handler, uint32_t timeout_ms,
     cbuf->header.id = 0;
   }
   else {
-    cbuf->header.id = atomic_inc_return(&ms_next_request_id);
+    cbuf->header.id = ms_next_request_id++;
     if (cbuf->header.id == 0)
-      cbuf->header.id = atomic_inc_return(&ms_next_request_id);
+      cbuf->header.id = ms_next_request_id++;
   }
 
   cbuf->header.timeout_ms = timeout_ms;
@@ -539,7 +540,7 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
     if (m_verbose)
       HT_INFOF("Unable to bind to %s: %s, will retry in 10 seconds...",
                addr.to_str().c_str(), strerror(errno));
-    poll(0, 0, 10000);
+    this_thread::sleep_for(chrono::milliseconds(10000));
     bind_attempts++;
   }
 
@@ -622,8 +623,7 @@ int Comm::send_datagram(const CommAddress &addr, const CommAddress &send_addr,
 
 int Comm::set_timer(uint32_t duration_millis, const DispatchHandlerPtr &handler) {
   ExpireTimer timer;
-  boost::xtime_get(&timer.expire_time, boost::TIME_UTC_);
-  xtime_add_millis(timer.expire_time, duration_millis);
+  timer.expire_time = ClockT::now() + chrono::milliseconds(duration_millis);
   timer.handler = handler;
   m_timer_reactor->add_timer(timer);
   return Error::OK;
@@ -631,9 +631,9 @@ int Comm::set_timer(uint32_t duration_millis, const DispatchHandlerPtr &handler)
 
 
 int
-Comm::set_timer_absolute(boost::xtime expire_time, const DispatchHandlerPtr &handler) {
+Comm::set_timer_absolute(ClockT::time_point expire_time, const DispatchHandlerPtr &handler) {
   ExpireTimer timer;
-  memcpy(&timer.expire_time, &expire_time, sizeof(boost::xtime));
+  timer.expire_time = expire_time;
   timer.handler = handler;
   m_timer_reactor->add_timer(timer);
   return Error::OK;
@@ -861,7 +861,7 @@ Comm::connect_socket(socket_t sd, const CommAddress &addr,
   while (::connect(sd, (struct sockaddr *)&connectable_addr.inet, sizeof(struct sockaddr_in))
           < 0) {
       if (errno == EINTR) {
-        poll(0, 0, 1000);
+      this_thread::sleep_for(chrono::milliseconds(1000));
         continue;
       }
       else if (errno == EINPROGRESS) {

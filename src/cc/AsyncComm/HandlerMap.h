@@ -38,17 +38,16 @@
 #include "IOHandlerRaw.h"
 #include "ProxyMap.h"
 
-#include <Common/Mutex.h>
 #include <Common/Error.h>
 #include <Common/Logger.h>
 #include <Common/SockAddrMap.h>
 #include <Common/Time.h>
 #include <Common/Timer.h>
 
-#include <boost/thread/condition.hpp>
-
+#include <condition_variable>
 #include <cassert>
 #include <memory>
+#include <mutex>
 
 namespace Hypertable {
 
@@ -229,7 +228,7 @@ namespace Hypertable {
      * @param handler Pointer to IOHandler to decomission
      */
     void decomission_handler(IOHandler *handler) {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       decomission_handler_unlocked(handler);
     }
 
@@ -276,12 +275,7 @@ namespace Hypertable {
      */
     void wait_for_empty();
 
-    template<typename duration_type>
-    void wait_for_empty(const duration_type& wait_duration) {
-      ScopedRecLock lock(m_mutex);
-      if (!m_decomissioned_handlers.empty())
-        m_cond.timed_wait(lock, wait_duration);
-    }
+    void wait_for_empty(std::chrono::steady_clock::duration duration);
 
     void shutdown();
 
@@ -426,13 +420,13 @@ namespace Hypertable {
     IOHandlerRaw *lookup_raw_handler(const InetAddr &addr);
 
     /// %Mutex for serializing concurrent access
-    RecMutex m_mutex;
+    std::recursive_mutex m_mutex;
 
     /// Condition variable for signalling empty map
-    boost::condition m_cond;
+    std::condition_variable_any m_cond;
 
     /// Condition variable for signalling proxy map load
-    boost::condition m_cond_proxy;
+    std::condition_variable_any m_cond_proxy;
 
     /// Accept map (InetAddr-to-IOHandlerAccept)
     SockAddrMap<IOHandlerAccept *> m_accept_handler_map;

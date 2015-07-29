@@ -1,4 +1,4 @@
-/** -*- C++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -17,10 +17,10 @@
  * abig with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#include "Common/Compat.h"
-#include "Common/TestUtils.h"
-#include "Common/Init.h"
-#include "Common/PageArenaAllocator.h"
+#include <Common/Compat.h>
+#include <Common/TestUtils.h>
+#include <Common/Init.h>
+#include <Common/PageArenaAllocator.h>
 
 #include <deque>
 #include <vector>
@@ -89,7 +89,7 @@ int main(int ac, char *av[]) {
     int s = get_i32("small-size");
     int r = get_i32("reserve");
 
-    foreach_ht(const String &co, get_strs("components")) {
+    for (const auto &co : get_strs("components")) {
       if (co == "smalldeque")
         run_test(bind(test_small_deque, s, r, n), true);
       else if (co == "smallvector")
@@ -104,6 +104,6 @@ int main(int ac, char *av[]) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    exit(EXIT_FAILURE);
   }
 }

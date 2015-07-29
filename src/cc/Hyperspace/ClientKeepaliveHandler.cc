@@ -19,20 +19,20 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-extern "C" {
-#include <poll.h>
-}
-
-#include "Common/Error.h"
-#include "Common/InetAddr.h"
-#include "Common/StringExt.h"
-#include "Common/Time.h"
+#include <Common/Compat.h>
 
 #include "ClientKeepaliveHandler.h"
 #include "Master.h"
 #include "Protocol.h"
 #include "Session.h"
+
+#include <Common/Error.h>
+#include <Common/InetAddr.h>
+#include <Common/StringExt.h>
+#include <Common/Time.h>
+
+#include <chrono>
+#include <thread>
 
 using namespace std;
 using namespace Hypertable;
@@ -48,8 +48,7 @@ using namespace Serialization;
 
 ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
                                                Session *session)
-  : m_dead(false), m_destroying(false), m_comm(comm),
-    m_session(session), m_session_id(0) {
+  : m_comm(comm), m_session(session) {
 
   HT_TRY("getting config values",
     m_verbose = cfg->get_bool("Hypertable.Verbose");
@@ -59,11 +58,11 @@ ClientKeepaliveHandler::ClientKeepaliveHandler(Comm *comm, PropertiesPtr &cfg,
     m_keep_alive_interval = cfg->get_i32("Hyperspace.KeepAlive.Interval");
     m_reconnect = cfg->get_bool("Hyperspace.Session.Reconnect"));
 
-  boost::xtime_get(&m_last_keep_alive_send_time, boost::TIME_UTC_);
-  boost::xtime_get(&m_jeopardy_time, boost::TIME_UTC_);
-  xtime_add_millis(m_jeopardy_time, m_lease_interval);
+  auto now = chrono::steady_clock::now();
+  m_last_keep_alive_send_time = now;
+  m_jeopardy_time = now + chrono::milliseconds(m_lease_interval);
 
-  foreach_ht(const String &replica, cfg->get_strs("Hyperspace.Replica.Host")) {
+  for (const auto &replica : cfg->get_strs("Hyperspace.Replica.Host")) {
     m_hyperspace_replicas.push_back(replica);
   }
 
@@ -101,7 +100,7 @@ void ClientKeepaliveHandler::start() {
 
 
 void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
-  ScopedRecLock lock(m_mutex);
+  lock_guard<recursive_mutex> lock(m_mutex);
   int error;
 
   if (m_dead)
@@ -171,9 +170,8 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
             return;
 
           // update jeopardy time
-          memcpy(&m_jeopardy_time, &m_last_keep_alive_send_time,
-                 sizeof(boost::xtime));
-          xtime_add_millis(m_jeopardy_time, m_lease_interval);
+          m_jeopardy_time = m_last_keep_alive_send_time +
+            chrono::milliseconds(m_lease_interval);
 
           session_id = decode_i64(&decode_ptr, &decode_remain);
           error = decode_i32(&decode_ptr, &decode_remain);
@@ -212,8 +210,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
             HandleMap::iterator iter = m_handle_map.find(handle);
             if (iter == m_handle_map.end()) {
               // We have a bad notification, ie. a notification for a handle not in m_handle_map
-              boost::xtime now;
-              boost::xtime_get(&now, boost::TIME_UTC_);
+              auto now = chrono::steady_clock::now();
 
               HT_ERROR_OUT << "[Issue 313] Received bad notification session=" << m_session_id
                            << ", handle=" << handle << ", event_id=" << event_id
@@ -230,7 +227,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
               }
               else {
                 // if we do then check against grace period
-                uint64_t time_diff=xtime_diff_millis((*uiter).second ,now);
+                uint64_t time_diff = chrono::duration_cast<chrono::milliseconds>(now - (*uiter).second).count();
                 if (time_diff > ms_bad_notification_grace_period) {
                   HT_ERROR_OUT << "[Issue 313] Still receiving bad notification after grace "
                                << "period=" << ms_bad_notification_grace_period
@@ -348,7 +345,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
           if (notifications > 0) {
             CommBufPtr cbp(Protocol::create_client_keepalive_request(
                 m_session_id, m_delivered_events));
-            boost::xtime_get(&m_last_keep_alive_send_time, boost::TIME_UTC_);
+            m_last_keep_alive_send_time = chrono::steady_clock::now();
             if ((error = m_comm->send_datagram(m_master_addr, m_local_addr, cbp)
                 != Error::OK)) {
               HT_THROW_AND_LOG(error, "Unable to send datagram - %s");
@@ -370,18 +367,14 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
     }
   }
   else if (event->type == Hypertable::Event::TIMER) {
-    boost::xtime now;
     int state;
 
     if ((state = m_session->get_state()) == Session::STATE_EXPIRED)
       return;
 
-    boost::xtime_get(&now, boost::TIME_UTC_);
-
     if (state == Session::STATE_SAFE && !m_reconnect) {
-      if (xtime_cmp(m_jeopardy_time, now) < 0 && !m_reconnect) {
+      if (m_jeopardy_time < chrono::steady_clock::now() && !m_reconnect)
         m_session->state_transition(Session::STATE_JEOPARDY);
-      }
     }
     else if (m_session->expired()) {
       expire_session();
@@ -391,7 +384,7 @@ void ClientKeepaliveHandler::handle(Hypertable::EventPtr &event) {
     CommBufPtr cbp(Hyperspace::Protocol::create_client_keepalive_request(
         m_session_id, m_delivered_events));
 
-    boost::xtime_get(&m_last_keep_alive_send_time, boost::TIME_UTC_);
+    m_last_keep_alive_send_time = chrono::steady_clock::now();
 
     if ((error = m_comm->send_datagram(m_master_addr, m_local_addr, cbp)
         != Error::OK)) {
@@ -414,16 +407,16 @@ void ClientKeepaliveHandler::expire_session() {
 
   if (m_conn_handler)
     m_conn_handler->close();
-  poll(0,0,2000);
+  this_thread::sleep_for(chrono::milliseconds(2000));
   m_conn_handler = 0;
   m_handle_map.clear();
   m_bad_handle_map.clear();
   m_session_id = 0;
 
   if (m_reconnect) {
-    boost::xtime_get(&m_last_keep_alive_send_time, boost::TIME_UTC_);
-    boost::xtime_get(&m_jeopardy_time, boost::TIME_UTC_);
-    xtime_add_millis(m_jeopardy_time, m_lease_interval);
+    auto now = chrono::steady_clock::now();
+    m_last_keep_alive_send_time = now;
+    m_jeopardy_time = now + chrono::milliseconds(m_lease_interval);
 
     m_local_addr = InetAddr(INADDR_ANY, m_datagram_send_port);
 
@@ -450,7 +443,7 @@ void ClientKeepaliveHandler::destroy_session() {
   int error;
 
   {
-    ScopedRecLock lock(m_mutex);
+    lock_guard<recursive_mutex> lock(m_mutex);
     if (m_dead || m_destroying)
       return;
     m_destroying = true;
@@ -470,14 +463,13 @@ void ClientKeepaliveHandler::destroy_session() {
 }
 
 void ClientKeepaliveHandler::wait_for_destroy_session() {
-  ScopedRecLock lock(m_mutex);
+  unique_lock<recursive_mutex> lock(m_mutex);
   if (m_dead)
     return;
 
   m_destroying = true;
-  if (!m_cond_destroyed.timed_wait(lock, boost::posix_time::seconds(2))) {
+  if (m_cond_destroyed.wait_for(lock, chrono::seconds(2)) == cv_status::timeout)
     destroy();
-  }
 }
 
 void ClientKeepaliveHandler::destroy() {

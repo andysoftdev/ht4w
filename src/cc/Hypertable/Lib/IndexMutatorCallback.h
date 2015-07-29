@@ -19,19 +19,19 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_INDEXMUTATORCALLBACK_H
-#define HYPERTABLE_INDEXMUTATORCALLBACK_H
+#ifndef Hypertable_Lib_IndexMutatorCallback_h
+#define Hypertable_Lib_IndexMutatorCallback_h
+
+#include "Key.h"
+#include "KeySpec.h"
+#include "ResultCallback.h"
+#include "TableMutatorAsync.h"
 
 #include <vector>
 #include <deque>
 #include <map>
-#include <boost/thread/condition.hpp>
-
-#include "Common/Mutex.h"
-#include "ResultCallback.h"
-#include "Key.h"
-#include "KeySpec.h"
-#include "TableMutatorAsync.h"
+#include <memory>
+#include <mutex>
 
 namespace Hypertable {
 
@@ -61,7 +61,7 @@ namespace Hypertable {
 
     /** buffers a cell in the cellbuffer and the keymap */
     void buffer_key(Key &key, const void *value, uint32_t value_len) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex>lock(m_mutex);
 
       // to avoid Schema lookups: use the numeric ID as the column family
       UInt8Formatter tmp(key.column_family_code);
@@ -122,12 +122,12 @@ namespace Hypertable {
         return;
       }
 
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex>lock(m_mutex);
 
       m_error = error;
 
       // remove failed updates from the keymap
-      foreach_ht (const FailedMutation &fm, failures) {
+      for (const auto &fm : failures) {
         const Cell &cell = fm.first;
         
         // get the original row key
@@ -147,9 +147,9 @@ namespace Hypertable {
     void propagate_failures() {
       FailedMutations propagate;
 
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex>lock(m_mutex);
 
-      foreach_ht (const FailedRow &fail, m_failed_rows) {
+      for (const auto &fail : m_failed_rows) {
         // add all cells with this row key to the failed mutations and
         // purge them from the keymap
         std::pair<KeyMap::iterator, KeyMap::iterator> it =
@@ -166,12 +166,12 @@ namespace Hypertable {
     }
 
     bool needs_flush() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex>lock(m_mutex);
       return m_used_memory > m_max_memory;
     }
 
     void consume_keybuffer(TableMutatorAsync *mutator) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex>lock(m_mutex);
       
       IndexMutatorCallback::KeyMap::iterator it;
       for (it = m_keymap.begin(); it != m_keymap.end(); ++it) {
@@ -205,7 +205,7 @@ namespace Hypertable {
     std::vector<FailedRow> m_failed_rows;
 
     // a mutex to protect the members
-    Mutex m_mutex;
+    std::mutex m_mutex;
 
     // maximum size of buffered keys
     uint64_t m_max_memory;
@@ -217,8 +217,8 @@ namespace Hypertable {
     int m_error;
   };
 
-  typedef intrusive_ptr<IndexMutatorCallback> IndexMutatorCallbackPtr;
+  typedef std::shared_ptr<IndexMutatorCallback> IndexMutatorCallbackPtr;
 
 } // namespace Hypertable
 
-#endif // HYPERTABLE_INDEXMUTATORCALLBACK_H
+#endif // Hypertable_Lib_IndexMutatorCallback_h

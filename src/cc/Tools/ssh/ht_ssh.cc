@@ -50,9 +50,8 @@
 #include <map>
 #include <mutex>
 #include <sstream>
+#include <thread>
 #include <vector>
-
-#include <poll.h>
 
 using namespace Hypertable;
 using namespace std;
@@ -92,7 +91,7 @@ namespace {
     cout << "            are: none, warning, protocol, packet, and functions.\n";
     cout << "            Default value is protocol.\n";
     cout << endl;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 }
 
@@ -103,7 +102,7 @@ namespace {
 int main(int argc, char **argv) {
 
   System::initialize();
-  Config::properties = new Properties();
+  Config::properties = make_shared<Properties>();
   ReactorFactory::initialize(System::get_processor_count());
 
   string host_spec;
@@ -144,7 +143,7 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     cout << "Invalid host specification: " << e.what() << endl;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
   (void)signal(SIGINT,  sig);
@@ -165,21 +164,21 @@ int main(int argc, char **argv) {
     lock_guard<mutex> lock(g_mutex);
     g_handlers_created = true;
     if (g_cancelled)
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
   }
 
   // Wait for connections
   for (auto & handler : g_handlers) {
     if (!handler->wait_for_connection(deadline)) {
       handler->dump_log(cerr);
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
   }
 
   {
     lock_guard<mutex> lock(g_mutex);
     if (g_cancelled)
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
   }
 
   vector<string> failed_hosts;
@@ -197,7 +196,7 @@ int main(int argc, char **argv) {
     chrono::time_point<chrono::steady_clock> now;
     for (auto & entry : start_map) {
       now = chrono::steady_clock::now();
-      poll(0, 0, chrono::duration_cast<std::chrono::milliseconds>(entry.first-now).count());
+      this_thread::sleep_for(chrono::duration_cast<std::chrono::milliseconds>(entry.first-now));
       if (!entry.second->issue_command(command)) {
         entry.second->dump_log(cerr);
         failed_hosts.push_back(entry.second->hostname());        
@@ -238,10 +237,10 @@ int main(int argc, char **argv) {
       cerr << host;
     }
     cerr << endl << flush;
-    _exit(2);
+    quick_exit(2);
   }
 
   cout << flush;
 
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

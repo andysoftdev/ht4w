@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2012 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,41 +19,44 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <AsyncComm/Comm.h>
+#include <AsyncComm/CommBuf.h>
+#include <AsyncComm/DispatchHandler.h>
+#include <AsyncComm/ReactorFactory.h>
+
+#include <Common/InetAddr.h>
+#include <Common/Init.h>
+#include <Common/Error.h>
+#include <Common/InetAddr.h>
+#include <Common/Logger.h>
+#include <Common/System.h>
+#include <Common/Usage.h>
+
+#include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
+#include <thread>
 #include <vector>
 
 extern "C" {
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <poll.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 }
-
-#include "Common/InetAddr.h"
-#include "Common/Init.h"
-#include "Common/Error.h"
-#include "Common/InetAddr.h"
-#include "Common/Logger.h"
-#include "Common/System.h"
-#include "Common/Usage.h"
-
-#include "AsyncComm/Comm.h"
-#include "AsyncComm/CommBuf.h"
-#include "AsyncComm/DispatchHandler.h"
-#include "AsyncComm/ReactorFactory.h"
 
 #ifdef _WIN32
 
 #include "Common/ServerLauncher.h"
 
 #endif
-
 
 using namespace Hypertable;
 using namespace std;
@@ -81,21 +84,20 @@ namespace {
     void set_pending() { m_pending = true; }
 
     virtual void handle(EventPtr &event_ptr) {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_pending = false;
       m_cond.notify_all();
     }
 
     void wait_for_notification() {
-      ScopedLock lock(m_mutex);
-      while (m_pending)
-        m_cond.wait(lock);
+      unique_lock<mutex> lock(m_mutex);
+      m_cond.wait(lock, [this](){ return !m_pending; });
     }
 
   private:
-    Mutex             m_mutex;
-    boost::condition  m_cond;
-    bool m_pending;
+    std::mutex m_mutex;
+    std::condition_variable m_cond;
+    bool m_pending {};
   };
   typedef std::shared_ptr<NotificationHandler> NotificationHandlerPtr;
 
@@ -106,13 +108,13 @@ namespace {
 #ifndef _WIN32
       perror("write");
 #endif
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     if (write(fd, ";\n", 2) != 2) {
 #ifndef _WIN32
       perror("write");
 #endif
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -144,7 +146,7 @@ class ServerLauncher {
       m_path = path;
       if (pipe(fd) < 0) {
         perror("pipe");
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       if ((m_child_pid = fork()) == 0) {
         if (outfile) {
@@ -159,7 +161,7 @@ class ServerLauncher {
           outfd = open(outfile, open_flags, 0644);
           if (outfd < 0) {
             perror("open");
-            exit(1);
+            exit(EXIT_FAILURE);
           }
           dup2(outfd, 1);
           dup2(outfd, 2);
@@ -171,7 +173,7 @@ class ServerLauncher {
       }
       close(fd[0]);
       m_write_fd = fd[1];
-      poll(0,0,2000);
+      this_thread::sleep_for(chrono::milliseconds(2000));
     }
 
     ~ServerLauncher() {
@@ -217,7 +219,7 @@ int main(int argc, char **argv) {
   comm = Comm::instance();
 
   if (!InetAddr::initialize(&inet_addr, "23451"))
-    exit(1);
+    exit(EXIT_FAILURE);
 
   comm->find_available_udp_port(inet_addr);
   notification_address_arg = format("--notification-address=%d",
@@ -230,12 +232,12 @@ int main(int argc, char **argv) {
 
   if (system("/bin/rm -rf ./hsroot") != 0) {
     HT_ERROR("Problem removing ./hsroot directory");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (system("mkdir -p ./hsroot") != 0) {
     HT_ERROR("Unable to create ./hsroot directory");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
  #else
@@ -328,7 +330,7 @@ int main(int argc, char **argv) {
     IssueCommandNoWait(g_fd1, "quit");
     IssueCommandNoWait(g_fd2, "quit");
     IssueCommandNoWait(g_fd3, "quit");
-    poll(0, 0, 5000);
+    this_thread::sleep_for(chrono::milliseconds(1000));
   }
 
 #ifndef _WIN32
@@ -342,7 +344,7 @@ int main(int argc, char **argv) {
   if (system("diff ./client3.out ./client3.golden"))
     return 1;
 
-  #else
+  quick_exit(EXIT_SUCCESS);
 
   if (system("fc client1.out client1.golden"))
     return 1;
@@ -360,7 +362,6 @@ int main(int argc, char **argv) {
 
 #endif
 
-  _exit(0);
 }
 
 
@@ -510,9 +511,9 @@ namespace {
     IssueCommand(g_fd3, "open lockfile flags=READ|WRITE|LOCK");
     IssueCommand(g_fd2, "lock lockfile EXCLUSIVE");
     IssueCommandNoWait(g_fd3, "lock lockfile EXCLUSIVE");
-    poll(0,0,1000);
+    this_thread::sleep_for(chrono::milliseconds(1000));
     IssueCommand(g_fd2, "release lockfile");
-    poll(0,0,1000);
+    this_thread::sleep_for(chrono::milliseconds(1000));
     IssueCommand(g_fd3, "release lockfile");
     IssueCommand(g_fd2, "lock lockfile SHARED");
     IssueCommand(g_fd3, "lock lockfile SHARED");
@@ -563,14 +564,13 @@ namespace {
 
     if (kill(g_pid2, SIGSTOP) == -1)
       perror("kill");
-
+    this_thread::sleep_for(chrono::milliseconds(9000));
 #else
 
     ProcessUtils::kill(g_pid2, 5000);
 
 #endif
 
-    poll(0, 0, 9000);
     // IssueCommand(g_fd2, "close dir1/foo");
     IssueCommand(g_fd1, "close dir1");
     IssueCommand(g_fd1, "delete dir1");

@@ -1,4 +1,4 @@
-/* -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,23 +19,23 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include <cstring>
-
-extern "C" {
-#include <poll.h>
-}
-
-#include <boost/algorithm/string.hpp>
-
-#include "Common/Config.h"
-#include "Common/StringExt.h"
+#include <Common/Compat.h>
 
 #include "Key.h"
 #include "TableMutator.h"
 
+#include <Common/Config.h>
+#include <Common/StringExt.h>
+
+#include <boost/algorithm/string.hpp>
+
+#include <chrono>
+#include <cstring>
+#include <thread>
+
 using namespace Hypertable;
 using namespace Hypertable::Config;
+using namespace std;
 
 void TableMutator::handle_exceptions() {
   try {
@@ -65,9 +65,10 @@ TableMutator::TableMutator(PropertiesPtr &props, Comm *comm, Table *table, Range
   ApplicationQueueInterfacePtr app_queue = m_queue;
 
   m_flush_delay = props->get_i32("Hypertable.Mutator.FlushDelay");
-  m_mutator = new TableMutatorAsync(m_queue_mutex, m_cond, props, comm, 
-          app_queue, table, range_locator, timeout_ms, &m_callback, 
-          flags, false, this);
+  m_mutator =
+    make_shared<TableMutatorAsync>(m_queue_mutex, m_cond, props, comm, app_queue,
+                                   table, range_locator, timeout_ms, &m_callback, 
+                                   flags, false, this);
 }
 
 TableMutator::~TableMutator() {
@@ -154,7 +155,7 @@ void TableMutator::auto_flush() {
     wait_for_flush_completion(m_mutator.get());
 
     if (m_flush_delay)
-      poll(0, 0, m_flush_delay);
+      this_thread::sleep_for(chrono::milliseconds(m_flush_delay));
 
     m_mutator->flush_with_tablequeue(this,
             !(m_flags & Table::MUTATOR_FLAG_NO_LOG_SYNC));
@@ -196,16 +197,16 @@ void TableMutator::wait_for_flush_completion(TableMutatorAsync *mutator) {
   ApplicationHandler *app_handler = 0;
   while (true) {
     {
-      ScopedLock lock(m_queue_mutex);
+      unique_lock<mutex> lock(m_queue_mutex);
       if (mutator->has_outstanding_unlocked()) {
         m_queue->wait_for_buffer(lock, &app_handler);
         {
-          ScopedLock lock(m_mutex);
+          lock_guard<mutex> lock(m_mutex);
           last_error = m_last_error;
         }
       }
       else {
-        ScopedLock lock(m_mutex);
+        lock_guard<mutex> lock(m_mutex);
         if (m_last_error != Error::OK)
           HT_THROW(m_last_error, "");
         return;
@@ -227,7 +228,7 @@ bool TableMutator::retry(uint32_t timeout_ms) {
     return true;
 
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     if (m_last_error == Error::OK)
       return true;
     m_last_error = Error::OK;
@@ -257,7 +258,7 @@ void TableMutator::retry_flush() {
   CellsBuilderPtr failed_cells;
 
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     if (m_failed_cells && m_failed_cells->size() > 0) {
       failed_mutations.swap(m_failed_mutations);
       failed_cells = m_failed_cells;
@@ -268,17 +269,17 @@ void TableMutator::retry_flush() {
   if (failed_cells && failed_cells->size() > 0)
     set_cells(failed_cells->get());
 
-  poll(0, 0, 2000);
+  this_thread::sleep_for(chrono::milliseconds(2000));
 
   flush();
 }
 
 std::ostream &
 TableMutator::show_failed(const Exception &e, std::ostream &out) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   if (!m_failed_mutations.empty()) {
-    foreach_ht(const FailedMutation &v, m_failed_mutations) {
+    for (const auto &v : m_failed_mutations) {
       out << "Failed: (" << v.first.row_key << "," << v.first.column_family;
 
       if (v.first.column_qualifier && *(v.first.column_qualifier))
@@ -295,7 +296,7 @@ TableMutator::show_failed(const Exception &e, std::ostream &out) {
 }
 
 void TableMutator::update_ok() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (m_failed_cells && m_failed_cells->size() > 0) {
     m_failed_mutations.clear();
     m_failed_cells.reset();
@@ -303,10 +304,10 @@ void TableMutator::update_ok() {
 }
 
 void TableMutator::update_error(int error, FailedMutations &failures) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   // copy all failed updates
   m_last_error = error;
   if (!m_failed_cells)
-    m_failed_cells = new CellsBuilder(failures.size());
+    m_failed_cells = make_shared<CellsBuilder>(failures.size());
   m_failed_cells->copy_failed_mutations(failures, m_failed_mutations);
 }

@@ -28,8 +28,8 @@
 
 #include <Common/Properties.h>
 #include <Common/String.h>
-#include <Common/atomic.h>
 
+#include <atomic>
 #include <string>
 
 extern "C" {
@@ -78,7 +78,7 @@ namespace FsBroker {
   public:
     OpenFileDataLocalPtr() : OpenFileDataPtr() { }
     OpenFileDataLocalPtr(OpenFileDataLocal *ofdl)
-      : OpenFileDataPtr(ofdl, true) { }
+      : OpenFileDataPtr(ofdl) { }
     OpenFileDataLocal *operator->() const {
       return (OpenFileDataLocal *)get();
     }
@@ -117,7 +117,7 @@ namespace FsBroker {
 
   private:
 
-    static atomic_t ms_next_fd;
+    static atomic<int> ms_next_fd;
 
     virtual void report_error(ResponseCallback *cb);
 

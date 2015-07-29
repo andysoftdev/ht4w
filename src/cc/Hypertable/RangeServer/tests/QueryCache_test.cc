@@ -60,7 +60,7 @@ typedef struct {
 
 int main(int argc, char **argv) {
   QueryCache *cache;
-  unsigned long seed = (unsigned long)getpid();
+  unsigned long seed = 1234;
   boost::shared_array<uint8_t> result( new uint8_t [ 1000 ] );
   uint32_t result_length;
   QueryCache::Key key;
@@ -78,20 +78,18 @@ int main(int argc, char **argv) {
       seed = atoi(&argv[i][7]);
   }
 
-  System::seed(seed);
-
   cache = new QueryCache(MAX_MEMORY);
 
   md5_csum((unsigned char *)"aa", 2, (unsigned char *)key.digest);
 
   if (cache->insert(&key, "/1", "aa", columns, cell_count, result, MAX_MEMORY+1)) {
     cout << "Error: insert should have failed." << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (cache->lookup(&key, result, &result_length, &cell_count)) {
     cout << "Error: key should not exist in cache." << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   for (size_t rowi = (size_t)'a'; rowi <= (size_t)'z'; rowi++) {
@@ -103,7 +101,7 @@ int main(int argc, char **argv) {
       md5_csum((unsigned char *)keybuf, strlen(keybuf), (unsigned char *)key.digest);
       if (!cache->insert(&key, "/1", row, columns, cell_count, result, 1000)) {
 	cout << "Error: insert failed." << endl;
-	exit(1);
+	exit(EXIT_FAILURE);
       }
     }
   }
@@ -117,7 +115,7 @@ int main(int argc, char **argv) {
     md5_csum((unsigned char *)keybuf, strlen(keybuf), (unsigned char *)key.digest);
     if (!cache->lookup(&key, result, &result_length, &cell_count)) {
       cout << "Error: key not found." << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -128,7 +126,7 @@ int main(int argc, char **argv) {
     md5_csum((unsigned char *)keybuf, strlen(keybuf), (unsigned char *)key.digest);
     if (cache->lookup(&key, result, &result_length, &cell_count)) {
       cout << "Error: key found." << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -141,7 +139,7 @@ int main(int argc, char **argv) {
 
   HT_ASSERT(cache->available_memory() == MAX_MEMORY);
 
-  srandom(1234);
+  srandom(seed);
 
   uint32_t rand_val, charno;
 

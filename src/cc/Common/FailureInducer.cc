@@ -26,22 +26,21 @@
  * depending on the these arguments.
  */
 
-#include "Common/Compat.h"
-#include "Common/String.h"
+#include <Common/Compat.h>
+#include <Common/String.h>
+#include <Common/FailureInducer.h>
+#include <Common/Error.h>
+#include <Common/Logger.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+
+#include <chrono>
+#include <thread>
 #include <vector>
 
-extern "C" {
-#include <poll.h>
-}
-
-#include "FailureInducer.h"
-#include "Error.h"
-#include "Logger.h"
-
 using namespace Hypertable;
+using namespace std;
 
 namespace {
   enum { 
@@ -57,13 +56,12 @@ FailureInducer *FailureInducer::instance = 0;
 void FailureInducer::parse_option(String option) {
   std::vector<String> args;
   boost::algorithm::split(args, option, boost::algorithm::is_any_of(";"));
-
-  foreach_ht (String &a, args)
+  for (auto &a : args)
     parse_option_single(a);
 }
 
 void FailureInducer::maybe_fail(const String &label) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   StateMap::iterator iter = m_state_map.find(label);
   if (iter != m_state_map.end()) {
     if ((*iter).second->iteration == (*iter).second->trigger_iteration) {
@@ -80,13 +78,13 @@ void FailureInducer::maybe_fail(const String &label) {
         HT_INFOF("Induced pause at '%s' iteration=%u for %u milliseconds",
                 label.c_str(), (*iter).second->iteration,
                 (*iter).second->pause_millis);
-        poll(0, 0, (*iter).second->pause_millis);
+        this_thread::sleep_for(chrono::milliseconds((*iter).second->pause_millis));
       }
       else {
         HT_ERRORF("induced failure code '%d' '%s' iteration=%u",
                  (*iter).second->error_code, (*iter).first.c_str(), 
                  (*iter).second->iteration);
-        _exit(1);
+        quick_exit(EXIT_FAILURE);
       }
     }
     (*iter).second->iteration++;
@@ -94,7 +92,7 @@ void FailureInducer::maybe_fail(const String &label) {
 }
 
 bool FailureInducer::failure_signalled(const String &label) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   StateMap::iterator iter = m_state_map.find(label);
   if (iter == m_state_map.end())
     return false;
@@ -106,7 +104,7 @@ bool FailureInducer::failure_signalled(const String &label) {
 }
 
 void FailureInducer::clear() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   for (StateMap::iterator iter = m_state_map.begin(); 
           iter != m_state_map.end(); ++iter)
     delete iter->second;

@@ -36,12 +36,14 @@
 #include <boost/graph/topological_sort.hpp>
 #include <boost/graph/graphviz.hpp>
 
+#include <chrono>
 #include <unordered_map>
 #include <sstream>
+#include <thread>
 
 using namespace Hypertable;
 using namespace boost;
-
+using namespace std;
 
 OperationProcessor::ThreadContext::ThreadContext(ContextPtr &mctx)
   : master_context(mctx), current_blocked(0), busy_count(0),
@@ -70,7 +72,7 @@ OperationProcessor::~OperationProcessor() {
 
 
 void OperationProcessor::add_operation(OperationPtr operation) {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
 
   //HT_INFOF("Adding operation %s", operation->label().c_str());
 
@@ -90,7 +92,7 @@ void OperationProcessor::add_operation(OperationPtr operation) {
 }
 
 void OperationProcessor::add_operations(std::vector<OperationPtr> &operations) {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
   bool added = false;
 
   for (auto & operation : operations) {
@@ -138,7 +140,7 @@ void OperationProcessor::add_operation_internal(OperationPtr &operation) {
 }
 
 OperationPtr OperationProcessor::remove_operation(int64_t hash_code) {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
   OperationPtr operation;
   Vertex vertex;
 
@@ -158,7 +160,7 @@ OperationPtr OperationProcessor::remove_operation(int64_t hash_code) {
 }
 
 void OperationProcessor::shutdown() {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
   m_context.shutdown = true;
   m_context.cond.notify_all();
 }
@@ -168,25 +170,25 @@ void OperationProcessor::join() {
 }
 
 void OperationProcessor::wait_for_empty() {
-  ScopedLock lock(m_context.mutex);
-  while (num_vertices(m_context.graph) > 0)
-    m_context.idle_cond.wait(lock);
+  std::unique_lock<std::mutex> lock(m_context.mutex);
+  m_context.idle_cond.wait(lock, [this](){
+      return num_vertices(m_context.graph) == 0; });
 }
 
 void OperationProcessor::wait_for_idle() {
-  ScopedLock lock(m_context.mutex);
+  std::unique_lock<std::mutex> lock(m_context.mutex);
   while (m_context.busy_count > 0 ||
          m_context.need_order_recompute ||
          m_context.execution_order_iter != m_context.execution_order.end())
     m_context.idle_cond.wait(lock);
 }
 
-bool OperationProcessor::timed_wait_for_idle(boost::xtime expire_time) {
-  ScopedLock lock(m_context.mutex);
+bool OperationProcessor::wait_for_idle(std::chrono::milliseconds max_wait) {
+  std::unique_lock<std::mutex> lock(m_context.mutex);
   while (m_context.busy_count > 0 ||
          m_context.need_order_recompute ||
          m_context.execution_order_iter != m_context.execution_order.end()) {
-    if (!m_context.idle_cond.timed_wait(lock, expire_time))
+    if (m_context.idle_cond.wait_for(lock, max_wait) == std::cv_status::timeout)
       return false;
   }
   return true;
@@ -201,13 +203,13 @@ bool OperationProcessor::empty() {
 }
 
 void OperationProcessor::wake_up() {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
   m_context.need_order_recompute = true;
   m_context.cond.notify_all();
 }
 
 void OperationProcessor::unblock(const String &name) {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
   std::pair<DependencyIndex::iterator, DependencyIndex::iterator> bound;
   bool unblocked_something = false;
 
@@ -230,7 +232,7 @@ void OperationProcessor::unblock(const String &name) {
 }
 
 void OperationProcessor::activate(const String &name) {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
 
   if (!m_context.perpetual_ops.empty()) {
     DependencySet names;
@@ -241,7 +243,7 @@ void OperationProcessor::activate(const String &name) {
 #if 0      
       {
         String str;
-        foreach_ht (const String &tag, names)
+        for (const auto &tag : names)
           str += tag + " ";
         HT_INFOF("Activating %s with obstructions %s", (*iter)->label().c_str(), str.c_str());
       }
@@ -274,7 +276,7 @@ void OperationProcessor::Worker::operator()() {
 
     while (true) {
       {
-        ScopedLock lock(m_context.mutex);
+        std::unique_lock<std::mutex> lock(m_context.mutex);
 
         if (m_context.shutdown)
           return;
@@ -325,7 +327,7 @@ void OperationProcessor::Worker::operator()() {
         operation->post_run();
 
         {
-          ScopedLock lock(m_context.mutex);
+          std::lock_guard<std::mutex> lock(m_context.mutex);
           m_context.busy[vertex] = false;
           m_context.busy_count--;
           m_context.current_active.erase(vertex);
@@ -338,7 +340,7 @@ void OperationProcessor::Worker::operator()() {
         }
       }
       catch (Exception &e) {
-        ScopedLock lock(m_context.mutex);
+        std::lock_guard<std::mutex> lock(m_context.mutex);
         m_context.busy[vertex] = false;
         m_context.busy_count--;
         m_context.current_active.erase(vertex);
@@ -349,7 +351,7 @@ void OperationProcessor::Worker::operator()() {
           break;
         }
         HT_ERROR_OUT << e << HT_END;
-        poll(0, 0, 5000);
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         m_context.need_order_recompute = true;
       }
 
@@ -552,14 +554,14 @@ void OperationProcessor::add_edge_permanent(Vertex v, Vertex u) {
 }
 
 void OperationProcessor::graphviz_output(String &output) {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
   std::ostringstream oss;
   write_graphviz(oss, m_context.graph, make_label_writer(m_context.label));
   output = oss.str();
 }
 
 void OperationProcessor::state_description(String &output) {
-  ScopedLock lock(m_context.mutex);
+  std::lock_guard<std::mutex> lock(m_context.mutex);
   std::ostringstream oss;
   DependencySet names;
 
@@ -588,7 +590,7 @@ void OperationProcessor::state_description(String &output) {
     first = true;
     names.clear();
     m_context.ops[*vp.first]->dependencies(names);
-    foreach_ht (const String &str, names) {
+    for (const auto &str : names) {
       if (!first)
         oss << ",";
       oss << str;
@@ -599,7 +601,7 @@ void OperationProcessor::state_description(String &output) {
     first = true;
     names.clear();
     m_context.ops[*vp.first]->obstructions(names);
-    foreach_ht (const String &str, names) {
+    for (const auto &str : names) {
       if (!first)
         oss << ",";
       oss << str;
@@ -610,7 +612,7 @@ void OperationProcessor::state_description(String &output) {
     first = true;
     names.clear();
     m_context.ops[*vp.first]->exclusivities(names);
-    foreach_ht (const String &str, names) {
+    for (const auto &str : names) {
       if (!first)
         oss << ",";
       oss << str;

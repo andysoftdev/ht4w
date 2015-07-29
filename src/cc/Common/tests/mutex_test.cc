@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,23 +19,24 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include "Common/Mutex.h"
-#include "Common/atomic.h"
-#include "Common/TestUtils.h"
-#include "Common/Init.h"
+#include <Common/Compat.h>
+#include <Common/TestUtils.h>
+#include <Common/Init.h>
+
+#include <atomic>
+#include <mutex>
 
 using namespace Hypertable;
 using namespace Hypertable::Config;
-using namespace boost;
+using namespace std;
 
 namespace {
 
 volatile int g_vcount = 0;
 int g_count = 0;
-Mutex g_mutex;
-RecMutex g_recmutex;
-atomic_t g_av;
+mutex g_mutex;
+recursive_mutex g_recmutex;
+atomic<int> g_av(0);
 
 void test_loop(int n) {
   HT_BENCH(Hypertable::format("%d: loop", g_vcount), ++g_vcount, n);
@@ -43,17 +44,17 @@ void test_loop(int n) {
 
 void test_atomic(int n) {
   HT_BENCH1(Hypertable::format("%d: atomic", g_count), for (int i = n; i--;)
-    atomic_inc(&g_av); g_count = atomic_read(&g_av), n);
+           ++g_av; g_count = g_av.load(), n);
 }
 
 void test_mutex(int n) {
   HT_BENCH(Hypertable::format("%d: mutex", g_count),
-    ScopedLock lock(g_mutex); ++g_count, n);
+           lock_guard<mutex> lock(g_mutex); ++g_count, n);
 }
 
 void test_recmutex(int n) {
   HT_BENCH(Hypertable::format("%d: recmutex", g_count),
-    ScopedRecLock lock(g_recmutex); ++g_count, n);
+           lock_guard<recursive_mutex> lock(g_recmutex); ++g_count, n);
 }
 
 } // local namespace

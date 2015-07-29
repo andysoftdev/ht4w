@@ -19,19 +19,21 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/Client.h>
+#include <Hypertable/Lib/Future.h>
+
+#include <Common/md5.h>
+#include <Common/Time.h>
+#include <Common/Usage.h>
+
 #include <cstdlib>
 #include <iostream>
 
 extern "C" {
 #include <unistd.h>
 }
-
-#include "Common/md5.h"
-#include "Common/Usage.h"
-
-#include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/Future.h"
 
 using namespace std;
 using namespace Hypertable;
@@ -88,23 +90,19 @@ int main(int argc, char **argv) {
      * Load data
      */
     {
-      TableMutatorPtr mutator;
-      boost::xtime now;
-
       ns->drop_table("KeyTest", true);
       ns->create_table("KeyTest", schema);
 
       table = ns->open_table("KeyTest");
 
-      mutator = table->create_mutator();
+      TableMutatorPtr mutator(table->create_mutator());
 
       key.row = "foo";
       key.row_len = strlen("foo");
       key.column_family = "Field";
       key.column_qualifier = 0;
       key.column_qualifier_len = 0;
-      boost::xtime_get(&now, boost::TIME_UTC_);
-      timestamp = ((int64_t)now.sec * 1000000000LL) + (int64_t)now.nsec;
+      timestamp = get_ts64();
       key.timestamp = timestamp;
 
       mutator->set(key, "value 1", strlen("value 1"));
@@ -112,10 +110,9 @@ int main(int argc, char **argv) {
     }
 
     {
-      TableScannerPtr scanner;
       ScanSpec scan_spec;
 
-      scanner = table->create_scanner(scan_spec);
+      TableScannerPtr scanner(table->create_scanner(scan_spec));
 
       while (scanner->next(cell)) {
         // Verify that revision number assigned is greater than
@@ -123,15 +120,15 @@ int main(int argc, char **argv) {
             (cell.revision - timestamp) >= 5000000000LL) {
           HT_ERRORF("Supplied timestamp = %lld, returned revision = %lld",
                     (Lld)timestamp, (Lld)cell.revision);
-          _exit(1);
+          quick_exit(EXIT_FAILURE);
         }
       }
     }
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

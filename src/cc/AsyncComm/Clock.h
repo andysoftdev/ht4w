@@ -14,20 +14,31 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA.
  */
 
-/** @file
- * Syntactic sugar related to the BOOST_FOREACH macro.
- */
+/// @file
+/// Declaration of ClockT.
+/// This file contains type declaration for ClockT, a C++ clock type used within
+/// the AsyncComm library for various timing needs.
 
-#ifndef HYPERTABLE_SWEETENER_H
-#define HYPERTABLE_SWEETENER_H
+#ifndef AsyncComm_Clock_h
+#define AsyncComm_Clock_h
 
-/* Some syntactic sugars */
+#include <Common/fast_clock.h>
 
-#include <boost/foreach.hpp>
+namespace Hypertable {
 
-#define foreach_ht BOOST_FOREACH
+  /// @addtogroup AsyncComm
+  /// @{
 
-#endif // HYPERTABLE_SWEETENER_H
+  /// Clock used for AsyncComm timing needs
+  typedef std::chrono::fast_clock ClockT;
+
+  /// @}
+
+}
+
+#endif // AsyncComm_Clock_h

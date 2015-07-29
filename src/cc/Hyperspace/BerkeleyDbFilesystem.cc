@@ -70,8 +70,6 @@ void close_db_cursor(Dbc **cursor) {
 const char* BerkeleyDbFilesystem::ms_name_namespace_db = "namespace.db";
 const char* BerkeleyDbFilesystem::ms_name_state_db = "state.db";
 
-/*
- */
 BerkeleyDbFilesystem::BerkeleyDbFilesystem(PropertiesPtr &props,
                                            const std::string &basedir,
                                            const std::vector<Thread::id> &thread_ids,
@@ -79,9 +77,9 @@ BerkeleyDbFilesystem::BerkeleyDbFilesystem(PropertiesPtr &props,
     : m_base_dir(basedir), m_env(0) {
 
   m_checkpoint_size_kb = props->get_i32("Hyperspace.Checkpoint.Size") / 1000;
-  m_log_gc_interval = props->get_i32("Hyperspace.LogGc.Interval");
   m_max_unused_logs = props->get_i32("Hyperspace.LogGc.MaxUnusedLogs");
-  boost::xtime_get(&m_last_log_gc_time, boost::TIME_UTC_);
+  m_log_gc_interval = std::chrono::milliseconds(props->get_i32("Hyperspace.LogGc.Interval"));
+  m_last_log_gc_time = std::chrono::steady_clock::now();
 
   u_int32_t env_flags =
     DB_CREATE |      // If the environment does not exist, create it
@@ -170,7 +168,7 @@ BerkeleyDbFilesystem::BerkeleyDbFilesystem(PropertiesPtr &props,
                             props->get_i32("Hyperspace.Replica.Replication.Timeout")*1000);
 
       int priority = m_replication_info.num_replicas;
-      foreach_ht(String replica, props->get_strs("Hyperspace.Replica.Host")) {
+      for (auto replica : props->get_strs("Hyperspace.Replica.Host")) {
         bool is_ipv4 = InetAddr::is_ipv4(replica.c_str());
         bool is_localhost=false;
         Endpoint e;
@@ -374,7 +372,7 @@ BerkeleyDbFilesystem::~BerkeleyDbFilesystem() {
    */
   try {
     HT_INFO("Closed DB handles for all threads ");
-    foreach_ht(ThreadHandleMap::value_type &val, m_thread_handle_map) {
+    for (auto &val : m_thread_handle_map) {
       (val.second)->close();
     }
     m_env.close(0);
@@ -492,8 +490,8 @@ void BerkeleyDbFilesystem::init_db_handles(const std::vector<Thread::id> &thread
   BDbHandlesPtr db_handles;
 
   // Assign per thread handles but don't open them yet
-  foreach_ht(Thread::id thread_id, thread_ids) {
-    db_handles = new BDbHandles();
+  for (auto thread_id : thread_ids) {
+    db_handles = std::make_shared<BDbHandles>();
     m_thread_handle_map[thread_id] = db_handles;
     HT_INFOF("Created DB handles for thread: %6d", thread_id);
 
@@ -538,12 +536,11 @@ void BerkeleyDbFilesystem::do_checkpoint() {
     HT_FATAL_OUT << "Error checkpointing BerkeleyDb: " << e.what() << HT_END;
   }
 
-  boost::xtime now;
-  boost::xtime_get(&now, boost::TIME_UTC_);
-  int64_t time_elapsed = xtime_diff_millis(m_last_log_gc_time, now);
+  auto now = std::chrono::steady_clock::now();
+  auto time_elapsed = now - m_last_log_gc_time;
 
   if (time_elapsed > m_log_gc_interval) {
-    memcpy(&m_last_log_gc_time, &now, sizeof(boost::xtime));
+    m_last_log_gc_time = now;
 
     // delete all but the last max_unused_logs files
     char **unused_logs, **log;
@@ -1246,7 +1243,7 @@ BerkeleyDbFilesystem::get_directory_attr_listing(BDbTxn &txn, String fname,
   if (include_sub_entries) {
     if (!ends_with(fname, "/"))
       fname += "/";
-    foreach_ht(DirEntryAttr &entry, listing)
+    for (auto &entry : listing)
       if (entry.is_dir)
         get_directory_attr_listing(txn, fname + entry.name, aname, true, entry.sub_entries);
   }

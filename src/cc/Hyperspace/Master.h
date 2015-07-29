@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERSPACE_MASTER_H
-#define HYPERSPACE_MASTER_H
+#ifndef Hyperspace_Master_h
+#define Hyperspace_Master_h
 
 #include <Hyperspace/BerkeleyDbFilesystem.h>
 #include <Hyperspace/MetricsHandler.h>
@@ -43,22 +43,22 @@
 #include <AsyncComm/Event.h>
 #include <AsyncComm/ResponseCallback.h>
 
-#include <Common/Mutex.h>
 #include <Common/Properties.h>
-#include <Common/ReferenceCount.h>
 #include <Common/SockAddrMap.h>
 #include <Common/Status.h>
 #include <Common/StringExt.h>
 #include <Common/Time.h>
-#include <Common/atomic.h>
 
+#include <chrono>
+#include <memory>
+#include <mutex>
 #include <queue>
 #include <unordered_map>
 #include <vector>
 
 namespace Hyperspace {
 
-  class Master : public ReferenceCount {
+  class Master {
   public:
 
     enum { TIMER_INTERVAL_MS=1000 };
@@ -154,7 +154,8 @@ namespace Hyperspace {
      */
     int renew_session_lease(uint64_t session_id);
 
-    bool next_expired_session(SessionDataPtr &, boost::xtime &now);
+    bool next_expired_session(SessionDataPtr &,
+                              std::chrono::steady_clock::time_point now);
     void remove_expired_sessions();
 
 
@@ -163,8 +164,8 @@ namespace Hyperspace {
     }
 
     void tick() {
-      ScopedLock lock(m_last_tick_mutex);
-      boost::xtime_get(&m_last_tick, boost::TIME_UTC_);
+      std::lock_guard<std::mutex> lock(m_last_tick_mutex);
+      m_last_tick = std::chrono::steady_clock::now();
     }
 
     /// Handle sleep event (e.g. laptop close).
@@ -342,16 +343,16 @@ namespace Hyperspace {
     SessionMap m_session_map;
     MetricsHandlerPtr m_metrics_handler;
 
-    Mutex         m_session_map_mutex;
-    Mutex         m_last_tick_mutex;
-    Mutex         m_maintenance_mutex;
-    bool          m_maintenance_outstanding;
-    boost::xtime  m_last_tick;
+    std::mutex m_session_map_mutex;
+    std::mutex m_last_tick_mutex;
+    std::mutex m_maintenance_mutex;
+    bool m_maintenance_outstanding {};
+    std::chrono::steady_clock::time_point m_last_tick;
 
     /// Suspension time recorded by handle_sleep()
-    boost::xtime m_sleep_time;
+    std::chrono::steady_clock::time_point m_sleep_time;
 
-    bool          m_shutdown;
+    bool m_shutdown {};
 
     // BerkeleyDB state
     BerkeleyDbFilesystem *m_bdb_fs;
@@ -361,8 +362,8 @@ namespace Hyperspace {
 
   };
 
-  typedef boost::intrusive_ptr<Master> MasterPtr;
+  typedef std::shared_ptr<Master> MasterPtr;
 
 } // namespace Hyperspace
 
-#endif // HYPERSPACE_MASTER_H
+#endif // Hyperspace_Master_h

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,42 +19,42 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-
-#include <queue>
-#include <cstdio>
-#include <iostream>
-#include <fstream>
-#include <string>
-
-extern "C" {
-#include <netdb.h>
-#include <errno.h>
-#include <poll.h>
-#ifndef _WIN32
-#include <pthread.h>
-#endif
-#include <stdint.h>
-#include <string.h>
-#include <time.h>
-}
-
-#include <boost/thread/condition.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
-
-#include "Common/Init.h"
-#include "Common/Error.h"
-#include "Common/InetAddr.h"
-#include "Common/Logger.h"
-#include "Common/System.h"
-#include "Common/Usage.h"
-#include "Common/Serialization.h"
+#include <Common/Compat.h>
 
 #include "DispatchHandler.h"
 #include "Comm.h"
 #include "CommHeader.h"
 #include "Event.h"
+
+#include <Common/Init.h>
+#include <Common/Error.h>
+#include <Common/InetAddr.h>
+#include <Common/Logger.h>
+#include <Common/System.h>
+#include <Common/Usage.h>
+#include <Common/Serialization.h>
+
+#include <boost/thread/thread.hpp>
+
+#include <chrono>
+#include <condition_variable>
+#include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+
+extern "C" {
+#include <netdb.h>
+#include <errno.h>
+#ifndef _WIN32
+#include <pthread.h>
+#endif
+#include <stdint.h>
+#include <string.h>
+}
 
 using namespace Hypertable;
 using namespace Serialization;
@@ -98,17 +98,17 @@ class ResponseHandler : public DispatchHandler {
 
 public:
 
-  ResponseHandler() : m_queue(), m_mutex(), m_cond() { return; }
-  virtual ~ResponseHandler() { return; }
+  ResponseHandler() { }
+  virtual ~ResponseHandler() { }
 
   virtual void handle(EventPtr &event_ptr) = 0;
 
   virtual bool get_response(EventPtr &event_ptr) = 0;
 
 protected:
-  std::queue<EventPtr>   m_queue;
-  Mutex             m_mutex;
-  boost::condition  m_cond;
+  std::queue<EventPtr> m_queue;
+  std::mutex m_mutex;
+  std::condition_variable m_cond;
 };
 
 
@@ -125,10 +125,10 @@ class ResponseHandlerTCP : public ResponseHandler {
 
 public:
 
-  ResponseHandlerTCP() : ResponseHandler(), m_connected(false) { return; }
+  ResponseHandlerTCP() { }
 
   virtual void handle(EventPtr &event_ptr) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (event_ptr->type == Event::CONNECTION_ESTABLISHED) {
       if (g_verbose)
         HT_INFOF("Connection Established - %s", event_ptr->to_str().c_str());
@@ -147,7 +147,7 @@ public:
     }
     else if (event_ptr->type == Event::ERROR) {
       HT_INFOF("Error : %s", Error::get_text(event_ptr->error));
-      //exit(1);
+      //exit(EXIT_FAILURE);
     }
     else if (event_ptr->type == Event::MESSAGE) {
       m_queue.push(event_ptr);
@@ -156,7 +156,7 @@ public:
   }
 
   bool wait_for_connection() {
-    ScopedLock lock(m_mutex);
+    std::unique_lock<std::mutex> lock(m_mutex);
     if (m_connected)
       return true;
     m_cond.wait(lock);
@@ -164,7 +164,7 @@ public:
   }
 
   virtual bool get_response(EventPtr &event_ptr) {
-    ScopedLock lock(m_mutex);
+    std::unique_lock<std::mutex> lock(m_mutex);
     while (m_queue.empty()) {
       if (m_connected == false)
         return false;
@@ -176,7 +176,7 @@ public:
   }
 
 private:
-  bool m_connected;
+  bool m_connected {};
 };
 
 
@@ -212,22 +212,20 @@ public:
   ResponseHandlerUDP() : ResponseHandler() { return; }
 
   virtual void handle(EventPtr &event_ptr) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (event_ptr->type == Event::MESSAGE) {
       m_queue.push(event_ptr);
       m_cond.notify_one();
     }
     else {
       HT_INFOF("%s", event_ptr->to_str().c_str());
-      //exit(1);
+      //exit(EXIT_FAILURE);
     }
   }
 
   virtual bool get_response(EventPtr &event_ptr) {
-    ScopedLock lock(m_mutex);
-    while (m_queue.empty()) {
-      m_cond.wait(lock);
-    }
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_cond.wait(lock, [this](){ return !m_queue.empty(); });
     event_ptr = m_queue.front();
     m_queue.pop();
     return true;
@@ -277,7 +275,7 @@ int main(int argc, char **argv) {
       rval = atoi(&argv[i][7]);
       if (rval <= 1024 || rval > 65535) {
         cerr << "Invalid port.  Must be in the range of 1024-65535." << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       port = rval;
     }
@@ -302,7 +300,7 @@ int main(int argc, char **argv) {
     Usage::dump_and_exit(usage);
 
   if (!InetAddr::initialize(&addr, host, port))
-    exit(1);
+    exit(EXIT_FAILURE);
 
   comm = Comm::instance();
 
@@ -329,7 +327,7 @@ int main(int argc, char **argv) {
     if (inet_addr.sin_port == 0) {
       if ((error = comm->connect(addr, dhp)) != Error::OK) {
         HT_ERRORF("Comm::connect error - %s", Error::get_text(error));
-        exit(1);
+        exit(EXIT_FAILURE);
       }
     }
     else {
@@ -337,7 +335,7 @@ int main(int argc, char **argv) {
       comm->listen(inet_addr, handler_factory, dhp);
     }
     if (!((ResponseHandlerTCP *)resp_handler)->wait_for_connection())
-      exit(1);
+      exit(EXIT_FAILURE);
 
   }
 
@@ -366,7 +364,7 @@ int main(int argc, char **argv) {
               HT_ERROR("Connection timeout.");
               return 1;
             }
-            poll(0, 0, 1000);
+            this_thread::sleep_for(chrono::milliseconds(1000));
             retries++;
           }
           else {

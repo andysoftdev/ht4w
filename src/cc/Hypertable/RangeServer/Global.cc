@@ -29,7 +29,7 @@ using namespace Hyperspace;
 
 namespace Hypertable {
 
-  Mutex                  Global::mutex;
+  std::mutex                  Global::mutex;
   SessionPtr             Global::hyperspace = 0;
   FilesystemPtr          Global::dfs;
   FilesystemPtr          Global::log_dfs;
@@ -45,10 +45,10 @@ namespace Hypertable {
   bool                   Global::row_size_unlimited = false;
   bool                   Global::ignore_cells_with_clock_skew = false;
   bool                   Global::range_initialization_complete = false;
-  CommitLog             *Global::user_log = 0;
-  CommitLog             *Global::system_log = 0;
-  CommitLog             *Global::metadata_log = 0;
-  CommitLog             *Global::root_log = 0;
+  CommitLogPtr           Global::user_log;
+  CommitLogPtr           Global::system_log;
+  CommitLogPtr           Global::metadata_log;
+  CommitLogPtr           Global::root_log;
   MetaLog::WriterPtr     Global::rsml_writer;
   std::string            Global::log_dir = "";
   LocationInitializerPtr Global::location_initializer;
@@ -84,38 +84,38 @@ namespace Hypertable {
   void Global::add_to_work_queue(MetaLog::EntityTaskPtr entity) {
     if (entity) {
       entity->work_queue_add_hook();
-      ScopedLock lock(Global::mutex);
+      std::lock_guard<std::mutex> lock(Global::mutex);
       Global::work_queue.push_back(entity);
     }
   }
 
   void Global::immovable_range_set_add(const TableIdentifier &table, const RangeSpec &spec) {
-    ScopedLock lock(Global::mutex);
+    std::lock_guard<std::mutex> lock(Global::mutex);
     String name = format("%s[%s..%s]", table.id, spec.start_row, spec.end_row);
     HT_ASSERT(Global::immovable_range_set.count(name) == 0);
     Global::immovable_range_set.insert(name);
   }
 
   void Global::immovable_range_set_remove(const TableIdentifier &table, const RangeSpec &spec) {
-    ScopedLock lock(Global::mutex);
+    std::lock_guard<std::mutex> lock(Global::mutex);
     String name = format("%s[%s..%s]", table.id, spec.start_row, spec.end_row);
     HT_ASSERT(Global::immovable_range_set.count(name) == 1);
     Global::immovable_range_set.erase(name);
   }
 
   bool Global::immovable_range_set_contains(const TableIdentifier &table, const RangeSpec &spec) {
-    ScopedLock lock(Global::mutex);
+    std::lock_guard<std::mutex> lock(Global::mutex);
     String name = format("%s[%s..%s]", table.id, spec.start_row, spec.end_row);
     return Global::immovable_range_set.count(name) > 0;
   }
 
   void Global::set_ranges(RangesPtr &r) {
-    ScopedLock lock(Global::mutex);
+    std::lock_guard<std::mutex> lock(Global::mutex);
     Global::ranges = r;
   }
 
   RangesPtr Global::get_ranges() {
-    ScopedLock lock(Global::mutex);
+    std::lock_guard<std::mutex> lock(Global::mutex);
     return Global::ranges;
   }
 

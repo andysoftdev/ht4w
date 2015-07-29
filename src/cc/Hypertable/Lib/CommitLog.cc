@@ -46,8 +46,10 @@
 #include <Common/md5.h>
 
 #include <cassert>
+#include <chrono>
 
 using namespace Hypertable;
+using namespace std;
 
 const char CommitLog::MAGIC_DATA[10] =
     { 'C','O','M','M','I','T','D','A','T','A' };
@@ -61,7 +63,6 @@ CommitLog::CommitLog(FilesystemPtr &fs, const string &log_dir, bool is_meta)
 }
 
 CommitLog::~CommitLog() {
-  delete m_compressor;
   close();
 }
 
@@ -86,7 +87,7 @@ CommitLog::initialize(const string &log_dir, PropertiesPtr &props,
     m_max_fragment_size = cfg.get_i64("RollLimit");
     compressor = cfg.get_str("Compressor"));
 
-  m_compressor = CompressorFactory::create_block_codec(compressor);
+  m_compressor.reset(CompressorFactory::create_block_codec(compressor));
 
   boost::trim_right_if(m_log_dir, boost::is_any_of("/"));
 
@@ -96,7 +97,7 @@ CommitLog::initialize(const string &log_dir, PropertiesPtr &props,
     if (m_range_reference_required)
       m_range_reference_required = init_log->range_reference_required();
     stitch_in(init_log);
-    foreach_ht (const CommitLogFileInfo *frag, m_fragment_queue) {
+    for (const auto frag : m_fragment_queue) {
       if (frag->num >= m_cur_fragment_num)
         m_cur_fragment_num = frag->num + 1;
     }
@@ -136,14 +137,11 @@ CommitLog::initialize(const string &log_dir, PropertiesPtr &props,
 
 
 int64_t CommitLog::get_timestamp() {
-  ScopedLock lock(m_mutex);
-  boost::xtime now;
-  boost::xtime_get(&now, boost::TIME_UTC_);
-  return ((int64_t)now.sec * 1000000000LL) + (int64_t)now.nsec;
+  return get_ts64();
 }
 
 int CommitLog::flush() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int error {};
 
   try {
@@ -161,7 +159,7 @@ int CommitLog::flush() {
 }
 
 int CommitLog::sync() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int error {};
 
   try {
@@ -186,7 +184,7 @@ CommitLog::write(uint64_t cluster_id, DynamicBuffer &buffer, int64_t revision,
   BlockHeaderCommitLog header(MAGIC_DATA, revision, cluster_id);
 
   if (m_needs_roll) {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     if ((error = roll()) != Error::OK)
       return error;
   }
@@ -201,7 +199,7 @@ CommitLog::write(uint64_t cluster_id, DynamicBuffer &buffer, int64_t revision,
    * Roll the log
    */
   if (m_cur_fragment_length > m_max_fragment_size) {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     if ((error = roll()) != Error::OK)
       return error;
   }
@@ -211,7 +209,7 @@ CommitLog::write(uint64_t cluster_id, DynamicBuffer &buffer, int64_t revision,
 
 
 int CommitLog::link_log(uint64_t cluster_id, CommitLogBase *log_base) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int error;
   int64_t link_revision = log_base->get_latest_revision();
   BlockHeaderCommitLog header(MAGIC_LINK, link_revision, cluster_id);
@@ -265,7 +263,7 @@ int CommitLog::link_log(uint64_t cluster_id, CommitLogBase *log_base) {
     file_info->verify();
     file_info->purge_dirs.insert(log_dir);
 
-    foreach_ht (CommitLogFileInfo *fi, log_base->fragment_queue()) {
+    for (auto fi : log_base->fragment_queue()) {
       if (fi->parent == 0) {
         fi->parent = file_info;
         file_info->references++;
@@ -290,7 +288,7 @@ int CommitLog::link_log(uint64_t cluster_id, CommitLogBase *log_base) {
 
 
 int CommitLog::close() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   try {
     if (m_fd >= 0) {
@@ -311,14 +309,14 @@ int CommitLog::close() {
 
 int CommitLog::purge(int64_t revision, StringSet &remove_ok_logs,
                      StringSet &removed_logs, string *trace) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   if (m_fd == -1)
     return Error::CLOSED;
 
   if (trace) {
     *trace += format("--- Reap set begin (%s) ---\n", m_log_dir.c_str());
-    foreach_ht (CommitLogFileInfo *fi, m_reap_set)
+    for (const auto fi : m_reap_set)
       *trace += fi->to_str(remove_ok_logs) + "\n";
     *trace += format("--- Reap set end (%s) ---\n", m_log_dir.c_str());
   }
@@ -371,7 +369,7 @@ void CommitLog::remove_file_info(CommitLogFileInfo *fi, StringSet &removed_logs)
   fi->verify();
 
   // Remove linked log directores
-  foreach_ht (const string &logdir, fi->purge_dirs) {
+  for (const auto &logdir : fi->purge_dirs) {
     try {
       HT_INFOF("Removing linked log directory '%s' because all fragments have been removed", logdir.c_str());
       removed_logs.insert(logdir);
@@ -478,7 +476,7 @@ int CommitLog::roll(CommitLogFileInfo **clfip) {
 int
 CommitLog::compress_and_write(DynamicBuffer &input, BlockHeader *header,
                               int64_t revision, Filesystem::Flags flags) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int error = Error::OK;
   DynamicBuffer zblock;
 
@@ -510,7 +508,7 @@ CommitLog::compress_and_write(DynamicBuffer &input, BlockHeader *header,
 
 
 void CommitLog::load_cumulative_size_map(CumulativeSizeMap &cumulative_size_map) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int64_t cumulative_total = 0;
   uint32_t distance = 0;
   CumulativeFragmentData frag_data;
@@ -544,13 +542,13 @@ void CommitLog::load_cumulative_size_map(CumulativeSizeMap &cumulative_size_map)
 
 
 void CommitLog::get_stats(const string &prefix, string &result) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
 
   if (m_fd == -1)
     HT_THROWF(Error::CLOSED, "Commit log '%s' has been closed", m_log_dir.c_str());
 
   try {
-    foreach_ht (const CommitLogFileInfo *frag, m_fragment_queue) {
+    for (const auto frag : m_fragment_queue) {
       result += prefix + String("-log-fragment[") + frag->num + "]\tsize\t" + frag->size + "\n";
       result += prefix + String("-log-fragment[") + frag->num + "]\trevision\t" + frag->revision + "\n";
       result += prefix + String("-log-fragment[") + frag->num + "]\tdir\t" + frag->log_dir + "\n";

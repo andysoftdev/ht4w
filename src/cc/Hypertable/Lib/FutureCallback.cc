@@ -20,7 +20,6 @@
  */
 
 #include "Common/Compat.h"
-#include <boost/thread/xtime.hpp>
 
 #include "FutureCallback.h"
 #include "TableScannerAsync.h"
@@ -31,41 +30,37 @@ using namespace Hypertable;
 FutureCallback::~FutureCallback() {
   cancel();
   wait_for_completion();
-  foreach_ht (TableScannerAsync *scanner, m_scanners_owned)
-    intrusive_ptr_release(scanner);
 }
 
 void FutureCallback::cancel() {
-  ScopedLock lock(m_outstanding_mutex);
+  std::lock_guard<std::mutex> lock(m_outstanding_mutex);
   m_cancelled = true;
-  foreach_ht (TableScannerAsync *scanner, m_scanner_set)
+  for (TableScannerAsync *scanner : m_scanner_set)
     scanner->cancel();
   m_outstanding_cond.notify_all();
 }
 
 void FutureCallback::register_scanner(TableScannerAsync *scanner) {
-  ScopedLock lock(m_outstanding_mutex);
+  std::lock_guard<std::mutex> lock(m_outstanding_mutex);
   m_scanner_set.insert(scanner);
-  if (m_scanners_owned.insert(scanner).second)
-    intrusive_ptr_add_ref(scanner);
   m_cancelled = false;
 }
 
 void FutureCallback::deregister_scanner(TableScannerAsync *scanner) {
-  ScopedLock lock(m_outstanding_mutex);
+  std::lock_guard<std::mutex> lock(m_outstanding_mutex);
   ScannerSet::iterator it = m_scanner_set.find(scanner);
   HT_ASSERT(it != m_scanner_set.end());
   m_scanner_set.erase(it);
 }
 
 void FutureCallback::register_mutator(TableMutatorAsync *mutator) {
-  ScopedLock lock(m_outstanding_mutex);
+  std::lock_guard<std::mutex> lock(m_outstanding_mutex);
   m_mutator_set.insert(mutator);
   m_cancelled = false;
 }
 
 void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
-  ScopedLock lock(m_outstanding_mutex);
+  std::lock_guard<std::mutex> lock(m_outstanding_mutex);
   MutatorSet::iterator it = m_mutator_set.find(mutator);
   HT_ASSERT(it != m_mutator_set.end());
   m_mutator_set.erase(it);
@@ -73,8 +68,8 @@ void FutureCallback::deregister_mutator(TableMutatorAsync *mutator) {
 
 void FutureCallback::wait_for_completion() {
   {
-    ScopedLock lock(m_outstanding_mutex);
-    foreach_ht (TableMutatorAsync *mutator, m_mutator_set)
+    std::lock_guard<std::mutex> lock(m_outstanding_mutex);
+    for (TableMutatorAsync *mutator : m_mutator_set)
       mutator->flush();
   }
   ResultCallback::wait_for_completion();

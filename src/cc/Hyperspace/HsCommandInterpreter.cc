@@ -33,13 +33,9 @@
 #include <Common/Stopwatch.h>
 #include <Common/DynamicBuffer.h>
 
-#include <boost/progress.hpp>
-#include <boost/timer.hpp>
-#include <boost/thread/xtime.hpp>
 #include <boost/algorithm/string.hpp>
 
 extern "C" {
-#include <time.h>
 #if defined(__sun__)
 #include <inttypes.h>
 #endif
@@ -97,7 +93,7 @@ int HsCommandInterpreter::execute_line(const String &line) {
         HT_THROW(Error::HYPERSPACE_CLI_PARSE_ERROR,
                  "Error: no filename supplied.");
 
-      HandleCallbackPtr callback = new FileHandleCallback(event_mask);
+      HandleCallbackPtr callback = make_shared<FileHandleCallback>(event_mask);
       handle = m_session->open(fname,open_flag,callback);
 
       // store opened handle in global HsClientState namespace
@@ -119,7 +115,7 @@ int HsCommandInterpreter::execute_line(const String &line) {
         HT_THROW(Error::HYPERSPACE_CLI_PARSE_ERROR,
                  "Error: no filename supplied.");
 
-      HandleCallbackPtr callback = new FileHandleCallback(event_mask);
+      HandleCallbackPtr callback = make_shared<FileHandleCallback>(event_mask);
       handle = m_session->create(fname,open_flag,callback,state.attrs);
 
       // store opened handle in global HsClientState namespace
@@ -356,7 +352,7 @@ int HsCommandInterpreter::execute_line(const String &line) {
         attrs.clear();
         m_session->attr_list(handle, attrs);
 
-        foreach_ht(const String &attr, attrs) {
+        for (const auto &attr : attrs) {
           if (attr == lock_attr || attr == generation_attr)
             continue;
           value.clear();
@@ -391,7 +387,7 @@ int HsCommandInterpreter::execute_line(const String &line) {
           else
             continue;
         }
-        foreach_ht(const struct DirEntry &entry, listing) {
+        for (const auto &entry : listing) {
           // if dir save it
           if(entry.is_dir)
             tmp_dirs.push_back(fname + "/" + entry.name);
@@ -408,7 +404,7 @@ int HsCommandInterpreter::execute_line(const String &line) {
             attrs.clear();
             m_session->attr_list(handle, attrs);
 
-            foreach_ht(const String &attr, attrs) {
+            for (const auto &attr : attrs) {
               if (attr == lock_attr || attr == generation_attr)
                 continue;
               value.clear();

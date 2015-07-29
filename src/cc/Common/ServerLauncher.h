@@ -24,16 +24,17 @@
  * testing.
  */
 
-#ifndef HYPERTABLE_SERVERLAUNCHER_H
-#define HYPERTABLE_SERVERLAUNCHER_H
+#ifndef Common_ServerLauncher_h
+#define Common_ServerLauncher_h
 
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 extern "C" {
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <poll.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -76,7 +77,7 @@ namespace Hypertable {
       m_path = path;
       if (pipe(fd) < 0) {
         perror("pipe");
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       if ((m_child_pid = fork()) == 0) {
         if (outfile) {
@@ -91,7 +92,7 @@ namespace Hypertable {
           outfd = open(outfile, open_flags, 0644);
           if (outfd < 0) {
             perror("open");
-            exit(1);
+            exit(EXIT_FAILURE);
           }
           dup2(outfd, 1);
           dup2(outfd, 2);
@@ -103,7 +104,7 @@ namespace Hypertable {
       }
       close(fd[0]);
       m_write_fd = fd[1];
-      poll(0, 0, 2000);
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 
     /** Destructor; kills the external program */
@@ -242,4 +243,4 @@ namespace Hypertable {
 
 }
 
-#endif // HYPERTABLE_SERVERLAUNCHER_H
+#endif // Common_ServerLauncher_h

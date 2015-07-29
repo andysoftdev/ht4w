@@ -1,4 +1,4 @@
-/* -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -42,12 +42,10 @@
 #include <Common/FailureInducer.h>
 #include <Common/ScopeGuard.h>
 
+#include <chrono>
+#include <ctime>
 #include <sstream>
-
-extern "C" {
-#include <poll.h>
-#include <time.h>
-}
+#include <thread>
 
 using namespace Hypertable;
 using namespace Hyperspace;
@@ -93,7 +91,7 @@ void OperationRecover::execute() {
     // Prevent any RegisterServer operations for this server from running while
     // recovery is in progress
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       String register_server_label = String("RegisterServer ") + m_location;
       m_dependencies.erase(register_server_label);
       m_exclusivities.insert(register_server_label);
@@ -106,7 +104,7 @@ void OperationRecover::execute() {
     if (!acquire_server_lock()) {
       if (m_rsc)
         m_rsc->set_recovering(false);
-      m_expiration_time.reset();  // force it to get removed immediately
+      m_expiration_time = ClockT::now();  // force it to get removed immediately
       complete_ok();
       return;
     }
@@ -169,7 +167,7 @@ void OperationRecover::execute() {
           last_notification = time(0);
         }
         HT_ERRORF("%s", message.c_str());
-        poll(0, 0, 30000);
+        this_thread::sleep_for(chrono::milliseconds(30000));
       }
     }
 
@@ -224,7 +222,7 @@ void OperationRecover::execute() {
 
     HT_MAYBE_FAIL("recover-server-4");
 
-    m_expiration_time.reset();  // force it to get removed immediately
+    m_expiration_time = ClockT::now();  // force it to get removed immediately
 
     if (m_rsc) {
       std::vector<MetaLog::EntityPtr> additional;
@@ -348,7 +346,7 @@ void OperationRecover::create_recovery_plan() {
  void OperationRecover::read_rsml(vector<MetaLog::EntityPtr> &removable_move_ops) {
   // move rsml and commit log to some recovered dir
   MetaLog::DefinitionPtr rsml_definition
-      = new MetaLog::DefinitionRangeServer(m_location.c_str());  
+    = make_shared<MetaLog::DefinitionRangeServer>(m_location.c_str());  
   MetaLogEntityRange *range;
   MetaLog::EntityTaskAcknowledgeRelinquish *ack_task;
   vector<MetaLog::EntityPtr> entities;
@@ -357,12 +355,12 @@ void OperationRecover::create_recovery_plan() {
   String logfile = m_context->toplevel_dir + "/servers/" + m_location + "/log/"
     + rsml_definition->name();
   MetaLog::ReaderPtr rsml_reader = 
-    new MetaLog::Reader(m_context->dfs, rsml_definition, logfile);
+    make_shared<MetaLog::Reader>(m_context->dfs, rsml_definition, logfile);
 
   rsml_reader->get_entities(entities);
 
   try {
-    foreach_ht (MetaLog::EntityPtr &entity, entities) {
+    for (auto &entity : entities) {
       if ((range = dynamic_cast<MetaLogEntityRange *>(entity.get())) != 0) {
         QualifiedRangeSpec spec;
         RangeStateManaged range_state;

@@ -47,7 +47,8 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include <poll.h>
+#include <chrono>
+#include <thread>
 
 using namespace Hypertable;
 using namespace Hyperspace;
@@ -129,7 +130,7 @@ void OperationAlterTable::execute() {
     }
     m_schema = alter_schema->render_xml(true);
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_dependencies.clear();
       m_dependencies.insert(Dependency::METADATA);
       m_state = OperationState::CREATE_INDICES;
@@ -150,7 +151,7 @@ void OperationAlterTable::execute() {
     servers.clear();
     Utility::get_table_server_set(m_context, m_id, "", servers);
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_servers.clear();
       m_dependencies.clear();
       for (StringSet::iterator iter=servers.begin(); iter!=servers.end(); ++iter) {
@@ -172,10 +173,10 @@ void OperationAlterTable::execute() {
     if (!op_handler->wait_for_completion()) {
       std::set<DispatchHandlerOperation::Result> results;
       op_handler->get_results(results);
-      foreach_ht (const DispatchHandlerOperation::Result &result, results) {
+      for (const auto &result : results) {
         if (result.error == Error::OK ||
             result.error == Error::TABLE_NOT_FOUND) {
-          ScopedLock lock(m_mutex);
+          lock_guard<mutex> lock(m_mutex);
           m_completed.insert(result.location);
         }
         else
@@ -183,7 +184,7 @@ void OperationAlterTable::execute() {
                    Error::get_text(result.error), result.msg.c_str());
       }
       {
-        ScopedLock lock(m_mutex);
+        lock_guard<mutex> lock(m_mutex);
         m_servers.clear();
         m_dependencies.clear();
         m_dependencies.insert(Dependency::METADATA);
@@ -191,7 +192,7 @@ void OperationAlterTable::execute() {
       }
       m_context->mml_writer->record_state(shared_from_this());
       // Sleep a little bit to prevent busy wait
-      poll(0, 0, 5000);
+      this_thread::sleep_for(chrono::milliseconds(5000));
       return;
     }
     set_state(OperationState::UPDATE_HYPERSPACE);
@@ -266,10 +267,10 @@ size_t OperationAlterTable::encoded_length_state() const {
     Serialization::encoded_length_vstr(m_schema) +
     Serialization::encoded_length_vstr(m_id);
   length += 4;
-  foreach_ht (const String &location, m_completed)
+  for (auto &location : m_completed)
     length += Serialization::encoded_length_vstr(location);
   length += 4;
-  foreach_ht (const String &location, m_servers)
+  for (auto &location : m_servers)
     length += Serialization::encoded_length_vstr(location);
   length += m_parts.encoded_length();
   return length;
@@ -280,10 +281,10 @@ void OperationAlterTable::encode_state(uint8_t **bufp) const {
   Serialization::encode_vstr(bufp, m_schema);
   Serialization::encode_vstr(bufp, m_id);
   Serialization::encode_i32(bufp, m_completed.size());
-  foreach_ht (const String &location, m_completed)
+  for (auto &location : m_completed)
     Serialization::encode_vstr(bufp, location);
   Serialization::encode_i32(bufp, m_servers.size());
-  foreach_ht (const String &location, m_servers)
+  for (auto &location : m_servers)
     Serialization::encode_vstr(bufp, location);
   m_parts.encode(bufp);
 }
@@ -340,8 +341,8 @@ bool OperationAlterTable::get_schemas(SchemaPtr &original_schema,
       DynamicBuffer value_buf;
       string filename = m_context->toplevel_dir + "/tables/" + m_id;
       m_context->hyperspace->attr_get(filename, "schema", value_buf);
-      original_schema = Schema::new_instance((const char *)value_buf.base);
-      alter_schema = Schema::new_instance(m_params.schema());
+      original_schema.reset( Schema::new_instance((const char *)value_buf.base) );
+      alter_schema.reset( Schema::new_instance(m_params.schema()) );
     }
     catch (Exception &e) {
       complete_error(e);

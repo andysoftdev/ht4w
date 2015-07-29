@@ -193,7 +193,7 @@ bool TermInfo::operator==(const TermInfo &other) const {
 
 namespace {
 
-RecMutex _mutex;
+std::recursive_mutex _mutex;
 
 // for unit conversion to/from MB/GB
 const double KiB = 1024.;
@@ -250,7 +250,7 @@ ProcessTimesPerfmon _processTimesPerfmon;
 namespace Hypertable {
 
 const CpuInfo &System::cpu_info() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   if (!_cpu_infop)
     _cpu_infop = &_cpu_info.init();
@@ -275,7 +275,7 @@ const DiskStat &System::disk_stat() {
 }
 
 const OsInfo &System::os_info() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   if (!_os_infop)
     _os_infop = &_os_info.init();
@@ -288,7 +288,7 @@ const SwapStat &System::swap_stat() {
 }
 
 const NetInfo &System::net_info() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
   if (!_net_infop)
     _net_infop = &_net_info.init();
 
@@ -300,7 +300,7 @@ const NetStat &System::net_stat() {
 }
 
 const ProcInfo &System::proc_info() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   if (!_proc_infop)
     _proc_infop = &_proc_info.init();
@@ -317,7 +317,7 @@ const FsStat &System::fs_stat() {
 }
 
 const TermInfo &System::term_info() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   if (!_term_infop)
     _term_infop = &_term_info.init();
@@ -326,7 +326,7 @@ const TermInfo &System::term_info() {
 }
 
 CpuInfo &CpuInfo::init() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   vendor.clear();
   model.clear();
@@ -361,7 +361,7 @@ CpuInfo &CpuInfo::init() {
 }
 
 CpuStat &CpuStat::refresh() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   user = 0;
   sys = 0;
@@ -378,7 +378,7 @@ CpuStat &CpuStat::refresh() {
 }
 
 LoadAvgStat &LoadAvgStat::refresh() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   loadavg[0] = 0;
   loadavg[1] = 0;
@@ -388,7 +388,7 @@ LoadAvgStat &LoadAvgStat::refresh() {
 }
 
 MemStat &MemStat::refresh() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   MEMORYSTATUSEX memStatusEx;
   ZeroMemory(&memStatusEx, sizeof(memStatusEx));
@@ -439,7 +439,7 @@ void DiskStat::swap(DiskStat &other) {
 }
 
 DiskStat &DiskStat::refresh(const char *dir_prefix) {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   prefix = dir_prefix;
   reads_rate = 0;
@@ -475,7 +475,7 @@ void SwapStat::swap(SwapStat &other) {
 }
 
 SwapStat &SwapStat::refresh() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   total = 0;
   used = 0;
@@ -488,7 +488,7 @@ SwapStat &SwapStat::refresh() {
 }
 
 OsInfo &OsInfo::init() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   arch.clear();
   machine.clear();
@@ -503,7 +503,7 @@ OsInfo &OsInfo::init() {
 }
 
 NetInfo &NetInfo::init() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   host_name.clear();
   primary_addr.clear();
@@ -590,7 +590,7 @@ NetInfo &NetInfo::init() {
 }
 
 NetStat &NetStat::refresh() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   tcp_established = 0;
   tcp_listen = 0;
@@ -605,7 +605,7 @@ NetStat &NetStat::refresh() {
 }
 
 ProcInfo &ProcInfo::init() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   pid = GetCurrentProcessId();
   char buf[4096];
@@ -634,7 +634,7 @@ ProcInfo &ProcInfo::init() {
 }
 
 ProcStat &ProcStat::refresh() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   vm_size = 0;
   vm_resident = 0;
@@ -649,7 +649,7 @@ ProcStat &ProcStat::refresh() {
 }
 
 FsStat &FsStat::refresh(const char *dir_prefix) {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
 
   use_pct = 0;
   total = 0;
@@ -664,7 +664,7 @@ FsStat &FsStat::refresh(const char *dir_prefix) {
 }
 
 TermInfo &TermInfo::init() {
-  ScopedRecLock lock(_mutex);
+  std::lock_guard<std::recursive_mutex> lock(_mutex);
   CONSOLE_SCREEN_BUFFER_INFO csbi;
   if(GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
     term = "winnt";
@@ -752,7 +752,7 @@ std::ostream &operator<<(std::ostream &out, const ProcInfo &i) {
   out <<"{ProcInfo: pid="<< i.pid <<" user="<< i.user <<" exe='"<< i.exe
       <<"'\n cwd='"<< i.cwd <<"' root='"<< i.root <<"'\n args=[";
 
-  foreach_ht(const String &arg, i.args)
+  for(const String &arg : i.args)
     out <<"'"<< arg <<"', ";
 
   out <<"]}";

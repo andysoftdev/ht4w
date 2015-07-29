@@ -25,14 +25,15 @@
  * for computing application load statistics.
  */
 
+#ifndef Hypertable_RangeServer_LoadStatistics_h
+#define Hypertable_RangeServer_LoadStatistics_h
 
-#ifndef HYPERTABLE_LOADSTATISTICS_H
-#define HYPERTABLE_LOADSTATISTICS_H
+#include <Common/Logger.h>
+#include <Common/Time.h>
 
-#include "Common/Logger.h"
-#include "Common/Mutex.h"
-#include "Common/ReferenceCount.h"
-#include "Common/Time.h"
+#include <chrono>
+#include <memory>
+#include <mutex>
 
 namespace Hypertable {
 
@@ -48,7 +49,7 @@ namespace Hypertable {
    * while the statistics being gathered for the current time period are stored
    * in the #m_running member.
    */
-  class LoadStatistics : public ReferenceCount {
+  class LoadStatistics {
   public:
 
     /** POD-style structure to hold statistics.
@@ -93,7 +94,7 @@ namespace Hypertable {
      * @param compute_period Time period over which statistics are gathered
      */
     LoadStatistics(int64_t compute_period) : m_compute_period(compute_period) {
-      boost::xtime_get(&m_start_time, TIME_UTC_);
+      m_start_time = std::chrono::steady_clock::now();
       m_running.clear();
       m_computed.clear();
     }
@@ -150,22 +151,22 @@ namespace Hypertable {
     }
 
     void increment_compactions_major() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_running.compactions_major++;
     }
 
     void increment_compactions_minor() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_running.compactions_minor++;
     }
 
     void increment_compactions_merging() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_running.compactions_merging++;
     }
 
     void increment_compactions_gc() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_running.compactions_gc++;
     }
 
@@ -181,12 +182,9 @@ namespace Hypertable {
      * @param stats Output parameter to hold copy of last computed statistics
      */
     void recompute(Bundle *stats=0) {
-      ScopedLock lock(m_mutex);
-      int64_t period_millis;
-      boost::xtime now;
-      boost::xtime_get(&now, TIME_UTC_);
-
-      period_millis = xtime_diff_millis(m_start_time, now);
+      std::lock_guard<std::mutex> lock(m_mutex);
+      auto now = std::chrono::steady_clock::now();
+      int64_t period_millis = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_start_time).count();
       if (period_millis >= m_compute_period) {
         m_computed = m_running;
         m_computed.period_millis = period_millis;
@@ -202,7 +200,7 @@ namespace Hypertable {
           m_computed.scan_mbps = 0.0;
           m_computed.update_mbps = 0.0;
         }
-        memcpy(&m_start_time, &now, sizeof(boost::xtime));
+        m_start_time = now;
         m_running.clear();
 
         HT_INFOF("scans=(%u %u %llu %f) updates=(%u %u %llu %f %u)",
@@ -220,18 +218,18 @@ namespace Hypertable {
      * @param stats Pointer to structure to hold statistics
      */
     void get(Bundle *stats) {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       *stats = m_computed;
     }
 
     /// %Mutex for serializing concurrent access
-    Mutex m_mutex;
+    std::mutex m_mutex;
     
     // Time period over which statistics are to be computed
     int64_t m_compute_period;
 
     // Starting time of current time perioed
-    boost::xtime m_start_time;
+    std::chrono::steady_clock::time_point m_start_time;
 
     // Holds statistics currently being gathered
     Bundle m_running;
@@ -240,12 +238,12 @@ namespace Hypertable {
     Bundle m_computed;
   };
 
-  /// Smart pointer to LoadStatistics
-  typedef intrusive_ptr<LoadStatistics> LoadStatisticsPtr;
+  /// Shared smart pointer to LoadStatistics
+  typedef std::shared_ptr<LoadStatistics> LoadStatisticsPtr;
 
   /** @} */
 }
 
-#endif // HYPERTABLE_LOADSTATISTICS_H
+#endif // Hypertable_RangeServer_LoadStatistics_h
 
 

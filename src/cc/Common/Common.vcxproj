@@ -198,6 +198,7 @@
     <ClCompile Include="Error.cc" />
     <ClCompile Include="Escaper.cc" />
     <ClCompile Include="FailureInducer.cc" />
+    <ClCompile Include="fast_clock.cc" />
     <ClCompile Include="Filesystem.cc" />
     <ClCompile Include="FileUtils.cc" />
     <ClCompile Include="HostSpecification.cc" />
@@ -238,7 +239,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h" />
-    <ClInclude Include="atomic.h" />
     <ClInclude Include="Barrier.h" />
     <ClInclude Include="BlobHashSet.h" />
     <ClInclude Include="BlobHashTraits.h" />
@@ -263,6 +263,7 @@
     <ClInclude Include="Error.h" />
     <ClInclude Include="Escaper.h" />
     <ClInclude Include="FailureInducer.h" />
+    <ClInclude Include="fast_clock.h" />
     <ClInclude Include="Filesystem.h" />
     <ClInclude Include="FileUtils.h" />
     <ClInclude Include="FixedStream.h" />
@@ -312,7 +313,6 @@
     <ClInclude Include="StringDecompressorPrefix.h" />
     <ClInclude Include="StringExt.h" />
     <ClInclude Include="strptime.h" />
-    <ClInclude Include="Sweetener.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="TclHash.h" />
     <ClInclude Include="TestHarness.h" />

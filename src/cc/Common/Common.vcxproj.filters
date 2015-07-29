@@ -139,12 +139,12 @@
     <ClCompile Include="StatusPersister.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="fast_clock.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="atomic.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Barrier.h">
@@ -258,9 +258,6 @@
     <ClInclude Include="Random.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ReferenceCount.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="ScopeGuard.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -289,9 +286,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="StringExt.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Sweetener.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="System.h">
@@ -402,6 +396,12 @@
     <ClInclude Include="Status.h" />
     <ClInclude Include="StatusPersister.h" />
     <ClInclude Include="strptime.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fast_clock.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ReferenceCount.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -36,8 +36,6 @@
 #include <Common/SockAddrMap.h>
 #include <Common/Timer.h>
 
-#include <boost/thread/xtime.hpp>
-
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -45,11 +43,6 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
-
-extern "C" {
-#include <time.h>
-#include <sys/time.h>
-}
 
 namespace Hypertable {
 
@@ -108,7 +101,7 @@ namespace Hypertable {
     struct LtConnectionState {
       bool operator()(const ConnectionStatePtr &cs1,
                       const ConnectionStatePtr &cs2) const {
-        return std::chrono::operator>(cs1->next_retry, cs2->next_retry);
+        return CHRONO_OPERATOR>(cs1->next_retry, cs2->next_retry);
       }
     };
 

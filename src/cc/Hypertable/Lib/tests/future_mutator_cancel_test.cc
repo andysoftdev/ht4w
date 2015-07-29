@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,15 +19,16 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/Client.h>
+#include <Hypertable/Lib/Future.h>
+
+#include <Common/md5.h>
+#include <Common/Usage.h>
+
 #include <cstdlib>
 #include <iostream>
-
-#include "Common/md5.h"
-#include "Common/Usage.h"
-
-#include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/Future.h"
 
 #ifdef _WIN32
 #define srandom srand
@@ -114,16 +115,15 @@ int main(int argc, char **argv) {
       ns->create_table("FutureTest", schema);
       table_ptr = ns->open_table("FutureTest");
 
-      size_t ii=0;
-      for(ii=0; ii<num_mutators; ++ii)
-        mutator_ptrs.push_back(table_ptr->create_mutator_async(&ff));
+      for(size_t ii=0; ii<num_mutators; ++ii)
+        mutator_ptrs.push_back(TableMutatorAsyncPtr(table_ptr->create_mutator_async(&ff)));
 
       key.column_family = "data";
       key.column_qualifier = 0;
       key.column_qualifier_len = 0;
 
       size_t cells=0;
-      ii=0;
+      size_t ii=0;
       while(true) {
         for (size_t jj=0; jj < num_mutators; ++jj) {
           load_buffer_with_random(buf, 10);
@@ -149,13 +149,13 @@ int main(int argc, char **argv) {
     if (num_mutators > 1) {
       Future ff;
       vector<TableMutatorAsyncPtr> mutator_ptrs;
-      set<TableMutatorAsyncPtr> cancelled_mutator_ptrs;
+      set<TableMutatorAsync *> cancelled_mutator_ptrs;
       ns->drop_table("FutureTest", true);
       ns->create_table("FutureTest", schema);
       table_ptr = ns->open_table("FutureTest");
 
       for(size_t ii=0; ii<num_mutators; ++ii)
-        mutator_ptrs.push_back(table_ptr->create_mutator_async(&ff));
+        mutator_ptrs.push_back(TableMutatorAsyncPtr(table_ptr->create_mutator_async(&ff)));
 
       key.column_family = "data";
       key.column_qualifier = 0;
@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
       while(true) {
         for (size_t jj=0; jj < num_mutators; ++jj) {
           TableMutatorAsyncPtr mutator_ptr = mutator_ptrs[jj];
-          if (cancelled_mutator_ptrs.find(mutator_ptr) != cancelled_mutator_ptrs.end())
+          if (cancelled_mutator_ptrs.find(mutator_ptr.get()) != cancelled_mutator_ptrs.end())
             continue;
           load_buffer_with_random(buf, 10);
           sprintf(keybuf, "%05u", (unsigned)cells);
@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
               && cells >= cancel_after_num_cells) {
             HT_INFOF("Cancelling mutator #%llu", (Llu)jj);
             mutator_ptr->cancel();
-            cancelled_mutator_ptrs.insert(mutator_ptr);
+            cancelled_mutator_ptrs.insert(mutator_ptr.get());
           }
         }
         while (!ff.is_empty() && ff.get(result)) {
@@ -190,11 +190,11 @@ int main(int argc, char **argv) {
             result->get_error(error, error_msg);
             Exception e(error, error_msg);
             HT_ERROR_OUT << "Encountered mutate error " << e << HT_END;
-            _exit(1);
+            quick_exit(EXIT_FAILURE);
           }
           else if (cancelled_mutator_ptrs.find(result->get_mutator()) != cancelled_mutator_ptrs.end()) {
             HT_ERROR("Result from a cancelled scanner received");
-            _exit(1);
+            quick_exit(EXIT_FAILURE);
           }
           else
             ++num_updates;
@@ -214,8 +214,8 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

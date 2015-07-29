@@ -78,7 +78,7 @@ namespace {
     static void init() {
       if (!has("log-path")) {
         HT_ERROR_OUT <<"log-path required\n"<< cmdline_desc() << HT_END;
-        exit(1);
+        exit(EXIT_FAILURE);
       }
     }
   };
@@ -173,14 +173,14 @@ int main(int argc, char **argv) {
 
     if (!dfs_client->wait_for_connection(timeout)) {
       HT_ERROR("Unable to connect to DFS Broker, exiting...");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
     // Population Defintion map
     std::unordered_map<String, MetaLog::DefinitionPtr> defmap;
-    MetaLog::DefinitionPtr def = new MetaLog::DefinitionRangeServer("");
+    MetaLog::DefinitionPtr def = make_shared<MetaLog::DefinitionRangeServer>("");
     defmap[def->name()] = def;
-    def = new MetaLog::DefinitionMaster("");
+    def = make_shared<MetaLog::DefinitionMaster>("");
     defmap[def->name()] = def;
 
     FilesystemPtr fs = dfs_client;
@@ -193,23 +193,23 @@ int main(int argc, char **argv) {
     auto iter = defmap.find(name);
     if (iter == defmap.end()) {
       cerr << "No definition for log type '" << name << "'" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     def = iter->second;
 
     int reader_flags = dump_all ? MetaLog::Reader::LOAD_ALL_ENTITIES : 0;
     if (is_file) {
-      rsml_reader = new MetaLog::Reader(fs, def, reader_flags);
+      rsml_reader = make_shared<MetaLog::Reader>(fs, def, reader_flags);
       rsml_reader->load_file(log_path);
     }
     else
-      rsml_reader = new MetaLog::Reader(fs, def, log_path, reader_flags);
+      rsml_reader = make_shared<MetaLog::Reader>(fs, def, log_path, reader_flags);
 
     if (!metadata_tsv && !print_logs)
       cout << "log version: " << rsml_reader->version() << "\n";
 
     if (show_version)
-      _exit(0);
+      quick_exit(EXIT_SUCCESS);
 
     std::vector<MetaLog::EntityPtr> entities;
 
@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
       }
     }
     else if (print_logs) {
-      foreach_ht (MetaLog::EntityPtr &entity, entities) {
+      for (auto &entity : entities) {
         entity_range = dynamic_cast<MetaLogEntityRange *>(entity.get());
         if (entity_range) {
           String log = entity_range->get_transfer_log();
@@ -255,5 +255,5 @@ int main(int argc, char **argv) {
     HT_ERROR_OUT << e << HT_END;
     return 1;
   }
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

@@ -24,8 +24,10 @@
  * (comparing files, generating them etc.)
  */
 
-#ifndef HYPERTABLE_TESTHARNESS_H
-#define HYPERTABLE_TESTHARNESS_H
+#ifndef Common_TestHarness_h
+#define Common_TestHarness_h
+
+#include "Logger.h"
 
 #include <iostream>
 #include <fstream>
@@ -33,13 +35,11 @@
 
 extern "C" {
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 }
-
-#include "Logger.h"
-
 
 namespace Hypertable {
 
@@ -68,7 +68,7 @@ namespace Hypertable {
       if ((m_fd = open(m_output_file, O_CREAT | O_TRUNC | O_RDWR, 0644))
           < 0) {
         HT_ERRORF("open(%s) failed - %s", m_output_file, strerror(errno));
-        exit(1);
+        exit(EXIT_FAILURE);
       }
 
       Logger::get()->set_test_mode(m_fd);
@@ -94,7 +94,7 @@ namespace Hypertable {
       validate(golden_file);
       if (!m_error)
         unlink(m_output_file);
-      _exit(m_error ? 1 : 0);
+      std::quick_exit(m_error ? 1 : 0);
     }
 
     /** Validates the log file against the golden file. Returns 0 on success,
@@ -133,7 +133,7 @@ namespace Hypertable {
     void display_error_and_exit() {
       close();
       std::cerr << "Error, see '" << m_output_file << "'" << std::endl;
-      _exit(1);
+      std::quick_exit(EXIT_FAILURE);
     }
 
   private:
@@ -158,4 +158,4 @@ namespace Hypertable {
 
 } // namespace Hypertable
 
-#endif // HYPERTABLE_TESTHARNESS_H
+#endif // Common_TestHarness_h

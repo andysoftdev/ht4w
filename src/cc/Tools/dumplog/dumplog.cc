@@ -65,7 +65,7 @@ struct AppPolicy : Config::Policy {
   static void init() {
     if (!has("log-dir")) {
       HT_ERROR_OUT <<"log-dir required\n"<< cmdline_desc() << HT_END;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 };
@@ -111,14 +111,14 @@ int main(int argc, char **argv) {
 
     if (!dfs_client->wait_for_connection(timeout)) {
       HT_ERROR("Unable to connect to DFS Broker, exiting...");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
     FilesystemPtr fs = dfs_client;
 
     boost::trim_right_if(log_dir, boost::is_any_of("/"));    
 
-    CommitLogReaderPtr log_reader = new CommitLogReader(fs, log_dir);
+    CommitLogReaderPtr log_reader = make_shared<CommitLogReader>(fs, log_dir);
 
     if (block_summary) {
       printf("LOG %s\n", log_dir.c_str());
@@ -254,7 +254,7 @@ namespace {
 
     log_reader->get_linked_logs(linked_logs);
 
-    foreach_ht (const String &name, linked_logs)
+    for (const auto &name : linked_logs)
       std::cout << name << "\n";
     std::cout << std::flush;
 

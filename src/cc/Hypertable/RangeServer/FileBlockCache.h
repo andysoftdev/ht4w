@@ -24,20 +24,22 @@
 
 #include <AsyncComm/Event.h>
 
-#include <Common/Mutex.h>
-#include <Common/atomic.h>
+#include <Common/Logger.h>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 
+#include <atomic>
+#include <mutex>
+
 namespace Hypertable {
   using namespace boost::multi_index;
 
   class FileBlockCache {
 
-    static atomic_t ms_next_file_id;
+    static std::atomic<int> ms_next_file_id;
 
   public:
     FileBlockCache(int64_t min_memory, int64_t max_memory, bool compressed)
@@ -69,7 +71,7 @@ namespace Hypertable {
     int64_t decrease_limit(int64_t amount);
 
     int64_t get_limit() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_limit;
     }
 
@@ -78,7 +80,7 @@ namespace Hypertable {
      * below min_memory
      */
     void cap_memory_use() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       int64_t memory_used = m_limit - m_available;
       if (memory_used > m_min_memory) {
         m_limit -= m_available;
@@ -91,17 +93,17 @@ namespace Hypertable {
     }
 
     int64_t memory_used() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return (int64_t)(m_limit - m_available);
     }
 
     int64_t available() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_available;
     }
 
     static int get_next_file_id() {
-      return atomic_inc_return(&ms_next_file_id);
+      return ++ms_next_file_id;
     }
     void get_stats(uint64_t *max_memoryp, uint64_t *available_memoryp,
                    uint64_t *accessesp, uint64_t *hitsp);
@@ -154,7 +156,7 @@ namespace Hypertable {
     typedef BlockCache::nth_index<0>::type Sequence;
     typedef BlockCache::nth_index<1>::type HashIndex;
 
-    Mutex         m_mutex;
+    std::mutex m_mutex;
     BlockCache    m_cache;
     int64_t      m_min_memory;
     int64_t      m_max_memory;

@@ -39,6 +39,8 @@
 #include <Common/Filesystem.h>
 #include <Common/Config.h>
 
+using namespace std;
+
 namespace Hypertable {
 
 class IndexUpdaterCallback : public ResultCallback {
@@ -128,7 +130,7 @@ IndexUpdaterPtr IndexUpdaterFactory::create(const String &table_id,
 
   HT_ASSERT(has_index || has_qualifier_index);
 
-  ScopedLock lock(ms_mutex);
+  lock_guard<mutex> lock(ms_mutex);
 
   // check if we've cached Table pointers for the indices
   if (has_index)
@@ -144,7 +146,7 @@ IndexUpdaterPtr IndexUpdaterFactory::create(const String &table_id,
 
   // at least one index table was not cached: load it
   if (!ms_namemap)
-    ms_namemap = new NameIdMapper(Global::hyperspace, Global::toplevel_dir);
+    ms_namemap = make_shared<NameIdMapper>(Global::hyperspace, Global::toplevel_dir);
 
   String table_name;
   if (!ms_namemap->id_to_name(table_id, table_name)) {
@@ -183,7 +185,7 @@ IndexUpdaterPtr IndexUpdaterFactory::create(const String &table_id,
 
 void IndexUpdaterFactory::close()
 {
-  ScopedLock lock(ms_mutex);
+  lock_guard<mutex> lock(ms_mutex);
 
   ms_namemap = 0;
 
@@ -192,20 +194,20 @@ void IndexUpdaterFactory::close()
 }
 
 void IndexUpdaterFactory::clear_cache() {
-  ScopedLock lock(ms_mutex);
+  lock_guard<mutex> lock(ms_mutex);
   ms_index_cache.clear();
   ms_qualifier_index_cache.clear();
 }
 
-Table *IndexUpdaterFactory::load_table(const String &table_name)
+TablePtr IndexUpdaterFactory::load_table(const String &table_name)
 {
   ApplicationQueueInterfacePtr aq = Global::app_queue;
-  return new Table(Config::properties, Global::range_locator, Global::conn_manager,
-                   Global::hyperspace, aq,
-                   ms_namemap, table_name);
+  return make_shared<Table>(Config::properties, Global::range_locator,
+                            Global::conn_manager, Global::hyperspace, aq,
+                            ms_namemap, table_name);
 }
 
-Mutex IndexUpdaterFactory::ms_mutex;
+mutex IndexUpdaterFactory::ms_mutex;
 NameIdMapperPtr IndexUpdaterFactory::ms_namemap;
 IndexUpdaterFactory::TableMap IndexUpdaterFactory::ms_index_cache;
 IndexUpdaterFactory::TableMap IndexUpdaterFactory::ms_qualifier_index_cache;

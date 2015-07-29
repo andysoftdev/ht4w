@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
     Comm *comm = Comm::instance();
 
     ApplicationQueuePtr app_queue = make_shared<ApplicationQueue>(worker_count);
-    BrokerPtr broker = new LocalBroker(properties);
+    BrokerPtr broker = make_shared<LocalBroker>(properties);
     ConnectionHandlerFactoryPtr handler_factory =
       make_shared<FsBroker::Lib::ConnectionHandlerFactory>(comm, app_queue, broker);
     InetAddr listen_addr(INADDR_ANY, port);
@@ -120,6 +120,7 @@ int main(int argc, char **argv) {
     app_queue->join();
 
     HT_NOTICE("Exiting local broker");
+    Logger::get()->set_level(Logger::Priority::FATAL);
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;

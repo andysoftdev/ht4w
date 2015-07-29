@@ -1,4 +1,4 @@
-/** -*- c++ -*-
+/* -*- c++ -*-
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,15 +19,16 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/Client.h>
+
+#include <Common/StringExt.h>
+#include <Common/Usage.h>
+
 #include <fstream>
+#include <mutex>
 #include <vector>
-
-#include "Common/StringExt.h"
-#include "Common/Usage.h"
-#include "Common/Mutex.h"
-
-#include "Hypertable/Lib/Client.h"
 
 using namespace std;
 using namespace Hypertable;
@@ -123,7 +124,7 @@ namespace {
     }
 
     void scan_ok(TableScannerAsync *scanner, ScanCellsPtr &cells) {
-      ScopedLock lock(mutex);
+      lock_guard<std::mutex> lock(mutex);
       Cells cc;
       cells->get(cc);
       String table_name = scanner->get_table_name();
@@ -153,25 +154,25 @@ namespace {
     }
 
     void scan_error(TableScannerAsync *scanner, int error, const String &error_msg, bool eos) {
-      ScopedLock lock(mutex);
+      lock_guard<std::mutex> lock(mutex);
       Exception e(error, error_msg);
       outfile << e << endl;
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
 
     void update_ok(TableMutatorAsync *mutator) {
-      ScopedLock lock(mutex);
+      lock_guard<std::mutex> lock(mutex);
       outfile << "Mutation done" << endl;
     }
     void update_error(TableMutatorAsync *mutator, int error, FailedMutations &failures) {
-      ScopedLock lock(mutex);
+      lock_guard<std::mutex> lock(mutex);
       Exception e(error, "");
       outfile << e << endl;
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
 
     void completed() {
-      ScopedLock lock(mutex);
+      lock_guard<std::mutex> lock(mutex);
       if (m_fruit.results == 3 && m_show_complete) {
         HT_ASSERT(!m_complete_shown);
         outfile << "Async calls completed" << endl;
@@ -181,15 +182,14 @@ namespace {
     }
 
     String &get_fruit() {
-      ScopedLock lock(mutex);
-      while (!m_complete_shown)
-        m_cond.wait(lock);
+      unique_lock<std::mutex> lock(mutex);
+      m_cond.wait(lock, [this](){ return m_complete_shown; });
       return m_fruit.to_str();
     }
 
   private:
-    Mutex mutex;
-    boost::condition m_cond;
+    std::mutex mutex;
+    std::condition_variable m_cond;
     Fruit m_fruit;
     String m_error_msg;
     bool m_show_complete;
@@ -216,9 +216,9 @@ namespace {
       cb.clear();
       ss.add_row(fruits[ii]);
       outfile << "Issuing scans for '" << fruits[ii] << "'" << endl;
-      scanner_color     = table_color->create_scanner_async(&cb, ss.get());
-      scanner_location  = table_location->create_scanner_async(&cb, ss.get());
-      scanner_energy    = table_energy->create_scanner_async(&cb, ss.get());
+      scanner_color.reset(table_color->create_scanner_async(&cb, ss.get()));
+      scanner_location.reset(table_location->create_scanner_async(&cb, ss.get()));
+      scanner_energy.reset(table_energy->create_scanner_async(&cb, ss.get()));
       cb.wait_for_completion();
       outfile << "Got result = " << cb.get_fruit() << endl;
     }
@@ -247,9 +247,9 @@ namespace {
     table_location    = ns->open_table("FruitLocation");
     table_energy      = ns->open_table("FruitEnergy");
 
-    mutator_color     = table_color->create_mutator_async(&cb);
-    mutator_location  = table_location->create_mutator_async(&cb);
-    mutator_energy    = table_energy->create_mutator_async(&cb);
+    mutator_color.reset(table_color->create_mutator_async(&cb));
+    mutator_location.reset(table_location->create_mutator_async(&cb));
+    mutator_energy.reset(table_energy->create_mutator_async(&cb));
 
     key.column_family = "data";
     key.column_qualifier = 0;
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
 #ifndef _WIN32
@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
 #else
   if (system("fc asyncApiTest.output asyncApiTest.golden"))
 #endif
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
 
-  _exit(0);
+  quick_exit(EXIT_SUCCESS);
 }

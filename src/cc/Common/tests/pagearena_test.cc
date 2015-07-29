@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,23 +19,22 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include "Common/Logger.h"
-#include "Common/Init.h"
-#include "Common/PageArenaAllocator.h"
-#include "Common/TestUtils.h"
+#include <Common/Compat.h>
+#include <Common/Logger.h>
+#include <Common/Init.h>
+#include <Common/PageArenaAllocator.h>
+#include <Common/TestUtils.h>
 
 #include <boost/bind.hpp>
-#include <deque>
 
-// seems to be the fastest 0..1 rng
-#include <boost/random/lagged_fibonacci.hpp>
-typedef boost::lagged_fibonacci607 Rng;
+#include <deque>
+#include <random>
 
 #define BENCH_ALLOC(_label_, _code_, _n_) do { \
-  Rng rng01; \
+  std::default_random_engine engine; \
+  std::uniform_real_distribution<> dr; \
   long size; \
-  HT_BENCH(_label_, size = (long)rng01() * 120 + 4;  _code_, _n_);      \
+  HT_BENCH(_label_, size = (long)(dr(engine) * 120.0) + 4;  _code_, _n_); \
 } while (0)
 
 using namespace Hypertable;
@@ -131,7 +130,7 @@ void random_test(int n) {
   assert_same(v, v6);
   HT_BENCH1("strings clear", v6.clear(), n);
 
-  HT_BENCH1("malloc free", foreach_ht(char *s, v) free(s), n);
+  HT_BENCH1("malloc free", for (auto s : v) free(s), n);
   HT_BENCH1("malloc clear", v.clear(), n);
 }
 
@@ -139,7 +138,7 @@ void test_malloc_frag(int n) {
   Cstrs v;
   random_malloc_test(v, n);
   print_proc_stat();
-  HT_BENCH1("malloc free", foreach_ht(char *s, v) free(s), n);
+  HT_BENCH1("malloc free", for (auto s : v) free(s), n);
   HT_BENCH1("malloc clear", v.clear(), n);
 }
 
@@ -196,7 +195,7 @@ int main(int ac, char *av[]) {
     if (has("components")) {
       int pagesize = get_i32("page-size");
 
-      foreach_ht(const String &co, get_strs("components")) {
+      for (const auto &co : get_strs("components")) {
         if (co == "malloc")
           run_test(boost::bind(test_malloc_frag, n), true);
         else if (co == "arena")
@@ -214,6 +213,6 @@ int main(int ac, char *av[]) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 }

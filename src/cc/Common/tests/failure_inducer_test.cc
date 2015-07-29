@@ -1,4 +1,4 @@
-/** -*- C++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -17,15 +17,17 @@
  * along with Hypertable. If not, see <http://www.gnu.org/licenses/>
  */
 
-#include "Common/Compat.h"
-#include "Common/Logger.h"
-#include "Common/Init.h"
-#include "Common/Config.h"
-#include "Common/FailureInducer.h"
-#include "Common/FileUtils.h"
-#include "Common/String.h"
+#include <Common/Compat.h>
+#include <Common/Logger.h>
+#include <Common/Init.h>
+#include <Common/Config.h>
+#include <Common/FailureInducer.h>
+#include <Common/FileUtils.h>
+#include <Common/String.h>
+
 #include <iostream>
 #include <fstream>
+
 using namespace Hypertable;
 using namespace std;
 
@@ -97,7 +99,7 @@ int main(int argc, char *argv[]) {
   for (int i=0; required_files[i]; i++) {
     if (!FileUtils::exists(required_files[i])) {
       HT_ERRORF("Unable to find '%s'", required_files[i]);
-      _exit(1);
+      quick_exit(EXIT_FAILURE);
     }
   }
   test1(outfile);
@@ -109,7 +111,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   if (system(cmd_str.c_str()) != 0)
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
 
   test2(outfile);
 
@@ -120,7 +122,5 @@ int main(int argc, char *argv[]) {
 #endif
 
   if (system(cmd_str.c_str()) != 0)
-    _exit(1);
-
-  return 0;
+    quick_exit(EXIT_FAILURE);
 }

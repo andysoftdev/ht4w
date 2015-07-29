@@ -20,11 +20,8 @@
  */
 
 #include <Common/Compat.h>
-#include <Common/Init.h>
-#include <Common/Error.h>
-#include <Common/FileUtils.h>
 
-#include <AsyncComm/DispatchHandlerSynchronizer.h>
+#include "RangeServerCommandInterpreter.h"
 
 #include <Hypertable/Lib/ClusterId.h>
 #include <Hypertable/Lib/HqlHelpText.h>
@@ -36,20 +33,18 @@
 #include <Hypertable/Lib/ScanSpec.h>
 #include <Hypertable/Lib/TestSource.h>
 
-#include <cassert>
-#include <cstdio>
-#include <cstring>
+#include <AsyncComm/DispatchHandlerSynchronizer.h>
+
+#include <Common/Init.h>
+#include <Common/Error.h>
+#include <Common/FileUtils.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/progress.hpp>
-#include <boost/thread/xtime.hpp>
-#include <boost/timer.hpp>
 
-extern "C" {
-#include <time.h>
-}
-
-#include "RangeServerCommandInterpreter.h"
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 
 #define BUFFER_SIZE 65536
 
@@ -99,7 +94,7 @@ RangeServerCommandInterpreter::RangeServerCommandInterpreter(
     m_toplevel_dir = properties->get_str("Hypertable.Directory");
     boost::trim_if(m_toplevel_dir, boost::is_any_of("/"));
     m_toplevel_dir = String("/") + m_toplevel_dir;
-    m_namemap = new NameIdMapper(m_hyperspace, m_toplevel_dir);
+    m_namemap = make_shared<NameIdMapper>(m_hyperspace, m_toplevel_dir);
   }
   return;
 }

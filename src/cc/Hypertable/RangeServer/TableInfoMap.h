@@ -32,10 +32,9 @@
 
 #include <Common/StringExt.h>
 
-#include <boost/intrusive_ptr.hpp>
-#include <boost/thread/mutex.hpp>
-
 #include <map>
+#include <memory>
+#include <mutex>
 #include <string>
 
 namespace Hypertable {
@@ -65,7 +64,7 @@ namespace Hypertable {
    * current set of live ranges and the set of transfer logs in
    * MetaLogEntityRemoveOkLogs.
    */
-  class TableInfoMap : public ReferenceCount {
+  class TableInfoMap {
   public:
 
     /** Constructor. */
@@ -210,8 +209,8 @@ namespace Hypertable {
     /// table_id-to-TableInfoPtr map type
     typedef std::map<String, TableInfoPtr> InfoMap;
 
-    /// %Mutex for serializing access
-    Mutex m_mutex;
+    /// %Mutex for serializing access to members
+    std::mutex m_mutex;
     
     /// %Hyperspace table cache
     HyperspaceTableCachePtr m_schema_cache;
@@ -220,8 +219,8 @@ namespace Hypertable {
     InfoMap m_map;
   };
 
-  /// Smart pointer to TableInfoMap
-  typedef boost::intrusive_ptr<TableInfoMap> TableInfoMapPtr;
+  /// Shared smart pointer to TableInfoMap
+  typedef std::shared_ptr<TableInfoMap> TableInfoMapPtr;
 
   /// @}
 }

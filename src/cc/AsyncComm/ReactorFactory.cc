@@ -39,22 +39,20 @@ using namespace std;
 
 std::vector<ReactorPtr> ReactorFactory::ms_reactors;
 boost::thread_group ReactorFactory::ms_threads;
-boost::mt19937 ReactorFactory::rng(1);
-Mutex        ReactorFactory::ms_mutex;
-atomic_t     ReactorFactory::ms_next_reactor = ATOMIC_INIT(0);
+default_random_engine ReactorFactory::rng {1};
+mutex ReactorFactory::ms_mutex;
+atomic<int> ReactorFactory::ms_next_reactor(0);
 #ifndef _WIN32
-bool         ReactorFactory::ms_epollet = true;
-bool         ReactorFactory::use_poll = false;
+bool ReactorFactory::ms_epollet = true;
+bool ReactorFactory::use_poll = false;
 #else
 HANDLE       ReactorFactory::hIOCP = 0;
 #endif
-bool         ReactorFactory::proxy_master = false;
+bool ReactorFactory::proxy_master = false;
 bool ReactorFactory::verbose {};
 
-/**
- */
 void ReactorFactory::initialize(uint16_t reactor_count) {
-  ScopedLock lock(ms_mutex);
+  lock_guard<mutex> lock(ms_mutex);
   if (!ms_reactors.empty())
     return;
   ReactorPtr reactor;
@@ -116,7 +114,13 @@ void ReactorFactory::destroy() {
   ReactorRunner::handler_map = 0;
 
 #ifdef _WIN32
+  Reactor::destroy();
+
   if( WSACleanup() != 0 )
     HT_ERRORF( "WSACleanup: %s", winapi_strerror(WSAGetLastError()));
 #endif
+}
+
+void ReactorFactory::join() {
+  ms_threads.join_all();
 }

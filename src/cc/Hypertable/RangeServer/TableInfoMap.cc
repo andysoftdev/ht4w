@@ -37,6 +37,7 @@
 #include <Common/FailureInducer.h>
 
 using namespace Hypertable;
+using namespace std;
 
 TableInfoMap::~TableInfoMap() {
   m_map.clear();
@@ -44,7 +45,7 @@ TableInfoMap::~TableInfoMap() {
 
 
 bool TableInfoMap::lookup(const String &table_id, TableInfoPtr &info) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   InfoMap::iterator iter = m_map.find(table_id);
   if (iter == m_map.end())
     return false;
@@ -53,7 +54,7 @@ bool TableInfoMap::lookup(const String &table_id, TableInfoPtr &info) {
 }
 
 void TableInfoMap::get(const String &table_id, TableInfoPtr &info) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   TableIdentifier table;
 
   InfoMap::iterator iter = m_map.find(table_id);
@@ -75,7 +76,7 @@ void TableInfoMap::get(const String &table_id, TableInfoPtr &info) {
     try {
       DynamicBuffer valbuf;
       Global::hyperspace->attr_get(tablefile, "schema", valbuf);
-      entry.schema = Schema::new_instance((const char *)valbuf.base);
+      entry.schema.reset( Schema::new_instance((const char *)valbuf.base) );
       entry.maintenance_disabled =
         Global::hyperspace->attr_exists(tablefile, "maintenance_disabled");
     }
@@ -91,7 +92,7 @@ void TableInfoMap::get(const String &table_id, TableInfoPtr &info) {
   table.id = table_id.c_str();
   table.generation = entry.schema->get_generation();
 
-  info = new TableInfo(&table, entry.schema, entry.maintenance_disabled);
+  info = make_shared<TableInfo>(&table, entry.schema, entry.maintenance_disabled);
 
   m_map[table_id] = info;
 }
@@ -99,7 +100,7 @@ void TableInfoMap::get(const String &table_id, TableInfoPtr &info) {
 
 
 void TableInfoMap::promote_staged_range(const TableIdentifier &table, RangePtr &range, const char *transfer_log) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   StringSet linked_logs;
   int error;
 
@@ -108,9 +109,9 @@ void TableInfoMap::promote_staged_range(const TableIdentifier &table, RangePtr &
 
   if (transfer_log && *transfer_log) {
     CommitLogReaderPtr commit_log_reader =
-      new CommitLogReader(Global::log_dfs, transfer_log);
+      make_shared<CommitLogReader>(Global::log_dfs, transfer_log);
     if (!commit_log_reader->empty()) {
-      CommitLog *log;
+      CommitLogPtr log;
       if (range->is_root())
         log = Global::root_log;
       else if (table.is_metadata())
@@ -149,7 +150,7 @@ void TableInfoMap::promote_staged_range(const TableIdentifier &table, RangePtr &
 
 
 bool TableInfoMap::remove(const String &table_id, TableInfoPtr &info) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   InfoMap::iterator iter = m_map.find(table_id);
   if (iter == m_map.end())
     return false;
@@ -160,14 +161,14 @@ bool TableInfoMap::remove(const String &table_id, TableInfoPtr &info) {
 
 
 void TableInfoMap::get_all(std::vector<TableInfoPtr> &tv) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   for (InfoMap::iterator iter = m_map.begin(); iter != m_map.end(); ++iter)
     tv.push_back((*iter).second);
 }
 
 
 void TableInfoMap::get_ranges(Ranges &ranges, StringSet *remove_ok_logs) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   int32_t count = 0;
 
   // reserve space in vector
@@ -179,7 +180,7 @@ void TableInfoMap::get_ranges(Ranges &ranges, StringSet *remove_ok_logs) {
     (*iter).second->get_ranges(ranges);
 
   {
-    ScopedLock lock2(Global::mutex);
+    lock_guard<mutex> lock2(Global::mutex);
     if (Global::remove_ok_logs && remove_ok_logs)
       Global::remove_ok_logs->get(*remove_ok_logs);
   }
@@ -188,25 +189,25 @@ void TableInfoMap::get_ranges(Ranges &ranges, StringSet *remove_ok_logs) {
 
 
 void TableInfoMap::clear() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   m_map.clear();
 }
 
 bool TableInfoMap::empty() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return m_map.empty();
 }
 
 
 void TableInfoMap::merge(TableInfoMap *other) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   merge_unlocked(other);
 }
 
 void TableInfoMap::merge(TableInfoMap *other,
                          vector<MetaLog::EntityPtr> &entities,
                          StringSet &transfer_logs) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (Global::rsml_writer == 0)
     HT_THROW(Error::SERVER_SHUTTING_DOWN, "");
   Global::remove_ok_logs->insert(transfer_logs);
@@ -232,7 +233,7 @@ void TableInfoMap::merge_unlocked(TableInfoMap *other) {
     else {
       ranges.array.clear();
       (*other_iter).second->get_ranges(ranges);
-      foreach_ht (RangeData &rd, ranges.array)
+      for (auto &rd : ranges.array)
         (*iter).second->add_range(rd.range);
     }
 

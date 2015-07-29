@@ -1,4 +1,4 @@
-/* -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,14 +19,7 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
-#include "Common/Error.h"
-#include "Common/md5.h"
-#include "Common/PageArenaAllocator.h"
-#include "Common/FailureInducer.h"
-
-#include <Hypertable/Lib/CommitLogReader.h>
-#include <Hypertable/Lib/LegacyDecoder.h>
+#include <Common/Compat.h>
 
 #include "BalancePlanAuthority.h"
 #include "OperationMoveRange.h"
@@ -35,11 +28,22 @@
 #include "OperationProcessor.h"
 #include "Utility.h"
 
+#include <Hypertable/Lib/CommitLogReader.h>
+#include <Hypertable/Lib/LegacyDecoder.h>
+
+#include <Common/Error.h>
+#include <Common/md5.h>
+#include <Common/PageArenaAllocator.h>
+#include <Common/FailureInducer.h>
+
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <set>
+#include <thread>
 
 using namespace Hypertable;
+using namespace std;
 
 OperationRecoverRanges::OperationRecoverRanges(ContextPtr &context,
         const String &location, int type)
@@ -79,7 +83,7 @@ void OperationRecoverRanges::execute() {
     if (m_plan.receiver_plan.empty()) {
       HT_INFOF("Plan for location %s, type %s is empty, nothing to do",
                m_location.c_str(), m_type_str.c_str());
-      m_expiration_time.reset();  // force it to get removed immediately
+      m_expiration_time = ClockT::now();  // force it to get removed immediately
       complete_ok();
       break;
     }
@@ -197,7 +201,7 @@ void OperationRecoverRanges::execute() {
 
     if (!acknowledge()) {
       // wait a few seconds and then try again
-      poll(0, 0, 5000);
+      this_thread::sleep_for(chrono::milliseconds(5000));
       HT_MAYBE_FAIL(format("recover-server-ranges-%s-12", m_type_str.c_str()));
       break;
     }
@@ -211,7 +215,7 @@ void OperationRecoverRanges::execute() {
 
     HT_ASSERT(m_context->get_balance_plan_authority()->recovery_complete(m_location, m_type));
 
-    m_expiration_time.reset();  // force it to get removed immediately
+    m_expiration_time = ClockT::now();  // force it to get removed immediately
     complete_ok();
     break;
 
@@ -242,7 +246,7 @@ const String OperationRecoverRanges::label() {
 }
 
 void OperationRecoverRanges::initialize_obstructions_dependencies() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   m_dependencies.clear();
   m_obstructions.clear();
   m_dependencies.insert(Dependency::RECOVERY_BLOCKER);
@@ -271,7 +275,7 @@ void OperationRecoverRanges::initialize_obstructions_dependencies() {
 
   vector<QualifiedRangeSpec> specs;
   m_plan.receiver_plan.get_range_specs(specs);
-  foreach_ht (QualifiedRangeSpec &spec, specs)
+  for (auto &spec : specs)
     m_dependencies.insert(format("OperationMove %s[%s..%s]",
                                  spec.table.id, spec.range.start_row,
                                  spec.range.end_row));
@@ -329,7 +333,7 @@ bool OperationRecoverRanges::phantom_load_ranges() {
   vector<int32_t> fragments;
 
   m_plan.replay_plan.get_fragments(fragments);
-  foreach_ht (const String &location, locations) {
+  for (const auto &location : locations) {
     addr.set_proxy(location);
     vector<QualifiedRangeSpec> specs;
     vector<RangeState> states;
@@ -395,15 +399,15 @@ void OperationRecoverRanges::create_futures() {
   RecoveryStepFuturePtr future;
 
   // Install "replay" future
-  future = new RecoveryStepFuture("replay", m_plan_generation);
+  future = make_shared<RecoveryStepFuture>("replay", m_plan_generation);
   m_context->recovery_state().install_replay_future(id(), future);
 
   // Install "prepare" future
-  future = new RecoveryStepFuture("prepare", m_plan_generation);
+  future = make_shared<RecoveryStepFuture>("prepare", m_plan_generation);
   m_context->recovery_state().install_prepare_future(id(), future);
 
   // Install "commit" future
-  future = new RecoveryStepFuture("commit", m_plan_generation);
+  future = make_shared<RecoveryStepFuture>("commit", m_plan_generation);
   m_context->recovery_state().install_commit_future(id(), future);
 }
 
@@ -459,7 +463,7 @@ bool OperationRecoverRanges::replay_fragments() {
 
   future->register_locations(locations);
 
-  foreach_ht(const String &location, locations) {
+  for (const auto &location : locations) {
     try {
       fragments.clear();
       m_plan.replay_plan.get_fragments(location, fragments);
@@ -525,7 +529,7 @@ bool OperationRecoverRanges::prepare_to_commit() {
 
   future->register_locations(locations);
 
-  foreach_ht(const String &location, locations) {
+  for (const auto &location : locations) {
     addr.set_proxy(location);
     vector<QualifiedRangeSpec> specs;
     m_plan.receiver_plan.get_range_specs(location, specs);
@@ -585,12 +589,12 @@ bool OperationRecoverRanges::commit() {
     m_plan.receiver_plan.get_locations(locations);
 
   // Erase locations marked for "redo"
-  foreach_ht (const String &location, m_redo_set)
+  for (const auto &location : m_redo_set)
     locations.erase(location);
 
   future->register_locations(locations);
 
-  foreach_ht(const String &location, locations) {
+  for (const auto &location : locations) {
     addr.set_proxy(location);
     vector<QualifiedRangeSpec> specs;
     m_plan.receiver_plan.get_range_specs(location, specs);
@@ -647,10 +651,10 @@ bool OperationRecoverRanges::acknowledge() {
     m_plan.receiver_plan.get_locations(locations);
 
   // Erase locations marked for "redo"
-  foreach_ht (const String &location, m_redo_set)
+  for (const auto &location : m_redo_set)
     locations.erase(location);
 
-  foreach_ht(const String &location, locations) {
+  for (const auto &location : locations) {
     addr.set_proxy(location);
     vector<QualifiedRangeSpec> specs;
     vector<QualifiedRangeSpec *> range_ptrs;
@@ -658,7 +662,7 @@ bool OperationRecoverRanges::acknowledge() {
     map<QualifiedRangeSpec, int>::iterator response_map_it;
 
     m_plan.receiver_plan.get_range_specs(location, specs);
-    foreach_ht(QualifiedRangeSpec &range, specs)
+    for (auto &range : specs)
       range_ptrs.push_back(&range);
     try {
       HT_INFOF("Issue acknowledge_load for %d ranges to %s",
@@ -690,7 +694,7 @@ bool OperationRecoverRanges::acknowledge() {
   // Purge successfully acknowledged ranges from recovery plan(s)
   if (!acknowledged.empty()) {
     bpa->remove_from_receiver_plan(m_location, m_type, acknowledged);
-    foreach_ht (const QualifiedRangeSpec &spec, acknowledged)
+    for (const auto &spec : acknowledged)
       m_plan.receiver_plan.remove(spec);
   }
 

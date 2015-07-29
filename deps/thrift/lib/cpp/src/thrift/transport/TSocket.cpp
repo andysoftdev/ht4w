@@ -215,6 +215,26 @@ void TSocket::openConnection(struct addrinfo *res) {
   // No delay
   setNoDelay(noDelay_);
 
+  int tcpSendBuffer_ = 4*32768;
+  int tcpRecvBuffer_ = 4*32768;
+
+  // Set TCP buffer sizes
+  if (tcpSendBuffer_ > 0) {
+    if (-1 == setsockopt(socket_, SOL_SOCKET, SO_SNDBUF,
+                         cast_sockopt(&tcpSendBuffer_), sizeof(tcpSendBuffer_))) {
+      int errno_copy = THRIFT_GET_SOCKET_ERROR;  // Copy THRIFT_GET_SOCKET_ERROR because we're allocating memory.
+      GlobalOutput.perror("TSocket::openConnection() setsockopt(SO_SNDBUF) " + getSocketInfo(), errno_copy);
+    }
+  }
+
+  if (tcpRecvBuffer_ > 0) {
+    if (-1 == setsockopt(socket_, SOL_SOCKET, SO_RCVBUF,
+                         cast_sockopt(&tcpRecvBuffer_), sizeof(tcpRecvBuffer_))) {
+      int errno_copy = THRIFT_GET_SOCKET_ERROR;  // Copy THRIFT_GET_SOCKET_ERROR because we're allocating memory.
+      GlobalOutput.perror("TSocket::openConnection() setsockopt(SO_RCVBUF) " + getSocketInfo(), errno_copy);
+    }
+  }
+
 #ifdef SO_NOSIGPIPE
   {
     int one = 1;

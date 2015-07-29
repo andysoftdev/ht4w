@@ -29,12 +29,13 @@
 #include <map>
 #include <set>
 #include <deque>
-#include <boost/thread/condition.hpp>
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
 
 #include "Common/Mutex.h"
 #include "Common/Properties.h"
 #include "Common/Filesystem.h"
-#include "Common/atomic.h"
 #include "Common/Thread.h"
 #include "AsyncComm/CommBuf.h"
 
@@ -155,7 +156,7 @@ namespace Lib {
 
     class RequestQueue {
     public:
-      RequestQueue(RecMutex& mutex);
+      RequestQueue(std::recursive_mutex& recursive_mutex);
 
       void enqueue(const Request &request);
       bool dequeue(Request &request);
@@ -172,9 +173,9 @@ namespace Lib {
 
       Queue m_queue;
       FdSet m_fd_in_progress;
-      RecMutex& m_mutex;
-      boost::condition m_cond;
-      boost::condition m_fd_completed_cond;
+      std::recursive_mutex& m_mutex;
+      std::condition_variable_any m_cond;
+      std::condition_variable_any m_fd_completed_cond;
       bool m_shutdown {};
     };
 
@@ -220,17 +221,17 @@ namespace Lib {
     void throw_error();
 
     inline void set_handle(int fd, ::HANDLE h, uint32_t flags) {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       m_handles[fd] = std::make_pair(h, flags);
     }
 
     inline ::HANDLE get_handle(int fd) {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       return m_handles[fd].first;
     }
 
     inline ::HANDLE get_handle(int fd, uint32_t& flags) {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       std::pair<::HANDLE, uint32_t> item = m_handles[fd];
       flags = item.second;
       return item.first;
@@ -239,7 +240,7 @@ namespace Lib {
     inline void close_handle(int fd) {
       ::HANDLE h;
       {
-        ScopedRecLock lock(m_mutex);
+        std::lock_guard<std::recursive_mutex> lock(m_mutex);
         std::map<int, std::pair<::HANDLE, uint32_t>>::iterator it = m_handles.find(fd);
         h = it->second.first;
         m_handles.erase(it);
@@ -247,8 +248,8 @@ namespace Lib {
       ::CloseHandle(h);
     }
 
-    static atomic_t ms_next_fd;
-    RecMutex m_mutex;
+    static std::atomic<int> ms_next_fd;
+    std::recursive_mutex m_mutex;
     std::map<int, std::pair<::HANDLE, uint32_t>> m_handles;
 
     String m_rootdir;

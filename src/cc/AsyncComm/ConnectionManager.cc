@@ -33,6 +33,7 @@
 
 #include <Common/Error.h>
 #include <Common/Logger.h>
+#include <Common/Random.h>
 #include <Common/Serialization.h>
 #include <Common/System.h>
 #include <Common/Time.h>
@@ -98,7 +99,7 @@ ConnectionManager::add_internal(const CommAddress &addr,
           const CommAddress &local_addr, uint32_t timeout_ms,
           const char *service_name, DispatchHandlerPtr &handler,
           ConnectionInitializerPtr &initializer) {
-  unique_lock<mutex> lock(m_impl->mutex);
+  lock_guard<mutex> lock(m_impl->mutex);
   ConnectionStatePtr conn_state;
 
   /// Start retry thread
@@ -134,7 +135,7 @@ ConnectionManager::add_internal(const CommAddress &addr,
     m_impl->conn_map[addr.inet] = conn_state;
 
   {
-    unique_lock<mutex> conn_lock(conn_state->mutex);
+    lock_guard<mutex> conn_lock(conn_state->mutex);
     send_connect_request(conn_state);
   }
 }
@@ -154,7 +155,7 @@ ConnectionManager::wait_for_connection(const CommAddress &addr,
   ConnectionStatePtr conn_state_ptr;
 
   {
-    unique_lock<mutex> lock(m_impl->mutex);
+    lock_guard<mutex> lock(m_impl->mutex);
     if (addr.is_inet()) {
       SockAddrMap<ConnectionStatePtr>::iterator iter =
 	m_impl->conn_map.find(addr.inet);
@@ -182,11 +183,10 @@ bool ConnectionManager::wait_for_connection(ConnectionStatePtr &conn_state,
   {
     unique_lock<mutex> conn_lock(conn_state->mutex);
 
-    while (conn_state->state != State::READY) {
-      auto duration = std::chrono::milliseconds(timer.remaining());
-      if (conn_state->cond.wait_for(conn_lock, duration) == std::cv_status::timeout)
-        return false;
-    }
+    auto duration = std::chrono::milliseconds(timer.remaining());
+
+    if (!conn_state->cond.wait_for(conn_lock, duration, [&conn_state](){ return conn_state->state == State::READY; }))
+      return false;
 
     if (conn_state->state == State::DECOMMISSIONED)
       return false;
@@ -248,11 +248,11 @@ ConnectionManager::send_connect_request(ConnectionStatePtr &conn_state) {
     // Reschedule (throw in a little randomness)
     conn_state->next_retry = std::chrono::steady_clock::now() +
       std::chrono::milliseconds(conn_state->timeout_ms);
-    int32_t milli_adjust = System::rand32() % 2000;
-    if (System::rand32() & 1)
-      conn_state->next_retry -= std::chrono::milliseconds(milli_adjust);
+
+    if (Random::number32() & 1)
+      conn_state->next_retry -= Random::duration_millis(2000);
     else
-      conn_state->next_retry += std::chrono::milliseconds(milli_adjust);
+      conn_state->next_retry += Random::duration_millis(2000);
 
     // add to retry heap
     m_impl->retry_queue.push(conn_state);
@@ -271,13 +271,13 @@ int ConnectionManager::remove(const CommAddress &addr) {
   HT_ASSERT(addr.is_set());
 
   {
-    unique_lock<mutex> lock(m_impl->mutex);
+    lock_guard<mutex> lock(m_impl->mutex);
 
     if (addr.is_proxy()) {
       auto iter = m_impl->conn_map_proxy.find(addr.proxy);
       if (iter != m_impl->conn_map_proxy.end()) {
 	{
-	  unique_lock<mutex> conn_lock((*iter).second->mutex);
+	  lock_guard<mutex> conn_lock((*iter).second->mutex);
 	  check_inet_addr = true;
 	  inet_addr = (*iter).second->inet_addr;
           if ((*iter).second->state == State::CONNECTED ||
@@ -299,7 +299,7 @@ int ConnectionManager::remove(const CommAddress &addr) {
         m_impl->conn_map.find(inet_addr);
       if (iter != m_impl->conn_map.end()) {
 	{
-	  unique_lock<mutex> conn_lock((*iter).second->mutex);
+	  lock_guard<mutex> conn_lock((*iter).second->mutex);
           if ((*iter).second->state == State::CONNECTED ||
               (*iter).second->state == State::READY)
             do_close = true;
@@ -325,10 +325,8 @@ void ConnectionManager::remove_all() {
     unique_lock<mutex> lock(m_impl->mutex);
     for(std::unordered_map<String, ConnectionStatePtr>::iterator it = m_impl->conn_map_proxy.begin(); it != m_impl->conn_map_proxy.end(); ++it)
       addrs.push_back((*it).second->addr);
-    foreach_ht (SockAddrMap<ConnectionStatePtr>::value_type& v, m_impl->conn_map)
-      addrs.push_back(v.second->addr);
   }
-  foreach_ht (const CommAddress& addr, addrs)
+  for each (const CommAddress& addr in addrs)
     remove(addr);
 }
 
@@ -346,7 +344,7 @@ void ConnectionManager::remove_all() {
  */
 void
 ConnectionManager::handle(EventPtr &event) {
-  unique_lock<mutex> lock(m_impl->mutex);
+  lock_guard<mutex> lock(m_impl->mutex);
   ConnectionStatePtr conn_state;
 
   {
@@ -365,7 +363,7 @@ ConnectionManager::handle(EventPtr &event) {
   }
 
   if (conn_state) {
-    unique_lock<mutex> conn_lock(conn_state->mutex);
+    lock_guard<mutex> conn_lock(conn_state->mutex);
 
     if (event->type == Event::CONNECTION_ESTABLISHED) {
       conn_state->inet_addr = event->addr;
@@ -489,7 +487,7 @@ void ConnectionManager::connect_retry_loop() {
     conn_state = m_impl->retry_queue.top();
 
     {
-      unique_lock<mutex> conn_lock(conn_state->mutex);
+      lock_guard<mutex> conn_lock(conn_state->mutex);
       if (conn_state->state == State::DISCONNECTED) {
         if (conn_state->next_retry <= std::chrono::steady_clock::now()) {
           m_impl->retry_queue.pop();

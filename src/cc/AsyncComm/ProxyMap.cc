@@ -26,21 +26,19 @@
  * addresses.
  */
 
-#include "Common/Compat.h"
-#include "Common/StringExt.h"
-
-extern "C" {
-#include <string.h>
-}
+#include <Common/Compat.h>
 
 #include "ProxyMap.h"
 
+#include <Common/StringExt.h>
+
 using namespace Hypertable;
+using namespace std;
 
 void ProxyMap::update_mapping(const String &proxy, const String &hostname,
                               const InetAddr &addr, ProxyMapT &invalidated_map,
 			      ProxyMapT &new_map) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   ProxyMapT::iterator iter = m_forward_map.find(proxy);
   if (iter != m_forward_map.end() && (*iter).second.addr == addr) {
     if ((*iter).second.hostname != hostname)
@@ -56,7 +54,7 @@ void ProxyMap::update_mapping(const String &proxy, const String &hostname,
 
 void ProxyMap::update_mappings(String &mappings, ProxyMapT &invalidated_map,
 			       ProxyMapT &new_map) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   char *line, *proxy, *hostname, *addr_str, *end_nl, *end_tab;
 
   for (line = strtok_r((char *)mappings.c_str(), "\n", &end_nl); line;
@@ -100,7 +98,7 @@ void ProxyMap::update_mappings(String &mappings, ProxyMapT &invalidated_map,
 
 
 void ProxyMap::remove_mapping(const String &proxy, ProxyMapT &remove_map) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   invalidate(proxy, remove_map);
   return;
 }
@@ -108,7 +106,7 @@ void ProxyMap::remove_mapping(const String &proxy, ProxyMapT &remove_map) {
 
 
 bool ProxyMap::get_mapping(const String &proxy, String &hostname, InetAddr &addr) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   ProxyMapT::iterator iter = m_forward_map.find(proxy);
   if (iter == m_forward_map.end())
     return false;
@@ -118,7 +116,7 @@ bool ProxyMap::get_mapping(const String &proxy, String &hostname, InetAddr &addr
 }
 
 String ProxyMap::get_proxy(InetAddr &addr) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   SockAddrMap<String>::iterator iter = m_reverse_map.find(addr);
   if (iter != m_reverse_map.end())
     return (*iter).second;
@@ -126,14 +124,14 @@ String ProxyMap::get_proxy(InetAddr &addr) {
 }
 
 
-CommBuf *ProxyMap::create_update_message() {
-  ScopedLock lock(m_mutex);
+CommBufPtr ProxyMap::create_update_message() {
+  lock_guard<mutex> lock(m_mutex);
   String payload;
   CommHeader header;
   header.flags |= CommHeader::FLAGS_BIT_PROXY_MAP_UPDATE;
   for (ProxyMapT::iterator iter = m_forward_map.begin(); iter != m_forward_map.end(); ++iter)
     payload += (*iter).first + "\t" + (*iter).second.hostname + "\t" + (*iter).second.addr.format() + "\n";
-  CommBuf *cbuf = new CommBuf(header, payload.length());
+  CommBufPtr cbuf = make_shared<CommBuf>(header, payload.length());
   if (payload.length())
     cbuf->append_bytes((uint8_t *)payload.c_str(), payload.length());
   return cbuf;
@@ -189,7 +187,7 @@ void ProxyMap::invalidate(const String &proxy, ProxyMapT &invalidated_map) {
 }
 
 String ProxyMap::to_str() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   ProxyMapT::iterator iter;
   String str;
   for (iter = m_forward_map.begin(); iter != m_forward_map.end(); ++iter)

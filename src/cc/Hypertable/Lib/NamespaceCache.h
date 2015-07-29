@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_NAMESPACECACHE_H
-#define HYPERTABLE_NAMESPACECACHE_H
+#ifndef Hypertable_Lib_NamespaceCache_h
+#define Hypertable_Lib_NamespaceCache_h
 
 #include <Hypertable/Lib/TableCache.h>
 #include <Hypertable/Lib/Schema.h>
@@ -29,17 +29,17 @@
 
 #include <AsyncComm/ApplicationQueueInterface.h>
 
-#include <Common/Mutex.h>
-#include <Common/ReferenceCount.h>
 #include <Common/String.h>
 
+#include <memory>
+#include <mutex>
 #include <unordered_map>
 
 namespace Hypertable {
 
   class Client;
 
-  class NamespaceCache : public ReferenceCount {
+  class NamespaceCache {
   public:
 
     NamespaceCache(PropertiesPtr &props, RangeLocatorPtr &range_locator,
@@ -73,14 +73,15 @@ namespace Hypertable {
     Lib::Master::ClientPtr m_master_client;
     TableCachePtr           m_table_cache;
     uint32_t                m_timeout_ms;
-    Mutex                   m_mutex;
+    std::mutex m_mutex;
     NamespaceMap            m_namespace_map;
     Client                 *m_client;
   };
 
-  typedef intrusive_ptr<NamespaceCache> NamespaceCachePtr;
+  /// Smart pointer to NamespaceCache
+  typedef std::shared_ptr<NamespaceCache> NamespaceCachePtr;
 
-} // namespace Hypertable
+}
 
 
-#endif // HYPERTABLE_
+#endif // Hypertable_Lib_NamespaceCache_h

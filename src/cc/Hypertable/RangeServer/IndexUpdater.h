@@ -32,11 +32,11 @@
 #include <Hypertable/Lib/Table.h>
 #include <Hypertable/Lib/TableMutatorAsync.h>
 
-#include <Common/Mutex.h>
 #include <Common/String.h>
 
 #include <map>
 #include <memory>
+#include <mutex>
 
 namespace Hypertable {
 
@@ -101,11 +101,11 @@ namespace Hypertable {
 
   private:
     // Loads a table.
-    static Table *load_table(const String &table_name);
+    static TablePtr load_table(const String &table_name);
 
     typedef std::map<String, TablePtr> TableMap;
 
-    static Mutex ms_mutex;
+    static std::mutex ms_mutex;
     static NameIdMapperPtr ms_namemap;
     static TableMap ms_qualifier_index_cache;
     static TableMap ms_index_cache;
@@ -113,6 +113,6 @@ namespace Hypertable {
 
   /// @}
 
-} // namespace Hypertable
+}
 
 #endif // Hypertable_RangeServer_IndexUpdater_h

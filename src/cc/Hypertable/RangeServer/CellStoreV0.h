@@ -71,7 +71,8 @@ namespace Hypertable {
     bool may_contain(const String &key) {
       return may_contain(key.data(), key.size());
     }
-    virtual bool may_contain(ScanContextPtr &);
+
+    bool may_contain(ScanContext *scan_ctx) override;
 
     virtual uint64_t disk_usage() {
       if (m_disk_usage < 0)
@@ -83,7 +84,7 @@ namespace Hypertable {
     virtual int64_t get_total_entries() { return m_trailer.total_entries; }
     virtual std::string &get_filename() { return m_filename; }
     virtual int get_file_id() { return m_file_id; }
-    virtual CellListScanner *create_scanner(ScanContextPtr &scan_ctx);
+    CellListScannerPtr create_scanner(ScanContext *scan_ctx) override;
     virtual BlockCompressionCodec *create_block_compression_codec();
     virtual void display_block_info();
     virtual int64_t end_of_last_block() { return m_trailer.fix_index_offset; }
@@ -94,12 +95,12 @@ namespace Hypertable {
     virtual bool restricted_range() { return true; }
 
     virtual int32_t get_fd() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       return m_fd;
     }
 
     virtual int32_t reopen_fd() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       if (m_fd != -1)
         m_filesys->close(m_fd);
       m_fd = m_filesys->open(m_filename, 0);
@@ -147,8 +148,6 @@ namespace Hypertable {
     BloomFilterItems      *m_bloom_filter_items;
     uint32_t               m_max_approx_items;
   };
-
-  typedef intrusive_ptr<CellStoreV0> CellStoreV0Ptr;
 
 } // namespace Hypertable
 

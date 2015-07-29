@@ -1,4 +1,4 @@
-/* -*- c++ -*-
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -20,14 +20,13 @@
  */
 
 #include <Common/Compat.h>
+
 #include "GcWorker.h"
 
 #include <boost/algorithm/string.hpp>
 
-#include <unistd.h>
-
 extern "C" {
-#include <poll.h>
+#include <unistd.h>
 }
 
 using namespace Hypertable;
@@ -53,15 +52,14 @@ void GcWorker::gc() {
 
 
 void GcWorker::scan_metadata(CountMap &files_map) {
-  TableScannerPtr scanner;
   ScanSpec scan_spec;
 
   scan_spec.columns.clear();
   scan_spec.columns.push_back("Files");
 
-  scanner = m_context->metadata_table->create_scanner(scan_spec);
+  TableScannerPtr scanner(m_context->metadata_table->create_scanner(scan_spec));
 
-  TableMutatorPtr mutator = m_context->metadata_table->create_mutator();
+  TableMutatorPtr mutator(m_context->metadata_table->create_mutator());
 
   Cell cell;
   string last_row;
@@ -180,7 +178,7 @@ void GcWorker::insert_file(CountMap &map, const char *fname, int c) {
 void GcWorker::reap(CountMap &files_map) {
   size_t nf = 0, nf_done = 0, nd = 0, nd_done = 0;
 
-  foreach_ht (const CountMap::value_type &v, files_map) {
+  for (const auto &v : files_map) {
     if (!v.second) {
       HT_INFOF("MasterGc: removing file %s", v.first);
       try {

@@ -42,7 +42,6 @@
 extern "C" {
 #include <poll.h>
 #include <stdio.h>
-#include <time.h>
 }
 
 using namespace Hypertable;
@@ -120,11 +119,11 @@ int main(int argc, char **argv) {
       table_str = "RS_METRICS";
     }
 
-    ClientPtr client = new Hypertable::Client(System::install_dir);
+    ClientPtr client = make_shared<Hypertable::Client>(System::install_dir);
     NamespacePtr ns = client->open_namespace(ns_str);
     TablePtr rs_metrics = ns->open_table(table_str);
     BalancePlanPtr plan = make_shared<BalancePlan>();
-    ContextPtr context = new Context(properties);
+    ContextPtr context = make_shared<Context>(properties);
     context->rsc_manager.reset();
     context->rs_metrics_table = rs_metrics;
     generate_balance_plan(context->props, load_balancer, context, plan);
@@ -153,11 +152,11 @@ int main(int argc, char **argv) {
   }
   catch (Exception &e) {
     HT_ERROR_OUT << e << HT_END;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   fflush(stdout);
-  _exit(0); // don't bother with static objects
+  quick_exit(EXIT_SUCCESS); // don't bother with static objects
 }
 
 void generate_balance_plan(PropertiesPtr &props, const String &load_balancer,

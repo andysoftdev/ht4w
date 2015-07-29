@@ -19,25 +19,25 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_COMMAND_SHELL_H
-#define HYPERTABLE_COMMAND_SHELL_H
+#ifndef Tools_Lib_CommandShell_h
+#define Tools_Lib_CommandShell_h
 
 #include "CommandInterpreter.h"
 #include "Notifier.h"
 
 #include <Common/Config.h>
 #include <Common/Properties.h>
-#include <Common/ReferenceCount.h>
 
 #ifndef _WIN32
 #include <histedit.h>
 #endif
 
+#include <memory>
 #include <string>
 
 namespace Hypertable {
 
-  class CommandShell : public ReferenceCount {
+  class CommandShell {
   public:
     CommandShell(const std::string &prompt_str, const std::string &service_name,
                  CommandInterpreterPtr &, PropertiesPtr &);
@@ -95,7 +95,7 @@ namespace Hypertable {
 #endif
   };
 
-  typedef intrusive_ptr<CommandShell> CommandShellPtr;
+  typedef std::shared_ptr<CommandShell> CommandShellPtr;
 
   struct CommandShellPolicy : Config::Policy {
     static void init_options() {
@@ -104,7 +104,7 @@ namespace Hypertable {
   };
 
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_COMMAND_SHELL_H
+#endif // Tools_Lib_CommandShell_h
 

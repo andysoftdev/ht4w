@@ -19,26 +19,29 @@
 
 #include <Common/Compat.h>
 
+#include "CephBroker.h"
+
+#include <Common/Filesystem.h>
+#include <Common/FileUtils.h>
+#include <Common/System.h>
+
 #include <cerrno>
+#include <chrono>
 #include <string>
+#include <thread>
 
 extern "C" {
 #include <fcntl.h>
-#include <poll.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
 }
 
-#include "Common/Filesystem.h"
-#include "Common/FileUtils.h"
-#include "Common/System.h"
-#include "CephBroker.h"
-
 using namespace Hypertable;
 using namespace Hypertable::FsBroker;
+using namespace std;
 
-atomic_t CephBroker::ms_next_fd = ATOMIC_INIT(0);
+atomic<int> CephBroker::ms_next_fd {0};
 
 CephBroker::CephBroker(PropertiesPtr& cfg) {
   m_verbose = cfg->get_bool("Hypertable.Verbose");
@@ -77,7 +80,7 @@ void CephBroker::open(Response::Callback::Open *cb, const char *fname,
 
   make_abs_path(fname, abspath);
 
-  fd = atomic_inc_return(&ms_next_fd);
+  fd = ++ms_next_fd;
 
   if ((ceph_fd = ceph_open(abspath.c_str(), O_RDONLY)) < 0) {
     report_error(cb, -ceph_fd);
@@ -107,7 +110,7 @@ void CephBroker::create(Response::Callback::Open *cb, const char *fname, uint32_
   HT_DEBUGF("create file='%s' flags=%u bufsz=%d replication=%d blksz=%lld",
             fname, flags, bufsz, (int)replication, (Lld)blksz);
 
-  fd = atomic_inc_return(&ms_next_fd);
+  fd = ++ms_next_fd;
 
   if (flags & Filesystem::OPEN_FLAG_OVERWRITE)
     oflags = O_WRONLY | O_CREAT | O_TRUNC;
@@ -400,7 +403,7 @@ void CephBroker::status(Response::Callback::Status *cb) {
 void CephBroker::shutdown(ResponseCallback *cb) {
   m_open_file_map.remove_all();
   cb->response_ok();
-  poll(0, 0, 2000);
+  this_thread::sleep_for(chrono::milliseconds(2000));
 }
 
 void CephBroker::readdir(Response::Callback::Readdir *cb, const char *dname) {

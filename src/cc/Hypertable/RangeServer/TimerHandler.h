@@ -30,13 +30,14 @@
 #include <AsyncComm/ApplicationQueue.h>
 #include <AsyncComm/DispatchHandler.h>
 
-#include <Common/Mutex.h>
 #include <Common/Time.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/condition.hpp>
 
+#include <chrono>
 #include <memory>
+#include <mutex>
 
 namespace Hypertable {
 
@@ -153,7 +154,7 @@ namespace Hypertable {
   private:
 
     /// %Mutex for serializing access
-    Mutex m_mutex;
+    std::mutex m_mutex;
 
     /// Comm object
     Comm *m_comm {};
@@ -174,10 +175,10 @@ namespace Hypertable {
     int64_t m_restart_generation {};
 
     /// Last time maintenance was scheduled
-    boost::xtime m_last_schedule;
+    std::chrono::steady_clock::time_point m_last_schedule;
 
     /// Last time application queue was paused
-    boost::xtime m_pause_time;
+    std::chrono::steady_clock::time_point m_pause_time;
 
     /// Timer interval
     int32_t m_timer_interval {};

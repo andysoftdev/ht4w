@@ -19,22 +19,20 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERSPACE_CLIENTHANDLESTATE_H
-#define HYPERSPACE_CLIENTHANDLESTATE_H
-
-#include <string>
-
-#include <boost/thread/condition.hpp>
-
-#include "Common/ReferenceCount.h"
-#include "Common/Mutex.h"
+#ifndef Hyperspace_ClientHandleState_h
+#define Hyperspace_ClientHandleState_h
 
 #include "HandleCallback.h"
 #include "LockSequencer.h"
 
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <string>
+
 namespace Hyperspace {
 
-  class ClientHandleState : public Hypertable::ReferenceCount {
+  class ClientHandleState {
   public:
     uint64_t     handle;
     uint32_t     open_flags;
@@ -45,11 +43,11 @@ namespace Hyperspace {
     int lock_status;
     uint32_t lock_mode;
     uint64_t lock_generation;
-    Mutex              mutex;
-    boost::condition   cond;
+    std::mutex mutex;
+    std::condition_variable cond;
   };
-  typedef boost::intrusive_ptr<ClientHandleState> ClientHandleStatePtr;
+  typedef std::shared_ptr<ClientHandleState> ClientHandleStatePtr;
 
 }
 
-#endif // HYPERSPACE_CLIENTHANDLESTATE_H
+#endif // Hyperspace_ClientHandleState_h

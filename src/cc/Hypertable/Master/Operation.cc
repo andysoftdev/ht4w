@@ -61,15 +61,13 @@ namespace Hypertable {
 Operation::Operation(ContextPtr &context, int32_t type)
   : MetaLog::Entity(type), m_context(context) {
   int32_t timeout = m_context->props->get_i32("Hypertable.Request.Timeout");
-  m_expiration_time.sec = time(0) + timeout/1000;
-  m_expiration_time.nsec = (timeout%1000) * 1000000LL;
+  m_expiration_time = ClockT::now() + chrono::milliseconds(timeout);
   m_hash_code = (int64_t)header.id;
 }
 
 Operation::Operation(ContextPtr &context, EventPtr &event, int32_t type)
   : MetaLog::Entity(type), m_context(context), m_event(event) {
-  m_expiration_time.sec = time(0) + m_event->header.timeout_ms/1000;
-  m_expiration_time.nsec = (m_event->header.timeout_ms%1000) * 1000000LL;
+  m_expiration_time = ClockT::now() + chrono::milliseconds(m_event->header.timeout_ms);
   m_hash_code = (int64_t)header.id;
 }
 
@@ -173,8 +171,9 @@ size_t Operation::encoded_length_internal() const {
 
 void Operation::encode_internal(uint8_t **bufp) const {
   Serialization::encode_i32(bufp, m_state);
-  Serialization::encode_i64(bufp, m_expiration_time.sec);
-  Serialization::encode_i32(bufp, m_expiration_time.nsec);
+  auto nanos = chrono::duration_cast<chrono::nanoseconds>(m_expiration_time.time_since_epoch()).count();
+  Serialization::encode_i64(bufp, (int64_t)(nanos / 1000000000LL));
+  Serialization::encode_i32(bufp, (int32_t)(nanos % 1000000000LL));
   Serialization::encode_i16(bufp, m_remove_approvals);
   Serialization::encode_i16(bufp, m_remove_approval_mask);
   if (m_state == OperationState::COMPLETE) {
@@ -207,8 +206,9 @@ void Operation::decode_internal(uint8_t version, const uint8_t **bufp,
                                 size_t *remainp) {
 
   m_state = Serialization::decode_i32(bufp, remainp);
-  m_expiration_time.sec = Serialization::decode_i64(bufp, remainp);
-  m_expiration_time.nsec = Serialization::decode_i32(bufp, remainp);
+  int64_t nanos = Serialization::decode_i64(bufp, remainp) * 1000000000LL;
+  nanos += Serialization::decode_i32(bufp, remainp);
+  m_expiration_time = ClockT::time_point(chrono::duration_cast<ClockT::duration>(chrono::nanoseconds(nanos)));
   m_remove_approvals = Serialization::decode_i16(bufp, remainp);
   m_remove_approval_mask = Serialization::decode_i16(bufp, remainp);
   if (m_state == OperationState::COMPLETE) {
@@ -289,8 +289,9 @@ void Operation::decode_old(const uint8_t **bufp, size_t *remainp,
   if (definition_version >= 2)
     version = (uint8_t)Serialization::decode_i16(bufp, remainp);
   m_state = Serialization::decode_i32(bufp, remainp);
-  m_expiration_time.sec = Serialization::decode_i64(bufp, remainp);
-  m_expiration_time.nsec = Serialization::decode_i32(bufp, remainp);
+  int64_t nanos = Serialization::decode_i64(bufp, remainp) * 1000000000LL;
+  nanos += Serialization::decode_i32(bufp, remainp);
+  m_expiration_time = ClockT::time_point(chrono::duration_cast<ClockT::duration>(chrono::nanoseconds(nanos)));
   if (m_original_type == 0 || (m_original_type & 0xF0000L) > 0x20000L) {
     m_remove_approvals = Serialization::decode_i16(bufp, remainp);
     m_remove_approval_mask = Serialization::decode_i16(bufp, remainp);
@@ -359,7 +360,7 @@ void Operation::decode_result(const uint8_t **bufp, size_t *remainp) {
 }
 
 bool Operation::removal_approved() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   return m_remove_approval_mask && m_remove_approvals == m_remove_approval_mask;
 }
 
@@ -399,7 +400,7 @@ void Operation::record_state(std::vector<MetaLog::EntityPtr> &additional) {
 void Operation::complete_error(int error, const String &msg,
                                std::vector<MetaLog::EntityPtr> &additional) {
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     m_state = OperationState::COMPLETE;
     m_error = error;
     m_error_msg = msg;
@@ -434,7 +435,7 @@ void Operation::complete_error(int error, const String &msg, MetaLog::EntityPtr 
 
 void Operation::complete_ok(std::vector<MetaLog::EntityPtr> &additional) {
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     m_state = OperationState::COMPLETE;
     m_error = Error::OK;
     m_dependencies.clear();
@@ -456,43 +457,43 @@ void Operation::complete_ok(MetaLog::EntityPtr additional) {
 }
 
 void Operation::exclusivities(DependencySet &exclusivities) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   exclusivities = m_exclusivities;
 }
 
 void Operation::dependencies(DependencySet &dependencies) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   dependencies = m_dependencies;
 }
 
 void Operation::obstructions(DependencySet &obstructions) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   obstructions = m_obstructions;
   obstructions.insert(m_obstructions_permanent.begin(), m_obstructions_permanent.end());
 }
 
 void Operation::fetch_sub_operations(std::vector<OperationPtr> &sub_ops) {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   for (int64_t id : m_sub_ops)
     sub_ops.push_back(m_context->reference_manager->get(id));
 }
 
 
 void Operation::pre_run() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   m_unblock_on_exit=false;
 }
 
 
 void Operation::post_run() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (m_unblock_on_exit)
     m_blocked = false;
 }
 
 
 bool Operation::block() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   if (!m_blocked) {
     m_blocked = true;
     return true;
@@ -501,7 +502,7 @@ bool Operation::block() {
 }
 
 bool Operation::unblock() {
-  ScopedLock lock(m_mutex);
+  lock_guard<mutex> lock(m_mutex);
   bool blocked_on_entry = m_blocked;
   m_unblock_on_exit = true;
   m_blocked = false;
@@ -521,7 +522,7 @@ bool Operation::validate_subops() {
     string dependency_string =
       format("%s subop %s %lld", name().c_str(), op->name().c_str(),
              (Lld)op->hash_code());
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     m_dependencies.erase(dependency_string);
     entities.push_back(op);
   }
@@ -540,7 +541,7 @@ void Operation::stage_subop(OperationPtr operation) {
   operation->set_remove_approval_mask(0x01);
   m_context->reference_manager->add(operation);
   {
-    ScopedLock lock(m_mutex);
+    lock_guard<mutex> lock(m_mutex);
     add_dependency(dependency_string);
     m_sub_ops.push_back(operation->id());
   }

@@ -20,6 +20,7 @@
  */
 
 #include <Common/Compat.h>
+
 #include "LocalBroker.h"
 
 #include <Common/FileUtils.h>
@@ -32,9 +33,11 @@
 #include <AsyncComm/ReactorFactory.h>
 
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <thread>
 #include <vector>
 #ifdef _WIN32
 #include <boost/algorithm/string.hpp>
@@ -44,7 +47,6 @@ extern "C" {
 #include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <poll.h>
 #if defined(__sun__)
 #include <sys/fcntl.h>
 #endif
@@ -57,6 +59,8 @@ extern "C" {
 using namespace Hypertable;
 using namespace Hypertable::FsBroker;
 using namespace std;
+
+atomic<int> LocalBroker::ms_next_fd {0};
 
 #ifdef _WIN32
 
@@ -107,7 +111,6 @@ inline uint64_t SetFilePointer(HANDLE hf, __int64 distance, DWORD dwMoveMethod) 
 
 #endif
 
-atomic_t LocalBroker::ms_next_fd = ATOMIC_INIT(0);
 
 LocalBroker::LocalBroker(PropertiesPtr &cfg) {
   m_verbose = cfg->get_bool("verbose");
@@ -150,7 +153,7 @@ LocalBroker::LocalBroker(PropertiesPtr &cfg) {
 
   // ensure that root directory exists
   if (!FileUtils::mkdirs(m_rootdir))
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 
@@ -178,7 +181,7 @@ LocalBroker::open(Response::Callback::Open *cb, const char *fname,
   else
     abspath = m_rootdir + "/" + fname;
 
-  fd = atomic_inc_return(&ms_next_fd);
+  fd = ++ms_next_fd;
 
   int oflags = O_RDONLY;
 
@@ -251,7 +254,7 @@ LocalBroker::create(Response::Callback::Open *cb, const char *fname, uint32_t fl
   else
     abspath = m_rootdir + "/" + fname;
 
-  fd = atomic_inc_return(&ms_next_fd);
+  fd = ++ms_next_fd;
 
   if (flags & Filesystem::OPEN_FLAG_OVERWRITE)
     oflags |= O_TRUNC;
@@ -278,7 +281,10 @@ LocalBroker::create(Response::Callback::Open *cb, const char *fname, uint32_t fl
   if ((local_fd = CreateFile(abspath.c_str(), GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_DELETE, 0, creationDisposition, flagsAndAttributes, 0)) == INVALID_HANDLE_VALUE) {
     report_error(cb);
     DWORD err = GetLastError();
-    HT_ERRORF("open failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
+    if (err != ERROR_PATH_NOT_FOUND)
+      HT_ERRORF("create failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
+    else
+      HT_INFOF("create failed: file='%s' - %s", abspath.c_str(), winapi_strerror(err));
     SetLastError(err);
     return;
   }
@@ -875,7 +881,7 @@ void LocalBroker::status(Response::Callback::Status *cb) {
 void LocalBroker::shutdown(ResponseCallback *cb) {
   m_open_file_map.remove_all();
   cb->response_ok();
-  poll(0, 0, 2000);
+  this_thread::sleep_for(chrono::milliseconds(2000));
 }
 
 

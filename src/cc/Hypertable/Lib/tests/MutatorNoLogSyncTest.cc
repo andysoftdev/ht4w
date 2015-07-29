@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2007-2015 Hypertable, Inc.
  *
  * This file is part of Hypertable.
@@ -19,7 +19,22 @@
  * 02110-1301, USA.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include <Hypertable/Lib/Client.h>
+#include <Hypertable/Lib/KeySpec.h>
+
+#include <AsyncComm/ReactorFactory.h>
+
+#include <Common/StringExt.h>
+#include <Common/Init.h>
+#include <Common/Error.h>
+#include <Common/InetAddr.h>
+#include <Common/Logger.h>
+#include <Common/ServerLauncher.h>
+#include <Common/System.h>
+#include <Common/Usage.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -30,20 +45,6 @@
 extern "C" {
 #include <unistd.h>
 }
-
-#include "Common/StringExt.h"
-#include "Common/Init.h"
-#include "Common/Error.h"
-#include "Common/InetAddr.h"
-#include "Common/Logger.h"
-#include "Common/ServerLauncher.h"
-#include "Common/System.h"
-#include "Common/Usage.h"
-
-#include "Hypertable/Lib/Client.h"
-#include "Hypertable/Lib/KeySpec.h"
-
-#include "AsyncComm/ReactorFactory.h"
 
 #ifdef _WIN32
 inline void sleep( int sec ) {
@@ -280,7 +281,7 @@ int main(int argc, char **argv) {
               " --no-thriftbroker --config=" + config_file;
   if (system(start_all.c_str()) !=0) {
     HT_ERROR("Unable to start servers");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   sleep(2);
 #endif
@@ -291,8 +292,9 @@ int main(int argc, char **argv) {
   ReactorFactory::initialize(2);
   try {
     assert (config_file != "");
-    hypertable_client_ptr = new Hypertable::Client(System::locate_install_dir(argv[0]),
-                                                   config_file);
+    hypertable_client_ptr =
+      make_shared<Hypertable::Client>(System::locate_install_dir(argv[0]),
+                                      config_file);
     namespace_ptr = hypertable_client_ptr->open_namespace("/");
     namespace_ptr->drop_table("MutatorNoLogSyncTest", true);
     namespace_ptr->create_table("MutatorNoLogSyncTest", schema);
@@ -304,7 +306,7 @@ int main(int argc, char **argv) {
 #ifndef _WIN32
     HT_EXPECT(system(clean_db.c_str()) == 0, Error::EXTERNAL);
 #endif
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
   key.column_family = "Field";
@@ -312,7 +314,7 @@ int main(int argc, char **argv) {
   try {
     // Load up some data so we have at least 3 ranges and do an explicit flush
     {
-      TableMutatorPtr mutator_ptr = table_ptr->create_mutator(0, Table::MUTATOR_FLAG_NO_LOG_SYNC);
+      TableMutatorPtr mutator_ptr(table_ptr->create_mutator(0, Table::MUTATOR_FLAG_NO_LOG_SYNC));
       cout << "*** Load 1" << endl;
       for (ii=0; ii<30; ++ii) {
         row_key = numbers[ii];
@@ -332,7 +334,7 @@ int main(int argc, char **argv) {
 
     // Load up a bit more and do an explicit flush
     {
-      TableMutatorPtr mutator_ptr = table_ptr->create_mutator(0, Table::MUTATOR_FLAG_NO_LOG_SYNC);
+      TableMutatorPtr mutator_ptr(table_ptr->create_mutator(0, Table::MUTATOR_FLAG_NO_LOG_SYNC));
        cout << "*** Load 2" << endl;
       for (;ii<34; ++ii) {
         row_key = numbers[ii];
@@ -352,7 +354,7 @@ int main(int argc, char **argv) {
 
     // Test flush on mutator destruction
     {
-      TableMutatorPtr mutator_ptr = table_ptr->create_mutator(0, Table::MUTATOR_FLAG_NO_LOG_SYNC);
+      TableMutatorPtr mutator_ptr(table_ptr->create_mutator(0, Table::MUTATOR_FLAG_NO_LOG_SYNC));
       cout << "*** Load 3" << endl;
       for (;ii<38; ++ii) {
         row_key = numbers[ii];
@@ -371,7 +373,7 @@ int main(int argc, char **argv) {
     // Do a scan and verify results
     {
       String scan_result;
-      TableScannerPtr scanner_ptr = table_ptr->create_scanner(scan_spec.get());
+      TableScannerPtr scanner_ptr(table_ptr->create_scanner(scan_spec.get()));
 
       int num_cells = expected_output.size();
       sort(expected_output.begin(), expected_output.end());
@@ -411,7 +413,7 @@ int main(int argc, char **argv) {
 #ifndef _WIN32
     HT_EXPECT(system(clean_db.c_str()) == 0, Error::EXTERNAL);
 #endif
-    _exit(1);
+    quick_exit(EXIT_FAILURE);
   }
 
   // stop all servers
@@ -422,7 +424,7 @@ int main(int argc, char **argv) {
 
   cout << "Test passed"<< endl;
 
-  exit(0);
+  exit(EXIT_SUCCESS);
 }
 
 
@@ -439,7 +441,7 @@ namespace {
 #endif
     if (system(command.c_str()) !=0) {
       HT_ERRORF("RangeServer on port %d did not come up", port);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 

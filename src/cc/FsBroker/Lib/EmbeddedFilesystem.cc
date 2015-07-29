@@ -89,7 +89,7 @@ using namespace Serialization;
 using namespace Hypertable::FsBroker;
 using namespace Hypertable::FsBroker::Lib;
 
-atomic_t EmbeddedFilesystem::ms_next_fd = ATOMIC_INIT(0);
+std::atomic<int> EmbeddedFilesystem::ms_next_fd = 1;
 
 EmbeddedFilesystem::EmbeddedFilesystem(PropertiesPtr &cfg)
   : m_directio(false), m_asyncio(false), m_request_queue(m_mutex) {
@@ -123,7 +123,7 @@ EmbeddedFilesystem::~EmbeddedFilesystem() {
     m_request_queue.shutdown();
     m_asyncio_thread.join_all();
 
-    ScopedRecLock lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     for (BufferedReaderMap::iterator iter = m_buffered_reader_map.begin(); iter != m_buffered_reader_map.end(); ++iter)
       delete iter->second;
   }
@@ -162,7 +162,7 @@ int EmbeddedFilesystem::open_buffered(const String &name, uint32_t flags, uint32
         new FsBroker::Lib::ClientBufferedReaderHandler(this, fd, buf_size, outstanding,
                                           start_offset, end_offset);
 
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       HT_ASSERT(m_buffered_reader_map.find(fd) == m_buffered_reader_map.end());
       m_buffered_reader_map[fd] = reader_handler;
     }
@@ -253,7 +253,7 @@ size_t EmbeddedFilesystem::read(int fd, void *dst, size_t len) {
   if (m_asyncio) {
     FsBroker::Lib::ClientBufferedReaderHandler *reader_handler = 0;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       BufferedReaderMap::iterator iter = m_buffered_reader_map.find(fd);
       if (iter != m_buffered_reader_map.end())
         reader_handler = (*iter).second;
@@ -902,7 +902,7 @@ int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
 
     String abspath;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       if (name[0] == '/')
         abspath = m_rootdir + name;
       else
@@ -910,7 +910,7 @@ int EmbeddedFilesystem::open(const String &name, uint32_t flags, bool sync) {
     }
 
     HANDLE h;
-    int fd = atomic_inc_return(&ms_next_fd);
+    int fd = ms_next_fd.fetch_add(1);
 
     //DWORD flagsAndAttributes = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_NO_BUFFERING : FILE_FLAG_RANDOM_ACCESS;
     if ((h = CreateFile(abspath.c_str(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0)) == INVALID_HANDLE_VALUE)
@@ -930,7 +930,7 @@ int EmbeddedFilesystem::create(const String &name, uint32_t flags, int32_t bufsz
 
     String abspath;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       if (name[0] == '/')
         abspath = m_rootdir + name;
       else
@@ -938,7 +938,7 @@ int EmbeddedFilesystem::create(const String &name, uint32_t flags, int32_t bufsz
     }
 
     HANDLE h;
-    int fd = atomic_inc_return(&ms_next_fd);
+    int fd = ms_next_fd.fetch_add(1);
 
     DWORD creationDisposition = flags & Filesystem::OPEN_FLAG_OVERWRITE ? CREATE_ALWAYS : OPEN_ALWAYS;
     DWORD flagsAndAttributes = m_directio && (flags & Filesystem::OPEN_FLAG_DIRECTIO) ? FILE_FLAG_WRITE_THROUGH/*|FILE_FLAG_NO_BUFFERING*/ : 0;
@@ -959,7 +959,7 @@ void EmbeddedFilesystem::close(int fd, bool sync) {
     if (m_asyncio) {
       FsBroker::Lib::ClientBufferedReaderHandler *reader_handler = 0;
       {
-        ScopedRecLock lock(m_mutex);
+        std::lock_guard<std::recursive_mutex> lock(m_mutex);
         BufferedReaderMap::iterator iter = m_buffered_reader_map.find(fd);
         if (iter != m_buffered_reader_map.end()) {
           reader_handler = (*iter).second;
@@ -1042,7 +1042,7 @@ void EmbeddedFilesystem::remove(const String &name, bool force, bool sync) {
 
     String abspath;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       if (name[0] == '/')
         abspath = m_rootdir + name;
       else
@@ -1063,7 +1063,7 @@ int64_t EmbeddedFilesystem::length(const String &name, bool sync) {
 
     String abspath;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       if (name[0] == '/')
         abspath = m_rootdir + name;
       else
@@ -1102,7 +1102,7 @@ void EmbeddedFilesystem::mkdirs(const String &name, bool sync) {
 
     String abspath;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       if (name[0] == '/')
         abspath = m_rootdir + name;
       else
@@ -1135,7 +1135,7 @@ void EmbeddedFilesystem::rmdir(const String &name, bool force, bool sync) {
 
     String abspath;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       if (name[0] == '/')
         abspath = m_rootdir + name;
       else
@@ -1158,7 +1158,7 @@ void EmbeddedFilesystem::readdir(const String &name, std::vector<Dirent> &listin
 
     String abspath;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       if (name[0] == '/')
         abspath = m_rootdir + name;
       else
@@ -1204,7 +1204,7 @@ bool EmbeddedFilesystem::exists(const String &name, bool sync) {
 
     String abspath;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       if (name[0] == '/')
         abspath = m_rootdir + name;
       else
@@ -1225,7 +1225,7 @@ void EmbeddedFilesystem::rename(const String &src, const String &dst, bool sync)
 
     String asrc, adst;
     {
-      ScopedRecLock lock(m_mutex);
+      std::lock_guard<std::recursive_mutex> lock(m_mutex);
       asrc = m_rootdir + "/" + src;
       adst = m_rootdir + "/" + dst;
     }
@@ -1328,13 +1328,13 @@ void EmbeddedFilesystem::throw_error() {
   }
 }
 
-EmbeddedFilesystem::RequestQueue::RequestQueue(RecMutex& mutex)
-: m_mutex(mutex)
+EmbeddedFilesystem::RequestQueue::RequestQueue(std::recursive_mutex& recursive_mutex)
+: m_mutex(recursive_mutex)
 {
 }
 
 void EmbeddedFilesystem::RequestQueue::enqueue(const Request& request) {
-  ScopedRecLock lock(m_mutex);
+  std::lock_guard<std::recursive_mutex> lock(m_mutex);
   if (!m_shutdown) {
     m_queue.push_back(request);
     m_cond.notify_one();
@@ -1342,7 +1342,7 @@ void EmbeddedFilesystem::RequestQueue::enqueue(const Request& request) {
 }
 
 bool EmbeddedFilesystem::RequestQueue::dequeue(Request &request) {
-  ScopedRecLock lock(m_mutex);
+  std::unique_lock<std::recursive_mutex> lock(m_mutex);
   while (!dequeue_request(request)) {
     if (m_shutdown)
       return false;
@@ -1352,14 +1352,14 @@ bool EmbeddedFilesystem::RequestQueue::dequeue(Request &request) {
 }
 
 void EmbeddedFilesystem::RequestQueue::sync(int fd) {
-  ScopedRecLock lock(m_mutex);
+  std::unique_lock<std::recursive_mutex> lock(m_mutex);
   while (m_fd_in_progress.find(fd) != m_fd_in_progress.end() || contains_request(fd))
     m_fd_completed_cond.wait(lock);
   m_fd_in_progress.insert(fd);
 }
 
 void EmbeddedFilesystem::RequestQueue::completed(int fd) {
-  ScopedRecLock lock(m_mutex);
+  std::lock_guard<std::recursive_mutex> lock(m_mutex);
   if (m_fd_in_progress.erase(fd)) {
     m_fd_completed_cond.notify_all();
     if (!m_queue.empty()) {
@@ -1369,7 +1369,7 @@ void EmbeddedFilesystem::RequestQueue::completed(int fd) {
 }
 
 void EmbeddedFilesystem::RequestQueue::shutdown() {
-  ScopedRecLock lock(m_mutex);
+  std::lock_guard<std::recursive_mutex> lock(m_mutex);
   m_queue.clear();
   m_shutdown = true;
   m_cond.notify_all();

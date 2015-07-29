@@ -26,22 +26,22 @@
  * and printf-like macros and convenience functions.
  */
 
-#include "Common/Compat.h"
+#include <Common/Compat.h>
+
+#include "String.h"
+#include "Logger.h"
 
 #include <iostream>
 #include <stdio.h>
 #include <stdarg.h>
-
-#include "String.h"
-#include "Logger.h"
-#include "Mutex.h"
+#include <mutex>
 #include "FileUtils.h"
 
 namespace Hypertable { namespace Logger {
 
 static String logger_name;
 static LogWriter *logger_obj = 0;
-static Mutex mutex;
+static std::mutex mutex;
 
 void initialize(const String &name) {
   logger_name = name;
@@ -66,7 +66,7 @@ void LogWriter::log_string(int priority, const char *message) {
     "NOTSET"
   };
 
-  ScopedLock lock(mutex);
+  std::lock_guard<std::mutex> lock(mutex);
   int saved_errno = errno;
 
   if (m_test_mode) {
@@ -96,7 +96,7 @@ void LogWriter::log_string(int priority, const char *message) {
 
 #endif
 
-    for each( const LogSink* ls in logSinks )
+    for ( const LogSink* ls : logSinks )
       ls->log( priority, message, entry );
 
   }
@@ -152,7 +152,7 @@ void LogWriter::log(int priority, const char *format, ...) {
 
 void LogWriter::set_file(const char* logfile) {
   if (logfile && *logfile) {
-    ScopedLock lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     m_logfile = logfile;
     m_file = fopen(logfile, "a+tc");
     if (m_file)
@@ -162,19 +162,19 @@ void LogWriter::set_file(const char* logfile) {
 
 void LogWriter::set_file(FILE *file) {
   if (file) {
-    ScopedLock lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     m_file = file;
   }
 }
 
 void LogWriter::add_sink(const LogSink* ls) {
-  ScopedLock lock(mutex);
+  std::lock_guard<std::mutex> lock(mutex);
   if (ls)
     logSinks.insert(ls);
 }
 
 void LogWriter::remove_sink(const LogSink* ls) {
-  ScopedLock lock(mutex);
+  std::lock_guard<std::mutex> lock(mutex);
   if (ls)
     logSinks.erase(ls);
 }
@@ -198,7 +198,7 @@ void LogWriter::set_test_mode(int fd) {
 }
 
 void LogWriter::flush() {
-  ScopedLock lock(mutex);
+  std::lock_guard<std::mutex> lock(mutex);
 
 #ifndef _WIN32
 
@@ -212,7 +212,7 @@ void LogWriter::flush() {
 }
 
 void LogWriter::close() {
-  ScopedLock lock(mutex);
+  std::lock_guard<std::mutex> lock(mutex);
 
   if (m_file != stdout) {
     fclose(m_file);

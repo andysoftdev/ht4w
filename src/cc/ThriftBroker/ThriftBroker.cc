@@ -42,9 +42,9 @@
 #include <Hypertable/Lib/ProfileDataScanner.h>
 
 #include <Common/Cronolog.h>
+#include <Common/fast_clock.h>
 #include <Common/Init.h>
 #include <Common/Logger.h>
-#include <Common/Mutex.h>
 #include <Common/Random.h>
 #include <Common/System.h>
 #include <Common/Time.h>
@@ -66,6 +66,7 @@
 #include <iomanip>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <unordered_map>
 
@@ -108,32 +109,32 @@ namespace {
 }
 
 #define LOG_API_START(_expr_) \
-  boost::xtime start_time, end_time; \
+  std::chrono::fast_clock::time_point start_time, end_time;     \
   std::ostringstream logging_stream;\
   ScannerInfoPtr scanner_info;\
   g_metrics_handler->request_increment(); \
   if (m_context.log_api || g_log_slow_queries) {\
-    boost::xtime_get(&start_time, TIME_UTC_);\
+    start_time = std::chrono::fast_clock::now(); \
     if (m_context.log_api)\
       logging_stream << "API " << __func__ << ": " << _expr_;\
   }
 
 #define LOG_API_FINISH \
   if (m_context.log_api || (g_log_slow_queries && scanner_info)) { \
-    boost::xtime_get(&end_time, TIME_UTC_); \
-    if (m_context.log_api)\
-      std::cout << start_time.sec <<'.'<< std::setw(9) << std::setfill('0') << start_time.nsec <<" API "<< __func__ <<": "<< logging_stream.str() << " latency=" << xtime_diff_millis(start_time, end_time) << std::endl; \
+    end_time = std::chrono::fast_clock::now(); \
+    if (m_context.log_api) \
+std::cout << std::chrono::duration_cast<std::chrono::seconds>(start_time.time_since_epoch()).count() <<'.'<< std::setw(9) << std::setfill('0') << (std::chrono::duration_cast<std::chrono::nanoseconds>(start_time.time_since_epoch()).count() % 1000000000LL) <<" API "<< __func__ <<": "<< logging_stream.str() << " latency=" << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << std::endl; \
     if (scanner_info) \
-      scanner_info->latency += xtime_diff_millis(start_time, end_time);\
+      scanner_info->latency += std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();\
   }
 
 #define LOG_API_FINISH_E(_expr_) \
   if (m_context.log_api || (g_log_slow_queries && scanner_info)) { \
-    boost::xtime_get(&end_time, TIME_UTC_); \
-    if (m_context.log_api)\
-      std::cout << start_time.sec <<'.'<< std::setw(9) << std::setfill('0') << start_time.nsec <<" API "<< __func__ <<": "<< logging_stream.str() << _expr_ << " latency=" << xtime_diff_millis(start_time, end_time) << std::endl; \
+    end_time = std::chrono::fast_clock::now(); \
+    if (m_context.log_api) \
+      std::cout << std::chrono::duration_cast<std::chrono::seconds>(start_time.time_since_epoch()).count() <<'.'<< std::setw(9) << std::setfill('0') << (std::chrono::duration_cast<std::chrono::nanoseconds>(start_time.time_since_epoch()).count() % 1000000000LL) <<" API "<< __func__ <<": "<< logging_stream.str() << _expr_ << " latency=" << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << std::endl; \
     if (scanner_info)\
-      scanner_info->latency += xtime_diff_millis(start_time, end_time);\
+      scanner_info->latency += std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();\
   }
 
 
@@ -162,8 +163,8 @@ namespace {
 
 #define LOG_SLOW_QUERY(_pd_, _ns_, _hql_) do {   \
   if (g_log_slow_queries) { \
-    boost::xtime_get(&end_time, TIME_UTC_); \
-    int64_t latency_ms = xtime_diff_millis(start_time, end_time); \
+    end_time = std::chrono::fast_clock::now(); \
+    int64_t latency_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count(); \
     if (latency_ms >= g_slow_query_latency_threshold) \
       log_slow_query(__func__, start_time, end_time, latency_ms, _pd_, _ns_, _hql_); \
   } \
@@ -173,8 +174,8 @@ namespace {
   if (g_log_slow_queries) { \
     ProfileDataScanner pd; \
     _scanner_->get_profile_data(pd); \
-    boost::xtime_get(&end_time, TIME_UTC_); \
-    int64_t latency_ms = xtime_diff_millis(start_time, end_time); \
+    end_time = std::chrono::fast_clock::now(); \
+    int64_t latency_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count(); \
     if (latency_ms >= g_slow_query_latency_threshold) \
       log_slow_query_scanspec(__func__, start_time, end_time, latency_ms, pd, _ns_, _table_, _ss_); \
   } \
@@ -245,7 +246,7 @@ public:
     future_capacity = Config::get_i32("ThriftBroker.Future.Capacity");
   }
   Hypertable::Client *client;
-  Mutex shared_mutator_mutex;
+  std::mutex shared_mutator_mutex;
   SharedMutatorMap shared_mutator_map;
   bool log_api;
   ::uint32_t next_threshold;
@@ -316,7 +317,7 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
   // shallow copy
   const char *start_row;
   const char *end_row;
-  foreach_ht(const ThriftGen::RowInterval &ri, tss.row_intervals) {
+  for (const auto &ri : tss.row_intervals) {
     start_row = ri.__isset.start_row ?
                 ri.start_row.c_str() :
                 ri.__isset.start_row_binary ?
@@ -332,7 +333,7 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
       end_row, ri.__isset.end_inclusive && ri.end_inclusive));
   }
 
-  foreach_ht(const ThriftGen::CellInterval &ci, tss.cell_intervals)
+  for (const auto &ci : tss.cell_intervals)
     hss.cell_intervals.push_back(Hypertable::CellInterval(
         ci.__isset.start_row ? ci.start_row.c_str() : "",
         ci.start_column.c_str(),
@@ -341,10 +342,10 @@ convert_scan_spec(const ThriftGen::ScanSpec &tss, Hypertable::ScanSpec &hss) {
         ci.end_column.c_str(),
         ci.__isset.end_inclusive && ci.end_inclusive));
 
-  foreach_ht(const std::string &col, tss.columns)
+  for (const auto &col : tss.columns)
     hss.columns.push_back(col.c_str());
 
-  foreach_ht(const ThriftGen::ColumnPredicate &cp, tss.column_predicates) {
+  for (const auto &cp : tss.column_predicates) {
     HT_INFOF("%s:%s %s", cp.column_family.c_str(), cp.column_qualifier.c_str(),
              cp.__isset.value ? cp.value.c_str() : "");
     hss.column_predicates.push_back(
@@ -583,7 +584,7 @@ int32_t convert_cells(const Hypertable::Cells &hcells, ThriftCells &tcells) {
 
 void convert_cells(const ThriftCells &tcells, Hypertable::Cells &hcells) {
   // shallow copy
-  foreach_ht(const ThriftGen::Cell &tcell, tcells) {
+  for (const auto &tcell : tcells) {
     Hypertable::Cell hcell;
     convert_cell(tcell, hcell);
     hcells.push_back(hcell);
@@ -621,7 +622,7 @@ int32_t convert_cells(Hypertable::Cells &hcells, CellsSerialized &tcells) {
 void
 convert_cells(const ThriftCellsAsArrays &tcells, Hypertable::Cells &hcells) {
   // shallow copy
-  foreach_ht(const CellAsArray &tcell, tcells) {
+  for (const auto &tcell : tcells) {
     Hypertable::Cell hcell;
     convert_cell(tcell, hcell);
     hcells.push_back(hcell);
@@ -907,9 +908,9 @@ struct HqlCallback : HqlInterpreter::Callback {
     : result(r), handler(*handler), ns(ns), hql(hql), flush(flush),
       buffered(buffered) { }
 
-  virtual void on_return(const String &);
-  virtual void on_scan(TableScanner &);
-  virtual void on_finish(TableMutator *);
+  void on_return(const std::string &) override;
+  void on_scan(TableScannerPtr &) override;
+  void on_finish(TableMutatorPtr &) override;
 
 };
 
@@ -957,7 +958,7 @@ public:
   }
 
   virtual ~ServerHandler() {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_object_map.empty())
       HT_WARNF("Destroying ServerHandler for remote peer %s with %d objects in map",
                m_remote_peer.c_str(),
@@ -1019,9 +1020,10 @@ public:
     return m_remote_peer;
   }
 
-  void log_slow_query(const char *func_name, boost::xtime start_time,
-                      boost::xtime end_time, int64_t latency_ms,
-                      ProfileDataScanner &profile_data,
+  void log_slow_query(const char *func_name,
+                      std::chrono::fast_clock::time_point start_time,
+                      std::chrono::fast_clock::time_point end_time,
+                      int64_t latency_ms, ProfileDataScanner &profile_data,
                       Hypertable::Namespace *ns, const string &hql) {
 
     // Build servers string
@@ -1062,20 +1064,21 @@ public:
     }
 
     string line = format("%lld %s %s %lld %d %d %lld %lld %lld %s %s %s",
-                         (Lld)start_time.sec, func_name, m_remote_peer.c_str(),
+                         (Lld)std::chrono::fast_clock::to_time_t(start_time),
+                         func_name, m_remote_peer.c_str(),
                          (Lld)latency_ms, profile_data.subscanners,
                          profile_data.scanblocks,
                          (Lld)profile_data.bytes_returned,
                          (Lld)profile_data.bytes_scanned,
                          (Lld)profile_data.disk_read, servers.c_str(),
                          ns_str.c_str(), hql_ptr);
-    g_slow_query_log->write((time_t)end_time.sec, line);
-
+    g_slow_query_log->write(std::chrono::fast_clock::to_time_t(end_time), line);
   }
 
-  void log_slow_query_scanspec(const char *func_name, boost::xtime start_time,
-                               boost::xtime end_time, int64_t latency_ms,
-                               ProfileDataScanner &profile_data,
+  void log_slow_query_scanspec(const char *func_name,
+                               std::chrono::fast_clock::time_point start_time,
+                               std::chrono::fast_clock::time_point end_time,
+                               int64_t latency_ms, ProfileDataScanner &profile_data,
                                Hypertable::Namespace *ns, const string &table,
                                Hypertable::ScanSpec &ss) {
 
@@ -1098,14 +1101,15 @@ public:
       ns_str = string("/") + ns_str;
 
     string line = format("%lld %s %s %lld %d %d %lld %lld %lld %s %s %s",
-                         (Lld)start_time.sec, func_name, m_remote_peer.c_str(),
+                         (Lld)std::chrono::fast_clock::to_time_t(start_time),
+                         func_name, m_remote_peer.c_str(),
                          (Lld)latency_ms, profile_data.subscanners,
                          profile_data.scanblocks,
                          (Lld)profile_data.bytes_returned,
                          (Lld)profile_data.bytes_scanned,
                          (Lld)profile_data.disk_read, servers.c_str(),
                          ns_str.c_str(), ss.render_hql(table).c_str());
-    g_slow_query_log->write((time_t)end_time.sec, line);
+    g_slow_query_log->write(std::chrono::fast_clock::to_time_t(end_time), line);
   }
   
 
@@ -1212,7 +1216,7 @@ public:
 
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
-      Hypertable::SchemaPtr hschema = new Hypertable::Schema();
+      Hypertable::SchemaPtr hschema = make_shared<Hypertable::Schema>();
       convert_schema(schema, hschema);
       namespace_ptr->create_table(table, hschema);
     } RETHROW("namespace=" << ns << " table="<< table)
@@ -1226,7 +1230,7 @@ public:
 
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
-      Hypertable::SchemaPtr hschema = new Hypertable::Schema();
+      Hypertable::SchemaPtr hschema = make_shared<Hypertable::Schema>();
       convert_schema(schema, hschema);
       namespace_ptr->alter_table(table, hschema, false);
     } RETHROW("namespace=" << ns << " table="<< table)
@@ -1305,7 +1309,7 @@ public:
       if (g_log_slow_queries) {
         ProfileDataScanner pd;
         scanner->get_profile_data(pd);
-        boost::xtime_get(&end_time, TIME_UTC_);
+        end_time = std::chrono::fast_clock::now();
         if (scanner_info->latency >= g_slow_query_latency_threshold) {
           if (scanner_info->hql.empty())
             log_slow_query_scanspec(__func__, start_time, end_time,
@@ -1502,7 +1506,7 @@ public:
       ss.row_intervals.push_back(Hypertable::RowInterval(row.c_str(), true,
                                                          row.c_str(), true));
       ss.max_versions = 1;
-      TableScannerPtr scanner = t->create_scanner(ss);
+      TableScannerPtr scanner(t->create_scanner(ss));
       _next(result, scanner.get(), INT32_MAX);
       LOG_SLOW_QUERY_SCANNER(scanner, get_namespace(ns), table, ss);
     } RETHROW("namespace=" << ns << " table="<< table <<" row="<< row)
@@ -1521,7 +1525,7 @@ public:
       ss.row_intervals.push_back(Hypertable::RowInterval(row.c_str(), true,
                                                          row.c_str(), true));
       ss.max_versions = 1;
-      TableScannerPtr scanner = t->create_scanner(ss);
+      TableScannerPtr scanner(t->create_scanner(ss));
       _next(result, scanner.get(), INT32_MAX);
       LOG_SLOW_QUERY_SCANNER(scanner, get_namespace(ns), table, ss);
     } RETHROW("namespace=" << ns << " table="<< table <<" row="<< row)
@@ -1541,7 +1545,7 @@ public:
       ss.row_intervals.push_back(Hypertable::RowInterval(row.c_str(), true,
                                                          row.c_str(), true));
       ss.max_versions = 1;
-      TableScannerPtr scanner = t->create_scanner(ss);
+      TableScannerPtr scanner(t->create_scanner(ss));
       Hypertable::Cell cell;
 
       while (scanner->next(cell))
@@ -1572,7 +1576,7 @@ public:
       ss.max_versions = 1;
 
       Hypertable::Cell cell;
-      TableScannerPtr scanner = t->create_scanner(ss, 0, true);
+      TableScannerPtr scanner(t->create_scanner(ss, 0, true));
 
       if (scanner->next(cell))
         result = String((char *)cell.value, cell.value_len);
@@ -1593,7 +1597,7 @@ public:
     try {
       Hypertable::ScanSpec hss;
       convert_scan_spec(ss, hss);
-      TableScannerPtr scanner = _open_scanner(ns, table, hss);
+      TableScannerPtr scanner(_open_scanner(ns, table, hss));
       _next(result, scanner.get(), INT32_MAX);
       LOG_SLOW_QUERY_SCANNER(scanner, get_namespace(ns), table, hss);
     } RETHROW("namespace=" << ns << " table="<< table <<" scan_spec="<< ss)
@@ -1608,7 +1612,7 @@ public:
     try {
       Hypertable::ScanSpec hss;
       convert_scan_spec(ss, hss);
-      TableScannerPtr scanner = _open_scanner(ns, table, hss);
+      TableScannerPtr scanner(_open_scanner(ns, table, hss));
       _next(result, scanner.get(), INT32_MAX);
       LOG_SLOW_QUERY_SCANNER(scanner, get_namespace(ns), table, hss);
     } RETHROW("namespace=" << ns << " table="<< table <<" scan_spec="<< ss)
@@ -1624,7 +1628,7 @@ public:
       Hypertable::ScanSpec hss;
       convert_scan_spec(ss, hss);
       SerializedCellsWriter writer(0, true);
-      TableScannerPtr scanner = _open_scanner(ns, table, hss);
+      TableScannerPtr scanner(_open_scanner(ns, table, hss));
       Hypertable::Cell cell;
 
       while (scanner->next(cell))
@@ -1898,7 +1902,7 @@ public:
     ThriftGen::Namespace id;
     LOG_API_START("namespace =" << ns);
     try {
-      id = get_cached_object_id( m_context.client->open_namespace(ns) );
+      id = get_cached_object_id( static_pointer_cast<ClientObject>(m_context.client->open_namespace(ns)) );
     } RETHROW("namespace " << ns)
     LOG_API_FINISH_E(" id=" << id);
     return id;
@@ -2074,7 +2078,7 @@ public:
           const ThriftGen::Cell &cell) {
     LOG_API_START("ns=" << ns << " table=" << table << " cell=" << cell);
     try {
-      TableMutatorPtr mutator = _open_mutator(ns, table);
+      TableMutatorPtr mutator(_open_mutator(ns, table));
       CellsBuilder cb;
       Hypertable::Cell hcell;
       convert_cell(cell, hcell);
@@ -2090,7 +2094,7 @@ public:
     LOG_API_START("ns=" << ns << " table=" << table << " cell.size="
             << cells.size());
     try {
-      TableMutatorPtr mutator = _open_mutator(ns, table);
+      TableMutatorPtr mutator(_open_mutator(ns, table));
       Hypertable::Cells hcells;
       convert_cells(cells, hcells);
       mutator->set_cells(hcells);
@@ -2106,7 +2110,7 @@ public:
             << cells.size());
 
     try {
-      TableMutatorPtr mutator = _open_mutator(ns, table);
+      TableMutatorPtr mutator(_open_mutator(ns, table));
       Hypertable::Cells hcells;      
       convert_cells(cells, hcells);
       mutator->set_cells(hcells);
@@ -2122,7 +2126,7 @@ public:
     LOG_API_START("ns=" << ns << " table=" << table << " cell_as_array.size="
             << cell.size());
     try {
-      TableMutatorPtr mutator = _open_mutator(ns, table);
+      TableMutatorPtr mutator(_open_mutator(ns, table));
       CellsBuilder cb;
       Hypertable::Cell hcell;
       convert_cell(cell, hcell);
@@ -2139,7 +2143,7 @@ public:
     LOG_API_START("ns=" << ns << " table=" << table <<
             " cell_serialized.size=" << cells.size() << " flush=" << flush);
     try {
-      TableMutatorPtr mutator = _open_mutator(ns, table);
+      TableMutatorPtr mutator(_open_mutator(ns, table));
       CellsBuilder cb;
       Hypertable::Cell hcell;
       SerializedCellsReader reader((void *)cells.c_str(),
@@ -2667,7 +2671,7 @@ public:
   void run_hql_interp(const ThriftGen::Namespace ns, const String &hql,
           HqlInterpreter::Callback &cb) {
     Hypertable::Namespace *namespace_ptr = get_namespace(ns);
-    HqlInterpreterPtr interp = m_context.client->create_hql_interpreter(true);
+    HqlInterpreterPtr interp(m_context.client->create_hql_interpreter(true));
     interp->set_namespace(namespace_ptr->get_name());
     interp->execute(hql, cb);
   }
@@ -2730,13 +2734,13 @@ public:
   }
 
   ClientObject *get_object(int64_t id) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     ObjectMap::iterator it = m_object_map.find(id);
     return (it != m_object_map.end()) ? it->second.get() : 0;
   }
 
   ClientObject *get_cached_object(int64_t id) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     ObjectMap::iterator it = m_cached_object_map.find(id);
     return (it != m_cached_object_map.end()) ? it->second.get() : 0;
   }
@@ -2764,41 +2768,56 @@ public:
 
   int64_t get_cached_object_id(ClientObjectPtr co) {
     int64_t id;
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     while (!m_cached_object_map.insert(make_pair(id = Random::number32(), co)).second || id == 0); // no overwrite
     return id;
   }
 
-  int64_t get_object_id(ClientObjectPtr co) {
-    ScopedLock lock(m_mutex);
-    int64_t id = reinterpret_cast<int64_t>(co.get());
-    m_object_map.insert(make_pair(id, co)); // no overwrite
+  int64_t get_object_id(ClientObject *co) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    int64_t id = reinterpret_cast<int64_t>(co);
+    m_object_map.insert(make_pair(id, ClientObjectPtr(co))); // no overwrite
+    return id;
+  }
+
+  int64_t get_object_id(TableMutatorPtr &mutator) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    int64_t id = reinterpret_cast<int64_t>(mutator.get());
+    m_object_map.insert(make_pair(id, static_pointer_cast<ClientObject>(mutator))); // no overwrite
     return id;
   }
 
   int64_t try_get_object_id(ClientObject* co) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     int64_t id = reinterpret_cast<int64_t>(co);
     return m_object_map.find(id) != m_object_map.end() ? id : 0;
   }
 
   int64_t get_scanner_id(TableScanner *scanner, ScannerInfoPtr &info) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     int64_t id = reinterpret_cast<int64_t>(scanner);
-    m_object_map.insert(make_pair(id, scanner));
+    m_object_map.insert(make_pair(id, ClientObjectPtr(scanner)));
+    m_scanner_info_map.insert(make_pair(id, info));
+    return id;
+  }
+
+  int64_t get_scanner_id(TableScannerPtr &scanner, ScannerInfoPtr &info) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    int64_t id = reinterpret_cast<int64_t>(scanner.get());
+    m_object_map.insert(make_pair(id, static_pointer_cast<ClientObject>(scanner)));
     m_scanner_info_map.insert(make_pair(id, info));
     return id;
   }
 
   void add_reference(int64_t from, int64_t to) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     ObjectMap::iterator it = m_object_map.find(to);
-    ClientObject *obj = (it != m_object_map.end()) ? it->second.get() : 0;
-    m_reference_map.insert(make_pair(from, obj));
+    if (it != m_object_map.end())
+      m_reference_map.insert(make_pair(from, it->second));
   }
 
   void remove_references(int64_t id) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_reference_map.erase(id);
   }
 
@@ -2814,9 +2833,11 @@ public:
   }
 
   TableScanner *get_scanner(int64_t id, ScannerInfoPtr &info) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
+    TableScanner *scanner {};
     auto it = m_object_map.find(id);
-    if (it == m_object_map.end()) {
+    if (it == m_object_map.end() ||
+        (scanner = dynamic_cast<TableScanner *>(it->second.get())) == nullptr) {
       HT_ERROR_OUT << "Bad scanner id - " << id << HT_END;
       THROW_TE(Error::THRIFTBROKER_BAD_SCANNER_ID,
                format("Invalid scanner id: %lld", (Lld)id));
@@ -2824,7 +2845,7 @@ public:
     auto sit = m_scanner_info_map.find(id);
     HT_ASSERT(sit != m_scanner_info_map.end());
     info = sit->second;
-    return dynamic_cast<TableScanner *>(it->second.get());
+    return scanner;
   }
 
   bool remove_object(int64_t id) {
@@ -2832,7 +2853,7 @@ public:
     bool removed = false;
     ClientObjectPtr item;
     {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       ObjectMap::iterator it = m_object_map.find(id);
       if (it != m_object_map.end()) {
         item = (*it).second;
@@ -2848,7 +2869,7 @@ public:
     bool removed = false;
     ClientObjectPtr item;
     {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       ObjectMap::iterator it = m_cached_object_map.find(id);
       if (it != m_cached_object_map.end()) {
         item = (*it).second;
@@ -2863,7 +2884,7 @@ public:
     // destroy client object unlocked
     ClientObjectPtr item;
     {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       m_scanner_info_map.erase(id);
       ObjectMap::iterator it = m_object_map.find(id);
       if (it != m_object_map.end()) {
@@ -2879,7 +2900,7 @@ public:
   }
 
   void remove_scanner(int64_t id, ClientObjectPtr &scanner, ScannerInfoPtr &info) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     ObjectMap::iterator it = m_object_map.find(id);
     if (it != m_object_map.end()) {
       scanner = (*it).second;
@@ -2896,7 +2917,7 @@ public:
 
   virtual void shared_mutator_refresh(const ThriftGen::Namespace ns,
           const String &table, const ThriftGen::MutateSpec &mutate_spec) {
-    ScopedLock lock(m_context.shared_mutator_mutex);
+    std::lock_guard<std::mutex> lock(m_context.shared_mutator_mutex);
     SharedMutatorMapKey skey(get_namespace(ns), table, mutate_spec);
 
     SharedMutatorMap::iterator it = m_context.shared_mutator_map.find(skey);
@@ -2927,7 +2948,7 @@ public:
 
   TableMutator *get_shared_mutator(const ThriftGen::Namespace ns,
           const String &table, const ThriftGen::MutateSpec &mutate_spec) {
-    ScopedLock lock(m_context.shared_mutator_mutex);
+    std::lock_guard<std::mutex> lock(m_context.shared_mutator_mutex);
     SharedMutatorMapKey skey(get_namespace(ns), table, mutate_spec);
 
     SharedMutatorMap::iterator it = m_context.shared_mutator_map.find(skey);
@@ -2996,7 +3017,7 @@ public:
 private:
   String m_remote_peer;
   Context &m_context;
-  Mutex m_mutex;
+  std::mutex m_mutex;
   multimap<::int64_t, ClientObjectPtr> m_reference_map;
   ObjectMap m_object_map;
   ObjectMap m_cached_object_map;
@@ -3004,38 +3025,38 @@ private:
 };
 
 template <class ResultT, class CellT>
-void HqlCallback<ResultT, CellT>::on_return(const String &ret) {
+void HqlCallback<ResultT, CellT>::on_return(const std::string &ret) {
   result.results.push_back(ret);
   result.__isset.results = true;
 }
 
 template <class ResultT, class CellT>
-void HqlCallback<ResultT, CellT>::on_scan(TableScanner &s) {
+void HqlCallback<ResultT, CellT>::on_scan(TableScannerPtr &s) {
   if (buffered) {
     Hypertable::Cell hcell;
     CellT tcell;
 
-    while (s.next(hcell)) {
+    while (s->next(hcell)) {
       convert_cell(hcell, tcell);
       result.cells.push_back(tcell);
     }
     result.__isset.cells = true;
 
     if (g_log_slow_queries)
-      s.get_profile_data(profile_data);
+      s->get_profile_data(profile_data);
 
   }
   else {
     ScannerInfoPtr si = make_shared<ScannerInfo>(ns);
     si->hql = hql;
-    result.scanner = handler.get_scanner_id(&s, si);
+    result.scanner = handler.get_scanner_id(s, si);
     result.__isset.scanner = true;
   }
   is_scan = true;
 }
 
 template <class ResultT, class CellT>
-void HqlCallback<ResultT, CellT>::on_finish(TableMutator *m) {
+void HqlCallback<ResultT, CellT>::on_finish(TableMutatorPtr &m) {
   if (flush) {
     Parent::on_finish(m);
   }
@@ -3070,7 +3091,7 @@ private:
   ServerHandlerFactory() { }
 
   ServerHandler* get_handler(const String& remotePeer) {
-    ScopedLock lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     ServerHandlerMap::iterator it = m_server_handler_map.find(remotePeer);
     if (it != m_server_handler_map.end()) {
       ++it->second.first;
@@ -3087,7 +3108,7 @@ private:
 
   void release_handler(ServerHandler* serverHandler) {
     {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex> lock(m_mutex);
       ServerHandlerMap::iterator it =
         m_server_handler_map.find(serverHandler->remote_peer());
       if (it != m_server_handler_map.end()) {
@@ -3100,7 +3121,7 @@ private:
     delete serverHandler;
   }
 
-  Mutex m_mutex;
+  std::mutex m_mutex;
   typedef std::map<String, std::pair<int, ServerHandler*> > ServerHandlerMap;
   ServerHandlerMap m_server_handler_map;
   static ServerHandlerFactory instance;
@@ -3175,7 +3196,11 @@ int main(int argc, char **argv) {
       timeout_ms = get_i32("thrift-timeout");
     else if (has("timeout"))
       timeout_ms = get_i32("timeout");
-    serverTransport.reset( new TServerSocket(port, timeout_ms, timeout_ms) );
+    TServerSocket* serverSocket = new TServerSocket(port, timeout_ms, 0);
+    serverSocket->setTcpSendBuffer(4*32768);
+    serverSocket->setTcpRecvBuffer(4*32768);
+    serverSocket->setKeepAlive(true);
+    serverTransport.reset( serverSocket );
 
     boost::shared_ptr<TTransportFactory> transportFactory(new TFramedTransportFactory());
 
@@ -3194,6 +3219,7 @@ int main(int argc, char **argv) {
     g_metrics_handler.reset();
     
     HT_NOTICE("Exiting thrift broker");
+    Logger::get()->set_level(Logger::Priority::FATAL);
 
   }
   catch (Hypertable::Exception &e) {

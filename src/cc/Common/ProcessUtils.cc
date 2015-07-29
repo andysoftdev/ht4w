@@ -143,7 +143,7 @@ bool ProcessUtils::join(const std::vector<DWORD>& pids, bool joinAll, DWORD time
     if (wait_handles) {
       HANDLE p;
       DWORD num_wait_handles = 0;
-      foreach_ht (DWORD pid, pids) {
+      for (DWORD pid : pids) {
         if ((p = OpenProcess(SYNCHRONIZE, FALSE, pid))) {
           wait_handles[num_wait_handles++] = p;
         }

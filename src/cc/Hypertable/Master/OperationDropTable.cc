@@ -139,7 +139,7 @@ void OperationDropTable::execute() {
       break;
 
     {
-      ScopedLock lock(m_mutex);
+      lock_guard<mutex> lock(m_mutex);
       m_dependencies.clear();
       m_dependencies.insert(Dependency::METADATA);
       m_dependencies.insert(m_id + " move range");
@@ -173,7 +173,7 @@ void OperationDropTable::execute() {
       StringSet servers;
       Utility::get_table_server_set(m_context, m_id, "", servers);
       {
-        ScopedLock lock(m_mutex);
+        lock_guard<mutex> lock(m_mutex);
         for (StringSet::iterator iter=servers.begin(); iter!=servers.end(); ++iter) {
           if (m_completed.count(*iter) == 0) {
             m_dependencies.insert(*iter);
@@ -197,10 +197,10 @@ void OperationDropTable::execute() {
         if (!op_handler->wait_for_completion()) {
           std::set<DispatchHandlerOperation::Result> results;
           op_handler->get_results(results);
-          foreach_ht (const DispatchHandlerOperation::Result &result, results) {
+          for (const auto &result : results) {
             if (result.error == Error::OK ||
                 result.error == Error::TABLE_NOT_FOUND) {
-              ScopedLock lock(m_mutex);
+              lock_guard<mutex> lock(m_mutex);
               m_completed.insert(result.location);
             }
             else
@@ -208,7 +208,7 @@ void OperationDropTable::execute() {
                        Error::get_text(result.error), result.msg.c_str());
           }
           {
-            ScopedLock lock(m_mutex);
+            lock_guard<mutex> lock(m_mutex);
             m_servers.clear();
             m_dependencies.insert(Dependency::METADATA);
             m_dependencies.insert(m_id + " move range");
@@ -262,10 +262,10 @@ size_t OperationDropTable::encoded_length_state() const {
   size_t length = m_params.encoded_length() +
     Serialization::encoded_length_vstr(m_id);
   length += 4;
-  foreach_ht (const String &location, m_completed)
+  for (auto &location : m_completed)
     length += Serialization::encoded_length_vstr(location);
   length += 4;
-  foreach_ht (const String &location, m_servers)
+  for (auto &location : m_servers)
     length += Serialization::encoded_length_vstr(location);
   length += m_parts.encoded_length();
   return length;
@@ -275,10 +275,10 @@ void OperationDropTable::encode_state(uint8_t **bufp) const {
   m_params.encode(bufp);
   Serialization::encode_vstr(bufp, m_id);
   Serialization::encode_i32(bufp, m_completed.size());
-  foreach_ht (const String &location, m_completed)
+  for (auto &location : m_completed)
     Serialization::encode_vstr(bufp, location);
   Serialization::encode_i32(bufp, m_servers.size());
-  foreach_ht (const String &location, m_servers)
+  for (auto &location : m_servers)
     Serialization::encode_vstr(bufp, location);
   m_parts.encode(bufp);
 }

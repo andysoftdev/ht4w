@@ -19,8 +19,18 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_DATAGENERATOR_H
-#define HYPERTABLE_DATAGENERATOR_H
+#ifndef Hypertable_Lib_DataGenerator_h
+#define Hypertable_Lib_DataGenerator_h
+
+#include "Cell.h"
+#include "DataGeneratorRandom.h"
+#include "DataGeneratorRowComponent.h"
+#include "DataGeneratorQualifier.h"
+#include "DataGeneratorColumn.h"
+
+#include <Common/Config.h>
+#include <Common/Random.h>
+#include <Common/String.h>
 
 #include <iostream>
 #include <iterator>
@@ -31,16 +41,6 @@ extern "C" {
 #include <limits.h>
 #include <stdlib.h>
 }
-
-#include "Common/Config.h"
-#include "Common/Random.h"
-#include "Common/String.h"
-
-#include "Cell.h"
-#include "DataGeneratorRowComponent.h"
-#include "DataGeneratorQualifier.h"
-#include "DataGeneratorColumn.h"
-
 
 namespace Hypertable {
   using namespace Hypertable::Config;
@@ -100,7 +100,7 @@ namespace Hypertable {
   /**
    * Provides an STL-style iterator on DataGenerator objects.
    */
-  class DataGeneratorIterator : public iterator<forward_iterator_tag, Cell> {
+  class DataGeneratorIterator : public boost::iterator<forward_iterator_tag, Cell> {
 
     friend class DataGenerator;
 
@@ -147,7 +147,7 @@ namespace Hypertable {
 
   public:
     DataGenerator(PropertiesPtr &props, bool keys_only=false);
-    iterator begin() { Random::seed(m_seed); return DataGeneratorIterator(this); }
+    iterator begin() { random_generator_set_seed(m_seed); return DataGeneratorIterator(this); }
     iterator end() { return DataGeneratorIterator(m_max_bytes, m_max_keys); }
     int64_t get_max_bytes() { return m_max_bytes; }
     int64_t get_max_keys() { return m_max_keys; }
@@ -167,4 +167,4 @@ namespace Hypertable {
 
 }
 
-#endif // HYPERTABLE_DATAGENERATOR_H
+#endif // Hypertable_Lib_DataGenerator_h

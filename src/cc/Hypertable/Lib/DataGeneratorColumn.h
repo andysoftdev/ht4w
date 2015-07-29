@@ -19,8 +19,18 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_DATAGENERATORCOLUMN_H
-#define HYPERTABLE_DATAGENERATORCOLUMN_H
+#ifndef Hypertable_Lib_DataGeneratorColumn_h
+#define Hypertable_Lib_DataGeneratorColumn_h
+
+#include "Cell.h"
+#include "DataGeneratorRandom.h"
+#include "DataGeneratorRowComponent.h"
+#include "DataGeneratorQualifier.h"
+
+#include <Common/Config.h>
+#include <Common/FileUtils.h>
+#include <Common/String.h>
+#include <Common/WordStream.h>
 
 #include <iostream>
 #include <iterator>
@@ -32,16 +42,7 @@ extern "C" {
 #include <stdlib.h>
 }
 
-#include "Common/Config.h"
-#include "Common/FileUtils.h"
-#include "Common/Random.h"
-#include "Common/String.h"
-#include "Common/WordStream.h"
-
-#include "Cell.h"
-#include "DataGeneratorRowComponent.h"
-#include "DataGeneratorQualifier.h"
-
+using namespace Hypertable;
 using namespace Hypertable::Config;
 using namespace std;
 
@@ -94,7 +95,7 @@ namespace Hypertable {
           HT_FATAL("Source file not specified for word stream");
         if (size == -1)
           HT_FATAL("Size not specified for word stream");
-        m_word_stream = new WordStream(s, seed, size, order == RANDOM);
+        m_word_stream = make_shared<WordStream>(s, seed, size, order == RANDOM);
       }
       else {
 
@@ -103,8 +104,7 @@ namespace Hypertable {
           if (!fixed)
             m_value_data_len *= 50;
           m_value_data.reset( new char [ m_value_data_len+1 ] );
-          Random::fill_buffer_with_random_ascii((char *)m_value_data.get(),
-                                                m_value_data_len);
+          random_fill_with_chars((char *)m_value_data.get(), m_value_data_len);
           ((char *)m_value_data.get())[m_value_data_len] = 0;
           m_source = (const char *)m_value_data.get();
 
@@ -167,7 +167,7 @@ namespace Hypertable {
       }
       else if (!m_word_stream) {
         if (!fixed)
-          offset = Random::number32() % m_value_data_len;
+          offset = random_int32((int32_t)m_value_data_len);
       }
 
       if (m_qualifiers.empty())
@@ -255,4 +255,4 @@ namespace Hypertable {
 
 }
 
-#endif // HYPERTABLE_DATAGENERATORCOLUMN_H
+#endif // Hypertable_Lib_DataGeneratorColumn_h

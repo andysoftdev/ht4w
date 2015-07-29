@@ -24,23 +24,21 @@
 /// This file contains declarations for CommitLog, a class for creating and
 /// appending entries to an edit log.
 
-#ifndef HYPERTABLE_COMMITLOG_H
-#define HYPERTABLE_COMMITLOG_H
-
-#include <Common/DynamicBuffer.h>
-#include <Common/ReferenceCount.h>
-#include <Common/String.h>
-#include <Common/Properties.h>
-#include <Common/Filesystem.h>
+#ifndef Hypertable_Lib_CommitLog_h
+#define Hypertable_Lib_CommitLog_h
 
 #include <Hypertable/Lib/BlockCompressionCodec.h>
 #include <Hypertable/Lib/CommitLogBase.h>
 #include <Hypertable/Lib/CommitLogBlockStream.h>
 
-#include <boost/thread/xtime.hpp>
+#include <Common/DynamicBuffer.h>
+#include <Common/String.h>
+#include <Common/Properties.h>
+#include <Common/Filesystem.h>
 
 #include <deque>
 #include <map>
+#include <memory>
 #include <stack>
 
 namespace Hypertable {
@@ -185,7 +183,7 @@ namespace Hypertable {
      * Returns total size of commit log
      */
     int64_t size() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex>lock(m_mutex);
       int64_t total = 0;
       for (LogFragmentQueue::iterator iter = m_fragment_queue.begin();
            iter != m_fragment_queue.end(); iter++)
@@ -194,7 +192,7 @@ namespace Hypertable {
     }
 
     const std::string& get_current_fragment_file() {
-      ScopedLock lock(m_mutex);
+      std::lock_guard<std::mutex>lock(m_mutex);
       return m_cur_fragment_fname;
     }
 
@@ -211,7 +209,7 @@ namespace Hypertable {
 
     FilesystemPtr           m_fs;
     std::set<CommitLogFileInfo *> m_reap_set;
-    BlockCompressionCodec  *m_compressor;
+    std::unique_ptr<BlockCompressionCodec> m_compressor;
     std::string                  m_cur_fragment_fname;
     int64_t                 m_cur_fragment_length;
     int64_t                 m_max_fragment_size;
@@ -222,10 +220,10 @@ namespace Hypertable {
   };
 
   /// Smart pointer to CommitLog
-  typedef intrusive_ptr<CommitLog> CommitLogPtr;
+  typedef std::shared_ptr<CommitLog> CommitLogPtr;
 
   /// @}
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_COMMITLOG_H
+#endif // Hypertable_Lib_CommitLog_h
