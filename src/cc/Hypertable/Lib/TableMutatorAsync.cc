@@ -630,110 +630,117 @@ void TableMutatorAsync::update_unsynced_rangeservers(const CommAddressSet &unsyn
     m_unsynced_rangeservers.insert(comm_addr);
 }
 
-void TableMutatorAsync::update_outstanding(TableMutatorAsyncScatterBufferPtr &buffer) {
+bool TableMutatorAsync::update_outstanding(TableMutatorAsyncScatterBufferPtr &buffer) {
   m_outstanding_buffers.erase(buffer->get_id());
   if (m_outstanding_buffers.size()==0) {
     m_cond.notify_one();
-    if (m_cb)
-      m_cb->decrement_outstanding();
+    return true;
   }
   m_cond.notify_one();
+  return false;
 }
 
 void TableMutatorAsync::buffer_finish(uint32_t id, int error, bool retry) {
   bool cancelled = false;
   bool mutated = false;
+  bool outstanding_buffers_empty = false;
   uint32_t next_id = 0;
   TableMutatorAsyncScatterBufferPtr redo;
   TableMutatorAsyncScatterBufferPtr buffer;
   ScatterBufferAsyncMap::iterator it;
 
-  {
-    lock_guard<mutex> lock(m_mutex);
-    it = m_outstanding_buffers.find(id);
-    HT_ASSERT(it != m_outstanding_buffers.end());
-
-    buffer = it->second;
+  while (true) {
     {
-      lock_guard<mutex> lock(m_member_mutex);
-      m_failed_mutations.clear();
-      update_unsynced_rangeservers(buffer->get_unsynced_rangeservers());
-      cancelled = m_cancelled;
-      mutated = m_mutated;
-    }
+      lock_guard<mutex> lock(m_mutex);
+      it = m_outstanding_buffers.find(id);
+      HT_ASSERT(it != m_outstanding_buffers.end());
 
-    if (cancelled) {
-      update_outstanding(buffer);
-      return;
-    }
-
-    if (error != Error::OK) {
-      if (error == Error::RANGESERVER_GENERATION_MISMATCH ||
-          (!mutated && error == Error::TABLE_NOT_FOUND)) {
+      buffer = it->second;
+      {
         lock_guard<mutex> lock(m_member_mutex);
-        // retry possible
-        m_table->refresh(m_table_identifier, m_schema);
-        buffer->refresh_schema(m_table_identifier, m_schema);
-        retry = true;
+        m_failed_mutations.clear();
+        update_unsynced_rangeservers(buffer->get_unsynced_rangeservers());
+        cancelled = m_cancelled;
+        mutated = m_mutated;
       }
-      else {
-        if (retry)
-          buffer->set_retries_to_fail(error);
-        // send error to callback
+
+      if (cancelled) {
+        outstanding_buffers_empty = update_outstanding(buffer);
+        break;
+      }
+
+      if (error != Error::OK) {
+        if (error == Error::RANGESERVER_GENERATION_MISMATCH ||
+            (!mutated && error == Error::TABLE_NOT_FOUND)) {
+          lock_guard<mutex> lock(m_member_mutex);
+          // retry possible
+          m_table->refresh(m_table_identifier, m_schema);
+          buffer->refresh_schema(m_table_identifier, m_schema);
+          retry = true;
+        }
+        else {
+          if (retry)
+            buffer->set_retries_to_fail(error);
+          // send error to callback
+          {
+            lock_guard<mutex> lock(m_member_mutex);
+            buffer->get_failed_mutations(m_failed_mutations);
+            if (m_cb != 0)
+              m_cb->update_error(this, error, m_failed_mutations);
+          }
+          outstanding_buffers_empty = update_outstanding(buffer);
+          break;
+        }
+      }
+
+      next_id = ++m_next_buffer_id;
+    }
+
+    if (retry) {
+      // create & send redo buffer
+      lock_guard<mutex> lock(m_member_mutex);
+      try {
+        redo = buffer->create_redo_buffer(next_id);
+      }
+      catch (Exception &e) {
+        error = e.code();
+        redo = 0;
+      }
+    }
+
+    lock_guard<mutex> lock(m_mutex);
+    if (retry) {
+      if (!redo) {
         {
           lock_guard<mutex> lock(m_member_mutex);
           buffer->get_failed_mutations(m_failed_mutations);
+          // send error to callback
           if (m_cb != 0)
             m_cb->update_error(this, error, m_failed_mutations);
         }
-        update_outstanding(buffer);
-        return;
+        outstanding_buffers_empty = update_outstanding(buffer);
       }
-    }
-
-    next_id = ++m_next_buffer_id;
-  }
-
-  if (retry) {
-    // create & send redo buffer
-    lock_guard<mutex> lock(m_member_mutex);
-    try {
-      redo = buffer->create_redo_buffer(next_id);
-    }
-    catch (Exception &e) {
-      error = e.code();
-      redo = 0;
-    }
-  }
-
-  lock_guard<mutex> lock(m_mutex);
-  if (retry) {
-    if (!redo) {
-      {
-        lock_guard<mutex> lock(m_member_mutex);
-        buffer->get_failed_mutations(m_failed_mutations);
-        // send error to callback
-        if (m_cb != 0)
-          m_cb->update_error(this, error, m_failed_mutations);
+      else {
+        HT_ASSERT(redo);
+        m_resends += buffer->get_resend_count();
+        m_outstanding_buffers.erase(it);
+        redo->send(buffer->get_send_flags());
+        m_outstanding_buffers[next_id] = redo;
       }
-      update_outstanding(buffer);
     }
     else {
-      HT_ASSERT(redo);
-      m_resends += buffer->get_resend_count();
-      m_outstanding_buffers.erase(it);
-      redo->send(buffer->get_send_flags());
-      m_outstanding_buffers[next_id] = redo;
+      // everything went well
+      {
+        lock_guard<mutex> lock(m_member_mutex);
+        m_mutated = true;
+      }
+      if (m_cb != 0)
+        m_cb->update_ok(this);
+      outstanding_buffers_empty = update_outstanding(buffer);
     }
+    break;
   }
-  else {
-    // everything went well
-    {
-      lock_guard<mutex> lock(m_member_mutex);
-      m_mutated = true;
-    }
-    if (m_cb != 0)
-      m_cb->update_ok(this);
-    update_outstanding(buffer);
-  }
+
+  if (m_cb && outstanding_buffers_empty)
+    m_cb->decrement_outstanding();
 }

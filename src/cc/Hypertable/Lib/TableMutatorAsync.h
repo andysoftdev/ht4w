@@ -183,7 +183,7 @@ namespace Hypertable {
     void get_unsynced_rangeservers(std::vector<CommAddress> &unsynced);
     TableMutatorAsyncScatterBufferPtr get_outstanding_buffer(size_t id);
     bool retry(uint32_t timeout_ms);
-    void update_outstanding(TableMutatorAsyncScatterBufferPtr &buffer);
+    bool update_outstanding(TableMutatorAsyncScatterBufferPtr &buffer);
     void get_failed_mutations(FailedMutations &failed_mutations) {
       std::lock_guard<std::mutex> lock(m_member_mutex);
       failed_mutations = m_failed_mutations;
