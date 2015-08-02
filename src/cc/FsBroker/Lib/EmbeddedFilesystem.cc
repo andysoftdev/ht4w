@@ -89,7 +89,7 @@ using namespace Serialization;
 using namespace Hypertable::FsBroker;
 using namespace Hypertable::FsBroker::Lib;
 
-std::atomic<int> EmbeddedFilesystem::ms_next_fd = 1;
+std::atomic_int_fast32_t EmbeddedFilesystem::ms_next_fd = 1;
 
 EmbeddedFilesystem::EmbeddedFilesystem(PropertiesPtr &cfg)
   : m_directio(false), m_asyncio(false), m_request_queue(m_mutex) {

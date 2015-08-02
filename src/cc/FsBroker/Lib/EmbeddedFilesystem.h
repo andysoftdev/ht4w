@@ -248,7 +248,7 @@ namespace Lib {
       ::CloseHandle(h);
     }
 
-    static std::atomic<int> ms_next_fd;
+    static std::atomic_int_fast32_t ms_next_fd;
     std::recursive_mutex m_mutex;
     std::map<int, std::pair<::HANDLE, uint32_t>> m_handles;
 

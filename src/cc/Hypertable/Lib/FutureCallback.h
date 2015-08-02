@@ -22,7 +22,6 @@
 #ifndef HYPERTABLE_FUTURECALLBACK_H
 #define HYPERTABLE_FUTURECALLBACK_H
 
-#include <boost/thread/condition.hpp>
 #include <set>
 
 #include "ResultCallback.h"
@@ -39,7 +38,7 @@ namespace Hypertable {
      * FutureCallback objects are used to access results from asynchronous scanners/mutators
      * @param capacity number of Result objects to enqueue
      */
-    FutureCallback() : m_cancelled(false) { }
+    FutureCallback() { }
     virtual ~FutureCallback();
 
     /**
@@ -69,10 +68,9 @@ namespace Hypertable {
     // without locks
     bool _is_cancelled() const { return m_cancelled; }
 
-    bool m_cancelled;
+    bool m_cancelled {};
     typedef std::set<TableScannerAsync*> ScannerSet;
     ScannerSet m_scanner_set;
-
     typedef set<TableMutatorAsync*> MutatorSet;
     MutatorSet m_mutator_set;
   };
