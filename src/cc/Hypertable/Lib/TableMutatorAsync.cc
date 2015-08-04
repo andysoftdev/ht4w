@@ -509,14 +509,14 @@ void TableMutatorAsync::flush_with_tablequeue(TableMutator *mutator, bool sync) 
     flags = m_flags | Table::MUTATOR_FLAG_NO_LOG_SYNC;
 
   try {
+    bool increment_outstanding = false;
     {
       lock_guard<mutex> lock(m_mutex);
       lock_guard<mutex> member_lock(m_member_mutex);
       if (m_current_buffer->memory_used() > 0) {
         m_current_buffer->send(flags);
         uint32_t buffer_id = ++m_next_buffer_id;
-        if (m_outstanding_buffers.size() == 0 && m_cb)
-          m_cb->increment_outstanding();
+        increment_outstanding = m_outstanding_buffers.size() == 0 && m_cb;
         m_outstanding_buffers[m_current_buffer->get_id()] = m_current_buffer;
         m_current_buffer = make_shared<TableMutatorAsyncScatterBuffer>(m_comm, 
                 m_app_queue, this, &m_table_identifier, m_schema, 
@@ -525,6 +525,9 @@ void TableMutatorAsync::flush_with_tablequeue(TableMutator *mutator, bool sync) 
         m_memory_used = 0;
       }
     }
+
+     if (increment_outstanding)
+       m_cb->increment_outstanding();
 
     // sync any unsynced RS
     if (sync)
