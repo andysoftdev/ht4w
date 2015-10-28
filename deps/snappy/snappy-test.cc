@@ -28,12 +28,15 @@
 //
 // Various stubs for the unit tests for the open-source version of Snappy.
 
-#include "snappy-test.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef HAVE_WINDOWS_H
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+
+#include "snappy-test.h"
 
 #include <algorithm>
 
@@ -42,16 +45,23 @@ DEFINE_bool(run_microbenchmarks, true,
 
 namespace snappy {
 
-string ReadTestDataFile(const string& base) {
+string ReadTestDataFile(const string& base, size_t size_limit) {
   string contents;
   const char* srcdir = getenv("srcdir");  // This is set by Automake.
+  string prefix;
   if (srcdir) {
-    File::ReadFileToStringOrDie(
-        string(srcdir) + "/testdata/" + base, &contents);
-  } else {
-    File::ReadFileToStringOrDie("testdata/" + base, &contents);
+    prefix = string(srcdir) + "/";
+  }
+  file::GetContents(prefix + "testdata/" + base, &contents, file::Defaults()
+      ).CheckSuccess();
+  if (size_limit > 0) {
+    contents = contents.substr(0, size_limit);
   }
   return contents;
+}
+
+string ReadTestDataFile(const string& base) {
+  return ReadTestDataFile(base, 0);
 }
 
 string StringPrintf(const char* format, ...) {
@@ -204,27 +214,32 @@ void Benchmark::Run() {
       benchmark_runs[run].cpu_time_us = benchmark_cpu_time_us;
     }
 
+    string heading = StringPrintf("%s/%d", name_.c_str(), test_case_num);
+    string human_readable_speed;
+
     nth_element(benchmark_runs,
                 benchmark_runs + kMedianPos,
                 benchmark_runs + kNumRuns,
                 BenchmarkCompareCPUTime());
     int64 real_time_us = benchmark_runs[kMedianPos].real_time_us;
     int64 cpu_time_us = benchmark_runs[kMedianPos].cpu_time_us;
-    int64 bytes_per_second = benchmark_bytes_processed * 1000000 / cpu_time_us;
-
-    string heading = StringPrintf("%s/%d", name_.c_str(), test_case_num);
-    string human_readable_speed;
-    if (bytes_per_second < 1024) {
-      human_readable_speed = StringPrintf("%dB/s", bytes_per_second);
-    } else if (bytes_per_second < 1024 * 1024) {
-      human_readable_speed = StringPrintf(
-          "%.1fkB/s", bytes_per_second / 1024.0f);
-    } else if (bytes_per_second < 1024 * 1024 * 1024) {
-      human_readable_speed = StringPrintf(
-          "%.1fMB/s", bytes_per_second / (1024.0f * 1024.0f));
+    if (cpu_time_us <= 0) {
+      human_readable_speed = "?";
     } else {
-      human_readable_speed = StringPrintf(
-          "%.1fGB/s", bytes_per_second / (1024.0f * 1024.0f * 1024.0f));
+      int64 bytes_per_second =
+          benchmark_bytes_processed * 1000000 / cpu_time_us;
+      if (bytes_per_second < 1024) {
+        human_readable_speed = StringPrintf("%dB/s", bytes_per_second);
+      } else if (bytes_per_second < 1024 * 1024) {
+        human_readable_speed = StringPrintf(
+            "%.1fkB/s", bytes_per_second / 1024.0f);
+      } else if (bytes_per_second < 1024 * 1024 * 1024) {
+        human_readable_speed = StringPrintf(
+            "%.1fMB/s", bytes_per_second / (1024.0f * 1024.0f));
+      } else {
+        human_readable_speed = StringPrintf(
+            "%.1fGB/s", bytes_per_second / (1024.0f * 1024.0f * 1024.0f));
+      }
     }
 
     fprintf(stderr,
@@ -353,7 +368,6 @@ int ZLib::CompressAtMostOrAll(Bytef *dest, uLongf *destLen,
   // compression.
   err = deflate(&comp_stream_, flush_mode);
 
-  const uLong source_bytes_consumed = *sourceLen - comp_stream_.avail_in;
   *sourceLen = comp_stream_.avail_in;
 
   if ((err == Z_STREAM_END || err == Z_OK)
@@ -397,7 +411,6 @@ int ZLib::CompressChunkOrAll(Bytef *dest, uLongf *destLen,
 int ZLib::Compress(Bytef *dest, uLongf *destLen,
                    const Bytef *source, uLong sourceLen) {
   int err;
-  const uLongf orig_destLen = *destLen;
   if ( (err=CompressChunkOrAll(dest, destLen, source, sourceLen,
                                Z_FINISH)) != Z_OK )
     return err;
