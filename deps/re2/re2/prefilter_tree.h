@@ -22,7 +22,7 @@
 namespace re2 {
 
 typedef SparseArray<int> IntMap;
-typedef map<int,int> StdIntMap;
+typedef map<int, int> StdIntMap;
 
 class Prefilter;
 
@@ -123,7 +123,7 @@ class PrefilterTree {
   // Has the prefilter tree been compiled.
   bool compiled_;
 
-  DISALLOW_EVIL_CONSTRUCTORS(PrefilterTree);
+  DISALLOW_COPY_AND_ASSIGN(PrefilterTree);
 };
 
 }  // namespace

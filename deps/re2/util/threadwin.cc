@@ -14,7 +14,7 @@ Thread::Thread() {
 Thread::~Thread() {
 }
 
-void *startThread(void *v) {
+DWORD WINAPI startThread(void *v) {
   Thread* t = (Thread*)v;
   t->Run();
   return 0;
@@ -22,17 +22,19 @@ void *startThread(void *v) {
 
 void Thread::Start() {
   CHECK(!running_);
-  pthread_create(&pid_, 0, startThread, this);
+  pid_ = CreateThread(NULL, 0, startThread, this, 0, NULL);
   running_ = true;
-  if (!joinable_)
-    pthread_detach(pid_);
+  if (!joinable_) {
+    CloseHandle(pid_);
+    pid_ = 0;
+  }
 }
 
 void Thread::Join() {
   CHECK(running_);
   CHECK(joinable_);
-  void *val;
-  pthread_join(pid_, &val);
+  if (pid_ != 0)
+    WaitForSingleObject(pid_, INFINITE);
   running_ = 0;
 }
 

@@ -7,11 +7,7 @@
 #ifndef RE2_UTIL_LOGGING_H__
 #define RE2_UTIL_LOGGING_H__
 
-#ifndef _WIN32
-#include <unistd.h>  /* for write */
-#else
-#include <io.h>
-#endif
+#include <stdio.h>  /* for fwrite */
 #include <sstream>
 
 // Debug-only checking.
@@ -58,8 +54,8 @@ class LogMessage {
   void Flush() {
     stream() << "\n";
     string s = str_.str();
-    int n = (int)s.size(); // shut up msvc
-    if(write(2, s.data(), n) < 0) {}  // shut up gcc
+    size_t n = s.size();
+    if (fwrite(s.data(), 1, n, stderr) < n) {}  // shut up gcc
     flushed_ = true;
   }
   ~LogMessage() {
@@ -68,30 +64,23 @@ class LogMessage {
     }
   }
   ostream& stream() { return str_; }
- 
+
  private:
   bool flushed_;
   std::ostringstream str_;
-  DISALLOW_EVIL_CONSTRUCTORS(LogMessage);
+  DISALLOW_COPY_AND_ASSIGN(LogMessage);
 };
 
 class LogMessageFatal : public LogMessage {
  public:
   LogMessageFatal(const char* file, int line)
     : LogMessage(file, line) { }
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable: 4722) // 'LogMessageFatal::~LogMessageFatal' : destructor never returns, potential memory leak
-#endif
   ~LogMessageFatal() {
     Flush();
     abort();
   }
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
  private:
-  DISALLOW_EVIL_CONSTRUCTORS(LogMessageFatal);
+  DISALLOW_COPY_AND_ASSIGN(LogMessageFatal);
 };
 
 #endif  // RE2_UTIL_LOGGING_H__

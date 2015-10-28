@@ -7,6 +7,7 @@
 // compilation as PCRE in namespace re2.
 
 #include <errno.h>
+#include <limits>
 #include "util/util.h"
 #include "util/flags.h"
 #include "util/pcre.h"
@@ -347,7 +348,7 @@ int PCRE::GlobalReplace(string *str,
   int count = 0;
   int vec[kVecSize];
   string out;
-  int start = 0;
+  size_t start = 0;
   bool last_match_was_empty_string = false;
 
   for (; start <= str->length();) {
@@ -377,7 +378,7 @@ int PCRE::GlobalReplace(string *str,
       if (matches <= 0)
         break;
     }
-    int matchstart = vec[0], matchend = vec[1];
+    size_t matchstart = vec[0], matchend = vec[1];
     assert(matchstart >= start);
     assert(matchend >= matchstart);
 
@@ -893,7 +894,7 @@ bool PCRE::Arg::parse_double(const char* str, int n, void* dest) {
   char* end;
   double r = strtod(buf, &end);
   if (end != buf + n) {
-#ifdef COMPILER_MSVC
+#ifdef _WIN32
     // Microsoft's strtod() doesn't handle inf and nan, so we have to
     // handle it explicitly.  Speed is not important here because this
     // code is only called in unit tests.
@@ -906,11 +907,11 @@ bool PCRE::Arg::parse_double(const char* str, int n, void* dest) {
       ++i;
     }
     if (0 == stricmp(i, "inf") || 0 == stricmp(i, "infinity")) {
-      r = numeric_limits<double>::infinity();
+      r = std::numeric_limits<double>::infinity();
       if (!pos)
         r = -r;
     } else if (0 == stricmp(i, "nan")) {
-      r = numeric_limits<double>::quiet_NaN();
+      r = std::numeric_limits<double>::quiet_NaN();
     } else {
       return false;
     }

@@ -46,9 +46,6 @@
     <ClInclude Include="re2\walker-inl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="util\arena.h">
-      <Filter>Source Files\util</Filter>
-    </ClInclude>
     <ClInclude Include="util\util.h">
       <Filter>Source Files\util</Filter>
     </ClInclude>
@@ -111,16 +108,10 @@
     <ClCompile Include="re2\unicode_groups.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="util\arena.cc">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
     <ClCompile Include="util\hash.cc">
       <Filter>Source Files\util</Filter>
     </ClCompile>
     <ClCompile Include="util\rune.cc">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\stringpiece.cc">
       <Filter>Source Files\util</Filter>
     </ClCompile>
     <ClCompile Include="util\stringprintf.cc">
@@ -128,6 +119,9 @@
     </ClCompile>
     <ClCompile Include="util\strutil.cc">
       <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="re2\stringpiece.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

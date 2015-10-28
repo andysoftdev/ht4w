@@ -33,10 +33,18 @@ void StringPiece::CopyToString(string* target) const {
   target->assign(ptr_, length_);
 }
 
+void StringPiece::AppendToString(string* target) const {
+  target->append(ptr_, length_);
+}
+
 int StringPiece::copy(char* buf, size_type n, size_type pos) const {
   int ret = min(length_ - pos, n);
   memcpy(buf, ptr_ + pos, ret);
   return ret;
+}
+
+bool StringPiece::contains(StringPiece s) const {
+  return (size_t)find(s, 0) != npos;
 }
 
 int StringPiece::find(const StringPiece& s, size_type pos) const {
@@ -46,7 +54,7 @@ int StringPiece::find(const StringPiece& s, size_type pos) const {
   const char* result = std::search(ptr_ + pos, ptr_ + length_,
                                    s.ptr_, s.ptr_ + s.length_);
   const size_type xpos = result - ptr_;
-  return xpos + s.length_ <= length_ ? xpos : npos;
+  return xpos + s.length_ <= static_cast<size_type>(length_) ? xpos : npos;
 }
 
 int StringPiece::find(char c, size_type pos) const {
@@ -79,7 +87,7 @@ int StringPiece::rfind(char c, size_type pos) const {
 }
 
 StringPiece StringPiece::substr(size_type pos, size_type n) const {
-  if (pos > length_) pos = length_;
+  if (pos > static_cast<size_type>(length_)) pos = static_cast<size_type>(length_);
   if (n > length_ - pos) n = length_ - pos;
   return StringPiece(ptr_ + pos, n);
 }

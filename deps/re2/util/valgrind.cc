@@ -3,7 +3,9 @@
 // license that can be found in the LICENSE file.
 
 #include "util/util.h"
+#ifndef _WIN32
 #include "util/valgrind.h"
+#endif
 
 namespace re2 {
 

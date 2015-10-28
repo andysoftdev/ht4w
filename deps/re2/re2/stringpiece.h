@@ -20,10 +20,10 @@
 #define STRINGS_STRINGPIECE_H__
 
 #include <string.h>
+#include <algorithm>
 #include <cstddef>
 #include <iosfwd>
 #include <string>
-#include <algorithm>
 
 namespace re2 {
 
@@ -138,6 +138,8 @@ class StringPiece {
   int capacity() const { return length_; }
 
   int copy(char* buf, size_type n, size_type pos = 0) const;
+
+  bool contains(StringPiece s) const;
 
   int find(const StringPiece& s, size_type pos = 0) const;
   int find(char c, size_type pos = 0) const;
