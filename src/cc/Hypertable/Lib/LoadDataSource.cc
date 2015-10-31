@@ -783,3 +783,7 @@ bool LoadDataSource::parse_sec(const char *str, char **end_ptr, int64_t &ns)
     *end_ptr += info.length - 1 ;
   return info.hit;
 }
+
+void LoadDataSource::trim(std::string& s) {
+  boost::trim_if(s, boost::is_any_of("\r"));
+}

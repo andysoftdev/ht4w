@@ -56,7 +56,7 @@ using namespace std;
 LoadDataSourceFileLocal::LoadDataSourceFileLocal(const string &fname,
   const string &header_fname, int row_uniquify_chars, int load_flags)
   : LoadDataSource(header_fname, row_uniquify_chars, load_flags),
-    m_source(fname), m_fname(fname) {
+    m_source(fname, BOOST_IOS::in|BOOST_IOS::binary), m_fname(fname) {
 
   if (!FileUtils::exists(fname.c_str()))
     HT_THROW(Error::FILE_NOT_FOUND, fname);

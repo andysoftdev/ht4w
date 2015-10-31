@@ -23,6 +23,7 @@
 
 #include "ApacheLogParser.h"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 
@@ -37,7 +38,7 @@ using namespace std;
 void ApacheLogParser::load(std::string filename) {
   if (Fn::ends_with(filename, ".gz"))
     m_fin.push(Io::gzip_decompressor());
-  m_fin.push(Io::file_source(filename));
+  m_fin.push(Io::file_source(filename, BOOST_IOS::in|BOOST_IOS::binary));
 }
 
 bool ApacheLogParser::next(ApacheLogEntry &entry) {
@@ -50,6 +51,7 @@ bool ApacheLogParser::next(ApacheLogEntry &entry) {
     if (!getline(m_fin, m_line))
       return false;
 
+    boost::trim_if(m_line, boost::is_any_of("\r"));
     base = (char *)m_line.c_str();
 
     // IP address

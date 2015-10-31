@@ -82,6 +82,13 @@ namespace Hypertable {
       return m_fin.good();
     }
 
+    template<class _Elem, class _Traits, class _Alloc> inline
+    std::basic_istream<_Elem, _Traits>& getline(std::basic_istream<_Elem, _Traits>& _Istr, std::basic_string<_Elem, _Traits, _Alloc>& _Str) {
+      std::basic_istream<_Elem, _Traits>& s = std::getline(_Istr, _Str);
+      trim(_Str);
+      return s;
+    }
+
     virtual void parse_header(const String& header,
                               const std::vector<String> &key_columns,
                               const std::string &timestamp_column);
@@ -116,6 +123,7 @@ namespace Hypertable {
     bool parse_date_format(const char *str, int64_t &timestamp);
     bool parse_sec(const char *str, char **end_ptr, int64_t &ns);
     bool add_row_component(int index);
+    void trim(std::string& s);
 
     struct ColumnInfo {
       std::string family;
