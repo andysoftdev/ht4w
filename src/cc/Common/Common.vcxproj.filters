@@ -393,8 +393,6 @@
     <ClInclude Include="ConsoleOutputSquelcher.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Status.h" />
-    <ClInclude Include="StatusPersister.h" />
     <ClInclude Include="strptime.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -402,6 +400,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ReferenceCount.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Status.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StatusPersister.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
