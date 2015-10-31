@@ -81,7 +81,7 @@ namespace Lib {
     virtual bool is_open() const;
 
     // read
-    virtual size_t read(char_type* dst, size_t amount);
+    virtual streamsize read(char_type* dst, size_t amount);
     virtual size_t bytes_read();
     virtual size_t length();
 
@@ -125,7 +125,7 @@ namespace Lib {
         }
       }
 
-      size_t read(char_type *dst, size_t amount) {
+      streamsize read(char_type *dst, size_t amount) {
         if (amount + m_bytes_read > m_length)
           amount = m_length - m_bytes_read;
         if (amount > 0 ) {

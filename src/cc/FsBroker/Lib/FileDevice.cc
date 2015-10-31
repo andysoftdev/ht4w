@@ -45,7 +45,7 @@ bool FileDevice::is_open() const
   return pimpl_->m_open;
 }
 
-size_t FileDevice::read(char_type *dst, size_t amount)
+streamsize FileDevice::read(char_type *dst, size_t amount)
 {
   return pimpl_->read(dst, amount);
 }
