@@ -2,9 +2,9 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <!-- MsiProductVersion and MsiProductCode passed by ht4w.buildproj -->
-    <MsiProductVersion>0.9.8.9</MsiProductVersion>
-    <MsiProductCode Condition="'$(Platform)' == 'x86'">82FBB776-F7F5-4C1B-85EB-3F1BB8B642EC</MsiProductCode>
-    <MsiProductCode Condition="'$(Platform)' == 'x64'">15CC20BB-9675-44FD-95C9-4238B28CD224</MsiProductCode>
+    <MsiProductVersion>0.9.8.10</MsiProductVersion>
+    <MsiProductCode Condition="'$(Platform)' == 'x86'">7E44FB9F-CFEA-403B-95A7-185BCB1BAB08</MsiProductCode>
+    <MsiProductCode Condition="'$(Platform)' == 'x64'">30B8628B-B0C8-47D9-B630-5002AFE80076</MsiProductCode>
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x86'">ProgramFilesFolder</MsiProgramFilesFolder>
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x64'">ProgramFiles64Folder</MsiProgramFilesFolder>
     <MsiMasterDir Condition="'$(Platform)' == 'x86'">..\..\dist\$(VisualStudioVersion)\Win32\Release</MsiMasterDir>
