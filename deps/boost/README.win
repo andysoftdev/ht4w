@@ -4,10 +4,10 @@ how-to-build boost for Hypertable
 1. download latest boost version from http://www.boost.org/users/download/
    or http://sourceforge.net/projects/boost/files/boost/
 
-2. unpack the package content (e.g. below boost_1_44_0/...) into this
+2. unpack the package content (e.g. below boost_1_59_0/...) into this
    folder e.g. ...\hypertable\deps\boost\
 
-3. run build-win32.bat or build-x64.bat
+3. run build-[ToolsetVersion]-win32.bat or build-[ToolsetVersion]-x64.bat
 
 be patient wiht the build...
 after successful build the intermediate files located in .\build\deps\boost could be deleted
