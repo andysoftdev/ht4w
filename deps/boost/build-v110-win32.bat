@@ -19,7 +19,7 @@ call %VCVARSALL% x86
 
 :bootstrap
 if exist bjam.exe del bjam.exe
-if exist bjam.exe del project-config.jam
+if exist project-config.jam del project-config.jam
 if not exist "%THIS_PATH%\bootstrap.bat" goto missing_bootstrap  
 echo build bjam
 call "%THIS_PATH%\bootstrap.bat"
