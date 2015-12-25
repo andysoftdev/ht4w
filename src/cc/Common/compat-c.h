@@ -257,8 +257,6 @@ typedef int64_t ssize_t;
 typedef int32_t ssize_t;
 #endif
 
-#pragma deprecated(perror)
-
 #endif 
 
 /** @}*/

@@ -201,8 +201,8 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>$(SolutionDir)deps\thrift\thrift-0.9.2.exe -o $(ProjectDir) --gen csharp $(SolutionDir)src\cc\ThriftBroker\Client.thrift
-$(SolutionDir)deps\thrift\thrift-0.9.2.exe -o $(ProjectDir) --gen csharp $(SolutionDir)src\cc\ThriftBroker\Hql.thrift</PreBuildEvent>
+    <PreBuildEvent>$(SolutionDir)deps\thrift\thrift-0.9.3.exe -o $(ProjectDir) --gen csharp $(SolutionDir)src\cc\ThriftBroker\Client.thrift
+$(SolutionDir)deps\thrift\thrift-0.9.3.exe -o $(ProjectDir) --gen csharp $(SolutionDir)src\cc\ThriftBroker\Hql.thrift</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>xcopy /Y $(TargetPath) $(TargetDir)..\..\libs\csharp\</PostBuildEvent>

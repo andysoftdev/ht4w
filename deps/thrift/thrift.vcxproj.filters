@@ -67,9 +67,6 @@
     <ClInclude Include="lib\cpp\src\thrift\protocol\TDebugProtocol.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="lib\cpp\src\thrift\protocol\TDenseProtocol.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="lib\cpp\src\thrift\transport\TFDTransport.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -184,6 +181,18 @@
     <ClInclude Include="lib\cpp\src\thrift\concurrency\StdThreadFactory.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="lib\cpp\src\thrift\async\TConcurrentClientSyncInfo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\thrift\server\TServerFramework.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\thrift\TOutput.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cpp\src\thrift\server\TConnectedClient.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="lib\cpp\src\thrift\async\TAsyncChannel.cpp">
@@ -210,9 +219,6 @@
     <ClCompile Include="lib\cpp\src\thrift\protocol\TDebugProtocol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lib\cpp\src\thrift\protocol\TDenseProtocol.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="lib\cpp\src\thrift\protocol\TJSONProtocol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -226,9 +232,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\cpp\src\thrift\TApplicationException.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\cpp\src\thrift\Thrift.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\cpp\src\thrift\transport\TBufferTransports.cpp">
@@ -289,6 +292,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\cpp\src\thrift\concurrency\StdThreadFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\thrift\async\TConcurrentClientSyncInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\thrift\protocol\TProtocol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\thrift\server\TServerFramework.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\thrift\TOutput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\cpp\src\thrift\server\TConnectedClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

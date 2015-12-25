@@ -37,14 +37,16 @@
 #include <netdb.h>
 #endif
 
-namespace apache { namespace thrift { namespace transport {
+namespace apache {
+namespace thrift {
+namespace transport {
 
 /**
  * TCP Socket implementation of the TTransport interface.
  *
  */
 class TSocket : public TVirtualTransport<TSocket> {
- public:
+public:
   /**
    * Constructs a new socket. Note that this does NOT actually connect the
    * socket.
@@ -59,7 +61,7 @@ class TSocket : public TVirtualTransport<TSocket> {
    * @param host An IP address or hostname to connect to
    * @param port The port to connect on
    */
-  TSocket(std::string host, int port);
+  TSocket(const std::string& host, int port);
 
   /**
    * Constructs a new Unix domain socket.
@@ -67,7 +69,7 @@ class TSocket : public TVirtualTransport<TSocket> {
    *
    * @param path The Unix domain socket e.g. "/tmp/ThriftTest.binary.thrift"
    */
-  TSocket(std::string path);
+  TSocket(const std::string& path);
 
   /**
    * Destroyes the socket object, closing it if necessary.
@@ -100,6 +102,13 @@ class TSocket : public TVirtualTransport<TSocket> {
 
   /**
    * Reads from the underlying socket.
+   * \returns the number of bytes read or 0 indicates EOF
+   * \throws TTransportException of types:
+   *           INTERRUPTED means the socket was interrupted
+   *                       out of a blocking call
+   *           NOT_OPEN means the socket has been closed
+   *           TIMED_OUT means the receive timeout expired
+   *           UNKNOWN means something unexpected happened
    */
   virtual uint32_t read(uint8_t* buf, uint32_t len);
 
@@ -184,7 +193,7 @@ class TSocket : public TVirtualTransport<TSocket> {
   void setKeepAlive(bool keepAlive);
 
   /**
-   * Get socket information formated as a string <Host: x Port: x>
+   * Get socket information formatted as a string <Host: x Port: x>
    */
   std::string getSocketInfo();
 
@@ -206,9 +215,7 @@ class TSocket : public TVirtualTransport<TSocket> {
   /**
    * Returns the underlying socket file descriptor.
    */
-  THRIFT_SOCKET getSocketFD() {
-    return socket_;
-  }
+  THRIFT_SOCKET getSocketFD() { return socket_; }
 
   /**
    * (Re-)initialize a TSocket for the supplied descriptor.  This is only
@@ -242,9 +249,15 @@ class TSocket : public TVirtualTransport<TSocket> {
   virtual const std::string getOrigin();
 
   /**
-   * Constructor to create socket from raw UNIX handle.
+   * Constructor to create socket from file descriptor.
    */
   TSocket(THRIFT_SOCKET socket);
+
+  /**
+   * Constructor to create socket from file descriptor that
+   * can be interrupted safely.
+   */
+  TSocket(THRIFT_SOCKET socket, boost::shared_ptr<THRIFT_SOCKET> interruptListener);
 
   /**
    * Set a cache of the peer address (used when trivially available: e.g.
@@ -252,9 +265,9 @@ class TSocket : public TVirtualTransport<TSocket> {
    */
   void setCachedAddress(const sockaddr* addr, socklen_t len);
 
- protected:
+protected:
   /** connect, called by open */
-  void openConnection(struct addrinfo *res);
+  void openConnection(struct addrinfo* res);
 
   /** Host to connect to */
   std::string host_;
@@ -274,8 +287,14 @@ class TSocket : public TVirtualTransport<TSocket> {
   /** UNIX domain socket path */
   std::string path_;
 
-  /** Underlying UNIX socket handle */
+  /** Underlying socket handle */
   THRIFT_SOCKET socket_;
+
+  /**
+   * A shared socket pointer that will interrupt a blocking read if data
+   * becomes available on it
+   */
+  boost::shared_ptr<THRIFT_SOCKET> interruptListener_;
 
   /** Connect timeout in ms */
   int connTimeout_;
@@ -310,12 +329,12 @@ class TSocket : public TVirtualTransport<TSocket> {
   /** Whether to use low minimum TCP retransmission timeout */
   static bool useLowMinRto_;
 
- private:
+private:
   void unix_open();
   void local_open();
 };
-
-}}} // apache::thrift::transport
+}
+}
+} // apache::thrift::transport
 
 #endif // #ifndef _THRIFT_TRANSPORT_TSOCKET_H_
-
