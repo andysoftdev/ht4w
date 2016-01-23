@@ -90,12 +90,16 @@ namespace {
         ("dump-logs", str(), "Dumps the logs matching the namespace/table preffix or /regexp/")
         ("recover", str(), "Creates a recovery script matching the namespace/table preffix or /regexp/")
         ("include-row", str()->default_value(""), "include table/row filter, preffix or /regexp/")
-        ("include-cf", str()->default_value(""), "include table/column family filter, preffix or /regexp/")
-        ("include-cq", str()->default_value(""), "include table/column qualifier, preffix or /regexp/")
         ("exclude-row", str()->default_value(""), "exclude include table/row filter, preffix or /regexp/")
+        ("include-cf", str()->default_value(""), "include table/column family filter, preffix or /regexp/")
         ("exclude-cf", str()->default_value(""), "exclude table/column family filter, preffix or /regexp/")
+        ("include-cq", str()->default_value(""), "include table/column qualifier, preffix or /regexp/")
         ("exclude-cq", str()->default_value(""), "exclude table/column qualifier, preffix or /regexp/")
-        ("skip-empty-cells", boo()->default_value(false), "skips cells with no value")
+        ("include-rs", str()->default_value(""), "include range server for dump logs, preffix or /regexp/")
+        ("exclude-rs", str()->default_value(""), "exclude range server for dump logs, preffix or /regexp/")
+        ("skip-empty-cells", "skips cells with no value")
+        ("drop-table-if-exists", "adds a drop table statements into the recovery script")
+        ("legacy-create-namespace", "not using the CREATE NAMESPACE IF NOT EXISTS syntax for the recovery script")
         ("cellstore-dir", str()->default_value("hypertable"), "The top level cell store directory, relative to FsBroker.Local.Root");
     }
     static void init() {
@@ -135,8 +139,8 @@ namespace {
     return it->second;
   }
 
-  template<class KeyPredicate, class Operator>
-  void walk_filesystem(String name, KeyPredicate& pr, Operator& op) {
+  template<class Predicates, class Operator>
+  void walk_filesystem(String name, Predicates& pr, Operator& op) {
     boost::trim_if(name, boost::is_any_of("/\\"));
     name = "/" + name;
     std::vector<Filesystem::Dirent> listing;
@@ -174,6 +178,17 @@ namespace {
     boost::replace_all(result, "( ", "(");
     boost::replace_all(result, "> <", "><");
   }
+
+  struct Predicates {
+    String include_row;
+    String include_cf;
+    String include_cq;
+    String include_rs;
+    String exclude_row;
+    String exclude_cf;
+    String exclude_cq;
+    String exclude_rs;
+  };
 
   struct Namemap {
     Namemap(std::vector<String>& _lines)
@@ -216,7 +231,8 @@ namespace {
 
   struct RebuildTables : PreffixFilter {
     RebuildTables(std::ostream& _os, const String& preffix)
-      : PreffixFilter(preffix), os(_os) { }
+      : PreffixFilter(preffix), os(_os), drop_table_if_exists(has("drop-table-if-exists"))
+			, legacy_create_namespace(has("legacy-create-namespace")){ }
     void operator()(const String &path, const String &name, const String &id, const NamespaceListing& item) {
       if(match(name)) {
         if (!item.is_namespace) {
@@ -224,21 +240,25 @@ namespace {
           get_table_schema(id, item.name, false, schema);
           if (!(path.empty() || path == "/"))
             os << "USE '" + path + "';" << endl;
-          /*TODO
-          os << "DROP TABLE IF EXISTS '" + item.name + "';" << endl;*/
+          if (drop_table_if_exists)
+            os << "DROP TABLE IF EXISTS '" + item.name + "';" << endl;
           os << schema << ";" << endl;
           if (!(path.empty() || path == "/"))
             os << "USE '/';" << endl;
         }
         else {
-          /*TODO
-          os << "CREATE NAMESPACE '" + name + "' IF NOT EXIST;" << endl;*/
-          os << "CREATE NAMESPACE '" + name + "';" << endl;
+          os << "CREATE NAMESPACE '" + name + "'";
+          if(!legacy_create_namespace)
+            os << " IF NOT EXIST";
+          os << ";" << endl;
         }
       }
     }
   private:
     std::ostream& os;
+    bool drop_table_if_exists;
+    bool legacy_create_namespace;
+
   };
 
   template<class Operator>
@@ -315,39 +335,30 @@ namespace {
 
   struct IsCellStore {
     bool operator()(const String &path, const String &fname) {
-      return fname.substr(0, 2) == "cs";
+      return boost::algorithm::starts_with(fname, "cs");
     }
   };
 
   struct IsLog {
+    IsLog(const Predicates& predicates)
+      : include_rs(predicates.include_rs), exclude_rs(predicates.exclude_rs) { }
     bool operator()(const String &path, const String &fname) {
-      //TODO REMOVE
-      if (!(path.find("/rs1/") != String::npos || 
-            path.find("/rs2/") != String::npos || 
-            path.find("/rs3/") != String::npos || 
-            path.find("/rs5/") != String::npos)) {
-
+      if (!isdigit(fname[0]))
         return false;
-      }
-      return isdigit(fname[0]);
+      String name = path + fname;
+      return include_rs.match(name)
+          && exclude_rs.no_match(name);
     }
-  };
-
-  struct KeyPredicate {
-    String include_row;
-    String include_cf;
-    String include_cq;
-    String exclude_row;
-    String exclude_cf;
-    String exclude_cq;
-    bool skip_empty_cells;
+  private:
+    PreffixFilter include_rs;
+    PreffixFilter exclude_rs;
   };
 
   struct KeyFilter {
-    KeyFilter(const KeyPredicate& predicate)
-      : include_row(predicate.include_row), include_cf(predicate.include_cf), include_cq(predicate.include_cq)
-      , exclude_row(predicate.exclude_row), exclude_cf(predicate.exclude_cf), exclude_cq(predicate.exclude_cq)
-      , skip_empty_cells(predicate.skip_empty_cells) { }
+    KeyFilter(const Predicates& predicates)
+      : include_row(predicates.include_row), include_cf(predicates.include_cf), include_cq(predicates.include_cq)
+      , exclude_row(predicates.exclude_row), exclude_cf(predicates.exclude_cf), exclude_cq(predicates.exclude_cq)
+      , skip_empty_cells(has("skip-empty-cells")) { }
     bool match(const String& table, const Key& key, const ColumnFamilySpec* _cf, size_t value_len) const {
       if (key.flag == FLAG_INSERT && value_len == 0 && skip_empty_cells)
         return false;
@@ -371,10 +382,10 @@ namespace {
   };
 
   struct DumpCellStore : KeyFilter {
-    DumpCellStore(const KeyPredicate& predicate)
-      : KeyFilter(predicate), os(0) { }
-    DumpCellStore(std::ostream* _os, const KeyPredicate& predicate)
-      : KeyFilter(predicate)
+    DumpCellStore(const Predicates& predicates)
+      : KeyFilter(predicates), os(0) { }
+    DumpCellStore(std::ostream* _os, const Predicates& predicates)
+      : KeyFilter(predicates)
       , os(_os) { }
     bool operator()(const String &path, const String &fname) {
       dump_cellstore(path, fname);
@@ -500,12 +511,12 @@ namespace {
   };
 
   struct DumpLog : KeyFilter, PreffixFilter {
-    DumpLog(const KeyPredicate& predicate)
-      : KeyFilter(predicate), PreffixFilter(""), os(0) { }
-    DumpLog(const String& preffix, const KeyPredicate& predicate)
-      : KeyFilter(predicate), PreffixFilter(preffix), os(0) { }
-    DumpLog(std::ostream* _os, const String& preffix, const KeyPredicate& predicate)
-      : KeyFilter(predicate), PreffixFilter(preffix), os(_os) { }
+    DumpLog(const Predicates& predicates)
+      : KeyFilter(predicates), PreffixFilter(""), os(0) { }
+    DumpLog(const String& preffix, const Predicates& predicates)
+      : KeyFilter(predicates), PreffixFilter(preffix), os(0) { }
+    DumpLog(std::ostream* _os, const String& preffix, const Predicates& predicates)
+      : KeyFilter(predicates), PreffixFilter(preffix), os(_os) { }
     bool operator()(const String &path, const String &fname) {
       if (!boost::algorithm::ends_with(path, "/user") && path.find("/user/") == String::npos) {
         return true;
@@ -828,14 +839,18 @@ int main(int argc, char **argv) {
       Global::dfs = dfs;
       Global::memory_tracker = new MemoryTracker(0, 0);
 
-      KeyPredicate predicate;
-      predicate.include_row = get_str("include-row");
-      predicate.include_cf = get_str("include-cf");
-      predicate.include_cq = get_str("include-cq");
-      predicate.exclude_row = get_str("exclude-row");
-      predicate.exclude_cf = get_str("exclude-cf");
-      predicate.exclude_cq = get_str("exclude-cq");
-      predicate.skip_empty_cells = get_bool("skip-empty-cells");
+      Predicates predicates;
+      predicates.include_row = get_str("include-row");
+      predicates.exclude_row = get_str("exclude-row");
+
+      predicates.include_cf = get_str("include-cf");
+      predicates.exclude_cf = get_str("exclude-cf");
+
+      predicates.include_cq = get_str("include-cq");
+      predicates.exclude_cq = get_str("exclude-cq");
+
+      predicates.include_rs = get_str("include-rs");
+      predicates.exclude_rs = get_str("exclude-rs");
 
       if (has("dump-all-cellstores") ||
           has("dump-cellstores")) {
@@ -857,7 +872,7 @@ int main(int argc, char **argv) {
                 walk_filesystem(
                   toplevelCellStoreDirectory + "/tables/" + id, 
                   IsCellStore(),
-                  DumpCellStore(predicate));
+                  DumpCellStore(predicates));
               }
             }
           }
@@ -866,7 +881,7 @@ int main(int argc, char **argv) {
           walk_filesystem(
           toplevelCellStoreDirectory + "/tables", 
           IsCellStore(), 
-          DumpCellStore(predicate));
+          DumpCellStore(predicates));
       }
 
       if (has("dump-all-logs") ||
@@ -877,15 +892,15 @@ int main(int argc, char **argv) {
           if (!preffix.empty()) {
             walk_filesystem(
               toplevelCellStoreDirectory + "/servers", 
-              IsLog(), 
-              DumpLog(preffix, predicate));
+              IsLog(predicates), 
+              DumpLog(preffix, predicates));
           }
         }
         else
           walk_filesystem(
             toplevelCellStoreDirectory + "/servers", 
-            IsLog(), 
-            DumpLog(predicate));
+            IsLog(predicates), 
+            DumpLog(predicates));
       }
 
       if (has("recover")) {
@@ -913,14 +928,14 @@ int main(int argc, char **argv) {
             walk_filesystem(
               toplevelCellStoreDirectory + "/tables/" + id, 
               IsCellStore(), 
-              DumpCellStore(&of, predicate));
+              DumpCellStore(&of, predicates));
           }
         }
 
         walk_filesystem(
           toplevelCellStoreDirectory + "/servers", 
-          IsLog(), 
-          DumpLog(&of, preffix, predicate));
+          IsLog(predicates), 
+          DumpLog(&of, preffix, predicates));
       }
     }
   }
