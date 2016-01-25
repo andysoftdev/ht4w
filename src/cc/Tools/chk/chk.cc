@@ -914,8 +914,9 @@ int main(int argc, char **argv) {
 
       if (has("recover")) {
         String preffix = get_str("recover");
-        String fname = "recover" + preffix + ".hql";
+        String fname = "recover" + preffix;
         make_fname(fname);
+        fname += ".hql";
         std::ofstream of(fname, ios::out|ios::trunc);
         of << "USE '/';" << endl;
 
