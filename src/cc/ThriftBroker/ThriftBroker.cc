@@ -1216,7 +1216,7 @@ public:
 
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
-      Hypertable::SchemaPtr hschema = make_shared<Hypertable::Schema>();
+      Hypertable::SchemaPtr hschema = std::make_shared<Hypertable::Schema>();
       convert_schema(schema, hschema);
       namespace_ptr->create_table(table, hschema);
     } RETHROW("namespace=" << ns << " table="<< table)
@@ -1230,7 +1230,7 @@ public:
 
     try {
       Hypertable::Namespace *namespace_ptr = get_namespace(ns);
-      Hypertable::SchemaPtr hschema = make_shared<Hypertable::Schema>();
+      Hypertable::SchemaPtr hschema = std::make_shared<Hypertable::Schema>();
       convert_schema(schema, hschema);
       namespace_ptr->alter_table(table, hschema, false);
     } RETHROW("namespace=" << ns << " table="<< table)
@@ -1243,7 +1243,7 @@ public:
     Scanner id;
     LOG_API_START("namespace=" << ns << " table="<< table <<" scan_spec="<< ss);
     try {
-      ScannerInfoPtr si = make_shared<ScannerInfo>(ns, table);
+      ScannerInfoPtr si = std::make_shared<ScannerInfo>(ns, table);
       convert_scan_spec(ss, si->scan_spec_builder);
       id = get_scanner_id(_open_scanner(ns, table, si->scan_spec_builder.get()), si);
     } RETHROW("namespace=" << ns << " table="<< table <<" scan_spec="<< ss)
@@ -3047,7 +3047,7 @@ void HqlCallback<ResultT, CellT>::on_scan(TableScannerPtr &s) {
 
   }
   else {
-    ScannerInfoPtr si = make_shared<ScannerInfo>(ns);
+    ScannerInfoPtr si = std::make_shared<ScannerInfo>(ns);
     si->hql = hql;
     result.scanner = handler.get_scanner_id(s, si);
     result.__isset.scanner = true;
