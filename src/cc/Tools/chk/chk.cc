@@ -128,6 +128,26 @@ namespace {
   typedef std::shared_ptr<std::ofstream> OfstreamPtr;
   typedef std::map<String, OfstreamPtr> OfstreamMap;
 
+  void replace_all_r(String& str, const String& what, const String& rewrite) {
+    String s;
+    do {
+      s = str; 
+      boost::replace_all(str, what, rewrite);
+    }
+    while (s != str);
+  }
+
+  void make_fname(String& fname) {
+    String search = " ";
+    const char invalid[] = "[\\~#%&*{}/:<>?|\"-].,;'";
+    for( int i = 0; i < sizeof(invalid); ++i ) {
+      search[0] = invalid[i];
+      boost::replace_all(fname, search, "_");
+    }
+    replace_all_r(fname, "__", "_");
+    boost::trim_if(fname, boost::is_any_of("_"));
+  }
+
   OfstreamPtr get(OfstreamMap& map, const String& name) {
     OfstreamMap::const_iterator it = map.find(name);
     if (it == map.end()) {
@@ -167,14 +187,7 @@ namespace {
     result = xml ? schema->render_xml(true) : schema->render_hql(table_name);
     boost::replace_all(result, "\r", "");
     boost::replace_all(result, "\n", "");
-
-    String s;
-    do {
-      s = result; 
-      boost::replace_all(result, "  ", " ");
-    }
-    while (s != result);
-
+    replace_all_r(result, "  ", " ");
     boost::replace_all(result, "( ", "(");
     boost::replace_all(result, "> <", "><");
   }
@@ -232,7 +245,7 @@ namespace {
   struct RebuildTables : PreffixFilter {
     RebuildTables(std::ostream& _os, const String& preffix)
       : PreffixFilter(preffix), os(_os), drop_table_if_exists(has("drop-table-if-exists"))
-			, legacy_create_namespace(has("legacy-create-namespace")){ }
+      , legacy_create_namespace(has("legacy-create-namespace")){ }
     void operator()(const String &path, const String &name, const String &id, const NamespaceListing& item) {
       if(match(name)) {
         if (!item.is_namespace) {
@@ -435,9 +448,7 @@ namespace {
         const char *unescaped_buf, *row_unescaped_buf;
         size_t unescaped_len, row_unescaped_len;
 
-        boost::replace_all(name, "\\", "_");
-        boost::replace_all(name, "/", "_");
-        boost::trim_if(name, boost::is_any_of("_"));
+        make_fname(name);
         std::ofstream of(name + ".tsv", ios::out|ios::trunc|ios::binary);
 
         of << "#timestamp\trow\tcolumn\tvalue\n";
@@ -446,7 +457,7 @@ namespace {
         CellListScannerPtr scanner = cellstore->create_scanner(scan_ctx.get());
         while (scanner->get(key_comps, value)) {
           ColumnFamilySpec* cf = schema->get_column_family(key_comps.column_family_code, false);
-          if (key_comps.flag != FLAG_INSERT) {
+          /*if (key_comps.flag != FLAG_INSERT) {
             cout << "DELETES ignored on table " << table_name 
                  << " row=" << key_comps.row 
                  << "cf=" << cf->get_name();
@@ -454,8 +465,8 @@ namespace {
                cout << " cq=" << key_comps.column_qualifier;
             cout << endl;
 
-            return false;
-          }
+            continue;
+          }*/
           if (cf) {
             bslen = value.decode_length((const uint8_t **)&bsptr);
             if (match(table_name, key_comps, cf, bslen)) {
@@ -534,8 +545,7 @@ namespace {
         OfstreamMap ostreams;
         CommitLogReader clr(Global::dfs, path);
 
-        boost::replace_all(path, "\\", "_");
-        boost::replace_all(path, "/", "_");
+        make_fname(path);
 
         BlockHeaderCommitLog header;
         const uint8_t *base;
@@ -592,8 +602,7 @@ namespace {
             fname += "_";
             fname += table_id.id;
             fname +=  + ".tsv";
-            boost::replace_all(fname, "/", "_");
-            boost::trim_if(fname, boost::is_any_of("_"));
+            make_fname(fname);
 
             SchemaPtr schema;
             try {
@@ -906,9 +915,7 @@ int main(int argc, char **argv) {
       if (has("recover")) {
         String preffix = get_str("recover");
         String fname = "recover" + preffix + ".hql";
-        boost::replace_all(fname, "\\", "_");
-        boost::replace_all(fname, "/", "_");
-        boost::trim_if(fname, boost::is_any_of("_"));
+        make_fname(fname);
         std::ofstream of(fname, ios::out|ios::trunc);
         of << "USE '/';" << endl;
 
@@ -919,10 +926,10 @@ int main(int argc, char **argv) {
           quick_exit(EXIT_FAILURE);
         PreffixFilter filter(preffix);
         for (const String& line : lines) {
-            String _line(line);
-            char *end_nl;
-            strtok_r((char*)_line.c_str(), "\t", &end_nl); 
-            if (filter.match(_line)) {
+          String _line(line);
+          char *end_nl;
+          strtok_r((char*)_line.c_str(), "\t", &end_nl); 
+          if (filter.match(_line)) {
             String id = strtok_r(0, "\t", &end_nl);
             boost::trim_if(id, boost::is_any_of("/"));
             walk_filesystem(
