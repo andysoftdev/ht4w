@@ -98,6 +98,7 @@ namespace {
         ("include-rs", str()->default_value(""), "include range server for dump logs, preffix or /regexp/")
         ("exclude-rs", str()->default_value(""), "exclude range server for dump logs, preffix or /regexp/")
         ("skip-empty-cells", "skips cells with no value")
+        ("skip-deletes", "skips deletes")
         ("drop-table-if-exists", "adds a drop table statements into the recovery script")
         ("legacy-create-namespace", "not using the CREATE NAMESPACE IF NOT EXISTS syntax for the recovery script")
         ("cellstore-dir", str()->default_value("hypertable"), "The top level cell store directory, relative to FsBroker.Local.Root");
@@ -371,9 +372,11 @@ namespace {
     KeyFilter(const Predicates& predicates)
       : include_row(predicates.include_row), include_cf(predicates.include_cf), include_cq(predicates.include_cq)
       , exclude_row(predicates.exclude_row), exclude_cf(predicates.exclude_cf), exclude_cq(predicates.exclude_cq)
-      , skip_empty_cells(has("skip-empty-cells")) { }
+      , skip_empty_cells(has("skip-empty-cells")), skip_deletes(has("skip-deletes")) { }
     bool match(const String& table, const Key& key, const ColumnFamilySpec* _cf, size_t value_len) const {
-      if (key.flag == FLAG_INSERT && value_len == 0 && skip_empty_cells)
+      if (skip_empty_cells && key.flag == FLAG_INSERT && value_len == 0)
+        return false;
+      if (skip_deletes && key.flag != FLAG_INSERT)
         return false;
       String table_row = table + "/" + key.row;
       String table_cf = table + "/" + _cf->get_name();
@@ -392,6 +395,7 @@ namespace {
     PreffixFilter exclude_cf;
     PreffixFilter exclude_cq;
     bool skip_empty_cells;
+    bool skip_deletes;
   };
 
   struct DumpCellStore : KeyFilter {
@@ -488,9 +492,29 @@ namespace {
               }
               memcpy(buf, bsptr, bslen);
               buf[bslen] = 0;
-              escaper.escape(buf, bslen, &unescaped_buf, &unescaped_len);
               of << "\t";
-              of.write(unescaped_buf, unescaped_len);
+              if (key_comps.flag == FLAG_INSERT) {
+                escaper.escape(buf, bslen, &unescaped_buf, &unescaped_len);
+                of.write(unescaped_buf, unescaped_len);
+              }
+              else {
+                switch(key_comps.flag) {
+                  case FLAG_DELETE_ROW:
+                    of << "DELETE_ROW";
+                    break;
+                  case FLAG_DELETE_COLUMN_FAMILY:
+                    of << "DELETE_COLUMN_FAMILY";
+                    break;
+                  case FLAG_DELETE_CELL:
+                    of << "DELETE_CELL";
+                    break;
+                  case FLAG_DELETE_CELL_VERSION:
+                    of << "DELETE_CELL_VERSION";
+                    break;
+                  default:
+                    cout << "Unexpected key flag 0x" << std::hex << key_comps.flag << std::endl;
+                }
+              }
               of << "\n";
 
               ++cells;
@@ -667,6 +691,8 @@ namespace {
                       case FLAG_DELETE_CELL_VERSION:
                         *of << "DELETE_CELL_VERSION";
                         break;
+                      default:
+                        cout << "Unexpected key flag 0x" << std::hex << key.flag << std::endl;
                     }
                   }
                   *of << "\n";
