@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -225,7 +225,7 @@ namespace Hypertable {
        * This method returns the name of the entity ("Recover")
        * @return Name of the entity ("Recover")
        */
-      virtual const std::string name() { return "Recover"; }
+      const std::string name() override { return "Recover"; }
 
     private:
 

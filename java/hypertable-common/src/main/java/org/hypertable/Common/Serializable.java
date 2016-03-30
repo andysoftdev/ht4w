@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -30,7 +30,7 @@ public abstract class Serializable {
 
   /** Returns serialized object length.
    * Returns the serialized length of the object as encoded by encode().
-   * @see encode() for encoding format
+   * @see #encode(ByteBuffer) encode
    * @return Overall serialized object length
    */
   public int encodedLength() throws UnsupportedEncodingException {
@@ -53,7 +53,7 @@ public abstract class Serializable {
 
   /** Reads serialized representation of object from a buffer.
    * @param buf ByteBuffer source
-   * @see encode() for encoding format
+   * @see #encode(ByteBuffer) encode
    * @throws ProtocolException
    */
   public void decode(ByteBuffer buf) throws ProtocolException, DataFormatException, UnsupportedEncodingException {
@@ -76,7 +76,7 @@ public abstract class Serializable {
    * This function is to be overridden by derived classes and should return
    * the length of the the serialized object per-se.
    * @return Internal serialized length
-   * @see encodeInternal() for encoding format
+   * @see #encodeInternal(ByteBuffer) encodeInternal
    */
   abstract protected int encodedLengthInternal() throws UnsupportedEncodingException;
 
@@ -92,7 +92,7 @@ public abstract class Serializable {
    * the object per-se as encoded with encodeInternal().
    * @param version Encoding version
    * @param buf ByteBuffer source
-   * @see encodeInternal() for encoding format
+   * @see #encodeInternal(ByteBuffer) encodeInternal
    */
   abstract protected void decodeInternal(byte version, ByteBuffer buf) throws ProtocolException, DataFormatException, UnsupportedEncodingException;
 

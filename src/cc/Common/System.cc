@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -46,6 +46,7 @@ using namespace std;
 using namespace boost::filesystem;
 
 string System::install_dir;
+std::unique_ptr<ClusterDefinition::ClusterDefinition> System::cluster_def;
 string System::exe_name;
 
 #ifndef _WIN32
@@ -97,6 +98,8 @@ void System::_init(const String &install_directory) {
     while (boost::ends_with(install_dir, "/"))
     install_dir = install_dir.substr(0, install_dir.length()-1);
   }
+
+  cluster_def.reset(new ClusterDefinition::ClusterDefinition(install_dir + "/conf/cluster.def"));
 
   if (exe_name.empty())
     exe_name = Path(proc_info().args[0]).filename().generic_string();

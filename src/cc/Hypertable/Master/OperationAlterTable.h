@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -61,149 +61,23 @@ namespace Hypertable {
     /** Destructor. */
     virtual ~OperationAlterTable() { }
 
-    /** Carries out the alter table operation.
-     * This method carries out the operation via the following states:
-     *
-     * <table>
-     * <tr>
-     * <th> State </th>
-     * <th> Description </th>
-     * </tr>
-     * <tr>
-     * <td> INITIAL </td>
-     * <td><ul>
-     *   <li> Maps supplied table name to a table identifier (#m_id) </li>
-     *   <li> If supplied table name not found in name map, completes with
-     *        Error::TABLE_NOT_FOUND </li>
-     *   <li> If supplied table name is a directory, completes with
-     *        Error::INVALID_ARGUMENT </li>
-     *   <li> Otherwise, transitions to VALIDATE_SCHEMA </li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td> VALIDATE_SCHEMA </td>
-     * <td><ul>
-     *   <li> Validates new schema and if bad, completes with
-     *        Error::MASTER_BAD_SCHEMA </li>
-     *   <li> Loads existing schema and checks to make sure new schema
-     *        generation number is the same as the original generation
-     *        number, if not completes with
-     *        Error::MASTER_SCHEMA_GENERATION_MISMATCH. </li>
-     *   <li> Otherwise, sets #m_parts to the index table that need to be
-     *        created with a call to get_create_index_parts(), sets,
-     *        dependencies to Dependency::METADATA, and transitions to
-     *        CREATE_INDICES </li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td>CREATE_INDICES</td>
-     * <td><ul>
-     * <li>If #m_parts specifies either a value or qualifier index, creates an
-     *     OperationCreateTable sub operation to create index tables and stages
-     *     it with a call to stage_subop()</li>
-     * <li>Transition state to SCAN_METADATA</li>
-     * <li>Persists this operation to MML and then returns</li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td> SCAN_METADATA </td>
-     * <td><ul>
-     *   <li> Handles result of create table sub operation with a call to
-     *        validate_subops(), returning on failure</li>
-     *   <li> Scans the METADATA table and populates #m_servers to hold the set
-     *        of servers that hold the table to be altered which are not in the
-     *        #m_completed set. </li>
-     *   <li> Dependencies are set to server names in #m_servers </li>
-     *   <li> Transitions to the ISSUE_REQUESTS state </li>
-     *   <li> Persists operation to MML and returns </li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td> ISSUE_REQUESTS </td>
-     * <td><ul>
-     *   <li> Issues a alter table request to all servers in #m_servers and
-     *        waits for their completion </li>
-     *   <li> If there are any errors, for each server that was successful or
-     *        returned with Error::TABLE_NOT_FOUND, the server name is added to
-     *        #m_completed.  Dependencies are then set back to just
-     *        Dependency::METADATA, the state is reset back to SCAN_METADATA,
-     *        the operation is persisted to the MML, and the method returns</li>
-     *   <li> Otherwise state is transitioned to UPDATE_HYPERSPACE and operation
-     *        is persisted to MML </li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td> UPDATE_HYPERSPACE </td>
-     * <td><ul>
-     *   <li> Sets #m_parts to the index table that need to be dropped with a
-     *        call to get_drop_index_parts() </li>
-     *   <li> Updates the schema attribute of table in hyperspace </li>
-     *   <li> If any of the index tables need to be dropped, transitions to
-     *        state SUSPEND_TABLE_MAINTENANCE, records this operation to
-     *        the MML, and then returns </li>
-     *   <li> Otherwise, transitions to COMPLETE and then returns </li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td>SUSPEND_TABLE_MAINTENANCE</td>
-     * <td><ul>
-     * <li>Creates an OperationToggleMaintenance sub operation to turn
-     *     maintenance off</li>
-     * <li>Stages sub operation with a call to stage_subop()</li>
-     * <li>Transition state to DROP_INDICES</li>
-     * <li>Persists this operation to MML and then returns</li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td>DROP_INDICES</td>
-     * <td><ul>
-     * <li>Handles result of toggle table maintenance sub operation with a
-     *     call to validate_subops(), returning on failure</li>
-     * <li>Creates an OperationDropTable sub operation to drop index
-     *     tables</li>
-     * <li>Stages sub operation with a call to stage_subop()</li>
-     * <li>Transition state to RESUME_TABLE_MAINTENANCE</li>
-     * <li>Persists this operation to MML and then returns</li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td>RESUME_TABLE_MAINTENANCE</td>
-     * <td><ul>
-     * <li>Handles result of drop table sub operation with a call to
-     *     validate_subops(), returning on failure</li>
-     * <li>Creates an OperationToggleMaintenance sub operation to turn
-     *     maintenance back on</li>
-     * <li>Stages sub operation with a call to stage_subop()</li>
-     * <li>Transition state to FINALIZE</li>
-     * <li>Persists this operation to MML and then returns</li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td>FINALIZE</td>
-     * <td><ul>
-     * <li>Handles result of the toggle maintenance sub operation with a call to
-     *     fetch_and_validate_subop(), returning on failure</li>
-     * <li>Calls complete_ok()</li>
-     * </ul></td>
-     * </tr>
-     * </table>
-     */
-    virtual void execute();
+    /** Carries out the alter table operation. */
+    void execute() override;
 
     /** Returns name of operation ("OperationAlterTable")
      * @return %Operation name
      */
-    virtual const String name();
+    const String name() override;
 
     /** Returns descriptive label for operation
      * @return Descriptive label for operation
      */
-    virtual const String label();
+    const String label() override;
 
     /** Writes human readable representation of object to output stream.
      * @param os Output stream
      */
-    virtual void display_state(std::ostream &os);
+    void display_state(std::ostream &os) override;
 
     /// Returns encoding version
     /// @return Encoding version

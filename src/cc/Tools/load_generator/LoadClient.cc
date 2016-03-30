@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -80,15 +80,23 @@ void
 LoadClient::create_mutator(const String &tablename, int mutator_flags,
                            ::uint64_t shared_mutator_flush_interval)
 {
+  string ns, table;
+  split_tablepath(tablename, &ns, &table);
   if (m_thrift) {
 #ifdef HT_WITH_THRIFT
+    if (!ns.empty()) {
+      m_thrift_client->namespace_close(m_thrift_namespace);
+      m_thrift_namespace = m_thrift_client->namespace_open(ns);
+    }
     m_thrift_mutator = m_thrift_client->open_mutator(m_thrift_namespace,
-            tablename, mutator_flags, 0);
+            table, mutator_flags, 0);
 #endif
   }
   else {
     if (!m_native_table_open) {
-      m_native_table = m_ns->open_table(tablename);
+      if (!ns.empty())
+        m_ns = m_native_client->open_namespace(ns);
+      m_native_table = m_ns->open_table(table);
       m_native_table_open = true;
     }
     m_native_mutator.reset(m_native_table->create_mutator(0, mutator_flags,
@@ -158,8 +166,14 @@ LoadClient::flush()
 void
 LoadClient::create_scanner(const String &tablename, const ScanSpec &scan_spec)
 {
+  string ns, table;
+  split_tablepath(tablename, &ns, &table);
   if (m_thrift) {
 #ifdef HT_WITH_THRIFT
+    if (!ns.empty()) {
+      m_thrift_client->namespace_close(m_thrift_namespace);
+      m_thrift_namespace = m_thrift_client->namespace_open(ns);
+    }
     //copy scanspec column and first row interval
     ThriftGen::ScanSpec thrift_scan_spec;
     ThriftGen::RowInterval thrift_row_interval;
@@ -175,12 +189,14 @@ LoadClient::create_scanner(const String &tablename, const ScanSpec &scan_spec)
     thrift_scan_spec.__isset.columns = thrift_scan_spec.__isset.row_intervals = true;
 
     m_thrift_scanner = m_thrift_client->open_scanner(m_thrift_namespace,
-            tablename, thrift_scan_spec);
+            table, thrift_scan_spec);
 #endif
   }
   else {
     if (!m_native_table_open) {
-      m_native_table = m_ns->open_table(tablename);
+      if (!ns.empty())
+        m_ns = m_native_client->open_namespace(ns);
+      m_native_table = m_ns->open_table(table);
       m_native_table_open = true;
     }
     m_native_scanner.reset(m_native_table->create_scanner(scan_spec));
@@ -238,5 +254,20 @@ LoadClient::~LoadClient()
 #ifdef HT_WITH_THRIFT
     m_thrift_client->close_namespace(m_thrift_namespace);
 #endif
+  }
+}
+
+void LoadClient::split_tablepath(const std::string &path, std::string *ns, std::string *table) {
+  auto offset = path.find_last_of('/');
+  ns->clear();
+  if (offset == string::npos)
+    *table = path;
+  else {
+    if (offset != 0) {
+      if (!path.empty() && path[0] != '/')
+        ns->append(1, '/');
+      ns->append(path.substr(0, offset));
+    }
+    *table = path.substr(offset+1);
   }
 }

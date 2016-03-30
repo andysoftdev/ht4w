@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -77,11 +77,11 @@ namespace Hypertable {
      * @param key key to be inserted
      * @param value value to inserted
      */
-    virtual void add(const Key &key, const ByteString value);
+    void add(const Key &key, const ByteString value) override;
 
     virtual void add_counter(const Key &key, const ByteString value);
 
-    virtual void split_row_estimate_data(SplitRowDataMapT &split_row_data);
+    void split_row_estimate_data(SplitRowDataMapT &split_row_data) override;
 
     /** Creates a CellCacheScanner object that contains an shared pointer
      * to this CellCache.

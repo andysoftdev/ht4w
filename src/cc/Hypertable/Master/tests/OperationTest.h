@@ -1,5 +1,5 @@
-/** -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -42,19 +42,19 @@ namespace Hypertable {
     virtual ~OperationTest() { }
 
     void set_state(int32_t state) { m_state = state; }
-
-    virtual void execute();
-    virtual const String name();
-    virtual const String label();
-    virtual void display_state(std::ostream &os);
+    
+    void execute() override;
+    const String name() override;
+    const String label() override;
+    void display_state(std::ostream &os) override;
     uint8_t encoding_version_state() const override;
     size_t encoded_length_state() const override;
     void encode_state(uint8_t **bufp) const override;
     void decode_state(uint8_t version, const uint8_t **bufp, size_t *remainp) override;
     void decode_state_old(uint8_t version, const uint8_t **bufp, size_t *remainp) override;
-    virtual void decode_request(const uint8_t **bufp, size_t *remainp);
+    void decode_request(const uint8_t **bufp, size_t *remainp);
 
-    virtual bool is_perpetual() { return m_is_perpetual; }
+    bool is_perpetual() override { return m_is_perpetual; }
 
     void set_is_perpetual(bool b) { m_is_perpetual = b; }
 

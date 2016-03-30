@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -65,6 +65,62 @@ OperationToggleTableMaintenance::OperationToggleTableMaintenance(ContextPtr &con
 }
 
 
+/// @detail
+/// This method carries out the operation via the following states:
+///
+/// <table>
+/// <tr>
+/// <th>State</th>
+/// <th>Description</th>
+/// </tr>
+/// <tr>
+/// <td>INITIAL</td>
+/// <td><ul>
+/// <li>Maps table name (#m_name) to table ID and stores in #m_id</li>
+/// <li>Transitions state to UPDATE_HYPERSPACE</li>
+/// <li>Persists operation to MML and drops through to next state</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>UPDATE_HYPERSPACE</td>
+/// <td><ul>
+/// <li>If #m_toggle_on is <i>true</i>, deletes the "maintenance_disabled"
+///     attribute of the table ID file in Hyperspace</li>
+/// <li>Otherwise, if #m_toggle_on is <i>false</i>, sets the
+///     "maintenance_disabled" attribute of the table ID file in
+///     Hyperspace</li>
+/// <li>Dependencies are set to METADATA and #m_id + " move range"</li>
+/// <li>Transitions state to SCAN_METADATA</li>
+/// <li>Persists operation to MML and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>SCAN_METADATA</td>
+/// <td><ul>
+/// <li>Obtains list of servers via call to
+///     Utility::get_table_server_set()</li>
+/// <li>For each server in #m_completed, removes server as dependency</li>
+/// <li>For each server not in #m_completed, adds server as dependency</li>
+/// <li>Transitions state to ISSUE_REQUESTS</li>
+/// <li>Persists operation to MML and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>ISSUE_REQUESTS</td>
+/// <td><ul>
+/// <li>Issues a toggle maintenance request to all servers in #m_servers and
+///     waits for their completion</li>
+/// <li>If any of the requests failed, the servers of the successfully
+///     completed requests are added to #m_completed, the servers in
+///     #m_servers are removed as dependencies, METADATA is added as a
+///     dependency, #m_servers is cleared, state is transitioned back to
+///     SCAN_METADATA, the operation sleeps for 5 seconds, the operation is
+///     persisted to the MML and then the function returns</li>
+/// <li>Otherwise, if all requsts completed successfully, the operation is
+///     completed with a call to complete_ok()</li>
+/// </ul></td>
+/// </tr>
+/// </table>
 void OperationToggleTableMaintenance::execute() {
   bool is_namespace;
   int32_t state = get_state();

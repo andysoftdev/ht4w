@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -74,6 +74,9 @@ class LoadClient {
     uint64_t get_all_cells();
 
   private:
+
+    void split_tablepath(const std::string &path, std::string *ns, std::string *table);
+
     bool m_thrift;
     ClientPtr m_native_client;
     NamespacePtr m_ns;

@@ -31,6 +31,16 @@ exports.HttpConnection = httpConnection.HttpConnection;
 exports.createHttpConnection = httpConnection.createHttpConnection;
 exports.createHttpClient = httpConnection.createHttpClient;
 
+var wsConnection = require('./ws_connection');
+exports.WSConnection = wsConnection.WSConnection;
+exports.createWSConnection = wsConnection.createWSConnection;
+exports.createWSClient = wsConnection.createWSClient;
+
+var xhrConnection = require('./xhr_connection');
+exports.XHRConnection = xhrConnection.XHRConnection;
+exports.createXHRConnection = xhrConnection.createXHRConnection;
+exports.createXHRClient = xhrConnection.createXHRClient;
+
 var server = require('./server');
 exports.createServer = server.createServer;
 exports.createMultiplexServer = server.createMultiplexServer;
@@ -50,8 +60,8 @@ exports.MultiplexedProcessor = mprocessor.MultiplexedProcessor;
  * Export transport and protocol so they can be used outside of a
  * cassandra/server context
  */
-exports.TFramedTransport = require('./transport').TFramedTransport;
-exports.TBufferedTransport = require('./transport').TBufferedTransport;
-exports.TBinaryProtocol = require('./protocol').TBinaryProtocol;
-exports.TJSONProtocol = require('./protocol').TJSONProtocol;
-exports.TCompactProtocol = require('./protocol').TCompactProtocol;
+exports.TFramedTransport = require('./framed_transport');
+exports.TBufferedTransport = require('./buffered_transport');
+exports.TBinaryProtocol = require('./binary_protocol');
+exports.TJSONProtocol = require('./json_protocol');
+exports.TCompactProtocol = require('./compact_protocol');

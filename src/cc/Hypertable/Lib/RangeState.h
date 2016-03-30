@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -188,7 +188,7 @@ namespace Hypertable {
     /** Destructor. */
     virtual ~RangeStateManaged() {}
 
-    virtual void clear();
+    void clear() override;
 
     /** Assignment operator.
      * Casts <code>other</code> to RangeState type and calls

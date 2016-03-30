@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2015 Hypertable, Inc.
+# Copyright (C) 2007-2016 Hypertable, Inc.
 #
 # This file is part of Hypertable.
 #
@@ -22,6 +22,8 @@ if (Thrift_FOUND)
 endif ()
 
 add_custom_target(hqldoc ${CMAKE_SOURCE_DIR}/doc/bin/make-doc-tree.sh hqldoc)
+
+add_custom_target(javadoc mvn -f java/pom.xml -Dmaven.test.skip=true -Papache2 javadoc:aggregate DEPENDS java)
 
 if (DOXYGEN_FOUND)
   configure_file(${HYPERTABLE_SOURCE_DIR}/doc/Doxyfile

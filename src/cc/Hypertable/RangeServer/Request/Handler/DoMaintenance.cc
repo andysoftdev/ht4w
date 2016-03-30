@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -28,5 +28,10 @@
 using namespace Hypertable::RangeServer::Request::Handler;
 
 void DoMaintenance::run() {
-  m_range_server->do_maintenance();
+  try {
+    m_range_server->do_maintenance();
+  }
+  catch (Exception &e) {
+    HT_ERROR_OUT << "DoMaintenance " << e << HT_END;
+  }
 }

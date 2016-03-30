@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2015 Hypertable, Inc.
+# Copyright (C) 2007-2016 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@ project(HYPERTABLE)
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "9")
 set(VERSION_MICRO "8")
-set(VERSION_PATCH "9")
+set(VERSION_PATCH "11")
 #set(VERSION_MISC_SUFFIX  "pre6")
 
 # cmake behavior compatibility
@@ -93,7 +93,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif ()
 
 # C flags
-SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-unknown-pragmas")
 SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic")
 SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LARGEFILE_SOURCE")
 SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FILE_OFFSET_BITS=64")
@@ -101,7 +101,7 @@ SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_REENTRANT")
 SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 # C++ flags
-SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unknown-pragmas")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_LARGEFILE_SOURCE")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64")
@@ -194,7 +194,7 @@ endif ()
 if (LLVM)
   message(STATUS "Using llvm: ${LLVM}")
   SET (CMAKE_C_COMPILER             "${LLVM}/bin/clang")
-  SET (CMAKE_C_FLAGS                "-Wall -std=c99")
+  SET (CMAKE_C_FLAGS                "-Wall -Wno-unknown-pragmas -std=c99")
   if (ADDRESS_SANITIZER)
     SET (CMAKE_C_FLAGS_DEBUG        "-fsanitize=address -O1 -fno-omit-frame-pointer -g")
   else ()
@@ -205,7 +205,7 @@ if (LLVM)
   SET (CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")
 
   SET (CMAKE_CXX_COMPILER             "${LLVM}/bin/clang++")
-  SET (CMAKE_CXX_FLAGS                "-Wall")
+  SET (CMAKE_CXX_FLAGS                "-Wall -Wno-unknown-pragmas")
   if (ADDRESS_SANITIZER)
     SET (CMAKE_CXX_FLAGS_DEBUG        "-fsanitize=address -O1 -fno-omit-frame-pointer -g")
   else ()

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -91,10 +91,11 @@ namespace Hypertable {
      * @param sd Socket descriptor
      * @param dhp Dispatch handler
      */
-    IOHandler(socket_t sd, const DispatchHandlerPtr &dhp)
+    IOHandler(socket_t sd, const DispatchHandlerPtr &dhp,
+              Reactor::Priority rp = Reactor::Priority::NORMAL)
       : m_free_flag(0), m_error(Error::OK),
         m_sd(sd), m_dispatch_handler(dhp), m_decomissioned(false) {
-      ReactorFactory::get_reactor(m_reactor);
+      ReactorFactory::get_reactor(m_reactor, rp);
       socklen_t namelen = sizeof(m_local_addr);
       getsockname(m_sd, (sockaddr *)&m_local_addr, &namelen);
       memset(&m_alias, 0, sizeof(m_alias));

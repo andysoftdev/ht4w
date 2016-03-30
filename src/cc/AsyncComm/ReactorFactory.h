@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -78,9 +78,13 @@ namespace Hypertable {
      * of the next reactor in the list.
      * @param reactor Smart pointer reference to returned Reactor
      */
-    static void get_reactor(ReactorPtr &reactor) {
+    static void get_reactor(ReactorPtr &reactor,
+                            Reactor::Priority priority = Reactor::Priority::NORMAL) {
       assert(ms_reactors.size() > 0);
-      reactor = ms_reactors[ms_next_reactor++ % (ms_reactors.size() - 1)];
+      if (priority == Reactor::Priority::HIGH)
+        reactor = ms_reactors.front();
+      else
+        reactor = ms_reactors[(ms_next_reactor++ % (ms_reactors.size()-2))+1];
     }
 
     /** This method returns the timer reactor.

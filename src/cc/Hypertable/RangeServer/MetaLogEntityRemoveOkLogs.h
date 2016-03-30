@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -105,13 +105,13 @@ namespace Hypertable {
     /** Returns the entity name ("Range")
      * @return %Entity name
      */
-    virtual const String name();
+    const String name() override;
 
     /** Writes a human readable representation of the object state to
      * an output stream.
      * @param os Output stream
      */
-    virtual void display(std::ostream &os);
+    void display(std::ostream &os) override;
 
   private:
 

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -35,10 +35,10 @@ namespace Hypertable {
     OperationDropNamespace(ContextPtr &context, EventPtr &event);
     virtual ~OperationDropNamespace() { }
 
-    virtual void execute();
-    virtual const std::string name();
-    virtual const std::string label();
-    virtual void display_state(std::ostream &os);
+    void execute() override;
+    const std::string name() override;
+    const std::string label() override;
+    void display_state(std::ostream &os) override;
     uint8_t encoding_version_state() const override;
     size_t encoded_length_state() const override;
     void encode_state(uint8_t **bufp) const override;

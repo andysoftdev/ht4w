@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -27,8 +27,8 @@
 #include <Common/Compat.h>
 
 #include "ClusterCommandInterpreter.h"
-#include "ClusterDefinition/TokenizerTools.h"
 
+#include <Common/ClusterDefinitionFile/TokenizerTools.h>
 #include <Common/String.h>
 #include <Common/System.h>
 
@@ -47,7 +47,7 @@ extern "C" {
 }
 
 using namespace Hypertable;
-using namespace Hypertable::ClusterDefinition;
+using namespace Hypertable::ClusterDefinitionFile;
 using namespace std;
 
 namespace {

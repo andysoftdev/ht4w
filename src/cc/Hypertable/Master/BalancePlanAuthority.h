@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -25,8 +25,8 @@
  * as the central authority for all active balance plans.
  */
 
-#ifndef HYPERTABLE_BALANCEPLANAUTHORITY_H
-#define HYPERTABLE_BALANCEPLANAUTHORITY_H
+#ifndef Hypertable_Master_BalancePlanAuthority_h
+#define Hypertable_Master_BalancePlanAuthority_h
 
 #include <map>
 
@@ -270,7 +270,7 @@ namespace Hypertable {
     /** Returns the name of this entity ("BalancePlanAuthority")
      * @return Entity name
      */
-    virtual const String name() { return "BalancePlanAuthority"; }
+    const String name() override { return "BalancePlanAuthority"; }
 
     /** Writes a human-readable represenation of object to an output stream.
      * This method writes a human-readable represenation of the object to the
@@ -278,7 +278,7 @@ namespace Hypertable {
      * generation number and is followed by all of the failover plans.
      * @param os Output stream to write to
      */
-    virtual void display(std::ostream &os);
+    void display(std::ostream &os) override;
 
     /** Reads serialized encoding of object.
      * This method restores the state of the object by decoding a serialized
@@ -400,6 +400,6 @@ namespace Hypertable {
 
   /// @}
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_BALANCEPLANAUTHORITY_H
+#endif // Hypertable_Master_BalancePlanAuthority_h

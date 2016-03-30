@@ -1,3 +1,36 @@
+Version 0.9.8.11:
+(2016-03-14)
+
+   Added salvage
+   Added log_player
+   Added metalog_tool
+   Added htck
+   Added ht-wait-until-quiesced.sh
+   Updated copyright date
+   Fixed ssl link problem with recovery tools
+   Fixed bug in CellCacheScanner where scanned cells are only deletes
+   Fixed bug in fast_clock::to_time_t
+   Don't apply TIMESTAMP filter when scanning index tables
+   Removed thread_local storage specifier from random engine variable in Random
+
+Version 0.9.8.10:
+(2015-12-22)
+
+   Updated for Thrift 0.9.3, Java 1.7, gcc 5.3.0
+   Added high priority reactor to AsyncComm used for UDP sockets with TOS
+   Fixed regression in COUNTER cell handling
+   add packaging files for python hypertable client
+   Fixed clang warnings; Marked appropriate declarations override
+   Added support for Hypertable.Master.RecordGraphvizStream
+   Eliminated warnings
+   Changed return type of FileDevice::read to signed
+   Add missing try/catch blocks to some RangeServer request handlers
+   Added STL-style directory container
+   Added javadoc target
+   Added ClusterDefinition class with system-wide System::cluster_def (and System.clusterDef for java)
+   Moved ClusterDefinition code to Common
+   Added --display-json option to ht_cluster
+
 Version 0.9.8.9:
 (2015-06-29)
 

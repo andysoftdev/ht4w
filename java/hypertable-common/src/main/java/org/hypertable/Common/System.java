@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,52 +19,56 @@
  * 02110-1301, USA.
  */
 
-
 package org.hypertable.Common;
-
 
 import java.io.File;
 import java.util.StringTokenizer;
-
 
 public class System {
 
   public static int HT_DIRECT_IO_ALIGNMENT = 512;
 
-    static {
-        String classpath = java.lang.System.getProperty("java.class.path");
+  /** Installation directory */
+  public static String installDir;
 
-        StringTokenizer st = new StringTokenizer(classpath, ":");
-        while (st.hasMoreTokens()) {
-            String path = st.nextToken();
-            if (!path.endsWith(".jar")) {
-                File base = new File(path);
-                File binDir = new File(base, "bin");
-                if (!binDir.exists())
-                    continue;
-                File confDir = new File(base, "conf");
-                if (!confDir.exists())
-                    continue;
-                if (path.endsWith("/"))
-                    installDir = path.substring(0, path.length()-1);
-                else
-                    installDir = path;
-                break;
-            }
-        }
+  /** Cluster definition */
+  public static ClusterDefinition clusterDef;
 
-        // Figure out the number of cpus
-        processorCount = Runtime.getRuntime().availableProcessors();
+  /** Processor count */
+  public static int processorCount;
+
+  static {
+    String classpath = java.lang.System.getProperty("java.class.path");
+
+    StringTokenizer st = new StringTokenizer(classpath, ":");
+    while (st.hasMoreTokens()) {
+      String path = st.nextToken();
+      if (!path.endsWith(".jar")) {
+        File base = new File(path);
+        File binDir = new File(base, "bin");
+        if (!binDir.exists())
+          continue;
+        File confDir = new File(base, "conf");
+        if (!confDir.exists())
+          continue;
+        if (path.endsWith("/"))
+          installDir = path.substring(0, path.length()-1);
+        else
+          installDir = path;
+        break;
+      }
     }
 
-    public static String installDir;
+    clusterDef = new ClusterDefinition(installDir + "/conf/cluster.def");
 
-    public static int processorCount;
+    // Figure out the number of cpus
+    processorCount = Runtime.getRuntime().availableProcessors();
+  }
 
-    public static void main(String [] args) {
-        java.lang.System.out.println("Installation Directory = '"
-                                     + installDir + "'");
-    }
+  public static void main(String [] args) {
+    java.lang.System.out.println("Installation Directory = '"
+                                 + installDir + "'");
+  }
 
 
 }

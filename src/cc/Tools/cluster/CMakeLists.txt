@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2015 Hypertable, Inc.
+# Copyright (C) 2007-2016 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,27 +17,14 @@
 # 02110-1301, USA.
 #
 
-set(SRC_DIR "${HYPERTABLE_SOURCE_DIR}/src/cc/Tools/cluster")
-set(DST_DIR "${HYPERTABLE_BINARY_DIR}/src/cc/Tools/cluster")
-
 set(cluster_SRCS
 ht_cluster.cc
 ClusterCommandInterpreter.cc
-ClusterDefinition/Compiler.cc
-ClusterDefinition/Token.cc
-ClusterDefinition/Tokenizer.cc
-ClusterDefinition/TokenizerTools.cc
-ClusterDefinition/TranslatorCode.cc
-ClusterDefinition/TranslatorRole.cc
-ClusterDefinition/TranslatorTask.cc
-ClusterDefinition/TranslatorVariable.cc
 )
 
 # ht_cluster - command interpreter
 add_executable(ht_cluster ${cluster_SRCS})
-target_link_libraries(ht_cluster Hypertable)
-
-add_subdirectory(ClusterDefinition)
+target_link_libraries(ht_cluster HyperCommon Hypertable)
 
 if (NOT HT_COMPONENT_INSTALL)
   install(TARGETS ht_cluster RUNTIME DESTINATION bin)

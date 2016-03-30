@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_METALOGENTITYTASKACKNOWLEDGERELINQUISH_H
-#define HYPERTABLE_METALOGENTITYTASKACKNOWLEDGERELINQUISH_H
+#ifndef Hypertable_RangeServer_MetaLogEntityTaskAcknowledgeRelinquish_h
+#define Hypertable_RangeServer_MetaLogEntityTaskAcknowledgeRelinquish_h
 
 #include "Common/md5.h"
 
@@ -36,8 +36,8 @@ namespace Hypertable {
                                       const TableIdentifier &t,
                                       const RangeSpec &rs);
       virtual ~EntityTaskAcknowledgeRelinquish() { }
-      virtual bool execute();
-      virtual void work_queue_add_hook();
+      bool execute() override;
+      void work_queue_add_hook() override;
 
       /** Decodes serlialized EntityTaskAcknowledgeRelinquish object.
        * @param bufp Address of source buffer pointer (advanced by call)
@@ -47,8 +47,8 @@ namespace Hypertable {
        */
       void decode(const uint8_t **bufp, size_t *remainp,
                   uint16_t definition_version) override;
-      virtual const String name();
-      virtual void display(std::ostream &os);
+      const String name() override;
+      void display(std::ostream &os) override;
 
       String location;
       int64_t range_id {};
@@ -70,7 +70,7 @@ namespace Hypertable {
       
     };
 
-  } // namespace MetaLog
-} // namespace Hypertable
+  }
+}
 
-#endif // HYPERTABLE_METALOGENTITYTASKACKNOWLEDGERELINQUISH_H
+#endif // Hypertable_RangeServer_MetaLogEntityTaskAcknowledgeRelinquish_h

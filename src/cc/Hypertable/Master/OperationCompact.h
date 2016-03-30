@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -62,67 +62,23 @@ namespace Hypertable {
     /// Destructor.
     virtual ~OperationCompact() { }
 
-    /** Carries out the manual compaction operation.
-     * This method carries out the operation via the following states:
-     *
-     * <table>
-     * <tr>
-     * <th>State</th>
-     * <th>Description</th>
-     * </tr>
-     * <tr>
-     * <td>INITIAL</td>
-     * <td><ul>
-     * <li>If a table name was supplied, it maps it to a table identifier (#m_id)</li>
-     * <li>If supplied table name not found in name map, completes with
-     * Error::TABLE_NOT_FOUND</li>
-     * <li>Otherwise, sets dependencies to Dependency::METADATA and transitions
-     * to SCAN_METADATA</li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td>SCAN_METADATA</td>
-     * <td><ul>
-     * <li>Scans the METADATA table and populates #m_servers to hold the set
-     * of servers that hold the table to be compacted which are not in the
-     * #m_completed set.  If no table name was supplied, then #m_servers is
-     * set to all available servers which are not in the #m_completed set</li>
-     * <li>Dependencies are set to server names in #m_servers</li>
-     * <li>Transitions to the ISSUE_REQUESTS state</li>
-     * <li>Persists operation to MML and returns</li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td>ISSUE_REQUESTS</td>
-     * <td><ul>
-     * <li>Issues a compact request to all servers in #m_servers and waits
-     * for their completion</li>
-     * <li>If there are any errors, for each server that was successful or
-     * returned with Error::TABLE_NOT_FOUND,
-     * the server name is added to #m_completed.  Dependencies are then set back
-     * to just Dependency::METADATA, the state is reset back to SCAN_METADATA,
-     * the operation is persisted to the MML, and the method returns</li>
-     * <li>Otherwise state is transitioned to COMPLETED</li>
-     * </ul></td>
-     * </tr>
-     * </table>
-     */
-    virtual void execute();
+    /** Carries out the manual compaction operation. */
+    void execute() override;
 
     /** Returns name of operation ("OperationCompact")
      * @return %Operation name
      */
-    virtual const std::string name();
+    const std::string name() override;
 
     /** Returns descriptive label for operation
      * @return Descriptive label for operation
      */
-    virtual const std::string label();
+    const std::string label() override;
 
     /** Writes human readable representation of object to output stream.
      * @param os Output stream
      */
-    virtual void display_state(std::ostream &os);
+    void display_state(std::ostream &os) override;
 
     uint8_t encoding_version_state() const override;
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -42,6 +42,8 @@ static int s_no_mmap = 1;
 #endif
 
 #include "bmz-internal.h"
+
+#pragma GCC diagnostic ignored "-Wpedantic"
 
 #ifdef _MSC_VER
 #pragma warning( push )

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -71,6 +71,91 @@ OperationDropTable::OperationDropTable(ContextPtr &context, EventPtr &event)
   m_dependencies.insert(Dependency::INIT);
 }
 
+/// @detail
+/// This method carries out the operation via the following states:
+///
+/// <table>
+/// <tr>
+/// <th>State</th>
+/// <th>Description</th>
+/// </tr>
+/// <tr>
+/// <td>INITIAL</td>
+/// <td><ul>
+/// <li>Gets table ID from %Hyperspace and stores it in #m_id.  If mapping
+/// does not exist in %Hyperspace, then if the <i>if exists</i> parameter is
+/// <i>true</i> it completes successfully, otherwise it completes with error
+/// Error::TABLE_NOT_FOUND</li>
+/// <li>Transitions to DROP_VALUE_INDEX</li>
+/// <li>Persists self to MML and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>DROP_VALUE_INDEX</td>
+/// <td><ul>
+/// <li>If value index is not specified in #m_parts or the value index table
+///     does not exist in Hyperspace, state is transitioned to
+///     DROP_QUALIFIER_INDEX and function drops through to next state</li>
+/// <li>Creates OperationDropTable sub operation for value index table</li>
+/// <li>Stages sub operation with call to stage_subop()</li>
+/// <li>Transitions to state DROP_QUALIFIER_INDEX</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </tr>
+/// <tr>
+/// <td>DROP_QUALIFIER_INDEX</td>
+/// <td><ul>
+/// <li>Handles result of value index dropping sub operation with a call to
+///     validate_subops(), returning if it failed</li>
+/// <li>If qualifier index is not specified in #m_parts or the qualifier
+///     index table does not exist in Hyperspace, state is transitioned to
+///     UPDATE_HYPERSPACE, state is persisted with a call to record_state(),
+///     then drops through to next state</li>
+/// <li>Creates OperationDropTable sub operation for the qualifier index
+///     table</li>
+/// <li>Stages sub operation with call to stage_subop()</li>
+/// <li>Transitions to state UPDATE_HYPERSPACE</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </tr>
+/// <tr>
+/// <td>UPDATE_HYPERSPACE</td>
+/// <td><ul>
+/// <li>Handles result of qualifier index dropping sub operation with a call
+///     to validate_subops(), returning if it failed</li>
+/// <li>Drops the name/id mapping for table in %Hyperspace</li>
+/// <li>Removes the table directory from the brokered FS</li>
+/// <li>Dependencies set to Dependency::METADATA and "<table-id> move range",
+/// the latter causing the drop table operation to wait for all in-progress
+/// MoveRange operations on the table to complete</li>
+/// <li>Transitions to SCAN_METADATA state</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>SCAN_METADATA</td>
+/// <td><ul>
+/// <li>Scans the METADATA table and populates #m_servers to hold the set
+/// of servers that hold the table to be dropped which are not in the
+/// #m_completed set.</li>
+/// <li>Dependencies are set to server names in #m_servers</li>
+/// <li>Transitions to ISSUE_REQUESTS state</li>
+/// <li>Persists self to MML and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>ISSUE_REQUESTS</td>
+/// <td><ul>
+/// <li>Issues a drop table request to all servers in #m_servers and waits
+/// for their completion</li>
+/// <li>If there are any errors, for each server that was successful or
+/// returned with Error::TABLE_NOT_FOUND,
+/// the server name is added to #m_completed.  Dependencies are then set back
+/// to METADATA and #m_id + " move range", the state is reset
+/// back to SCAN_METADATA, the operation is persisted to the MML, and the
+/// method returns</li>
+/// <li>Otherwise the table is purged from the monitoring subsystem and state
+/// is transitioned to COMPLETED</li>
+/// </ul></td>
+/// </tr>
 void OperationDropTable::execute() {
   String index_id;
   String qualifier_index_id;

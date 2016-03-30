@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2015 Hypertable, Inc.
+# Copyright (C) 2007-2016 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -27,6 +27,16 @@ endif ()
 set(Common_SRCS
 Base64.cc
 Checksum.cc
+ClusterDefinition.cc
+ClusterDefinitionFile/Compiler.cc
+ClusterDefinitionFile/ToJson.cc
+ClusterDefinitionFile/Token.cc
+ClusterDefinitionFile/Tokenizer.cc
+ClusterDefinitionFile/TokenizerTools.cc
+ClusterDefinitionFile/TranslatorCode.cc
+ClusterDefinitionFile/TranslatorRole.cc
+ClusterDefinitionFile/TranslatorTask.cc
+ClusterDefinitionFile/TranslatorVariable.cc
 Config.cc
 ConsoleOutputSquelcher.cc
 Cronolog.cc
@@ -92,6 +102,9 @@ target_link_libraries(Base64_test HyperCommon)
 add_executable(Crypto_test tests/Crypto_test.cc)
 target_link_libraries(Crypto_test HyperCommon)
 
+add_executable(directory_test tests/directory_test.cc)
+target_link_libraries(directory_test HyperCommon)
+
 add_executable(exception_test tests/exception_test.cc)
 target_link_libraries(exception_test HyperCommon)
 
@@ -103,8 +116,15 @@ target_link_libraries(HostSpecification_test HyperCommon)
 configure_file(${SRC_DIR}/tests/HostSpecification_test.golden
                ${DST_DIR}/HostSpecification_test.golden)
 
+add_executable(ClusterDefinition_test tests/ClusterDefinition_test.cc)
+target_link_libraries(ClusterDefinition_test HyperCommon)
+configure_file(${SRC_DIR}/tests/ClusterDefinition_test.golden
+               ${DST_DIR}/ClusterDefinition_test.golden)
+
 add_executable(logging_test tests/logging_test.cc)
 target_link_libraries(logging_test HyperCommon)
+
+add_subdirectory(ClusterDefinitionFile)
 
 # serialization tests
 add_executable(Serializable_test tests/Serializable_test.cc)
@@ -199,6 +219,7 @@ configure_file(${SRC_DIR}/tests/failure_inducer_test.golden
 add_test(Common-Exception exception_test)
 add_test(Common-Exception escaper_test)
 add_test(Common-HostSpecification HostSpecification_test)
+add_test(Common-ClusterDefinition ClusterDefinition_test)
 add_test(Common-Logging logging_test)
 add_test(Common-Serializable Serializable_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/Serializable_test.golden)
 add_test(Common-Serialization sertest)
@@ -209,6 +230,7 @@ add_test(Common-Config config_test)
 add_test(Common-Crontab env bash -c "${CMAKE_CURRENT_BINARY_DIR}/crontab_test > crontab_test.output; diff crontab_test.output ${CMAKE_CURRENT_SOURCE_DIR}/tests/crontab_test.golden")
 add_test(Common-Base64 Base64_test)
 add_test(Common-Crypto Crypto_test)
+add_test(Common-directory directory_test ${CMAKE_CURRENT_SOURCE_DIR}/tests/directory_test.golden)
 add_test(Common-Properties ${TEST_DIFF}
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/properties_test.golden ./properties_test)
 add_test(Common-init ${TEST_DIFF}

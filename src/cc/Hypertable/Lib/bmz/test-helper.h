@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -24,6 +24,8 @@
 #ifdef _WIN32
 #include <sys/timeb.h>
 #endif
+
+#pragma GCC diagnostic ignored "-Wpedantic"
 
 #define HT_MEASURE(_t_, _code_) do { \
   double t0 = ht_time_d(); _code_; _t_ = ht_time_d() - t0; \

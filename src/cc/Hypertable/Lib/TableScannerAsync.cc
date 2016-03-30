@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -104,8 +104,6 @@ bool TableScannerAsync::use_index(Table *table, const ScanSpec &primary_spec,
     return false;
 
   index_spec.set_keys_only(true);
-  index_spec.set_start_time(primary_spec.time_interval.first);
-  index_spec.set_end_time(primary_spec.time_interval.second);
   index_spec.add_column("v1");
 
   cell_predicates.resize(256);

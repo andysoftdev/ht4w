@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -63,13 +63,13 @@ namespace Hypertable {
         m_data.append(buf);
       }
       EntityGeneric(const EntityHeader &header_) : Entity(header_) { m_name = String("GenericEntity") + header_.type; }
-      virtual const String name() { return m_name; }
-      virtual void display(ostream &os) { os << "value=" << m_value; }
+      const String name() override { return m_name; }
+      void display(ostream &os) override { os << "value=" << m_value; }
       void increment() { m_value++; }
       void set_value(int32_t value) { m_value = value; }
 
-      virtual void decode(const uint8_t **bufp, size_t *remainp,
-                          uint16_t definition_version) {
+      void decode(const uint8_t **bufp, size_t *remainp,
+                  uint16_t definition_version) override {
         Entity::decode(bufp, remainp);
       }
 

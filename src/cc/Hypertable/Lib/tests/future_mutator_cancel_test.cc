@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -115,7 +115,8 @@ int main(int argc, char **argv) {
       ns->create_table("FutureTest", schema);
       table_ptr = ns->open_table("FutureTest");
 
-      for(size_t ii=0; ii<num_mutators; ++ii)
+      size_t ii;
+      for(ii=0; ii<num_mutators; ++ii)
         mutator_ptrs.push_back(TableMutatorAsyncPtr(table_ptr->create_mutator_async(&ff)));
 
       key.column_family = "data";
@@ -123,7 +124,7 @@ int main(int argc, char **argv) {
       key.column_qualifier_len = 0;
 
       size_t cells=0;
-      size_t ii=0;
+      ii=0;
       while(true) {
         for (size_t jj=0; jj < num_mutators; ++jj) {
           load_buffer_with_random(buf, 10);

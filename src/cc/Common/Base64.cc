@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -42,6 +42,9 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 using namespace Hypertable;
 
@@ -110,3 +113,5 @@ const string Base64::decode(const string &message, bool newlines) {
 
   return decoded_message;
 }
+
+#pragma clang diagnostic pop

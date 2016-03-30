@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_OPERATIONRECOVERRANGES_H
-#define HYPERTABLE_OPERATIONRECOVERRANGES_H
+#ifndef Hypertable_Master_OperationRecoverRanges_h
+#define Hypertable_Master_OperationRecoverRanges_h
 
 #include "Operation.h"
 
@@ -41,16 +41,16 @@ namespace Hypertable {
     OperationRecoverRanges(ContextPtr &context,
             const MetaLog::EntityHeader &header_);
 
-    virtual void execute();
-    virtual const String name();
-    virtual const String label();
-    virtual void display_state(std::ostream &os);
+    void execute() override;
+    const String name() override;
+    const String label() override;
+    void display_state(std::ostream &os) override;
     uint8_t encoding_version_state() const override;
     size_t encoded_length_state() const override;
     void encode_state(uint8_t **bufp) const override;
     void decode_state(uint8_t version, const uint8_t **bufp, size_t *remainp) override;
     void decode_state_old(uint8_t version, const uint8_t **bufp, size_t *remainp) override;
-    virtual void decode_request(const uint8_t **bufp, size_t *remainp);
+    void decode_request(const uint8_t **bufp, size_t *remainp);
 
   private:
     // make sure all recovery participants are available
@@ -78,6 +78,6 @@ namespace Hypertable {
     time_t m_last_notification {};
   };
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_OPERATIONRECOVERRANGES_H
+#endif // Hypertable_Master_OperationRecoverRanges_h

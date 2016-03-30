@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -64,6 +64,32 @@ OperationSetState::OperationSetState(ContextPtr &context, EventPtr &event)
   m_exclusivities.insert("SET VARIABLES");
 }
 
+/** @detail
+ * This method transitions through the following states:
+ *
+ * <table>
+ * <tr>
+ * <th>State</th>
+ * <th>Description</th>
+ * </tr>
+ * <tr>
+ * <td>INITIAL</td>
+ * <td><ul>
+ * <li>Fetches and delivers admin notifications from the SystemState object</li>
+ * <li>Fetches the variables specs with a call to SystemState::get()</li>
+ * <li>Transitions to the STARTED state</li>
+ * <li>Persists operation and the SystemState object in the MML</li>
+ * </ul></td>
+ * </tr>
+ * <tr>
+ * <td>STARTED</td>
+ * <td><ul>
+ * <li>Variable specs obtained in the INITIAL state are passed to all range
+ * servers via a call to RangeServer::set_state().</li>
+ * <li>Transitions to the COMPLETED state</li>
+ * </ul></td>
+ * </tr>
+ */
 void OperationSetState::execute() {
   int32_t state = get_state();
   DispatchHandlerOperationSetState dispatch_handler(m_context);

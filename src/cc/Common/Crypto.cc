@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -41,6 +41,9 @@ extern "C" {
 }
 
 using namespace Hypertable;
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 namespace {
 
@@ -235,3 +238,5 @@ const string Crypto::rsa_signature_decrypt(const char *key, bool key_is_public,
   delete [] buf;
   return decrypted_message;
 }
+
+#pragma clang diagnostic pop

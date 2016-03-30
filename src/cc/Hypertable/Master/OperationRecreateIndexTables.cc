@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -72,6 +72,81 @@ OperationRecreateIndexTables::OperationRecreateIndexTables(ContextPtr &context, 
   m_exclusivities.insert(m_params.name());
 }
 
+/// @detail
+/// This method carries out the operation via the following states:
+///
+/// <table>
+/// <tr>
+/// <th>State</th>
+/// <th>Description</th>
+/// </tr>
+/// <tr>
+/// <td>INITIAL</td>
+/// <td><ul>
+/// <li>Reads table schema from Hyperspace</li>
+/// <li>Combines information about existing index tables with the specified
+///     index tables passed in via #m_parts and stores the result to
+///     #m_parts</li>
+/// <li>If no index tables are specified after previous step,
+///     complete_error() is called with Error::NOTHING_TO_DO</li>
+/// <li>State is transitioned to SUSPEND_TABLE_MAINTENANCE</li>
+/// <li>Persists operation to MML and drops through</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>SUSPEND_TABLE_MAINTENANCE</td>
+/// <td><ul>
+/// <li>Creates OperationToggleMaintenance sub operation to turn maintenance
+///     off</li>
+/// <li>Stages sub operation with a call to stage_subop()</li>
+/// <li>Transition state to DROP_INDICES</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>DROP_INDICES</td>
+/// <td><ul>
+/// <li>Handles result of toggle maintenance sub operation with a call to
+///     validate_subops(), returning on failure</li>
+/// <li>Creates OperationDropTable sub operation to drop index tables</li>
+/// <li>Stages sub operation with a call to stage_subop()</li>
+/// <li>Transition state to CREATE_INDICES</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>CREATE_INDICES</td>
+/// <td><ul>
+/// <li>Handles result of drop table sub operation with a call to
+///     validate_subops(), returning on failure</li>
+/// <li>Fetches schema from Hyperspace and creates an OperationCreateTable
+///     sub operation to create index tables</li>
+/// <li>Stages sub operation with a call to stage_subop()</li>
+/// <li>Transition state to RESUME_TABLE_MAINTENANCE</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>RESUME_TABLE_MAINTENANCE</td>
+/// <td><ul>
+/// <li>Handles result of create table sub operation with a call to
+///     validate_subops(), returning on failure</li>
+/// <li>Creates OperationToggleMaintenance sub operation to turn maintenance
+///     back on</li>
+/// <li>Stages sub operation with a call to stage_subop()</li>
+/// <li>Transition state to FINALIZE</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>FINALIZE</td>
+/// <td><ul>
+/// <li>Handles result of toggle table maintenance sub operation with a call
+///     to validate_subops(), returning on failure</li>
+/// <li>%Operation is completed with a call to complete_ok()</li>
+/// </ul></td>
+/// </tr>
+/// </table>
 void OperationRecreateIndexTables::execute() {
   std::vector<Entity *> entities;
   int32_t state = get_state();

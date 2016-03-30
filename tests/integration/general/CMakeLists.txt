@@ -14,3 +14,7 @@ add_test(HQL-incompatible-column-options
 add_test(HQL-delete
          env INSTALL_DIR=${INSTALL_DIR}
          ${CMAKE_CURRENT_SOURCE_DIR}/hql-delete-test.sh)
+
+add_test(HQL-cellcache-delete-issue
+         env INSTALL_DIR=${INSTALL_DIR}
+         ${CMAKE_CURRENT_SOURCE_DIR}/hql-cellcache-delete-issue.sh)

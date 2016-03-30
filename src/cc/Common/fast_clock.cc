@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -41,7 +41,7 @@ chrono::fast_clock::time_point chrono::fast_clock::now() noexcept {
 }
 
 time_t chrono::fast_clock::to_time_t (const chrono::fast_clock::time_point& __t) noexcept {
-  return (time_t)(__t.time_since_epoch().count() % 1000000LL);
+  return (time_t)(__t.time_since_epoch().count() / 1000000LL);
 }
 
 chrono::fast_clock::time_point chrono::fast_clock::from_time_t(time_t __t) noexcept {

@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -135,12 +135,12 @@ namespace Hypertable {
     /** Return name of entity.
      * @return Name of entity.
      */
-    virtual const String name() { return "SystemState"; }
+    const String name() override { return "SystemState"; }
 
     /** Return textual representation of entity state.
      * @param os Output stream on which to write state string
      */
-    virtual void display(std::ostream &os);
+    void display(std::ostream &os) override;
 
     /** Decodes system state.
      * See encode_state() for format description.

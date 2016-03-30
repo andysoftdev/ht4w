@@ -19,25 +19,25 @@
 var net = require('net');
 var tls = require('tls');
 
-var ttransport = require('./transport'),
-    TBinaryProtocol = require('./protocol').TBinaryProtocol;
+var TBufferedTransport = require('./buffered_transport');
+var TBinaryProtocol = require('./binary_protocol');
+var InputBufferUnderrunError = require('./input_buffer_underrun_error');
 
-
-/** 
- * Create a Thrift server which can serve one or multiple services. 
+/**
+ * Create a Thrift server which can serve one or multiple services.
  * @param {object} processor - A normal or multiplexedProcessor (must
  *                             be preconstructed with the desired handler).
  * @param {ServerOptions} options - Optional additional server configuration.
- * @returns {object} - The Apache Thrift Multipled Server.
+ * @returns {object} - The Apache Thrift Multiplex Server.
  */
 exports.createMultiplexServer = function(processor, options) {
-  var transport = (options && options.transport) ? options.transport : ttransport.TBufferedTransport;
+  var transport = (options && options.transport) ? options.transport : TBufferedTransport;
   var protocol = (options && options.protocol) ? options.protocol : TBinaryProtocol;
 
   function serverImpl(stream) {
     var self = this;
-    stream.on('error', function(err) { 
-        self.emit('error', err); 
+    stream.on('error', function(err) {
+        self.emit('error', err);
     });
     stream.on('data', transport.receiver(function(transportWithData) {
       var input = new protocol(transportWithData);
@@ -56,7 +56,7 @@ exports.createMultiplexServer = function(processor, options) {
           transportWithData.commitPosition();
         } while (true);
       } catch (err) {
-        if (err instanceof ttransport.InputBufferUnderrunError) {
+        if (err instanceof InputBufferUnderrunError) {
           //The last data in the buffer was not a complete message, wait for the rest
           transportWithData.rollbackPosition();
         }
@@ -85,19 +85,19 @@ exports.createMultiplexServer = function(processor, options) {
       stream.end();
     });
   }
-  
-  if (options.tls) {
+
+  if (options && options.tls) {
     return tls.createServer(options.tls, serverImpl);
   } else {
     return net.createServer(serverImpl);
   }
 };
 
-/** 
- * Create a single service Apache Thrift server. 
+/**
+ * Create a single service Apache Thrift server.
  * @param {object} processor - A service class or processor function.
  * @param {ServerOptions} options - Optional additional server configuration.
- * @returns {object} - The Apache Thrift Multipled Server.
+ * @returns {object} - The Apache Thrift Multiplex Server.
  */
 exports.createServer = function(processor, handler, options) {
   if (processor.Processor) {

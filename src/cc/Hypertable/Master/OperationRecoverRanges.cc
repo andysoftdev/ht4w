@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -50,6 +50,7 @@ OperationRecoverRanges::OperationRecoverRanges(ContextPtr &context,
   : Operation(context, MetaLog::EntityType::OPERATION_RECOVER_SERVER_RANGES),
     m_location(location), m_type(type) {
   HT_ASSERT(type != RangeSpec::UNKNOWN);
+  set_type_str();
   initialize_obstructions_dependencies();
 }
 
@@ -301,6 +302,7 @@ void OperationRecoverRanges::decode_state(uint8_t version, const uint8_t **bufp,
                                           size_t *remainp) {
   m_location = Serialization::decode_vstr(bufp, remainp);
   m_type = Serialization::decode_i32(bufp, remainp);
+  set_type_str();
   m_plan_generation = Serialization::decode_i32(bufp, remainp);
   m_plan.decode(bufp, remainp);
 }
@@ -315,6 +317,7 @@ void OperationRecoverRanges::decode_state_old(uint8_t version, const uint8_t **b
     m_obstructions_permanent.insert(parent_dependency);
   }
   m_type = Serialization::decode_i32(bufp, remainp);
+  set_type_str();
   m_plan_generation = Serialization::decode_i32(bufp, remainp);
   legacy_decode(bufp, remainp, &m_plan);
 }

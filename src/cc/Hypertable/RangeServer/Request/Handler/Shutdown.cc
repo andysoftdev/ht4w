@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -39,7 +39,12 @@ using namespace std;
 
 void Shutdown::run() {
   ResponseCallback cb(m_comm, m_event);
-  m_range_server->shutdown();
+  try {
+    m_range_server->shutdown();
+  }
+  catch (Exception &e) {
+    HT_ERROR_OUT << "Shutdown " << e << HT_END;
+  }
   cb.response_ok();
   this_thread::sleep_for(chrono::milliseconds(2000));
   HT_INFO("Exiting RangeServer.");

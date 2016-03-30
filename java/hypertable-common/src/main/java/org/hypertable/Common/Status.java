@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -87,7 +87,7 @@ public class Status extends Serializable {
    * This function is to be overridden by derived classes and should return
    * the length of the the serialized object per-se.
    * @return Internal serialized length
-   * @see encodeInternal() for encoding format
+   * @see #encodeInternal(ByteBuffer) encodeInternal
    */
   protected int encodedLengthInternal() throws UnsupportedEncodingException {
     return 4 + Serialization.EncodedLengthVStr(mText);
@@ -108,7 +108,7 @@ public class Status extends Serializable {
    * the object per-se as encoded with encodeInternal().
    * @param version Encoding version
    * @param buf ByteBuffer source
-   * @see encodeInternal() for encoding format
+   * @see #encodeInternal(ByteBuffer) encodeInternal
    */
   protected void decodeInternal(byte version, ByteBuffer buf) throws ProtocolException, DataFormatException, UnsupportedEncodingException {
     mCode = Code.values()[buf.getInt()];

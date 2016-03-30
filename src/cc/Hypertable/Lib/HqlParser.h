@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -1707,7 +1707,7 @@ namespace Hypertable {
             if (!ci.empty())
               HT_THROW(Error::HQL_PARSE_ERROR, "Bad cell expression");
             ci.set_start(row, column, true);
-            column.append(1, 0xff);
+            column.append(1, static_cast<char>(0xff));
             ci.set_end(row, column, false);
             break;
           }

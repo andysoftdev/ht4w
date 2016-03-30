@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -19,8 +19,8 @@
  * 02110-1301, USA.
  */
 
-#ifndef HYPERTABLE_CELLSTOREV0_H
-#define HYPERTABLE_CELLSTOREV0_H
+#ifndef Hypertable_RangeServer_CellStoreV0_h
+#define Hypertable_RangeServer_CellStoreV0_h
 
 #include <map>
 #include <string>
@@ -58,48 +58,47 @@ namespace Hypertable {
     CellStoreV0(Filesystem *filesys);
     virtual ~CellStoreV0();
 
-    virtual void create(const char *fname, size_t max_entries,
-                        PropertiesPtr &props,
-                        const TableIdentifier *table_id=0);
-    virtual void add(const Key &key, const ByteString value);
-    virtual void finalize(TableIdentifier *table_identifier);
-    virtual void open(const String &fname, const String &start_row,
-                      const String &end_row, int32_t fd, int64_t file_length,
-                      CellStoreTrailer *trailer);
-    virtual int64_t get_blocksize() { return m_trailer.blocksize; }
-    virtual bool may_contain(const void *ptr, size_t len);
+    void create(const char *fname, size_t max_entries, PropertiesPtr &props,
+                const TableIdentifier *table_id=0) override;
+    void add(const Key &key, const ByteString value) override;
+    void finalize(TableIdentifier *table_identifier) override;
+    void open(const String &fname, const String &start_row,
+              const String &end_row, int32_t fd, int64_t file_length,
+              CellStoreTrailer *trailer) override;
+    int64_t get_blocksize() override { return m_trailer.blocksize; }
+    bool may_contain(const void *ptr, size_t len);
     bool may_contain(const String &key) {
       return may_contain(key.data(), key.size());
     }
 
     bool may_contain(ScanContext *scan_ctx) override;
 
-    virtual uint64_t disk_usage() {
+    uint64_t disk_usage() override {
       if (m_disk_usage < 0)
         HT_WARN_OUT << "[Issue 339] Disk usage for " << m_filename << "=" << m_disk_usage
                     << HT_END;
       return m_disk_usage;
     }
-    virtual float compression_ratio() { return m_trailer.compression_ratio; }
-    virtual int64_t get_total_entries() { return m_trailer.total_entries; }
-    virtual std::string &get_filename() { return m_filename; }
-    virtual int get_file_id() { return m_file_id; }
+    float compression_ratio() override { return m_trailer.compression_ratio; }
+    int64_t get_total_entries() override { return m_trailer.total_entries; }
+    std::string &get_filename() override { return m_filename; }
+    int get_file_id() override { return m_file_id; }
     CellListScannerPtr create_scanner(ScanContext *scan_ctx) override;
-    virtual BlockCompressionCodec *create_block_compression_codec();
-    virtual void display_block_info();
-    virtual int64_t end_of_last_block() { return m_trailer.fix_index_offset; }
-    virtual size_t bloom_filter_size() { return m_bloom_filter ? m_bloom_filter->size() : 0; }
-    virtual int64_t bloom_filter_memory_used() { return 0; }
-    virtual int64_t block_index_memory_used() { return 0; }
-    virtual uint64_t purge_indexes() { return 0; }
-    virtual bool restricted_range() { return true; }
+    BlockCompressionCodec *create_block_compression_codec() override;
+    void display_block_info() override;
+    int64_t end_of_last_block() override { return m_trailer.fix_index_offset; }
+    size_t bloom_filter_size() override { return m_bloom_filter ? m_bloom_filter->size() : 0; }
+    int64_t bloom_filter_memory_used() override { return 0; }
+    int64_t block_index_memory_used() override { return 0; }
+    uint64_t purge_indexes() override { return 0; }
+    bool restricted_range() override { return true; }
 
-    virtual int32_t get_fd() {
+    int32_t get_fd() override {
       std::lock_guard<std::mutex> lock(m_mutex);
       return m_fd;
     }
 
-    virtual int32_t reopen_fd() {
+    int32_t reopen_fd() override {
       std::lock_guard<std::mutex> lock(m_mutex);
       if (m_fd != -1)
         m_filesys->close(m_fd);
@@ -107,9 +106,9 @@ namespace Hypertable {
       return m_fd;
     }
 
-    virtual CellStoreTrailer *get_trailer() { return &m_trailer; }
+    CellStoreTrailer *get_trailer() override { return &m_trailer; }
 
-    virtual uint16_t block_header_format();
+    uint16_t block_header_format() override;
 
   protected:
     void add_index_entry(const SerializedKey key, uint32_t offset);
@@ -149,6 +148,6 @@ namespace Hypertable {
     uint32_t               m_max_approx_items;
   };
 
-} // namespace Hypertable
+}
 
-#endif // HYPERTABLE_CELLSTOREV0_H
+#endif // Hypertable_RangeServer_CellStoreV0_h

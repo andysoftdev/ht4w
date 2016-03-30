@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+/* -*- c++ -*-
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -72,6 +72,12 @@ namespace Hypertable {
     friend class ReactorFactory;
 
   public:
+
+    /** Enumeration for reactor priority */
+    enum class Priority {
+      HIGH = 0, //< High
+      NORMAL    //< Normal
+    };
 
     /** Constructor.
      * Initializes polling interface and creates interrupt socket.

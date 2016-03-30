@@ -75,12 +75,12 @@
 # DEJAGNU_VERSION
 #
 # They are each set in one place in the code below.  For example, to
-# install gcc 4.9 when it comes out, one would either change the value
+# install gcc 5.3.0 when it comes out, one would either change the value
 # of the global variable GCC_VERSION set below in set_gcc_release_vars
 # or do the following:
 #
 # . ./package_gcc.bash
-# GCC_VERSION=4.9
+# GCC_VERSION=5.3.0
 #
 # and then call the appropriate function, e.g., package_gcc_all.  Of
 # course, one should also check to see if ISL_VERSION and
@@ -172,11 +172,11 @@ function set_gcc_release_vars()
 {
   GCC_NAME=gcc
   # The following variable specifies the GCC version
-  GCC_VERSION=${GCC_VERSION:=4.8.2}
+  GCC_VERSION=${GCC_VERSION:=5.3.0}
   # The following two variables specify versions of support libraries
   # used in building GCC.  These should be checked for any new version
   # of GCC at http://gcc.gnu.org/install/prerequisites.html.
-  ISL_VERSION=${ISL_VERSION:=0.12.2}
+  ISL_VERSION=${ISL_VERSION:=0.15}
   CLOOG_VERSION=${CLOOG_VERSION:=0.18.1}
 
   ISL=isl-$ISL_VERSION

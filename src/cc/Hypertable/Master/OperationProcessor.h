@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -43,8 +43,10 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <fstream>
 #include <list>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 
@@ -239,6 +241,7 @@ namespace Hypertable {
 
     ThreadContext m_context;
     ThreadGroup m_threads;
+    std::unique_ptr<std::ofstream> m_graphviz_out;
   };
 
   /** @} */

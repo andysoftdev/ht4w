@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -22,48 +22,71 @@
 
 package org.hypertable.Common;
 
-import java.io.InputStream;
-import java.io.IOException;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.CharBuffer;
 
 public class FileUtils {
 
-    // Returns the contents of the file in a byte array.
-    public static byte[] FileToBuffer(File file) throws IOException {
-        InputStream is = new FileInputStream(file);
+  /** Returns the contents of the file in a byte array. */
+  public static byte[] FileToBuffer(File file) throws IOException {
+    InputStream is = new FileInputStream(file);
 
-        // Get the size of the file
-        long length = file.length();
+    // Get the size of the file
+    long length = file.length();
 
-        // You cannot create an array using a long type.
-        // It needs to be an int type.
-        // Before converting to an int type, check
-        // to ensure that file is not larger than Integer.MAX_VALUE.
-        if (length > Integer.MAX_VALUE) {
-            // File is too large
-        }
-
-        // Create the byte array to hold the data
-        byte[] bytes = new byte[(int)length];
-
-        // Read in the bytes
-        int offset = 0;
-        int numRead = 0;
-        while (offset < bytes.length
-               && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
-            offset += numRead;
-        }
-
-        // Ensure all the bytes have been read in
-        if (offset < bytes.length) {
-            throw new IOException("Could not completely read file "
-                                  + file.getName());
-        }
-
-        // Close the input stream and return bytes
-        is.close();
-
-        return bytes;
+    // You cannot create an array using a long type.
+    // It needs to be an int type.
+    // Before converting to an int type, check
+    // to ensure that file is not larger than Integer.MAX_VALUE.
+    if (length > Integer.MAX_VALUE) {
+      throw new IOException("File too long - " + file);
     }
+
+    // Create the byte array to hold the data
+    byte[] bytes = new byte[(int)length];
+
+    // Read in the bytes
+    int offset = 0;
+    int numRead = 0;
+    while (offset < bytes.length
+           && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
+      offset += numRead;
+    }
+
+    // Ensure all the bytes have been read in
+    if (offset < bytes.length) {
+      throw new IOException("Could not completely read file "
+                            + file.getName());
+    }
+
+    // Close the input stream and return bytes
+    is.close();
+
+    return bytes;
+  }
+
+  /** Returns the contents of the file in a CharBuffer */
+  public static CharBuffer fileToCharBuffer(File file) throws IOException {
+    long length = file.length();
+
+    if (length > Integer.MAX_VALUE)
+      throw new IOException("File too long - " + file);
+
+    CharBuffer cbuf = CharBuffer.allocate((int)length*2);
+    Reader rdr = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+
+    int nread;
+    while((nread = rdr.read(cbuf)) != -1)
+      ;
+    rdr.close();
+    cbuf.flip();
+    return cbuf;
+  }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -73,6 +73,129 @@ OperationCreateTable::OperationCreateTable(ContextPtr &context, EventPtr &event)
   m_dependencies.insert(Dependency::SYSTEM);
 }
 
+/// @detail
+/// This method carries out the operation via the states described below.
+/// If #m_parts indicates that the primary table is not being created and
+/// the entry state is INITIAL, the state is set to CREATE_INDEX.
+///
+/// <table>
+/// <tr>
+/// <th>State</th>
+/// <th>Description</th>
+/// </tr>
+/// <tr>
+/// <td>INITIAL</td>
+/// <td><ul>
+/// <li>Verifies that a table with the same name does not already exist in
+///     Hyperspace and completes with error Error::NAME_ALREADY_IN_USE if it
+///     does.</li>
+/// <li>Obtains current timestamp and uses it as the schema generation
+///     number.</li>
+/// <li>Transitions to state ASSIGN_ID</li>
+/// <li>Persists operation to MML and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>ASSIGN_ID</td>
+/// <td><ul>
+/// <li>Creates table in Hyperspace</li>
+/// <li>Updates #m_parts to reflect indices that actually exist in the
+///     schema</li>
+/// <li>Transitions to the CREATE_INDEX</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>CREATE_INDEX</td>
+/// <td><ul>
+/// <li>If value index not specified in #m_parts, state is transitioned to
+///     CREATE_QUALIFIER_INDEX
+/// <br>... otherwise ...</li>
+/// <li>Prepares the value index with call to Utility::prepare_index()</li>
+/// <li>Creates OperationCreateTable sub operation for value index table</li>
+/// <li>Stages sub operation with call to stage_subop()</li>
+/// <li>Transitions to state CREATE_QUALIFIER_INDEX</li>
+/// <li>Persists operation with call to record_state() and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>CREATE_QUALIFIER_INDEX</td>
+/// <td><ul>
+/// <li>Handles result of value index sub operation with a call to
+///     validate_subops(), returning if it failed</li>
+/// <li>If qualifier index not specified in #m_parts, state is transitioned
+///     to WRITE_METADATA, the operation is persisted to the MML, and drops
+///     through to the next state.
+/// <br>... otherwise ...</li>
+/// <li>Prepares the qualifier index with call to
+///     Utility::prepare_index()</li>
+/// <li>Creates OperationCreateTable sub operation for qualifier index
+///     table</li>
+/// <li>Stages sub operation with call to stage_subop()</li>
+/// <li>Transitions to state WRITE_METADATA</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>WRITE_METADATA</td>
+/// <td><ul>
+/// <li>Handles result of qualifier index sub operation with a call to
+///     validate_subops(), returning on failure</li>
+/// <li>If primary table is not specified in #m_parts, complete_ok() is
+///     called and the function returns</li>
+/// <li>Utility::create_table_write_metadata() is called</li>
+/// <li>The operation's dependencies are set to SERVERS, METADATA, and
+///     SYSTEM and an obstruction ("OperationMove " + range) is added.</li>
+/// <li>Transitions to state ASSIGN_LOCATION</li>
+/// <li>Persists operation with a call to record_state() and returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>ASSIGN_LOCATION</td>
+/// <td><ul>
+/// <li>Location for initial range is obtained via
+///     BalancePlanAuthority::get_balance_destination() and stored to
+///     #m_location</li>
+/// <li>The operation's dependencies are set to METADATA, and SYSTEM and an
+///     obstruction ("OperationMove " + range) is added.</li>
+/// <li>Transitions to state LOAD_RANGE</li>
+/// <li>Operation is persisted to MML and function returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>LOAD_RANGE</td>
+/// <td><ul>
+/// <li>Initial range is loaded with a call to
+///     Utility::create_table_load_range()</li>
+/// <li>If an Exception is thrown during the loading of the range, it is
+///     caught, the operation sleeps for 5 seconds, the state is
+///     transitioned to ASSIGN_LOCATION, and the function returns</li>
+/// <li>Otherwise, on success the state is transitioned to ACKNOWLEDGE</li>
+/// <li>Operation is persisted to MML and function returns</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>ACKNOWLEDGE</td>
+/// <td><ul>
+/// <li>Range is acknowledged with a call to
+///     Utility::create_table_acknowledge_range()</li>
+/// <li>If an Exception is thrown during the acknowledgement of the range,
+///     it is caught, the operation sleeps for 5 seconds, then assuming that
+///     the range was moved, its new location is obtained with a call to
+///     BalancePlanAuthority::get_balance_destination() and the function
+///     returns</li>
+/// <li>Otherwise, on success the state is transitioned to FINALIZE and the
+///     function drops through to the next state</li>
+/// </ul></td>
+/// </tr>
+/// <tr>
+/// <td>FINALIZE</td>
+/// <td><ul>
+/// <li>BalancePlanAuthority::balance_move_complete() is called</li>
+/// <li>The "x" attribute is set on the table's ID file in Hyperspace</li>
+/// <li>The operation is complted with a call to complete_ok()</li>
+/// </ul></td>
+/// </tr>
+/// </table>
 void OperationCreateTable::execute() {
   RangeSpec range, index_range, qualifier_index_range;
   std::string range_name;

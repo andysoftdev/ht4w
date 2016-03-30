@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -31,15 +31,17 @@
 
 #include <Hypertable/Master/OperationInitialize.h>
 
+#include <Common/Path.h>
 #include <Common/StringExt.h>
 
 #include <boost/graph/topological_sort.hpp>
 #include <boost/graph/graphviz.hpp>
 
 #include <chrono>
-#include <unordered_map>
+#include <iomanip>
 #include <sstream>
 #include <thread>
+#include <unordered_map>
 
 using namespace Hypertable;
 using namespace boost;
@@ -58,6 +60,14 @@ OperationProcessor::ThreadContext::~ThreadContext() {
 
 OperationProcessor::OperationProcessor(ContextPtr &context, size_t thread_count)
   : m_context(context) {
+
+  if (context->props->get_bool("Hypertable.Master.RecordGraphvizStream")) {
+    Path data_dir = Path(context->props->get_str("Hypertable.DataDirectory"));
+    string run_dir = (data_dir /= "/run").string();
+    string filename = run_dir + "/graphviz-stream";
+    m_graphviz_out = std::make_unique<std::ofstream>(filename.c_str(), ofstream::out|ofstream::app);
+  }
+
   m_context.execution_order_iter = m_context.execution_order.end();
   m_context.op = this;
   Worker worker(m_context);
@@ -721,8 +731,10 @@ void OperationProcessor::recompute_order() {
   for (vp = vertices(m_context.graph); vp.first != vp.second; ++vp.first)
     put(index, *vp.first, i++);
 
-  /** uncomment for DEBUG output **/
-  //write_graphviz(std::cout, m_context.graph, make_label_writer(m_context.label));
+  if (m_graphviz_out) {
+    write_graphviz(*m_graphviz_out, m_context.graph, make_label_writer(m_context.label));
+    *m_graphviz_out << flush;
+  }
 
   m_context.execution_order.clear();
   try {

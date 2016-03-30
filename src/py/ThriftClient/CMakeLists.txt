@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2007-2015 Hypertable, Inc.
+# Copyright (C) 2007-2016 Hypertable, Inc.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -39,5 +39,14 @@ endif ()
 
 if (NOT HT_COMPONENT_INSTALL OR PACKAGE_THRIFTBROKER)
   install(DIRECTORY gen-py hypertable DESTINATION lib/py)
-  install(FILES client_test.py DESTINATION lib/py)
+  install(FILES client_test.py MANIFEST.in README.rst DESTINATION lib/py)
+  configure_file(setup.py.in ${HYPERTABLE_BINARY_DIR}/setup.py @ONLY)
+  install(FILES ${HYPERTABLE_BINARY_DIR}/setup.py DESTINATION lib/py)
+  if(CMAKE_HOST_UNIX)
+    install(CODE "
+      EXECUTE_PROCESS(COMMAND ln -sf gen-py/hyperthrift hyperthrift
+         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib/py
+         )
+      ")
+  endif(CMAKE_HOST_UNIX)
 endif ()

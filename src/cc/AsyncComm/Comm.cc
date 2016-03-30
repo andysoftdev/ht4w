@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -519,6 +519,8 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
       HT_ERRORF("setsockopt(SO_RCVBUF) failed - %s", strerror(errno));
   }
 
+  Reactor::Priority reactor_priority {Reactor::Priority::NORMAL};
+
   if (tos) {
     int opt;
 #if defined(__linux__)
@@ -530,6 +532,7 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
     opt = IPTOS_LOWDELAY;       /* see <netinet/in.h> */
     setsockopt(sd, IPPROTO_IP, IP_TOS, &opt, sizeof(opt));
 #endif
+    reactor_priority = Reactor::Priority::HIGH;
   }
 
   int bind_attempts = 0;
@@ -575,9 +578,11 @@ void Comm::create_datagram_receive_socket(CommAddress &addr, int tos,
     bind_attempts++;
   }
 
+  Reactor::Priority reactor_priority { tos ? Reactor::Priority::HIGH : Reactor::Priority::NORMAL };
+
 #endif
 
-  handler = new IOHandlerDatagram(sd, dhp);
+  handler = new IOHandlerDatagram(sd, dhp, reactor_priority);
 
   addr.set_inet( handler->get_address() );
 

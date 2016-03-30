@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -29,5 +29,10 @@ using namespace Hypertable;
 using namespace Hypertable::RangeServer::Request::Handler;
 
 void GroupCommit::run() {
-  m_range_server->group_commit();
+  try {
+    m_range_server->group_commit();
+  }
+  catch (Exception &e) {
+    HT_ERROR_OUT << "GroupCommit " << e << HT_END;
+  }
 }

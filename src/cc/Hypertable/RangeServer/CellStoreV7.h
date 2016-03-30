@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -80,20 +80,19 @@ namespace Hypertable {
     CellStoreV7(Filesystem *filesys, SchemaPtr &schema);
     virtual ~CellStoreV7();
 
-    virtual void create(const char *fname, size_t max_entries,
-                        PropertiesPtr &props,
-                        const TableIdentifier *table_id=0);
-    virtual void add(const Key &key, const ByteString value);
-    virtual void finalize(TableIdentifier *table_identifier);
-    virtual void open(const String &fname, const String &start_row,
-                      const String &end_row, int32_t fd, int64_t file_length,
-                      CellStoreTrailer *trailer);
-    virtual void rescope(const String &start_row, const String &end_row);
-    virtual int64_t get_blocksize() { return m_trailer.blocksize; }
+    void create(const char *fname, size_t max_entries, PropertiesPtr &props,
+                const TableIdentifier *table_id=0) override;
+    void add(const Key &key, const ByteString value) override;
+    void finalize(TableIdentifier *table_identifier) override;
+    void open(const String &fname, const String &start_row,
+              const String &end_row, int32_t fd, int64_t file_length,
+              CellStoreTrailer *trailer) override;
+    void rescope(const String &start_row, const String &end_row) override;
+    int64_t get_blocksize() override { return m_trailer.blocksize; }
     bool may_contain(ScanContext *scan_ctx) override;
-    virtual uint64_t disk_usage() { return m_disk_usage; }
-    virtual float compression_ratio() { return m_trailer.compression_ratio; }
-    virtual void split_row_estimate_data(SplitRowDataMapT &split_row_data);
+    uint64_t disk_usage() override { return m_disk_usage; }
+    float compression_ratio() override { return m_trailer.compression_ratio; }
+    void split_row_estimate_data(SplitRowDataMapT &split_row_data) override;
 
     /** Populates <code>scanner</code> with key/value pairs generated from
      * CellStore index.  This method will first load the CellStore block 
@@ -104,42 +103,42 @@ namespace Hypertable {
      * @param scanner Pointer to CellListScannerBuffer to receive key/value
      * pairs
      */
-    virtual void populate_index_pseudo_table_scanner(CellListScannerBuffer *scanner);
+    void populate_index_pseudo_table_scanner(CellListScannerBuffer *scanner) override;
 
-    virtual int64_t get_total_entries() { return m_trailer.total_entries; }
-    virtual std::string &get_filename() { return m_filename; }
-    virtual int get_file_id() { return m_file_id; }
+    int64_t get_total_entries() override { return m_trailer.total_entries; }
+    std::string &get_filename() override { return m_filename; }
+    int get_file_id() override { return m_file_id; }
     CellListScannerPtr create_scanner(ScanContext *scan_ctx) override;
-    virtual BlockCompressionCodec *create_block_compression_codec();
-    virtual KeyDecompressor *create_key_decompressor();
-    virtual void display_block_info();
-    virtual int64_t end_of_last_block() { return m_trailer.fix_index_offset; }
+    BlockCompressionCodec *create_block_compression_codec() override;
+    KeyDecompressor *create_key_decompressor() override;
+    void display_block_info() override;
+    int64_t end_of_last_block() override { return m_trailer.fix_index_offset; }
 
-    virtual size_t bloom_filter_size() {
+    size_t bloom_filter_size() override {
       std::lock_guard<std::mutex> lock(m_mutex);
       return m_bloom_filter ? m_bloom_filter->size() : 0;
     }
 
-    virtual int64_t bloom_filter_memory_used() {
+    int64_t bloom_filter_memory_used() override {
       std::lock_guard<std::mutex> lock(m_mutex);
       return m_index_stats.bloom_filter_memory;
     }
 
-    virtual int64_t block_index_memory_used() {
+    int64_t block_index_memory_used() override {
       std::lock_guard<std::mutex> lock(m_mutex);
       return m_index_stats.block_index_memory;
     }
 
-    virtual uint64_t purge_indexes();
-    virtual bool restricted_range() { return m_restricted_range; }
-    virtual const std::vector<String> &get_replaced_files();
+    uint64_t purge_indexes() override;
+    bool restricted_range() override { return m_restricted_range; }
+    const std::vector<String> &get_replaced_files() override;
 
-    virtual int32_t get_fd() {
+    int32_t get_fd() override {
       std::lock_guard<std::mutex> lock(m_mutex);
       return m_fd;
     }
 
-    virtual int32_t reopen_fd() {
+    int32_t reopen_fd() override {
       std::lock_guard<std::mutex> lock(m_mutex);
       if (m_fd != -1)
         m_filesys->close(m_fd);
@@ -147,9 +146,9 @@ namespace Hypertable {
       return m_fd;
     }
 
-    virtual CellStoreTrailer *get_trailer() { return &m_trailer; }
+    CellStoreTrailer *get_trailer() override { return &m_trailer; }
 
-    virtual uint16_t block_header_format();
+    uint16_t block_header_format() override;
 
   protected:
     void create_bloom_filter(bool is_approx = false);

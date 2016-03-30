@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -188,7 +188,7 @@ namespace Hypertable {
      * an Exception with error code Error::MASTER_OPERATION_IN_PROGRESS.
      * @return Name of operation used to enforce exclusivity constraint
      */
-    virtual const String name() = 0;
+    const String name() override = 0;
 
     /** Human readable label for operation.
      * This method is used to generate a human readable string describing the
@@ -309,13 +309,13 @@ namespace Hypertable {
      * <code>*bufp</code> (decremented by call).
      * @param definition_version Version of DefinitionMaster
      */
-    virtual void decode(const uint8_t **bufp, size_t *remainp,
-                        uint16_t definition_version);
+    void decode(const uint8_t **bufp, size_t *remainp,
+                uint16_t definition_version) override;
 
     /** Write human readable string represenation of operation to output stream.
      * @param os Output stream to which string is written
      */
-    virtual void display(std::ostream &os);
+    void display(std::ostream &os) override;
 
     /** Operation identifier.
      * Returns an integer identifier that uniquely identifies this operation.

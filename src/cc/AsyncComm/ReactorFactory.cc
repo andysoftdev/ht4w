@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -97,7 +97,8 @@ void ReactorFactory::initialize(uint16_t reactor_count) {
     use_poll = true;
 #endif
 
-  for (uint16_t i=0; i<=reactor_count; i++) {
+  ms_reactors.reserve(reactor_count+2);
+  for (uint16_t i=0; i<reactor_count+2; i++) {
     reactor = make_shared<Reactor>();
     ms_reactors.push_back(reactor);
     rrunner.set_reactor(reactor);

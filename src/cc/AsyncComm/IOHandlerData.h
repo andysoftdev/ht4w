@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -72,7 +72,7 @@ namespace Hypertable {
     /** Disconnects handler by delivering Event::DISCONNECT via default dispatch
      * handler.
      */
-    virtual void disconnect() { 
+    void disconnect() override {
       EventPtr event = std::make_shared<Event>(Event::DISCONNECT, m_addr, m_proxy, m_error);
       deliver_event(event);
     }

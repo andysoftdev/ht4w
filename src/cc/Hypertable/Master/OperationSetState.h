@@ -1,5 +1,5 @@
 /* -*- c++ -*-
- * Copyright (C) 2007-2015 Hypertable, Inc.
+ * Copyright (C) 2007-2016 Hypertable, Inc.
  *
  * This file is part of Hypertable.
  *
@@ -75,48 +75,24 @@ namespace Hypertable {
     virtual ~OperationSetState() { }
 
     /** Executes "set state" operation.
-     * This method transitions through the following states:
-     *
-     * <table>
-     * <tr>
-     * <th>State</th>
-     * <th>Description</th>
-     * </tr>
-     * <tr>
-     * <td>INITIAL</td>
-     * <td><ul>
-     * <li>Fetches and delivers admin notifications from the SystemState object</li>
-     * <li>Fetches the variables specs with a call to SystemState::get()</li>
-     * <li>Transitions to the STARTED state</li>
-     * <li>Persists operation and the SystemState object in the MML</li>
-     * </ul></td>
-     * </tr>
-     * <tr>
-     * <td>STARTED</td>
-     * <td><ul>
-     * <li>Variable specs obtained in the INITIAL state are passed to all range
-     * servers via a call to RangeServer::set_state().</li>
-     * <li>Transitions to the COMPLETED state</li>
-     * </ul></td>
-     * </tr>
      */
-    virtual void execute();
+    void execute() override;
     
     /** Returns operation name (OperationSetState)
      * @return Operation name
      */
-    virtual const String name();
+    const String name() override;
 
     /** Returns textual string describing operation plus state
      * @return String label
      */
-    virtual const String label();
+    const String label() override;
 
     /** Displays textual representation of object state.
      * This method prints each variable and value in #m_specs
      * vector.
      */
-    virtual void display_state(std::ostream &os);
+    void display_state(std::ostream &os) override;
 
     uint8_t encoding_version_state() const override;
 
