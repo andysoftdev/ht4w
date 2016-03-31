@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyProduct("Hypertable.Thrift.Test")]
 [assembly: AssemblyDescription("Hypertable .NET thrift client test")]
 [assembly: AssemblyCompany("ht4w.softdev.ch")]
-[assembly: AssemblyCopyright("Copyright © 2010-2015")]
+[assembly: AssemblyCopyright("Copyright © 2010-2016")]
 [assembly: AssemblyVersion("0.9.8.10")]
 [assembly: AssemblyFileVersion("0.9.8.10")]
 [assembly: CLSCompliant(false)]
