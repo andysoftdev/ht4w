@@ -190,10 +190,10 @@ int main(int argc, char **argv) {
     String log_dir = get_str("log-dir");
     String log_host = get("log-host", String());
     int timeout = get_i32("dfs-timeout", 15000);
-    bool stdout = has("stdout");
+    bool has_stdout = has("stdout");
     bool tsv_output = has("tsv-output");
 
-    if (stdout && tsv_output)
+    if (has_stdout && tsv_output)
       HT_FATAL("Only one of --stdout and --tsv-output can be supplied.");
 
     /**
@@ -222,7 +222,7 @@ int main(int argc, char **argv) {
 
     CommitLogReaderPtr log_reader = make_shared<CommitLogReader>(fs, log_dir);
 
-    if (stdout)
+    if (has_stdout)
       emitter = new EmitterStdout();
     else if (tsv_output)
       emitter = new EmitterTsv();

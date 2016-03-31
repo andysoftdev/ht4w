@@ -25,6 +25,7 @@
 
 #include <Common/Init.h>
 #include <Common/Logger.h>
+#include <Common/Time.h>
 
 #include <cctype>
 #include <cstdlib>
