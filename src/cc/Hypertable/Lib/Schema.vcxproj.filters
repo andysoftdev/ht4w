@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Cell.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Key.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KeySpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScanSpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Schema.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\stdafx.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AccessGroupSpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColumnFamilySpec.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Canonicalize.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CellInterval.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColumnPredicate.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RowInterval.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableParts.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Cell.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cells.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DataSource.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Key.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeySpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NamespaceListing.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScanSpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Schema.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SerializedKey.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScanLimitState.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AccessGroupSpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellPredicate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColumnFamilySpec.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Canonicalize.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CellInterval.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColumnPredicate.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RowInterval.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TableParts.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

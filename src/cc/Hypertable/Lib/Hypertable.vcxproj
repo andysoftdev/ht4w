@@ -25,20 +25,13 @@
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="AccessGroupSpec.cc" />
     <ClCompile Include="ApacheLogParser.cc" />
     <ClCompile Include="BalancePlan.cc" />
-    <ClCompile Include="Canonicalize.cc" />
-    <ClCompile Include="Cell.cc" />
-    <ClCompile Include="CellInterval.cc" />
     <ClCompile Include="Client.cc" />
     <ClCompile Include="ClusterId.cc" />
-    <ClCompile Include="ColumnFamilySpec.cc" />
-    <ClCompile Include="ColumnPredicate.cc" />
     <ClCompile Include="Config.cc" />
     <ClCompile Include="DataGenerator.cc" />
     <ClCompile Include="DataGeneratorRandom.cc" />
-    <ClCompile Include="FixedRandomStringGenerator.cc" />
     <ClCompile Include="Future.cc" />
     <ClCompile Include="FutureCallback.cc" />
     <ClCompile Include="HqlCommandInterpreter.cc" />
@@ -46,8 +39,6 @@
     <ClCompile Include="HqlInterpreter.cc" />
     <ClCompile Include="IndexTables.cc" />
     <ClCompile Include="IntervalScannerAsync.cc" />
-    <ClCompile Include="Key.cc" />
-    <ClCompile Include="KeySpec.cc" />
     <ClCompile Include="LegacyDecoder.cc" />
     <ClCompile Include="LoadDataEscape.cc" />
     <ClCompile Include="LoadDataSource.cc" />
@@ -90,7 +81,6 @@
     <ClCompile Include="NameIdMapper.cc" />
     <ClCompile Include="Namespace.cc" />
     <ClCompile Include="NamespaceCache.cc" />
-    <ClCompile Include="ProfileDataScanner.cc" />
     <ClCompile Include="PseudoTables.cc" />
     <ClCompile Include="QualifiedRangeSpec.cc" />
     <ClCompile Include="RangeLocator.cc" />
@@ -134,14 +124,11 @@
     <ClCompile Include="RangeState.cc" />
     <ClCompile Include="Result.cc" />
     <ClCompile Include="RootFileHandler.cc" />
-    <ClCompile Include="RowInterval.cc" />
     <ClCompile Include="RS_METRICS\RangeMetrics.cc" />
     <ClCompile Include="RS_METRICS\ReaderTable.cc" />
     <ClCompile Include="RS_METRICS\ServerMetrics.cc" />
     <ClCompile Include="ScanBlock.cc" />
     <ClCompile Include="ScanCells.cc" />
-    <ClCompile Include="ScanSpec.cc" />
-    <ClCompile Include="Schema.cc" />
     <ClCompile Include="StatsRangeServer.cc" />
     <ClCompile Include="StatsTable.cc" />
     <ClCompile Include="SystemVariable.cc" />
@@ -159,7 +146,6 @@
     <ClCompile Include="TableMutatorIntervalHandler.cc" />
     <ClCompile Include="TableMutatorShared.cc" />
     <ClCompile Include="TableMutatorSyncDispatchHandler.cc" />
-    <ClCompile Include="TableParts.cc" />
     <ClCompile Include="TableScanner.cc" />
     <ClCompile Include="TableScannerAsync.cc" />
     <ClCompile Include="TableScannerDispatchHandler.cc" />
@@ -167,25 +153,16 @@
     <ClCompile Include="TableSplit.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AccessGroupSpec.h" />
     <ClInclude Include="ApacheLogParser.h" />
     <ClInclude Include="BalancePlan.h" />
-    <ClInclude Include="Canonicalize.h" />
-    <ClInclude Include="Cell.h" />
-    <ClInclude Include="CellInterval.h" />
-    <ClInclude Include="CellPredicate.h" />
-    <ClInclude Include="Cells.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="ClientObject.h" />
     <ClInclude Include="ClusterId.h" />
-    <ClInclude Include="ColumnFamilySpec.h" />
-    <ClInclude Include="ColumnPredicate.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="DataGenerator.h" />
     <ClInclude Include="DataGeneratorColumn.h" />
     <ClInclude Include="DataGeneratorQualifier.h" />
     <ClInclude Include="DataGeneratorRowComponent.h" />
-    <ClInclude Include="DataSource.h" />
     <ClInclude Include="FixedRandomStringGenerator.h" />
     <ClInclude Include="Future.h" />
     <ClInclude Include="FutureCallback.h" />
@@ -197,8 +174,6 @@
     <ClInclude Include="IndexScannerCallback.h" />
     <ClInclude Include="IndexTables.h" />
     <ClInclude Include="IntervalScannerAsync.h" />
-    <ClInclude Include="Key.h" />
-    <ClInclude Include="KeySpec.h" />
     <ClInclude Include="LegacyDecoder.h" />
     <ClInclude Include="LoadDataEscape.h" />
     <ClInclude Include="LoadDataFlags.h" />
@@ -244,7 +219,6 @@
     <ClInclude Include="NameIdMapper.h" />
     <ClInclude Include="Namespace.h" />
     <ClInclude Include="NamespaceCache.h" />
-    <ClInclude Include="NamespaceListing.h" />
     <ClInclude Include="ProfileDataScanner.h" />
     <ClInclude Include="PseudoTables.h" />
     <ClInclude Include="QualifiedRangeSpec.h" />
@@ -291,17 +265,12 @@
     <ClInclude Include="Result.h" />
     <ClInclude Include="ResultCallback.h" />
     <ClInclude Include="RootFileHandler.h" />
-    <ClInclude Include="RowInterval.h" />
     <ClInclude Include="RS_METRICS\RangeMetrics.h" />
     <ClInclude Include="RS_METRICS\Reader.h" />
     <ClInclude Include="RS_METRICS\ReaderTable.h" />
     <ClInclude Include="RS_METRICS\ServerMetrics.h" />
     <ClInclude Include="ScanBlock.h" />
     <ClInclude Include="ScanCells.h" />
-    <ClInclude Include="ScanLimitState.h" />
-    <ClInclude Include="ScanSpec.h" />
-    <ClInclude Include="Schema.h" />
-    <ClInclude Include="SerializedKey.h" />
     <ClInclude Include="StatsRangeServer.h" />
     <ClInclude Include="StatsTable.h" />
     <ClInclude Include="SystemVariable.h" />
@@ -323,7 +292,6 @@
     <ClInclude Include="TableMutatorQueue.h" />
     <ClInclude Include="TableMutatorShared.h" />
     <ClInclude Include="TableMutatorSyncDispatchHandler.h" />
-    <ClInclude Include="TableParts.h" />
     <ClInclude Include="TableScanner.h" />
     <ClInclude Include="TableScannerAsync.h" />
     <ClInclude Include="TableScannerDispatchHandler.h" />

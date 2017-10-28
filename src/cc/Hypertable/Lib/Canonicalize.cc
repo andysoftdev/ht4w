@@ -31,6 +31,7 @@
 #include <Common/Logger.h>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/tokenizer.hpp>
 
 using namespace Hypertable;
 using namespace std;
@@ -45,4 +46,23 @@ void Canonicalize::namespace_path(std::string &path) {
   boost::trim_right_if(path, boost::is_any_of("/ "));
   if (path.empty() || path[0] != '/')
     path = string("/") + path;
+}
+
+void Canonicalize::trim_namespace_path(std::string *original) {
+  string output;
+  boost::char_separator<char> sep("/");
+
+  if (original == NULL)
+    return;
+
+  typedef boost::tokenizer<boost::char_separator<char> > Tokenizer;
+  Tokenizer tokens(*original, sep);
+  for (Tokenizer::iterator tok_iter = tokens.begin();
+       tok_iter != tokens.end(); ++tok_iter)
+    if (tok_iter->size() > 0)
+      output += *tok_iter + "/";
+
+  // remove leading/trailing '/' and ' '
+  boost::trim_if(output, boost::is_any_of("/ "));
+  *original = output;
 }

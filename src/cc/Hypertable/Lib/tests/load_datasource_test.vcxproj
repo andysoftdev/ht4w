@@ -114,7 +114,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Hypertable.lib;FsBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Schema.lib;Hypertable.lib;FsBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -143,7 +143,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Hypertable.lib;FsBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Schema.lib;Hypertable.lib;FsBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -179,7 +179,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Hypertable.lib;FsBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Schema.lib;Hypertable.lib;FsBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -215,7 +215,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Hypertable.lib;FsBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Schema.lib;Hypertable.lib;FsBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>

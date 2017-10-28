@@ -115,7 +115,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hyperspace.lib;Hypertable.lib;HyperAppHelper.lib;Hypertools.lib;FsBroker.lib;expat.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hyperspace.lib;Schema.lib;Hypertable.lib;HyperAppHelper.lib;Hypertools.lib;FsBroker.lib;expat.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -144,7 +144,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hyperspace.lib;Hypertable.lib;HyperAppHelper.lib;Hypertools.lib;FsBroker.lib;expat.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hyperspace.lib;Schema.lib;Hypertable.lib;HyperAppHelper.lib;Hypertools.lib;FsBroker.lib;expat.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -180,7 +180,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hyperspace.lib;Hypertable.lib;HyperAppHelper.lib;Hypertools.lib;FsBroker.lib;expat.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hyperspace.lib;Schema.lib;Hypertable.lib;HyperAppHelper.lib;Hypertools.lib;FsBroker.lib;expat.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -216,7 +216,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hyperspace.lib;Hypertable.lib;HyperAppHelper.lib;Hypertools.lib;FsBroker.lib;expat.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;AsyncComm.lib;Hyperspace.lib;Schema.lib;Hypertable.lib;HyperAppHelper.lib;Hypertools.lib;FsBroker.lib;expat.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>

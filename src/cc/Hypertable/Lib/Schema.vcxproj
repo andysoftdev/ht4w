@@ -25,35 +25,66 @@
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="hypertable_api_test.cc" />
+    <ClCompile Include="AccessGroupSpec.cc" />
+    <ClCompile Include="Canonicalize.cc" />
+    <ClCompile Include="Cell.cc" />
+    <ClCompile Include="CellInterval.cc" />
+    <ClCompile Include="ColumnFamilySpec.cc" />
+    <ClCompile Include="ColumnPredicate.cc" />
+    <ClCompile Include="Key.cc" />
+    <ClCompile Include="KeySpec.cc" />
+    <ClCompile Include="RowInterval.cc" />
+    <ClCompile Include="ScanSpec.cc" />
+    <ClCompile Include="Schema.cc" />
+    <ClCompile Include="TableParts.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AccessGroupSpec.h" />
+    <ClInclude Include="Canonicalize.h" />
+    <ClInclude Include="Cell.h" />
+    <ClInclude Include="CellInterval.h" />
+    <ClInclude Include="CellPredicate.h" />
+    <ClInclude Include="Cells.h" />
+    <ClInclude Include="ColumnFamilySpec.h" />
+    <ClInclude Include="ColumnPredicate.h" />
+    <ClInclude Include="DataSource.h" />
+    <ClInclude Include="Key.h" />
+    <ClInclude Include="KeySpec.h" />
+    <ClInclude Include="NamespaceListing.h" />
+    <ClInclude Include="RowInterval.h" />
+    <ClInclude Include="ScanLimitState.h" />
+    <ClInclude Include="ScanSpec.h" />
+    <ClInclude Include="Schema.h" />
+    <ClInclude Include="SerializedKey.h" />
+    <ClInclude Include="TableParts.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C8881D8D-B03A-443A-A4E1-B56C3DB94C0D}</ProjectGuid>
+    <ProjectGuid>{D91E70F0-780F-42F0-87A6-E442B007F77A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>hypertable_api_test</RootNamespace>
+    <RootNamespace>Schema</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
@@ -76,82 +107,64 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs\</OutDir>
+    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\libs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs\</OutDir>
+    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\libs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs\</OutDir>
+    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\libs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\tests\</OutDir>
-    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tests\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs\</OutDir>
+    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\libs\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
-      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Schema.lib;Hypertable.lib;thrift.lib;ThriftBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <ProjectReference>
-      <LinkLibraryDependencies>false</LinkLibraryDependencies>
-    </ProjectReference>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
-      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Schema.lib;Hypertable.lib;thrift.lib;ThriftBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <ProjectReference>
-      <LinkLibraryDependencies>false</LinkLibraryDependencies>
-    </ProjectReference>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -160,34 +173,26 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Schema.lib;Hypertable.lib;thrift.lib;ThriftBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <ProjectReference>
-      <LinkLibraryDependencies>false</LinkLibraryDependencies>
-    </ProjectReference>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -196,34 +201,26 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Common/Compat.h</PrecompiledHeaderFile>
-      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
-      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\thrift\lib\cpp\src;$(SolutionDir)deps\thrift\lib\cpp\src\thrift;$(SolutionDir)deps\thrift\lib\cpp\src\windows</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src\cc;$(SolutionDir)deps\stubs;$(SolutionDir)deps\boost;$(SolutionDir)deps\db\build_windows;$(SolutionDir)deps\zlib;$(SolutionDir)deps\expat;$(SolutionDir)deps\re2</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
+      <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)/%(RelativeDir)/</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Schema.lib;Hypertable.lib;thrift.lib;ThriftBroker.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <ProjectReference>
-      <LinkLibraryDependencies>false</LinkLibraryDependencies>
-    </ProjectReference>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

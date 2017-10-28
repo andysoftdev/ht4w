@@ -41,8 +41,6 @@
 
 #include <Common/String.h>
 
-#include <boost/tokenizer.hpp>
-
 #include <memory>
 
 namespace Hypertable {
@@ -306,7 +304,6 @@ namespace Hypertable {
 
     void create_index_table(const std::string &primary_table_name);
 
-    typedef boost::tokenizer<boost::char_separator<char> > Tokenizer;
     std::string get_full_name(const std::string &sub_name);
 
     void initialize();

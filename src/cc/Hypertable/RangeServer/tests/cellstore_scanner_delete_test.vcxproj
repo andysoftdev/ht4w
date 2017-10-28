@@ -114,7 +114,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;snappy.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;snappy.lib;Schema.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <ProjectReference>
@@ -144,7 +144,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;snappy.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;snappy.lib;Schema.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <ProjectReference>
@@ -181,7 +181,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;snappy.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;snappy.lib;Schema.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <ProjectReference>
@@ -218,7 +218,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;snappy.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
+      <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;snappy.lib;Schema.lib;Hypertable.lib;RangeServer.lib;expat.lib;re2.lib</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <ProjectReference>

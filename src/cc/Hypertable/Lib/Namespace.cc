@@ -23,6 +23,7 @@
 
 #include "Client.h"
 #include "HqlCommandInterpreter.h"
+#include "Canonicalize.h"
 
 #include <Hyperspace/DirEntry.h>
 #include <Hypertable/Lib/Config.h>
@@ -82,21 +83,7 @@ String Namespace::get_full_name(const string &sub_name) {
 }
 
 void Namespace::canonicalize(String *original) {
-  string output;
-  boost::char_separator<char> sep("/");
-
-  if (original == NULL)
-    return;
-
-  Tokenizer tokens(*original, sep);
-  for (Tokenizer::iterator tok_iter = tokens.begin();
-       tok_iter != tokens.end(); ++tok_iter)
-    if (tok_iter->size() > 0)
-      output += *tok_iter + "/";
-
-  // remove leading/trailing '/' and ' '
-  boost::trim_if(output, boost::is_any_of("/ "));
-  *original = output;
+  Canonicalize::trim_namespace_path(original);
 }
 
 void Namespace::compact(const string &name, const string &row, uint32_t flags) {

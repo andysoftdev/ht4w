@@ -46,9 +46,6 @@
     <ClCompile Include="ApacheLogParser.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Cell.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Client.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -58,9 +55,6 @@
     <ClCompile Include="DataGenerator.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FixedRandomStringGenerator.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="HqlCommandInterpreter.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -68,12 +62,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="HqlInterpreter.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Key.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="KeySpec.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LoadDataEscape.cc">
@@ -122,12 +110,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ScanBlock.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ScanSpec.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Schema.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Table.cc">
@@ -238,31 +220,10 @@
     <ClCompile Include="RS_METRICS\ServerMetrics.cc">
       <Filter>Source Files\RS_METRICS</Filter>
     </ClCompile>
-    <ClCompile Include="AccessGroupSpec.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ClusterId.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ColumnFamilySpec.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="IndexTables.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TableParts.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ProfileDataScanner.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Canonicalize.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CellInterval.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ColumnPredicate.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LegacyDecoder.cc">
@@ -454,9 +415,6 @@
     <ClCompile Include="RangeServerRecovery\ServerReceiverPlan.cc">
       <Filter>Source Files\RangeServerRecovery</Filter>
     </ClCompile>
-    <ClCompile Include="RowInterval.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TableIdentifier.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -469,12 +427,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Cell.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Cells.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Client.h">
@@ -495,9 +447,6 @@
     <ClInclude Include="DataGeneratorRowComponent.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="DataSource.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="FixedRandomStringGenerator.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -511,12 +460,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="HqlParser.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Key.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="KeySpec.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="LoadDataEscape.h">
@@ -558,9 +501,6 @@
     <ClInclude Include="NamespaceCache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="NamespaceListing.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="RangeLocationInfo.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -574,15 +514,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ScanBlock.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ScanSpec.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Schema.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SerializedKey.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Table.h">
@@ -705,9 +636,6 @@
     <ClInclude Include="PseudoTables.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="ScanLimitState.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="SystemVariable.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -726,34 +654,13 @@
     <ClInclude Include="RS_METRICS\ServerMetrics.h">
       <Filter>Source Files\RS_METRICS</Filter>
     </ClInclude>
-    <ClInclude Include="AccessGroupSpec.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CellPredicate.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="ClusterId.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ColumnFamilySpec.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="IndexTables.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="TableParts.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="ProfileDataScanner.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Canonicalize.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CellInterval.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ColumnPredicate.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="LegacyDecoder.h">
@@ -947,9 +854,6 @@
     </ClInclude>
     <ClInclude Include="RangeServerRecovery\ServerReceiverPlan.h">
       <Filter>Source Files\RangeServerRecovery</Filter>
-    </ClInclude>
-    <ClInclude Include="RowInterval.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TableIdentifier.h">
       <Filter>Source Files</Filter>

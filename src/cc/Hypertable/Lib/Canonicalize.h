@@ -50,6 +50,8 @@ namespace Hypertable {
     /// @param path Namespace path to canonicalize
     static void namespace_path(std::string &path);
 
+    static void trim_namespace_path(std::string *original);
+
   };
 
   /// @}
