@@ -125,6 +125,15 @@
 			ContinueOnError="false" />
 	</Target>
 
+	<!-- Build libs-->
+	<Target Name="BuildLibsCore">
+		<MSBuild
+			Projects="ht4w-libs-core.sln"
+			Targets="Build"
+			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
+			ContinueOnError="false" />
+	</Target>
+
 	<!-- Build Java thrift client -->
 	<Target Name="BuildJavaThriftClient">
 		<Exec
