@@ -28,6 +28,10 @@
 #ifndef HYPERTABLE_COMPAT_H
 #define HYPERTABLE_COMPAT_H
 
+#if _MSC_VER >= 1900
+#define _SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
+#endif
+
 /** @addtogroup Common
  *  @{
  */
@@ -117,7 +121,7 @@ std::unique_ptr<T> make_unique(Ts&&... params) {
   return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
 }
 
-#if defined(__APPLE__) || !defined(_GLIBCXX_HAVE_QUICK_EXIT)
+#if defined(__APPLE__) || (!defined(_GLIBCXX_HAVE_QUICK_EXIT) && _MSC_VER < 1900)
 namespace std {
   inline void quick_exit(int status) { _exit(status); }
 }

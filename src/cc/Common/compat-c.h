@@ -222,10 +222,12 @@ typedef signed __int64 off64_t;
 typedef int pid_t;
 
 #define HAVE_STRUCT_TIMESPEC
+#if _MSC_VER < 1900
 typedef struct timespec {
     time_t tv_sec; // Seconds since 00:00:00 GMT, 1 January 1970
     long tv_nsec;  // Additional nanoseconds since tv_sec
 } timespec_t;
+#endif
 
 struct timezone {
     int tz_minuteswest; /* minutes W of Greenwich */
