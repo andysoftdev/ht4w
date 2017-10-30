@@ -76,7 +76,6 @@ using namespace Hypertable;
 using namespace Hyperspace;
 using namespace Config;
 using namespace std;
-using namespace boost;
 
 namespace {
 
@@ -521,13 +520,13 @@ Options)";
     String file_contents = FileUtils::file_to_string(metadata_tsv);
     String filepath;
 
-    char_separator<char> sep_outer("\n");
-    char_separator<char> sep_inner("\t");
-    char_separator<char> sep_field(";");
-    tokenizer<char_separator<char> > tokens_outer(file_contents, sep_outer);
+		boost::char_separator<char> sep_outer("\n");
+		boost::char_separator<char> sep_inner("\t");
+		boost::char_separator<char> sep_field(";");
+		boost::tokenizer<boost::char_separator<char> > tokens_outer(file_contents, sep_outer);
     for (string line : tokens_outer) {
-      tokenizer<char_separator<char> > tokens_inner(line, sep_inner);
-      tokenizer<char_separator<char> >::iterator iter = tokens_inner.begin();
+			boost::tokenizer<boost::char_separator<char> > tokens_inner(line, sep_inner);
+			boost::tokenizer<boost::char_separator<char> >::iterator iter = tokens_inner.begin();
       if (iter == tokens_inner.end())
         continue;
       ++iter;
@@ -537,7 +536,7 @@ Options)";
       ++iter;
       if (iter == tokens_inner.end())
         continue;
-      tokenizer<char_separator<char> > tokens_field(*iter, sep_field);
+			boost::tokenizer<boost::char_separator<char> > tokens_field(*iter, sep_field);
       for (string file : tokens_field) {
         if (file.find_first_of("\\n") == 0)
           file = file.substr(2);
@@ -630,11 +629,11 @@ int main(int argc, char **argv) {
     if (has("include")) {
       std::vector<String> include_vec;
       String str = get_str("include", String());
-      split(include_vec, str, is_any_of(","));
+			boost::split(include_vec, str, boost::is_any_of(","));
       std::vector<String> components;
       for (String path : include_vec) {
 	components.clear();
-	split(components, path, is_any_of("/"));
+	boost::split(components, path, boost::is_any_of("/"));
 	String tmp_path;
 	for (const auto &component : components) {
 	  if (!component.empty()) {
@@ -648,7 +647,7 @@ int main(int argc, char **argv) {
     if (has("exclude")) {
       std::vector<String> exclude_vec;
       String str = get_str("exclude", String());
-      split(exclude_vec, str, is_any_of(","));
+			boost::split(exclude_vec, str, boost::is_any_of(","));
       for (size_t i=0; i<exclude_vec.size(); i++) {
 	if (exclude_vec[i][0] != '/')
 	  excludes.insert("/" + exclude_vec[i]);

@@ -95,6 +95,11 @@
 #pragma warning( disable : 4396 ) // the inline specifier cannot be used when a friend declaration refers to a specialization of a function template
 #pragma warning( disable : 4800 ) // 'int' : forcing value to bool 'true' or 'false' (performance warning)
 #pragma warning( disable : 4996 ) // the POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name
+#pragma warning( disable : 4290 ) // C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
+
+#if _MSC_VER >= 1900
+#pragma warning( disable : 4503 ) // decorated name length exceeded, name was truncated
+#endif
 
 #define _WIN32_WINNT 0x0502 // Windows Server 2003 SP1, Windows XP SP2
 #define NOMINMAX
@@ -138,7 +143,6 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>
-#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -169,6 +173,10 @@
 #include <typeinfo>
 #include <utility>
 #include <vector>
+#include <unordered_set>
+#include <unordered_map>
+#include <set>
+#include <map>
 
 template <size_t size> inline
 char* ctime_r( const time_t *time, char (&buffer)[size] ) {

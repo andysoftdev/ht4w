@@ -181,3 +181,7 @@ run/monitoring/*stats.txt
 /deps/db/src/*
 /deps/db/test/*
 /deps/db/util/*
+*.VC.db
+*.VC.opendb
+.vs/config/applicationhost.config
+.vs/ht4w/*

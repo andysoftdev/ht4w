@@ -47,7 +47,6 @@ extern "C" {
 using namespace Hypertable;
 using namespace Hypertable::Config;
 using namespace std;
-using namespace boost;
 
 namespace {
 

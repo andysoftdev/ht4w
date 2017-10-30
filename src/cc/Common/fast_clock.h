@@ -30,7 +30,7 @@
 #include <chrono>
 #include <ctime>
 
-#ifdef _WIN32
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
 
 #define constexpr
 #define noexcept

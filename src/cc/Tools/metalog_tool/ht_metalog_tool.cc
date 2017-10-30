@@ -61,7 +61,6 @@
 using namespace Hypertable;
 using namespace Config;
 using namespace std;
-using namespace boost;
 
 
 namespace {
@@ -410,8 +409,8 @@ Options)";
   };
 
   void parse_select_arg(const String &arg) {
-    char_separator<char> sep(", ");
-    tokenizer<char_separator<char> > tokens(arg, sep);
+    boost::char_separator<char> sep(", ");
+		boost::tokenizer<boost::char_separator<char> > tokens(arg, sep);
     BOOST_FOREACH(string t, tokens) {
       if (boost::starts_with(t, "rs")) {
 	select_set.insert(t);
@@ -445,8 +444,8 @@ Options)";
       if (rsc != 0 && select_set.count(rsc->location()) > 0)
         return true;
       String name = entity->name();
-      char_separator<char> sep(" \t");
-      tokenizer<char_separator<char> > tokens(name, sep);
+			boost::char_separator<char> sep(" \t");
+			boost::tokenizer<boost::char_separator<char> > tokens(name, sep);
       if (select_set.count(*tokens.begin()) > 0)
         return true;
     }
@@ -458,8 +457,8 @@ Options)";
     if (has("balance-plan-change-destination")) {
       changes = new BalancePlanAuthorityChanges();
       String arg = get_str("balance-plan-change-destination");
-      char_separator<char> sep(",");
-      tokenizer<char_separator<char> > tokens(arg, sep);
+			boost::char_separator<char> sep(",");
+			boost::tokenizer<boost::char_separator<char> > tokens(arg, sep);
       size_t position = 0;
       BOOST_FOREACH(string t, tokens) {
         if (position == 0)
@@ -508,8 +507,8 @@ Options)";
     if (has("change-move-destinations")) {
       String arg = get_str("change-move-destinations");
       boost::trim_if(arg, boost::is_any_of("'\""));
-      char_separator<char> sep(",");
-      tokenizer<char_separator<char> > tokens(arg, sep);
+			boost::char_separator<char> sep(",");
+			boost::tokenizer<boost::char_separator<char> > tokens(arg, sep);
       MoveChangeSpec change;
       BOOST_FOREACH(string t, tokens) {
         const char *base = t.c_str();

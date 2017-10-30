@@ -46,6 +46,9 @@
     <ClCompile Include="MetricsHandler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Event.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientConnectionHandler.h">
@@ -103,6 +106,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MetricsHandler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Event.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

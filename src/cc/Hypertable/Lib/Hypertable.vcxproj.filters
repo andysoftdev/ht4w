@@ -424,6 +424,12 @@
     <ClCompile Include="DataGeneratorRandom.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ProfileDataScanner.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FixedRandomStringGenerator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApacheLogParser.h">

@@ -44,7 +44,6 @@
 #include <unordered_map>
 
 using namespace Hypertable;
-using namespace boost;
 using namespace std;
 
 OperationProcessor::ThreadContext::ThreadContext(ContextPtr &mctx)
@@ -552,13 +551,13 @@ void OperationProcessor::purge_from_obstruction_index(Vertex v) {
 
 
 void OperationProcessor::add_edge(Vertex v, Vertex u) {
-  std::pair<Edge, bool> ep = ::add_edge(v, u, m_context.graph);
+  std::pair<Edge, bool> ep = boost::add_edge(v, u, m_context.graph);
   HT_ASSERT(ep.second);
   put(m_context.permanent, ep.first, false);
 }
 
 void OperationProcessor::add_edge_permanent(Vertex v, Vertex u) {
-  std::pair<Edge, bool> ep = ::add_edge(v, u, m_context.graph);
+  std::pair<Edge, bool> ep = boost::add_edge(v, u, m_context.graph);
   HT_ASSERT(ep.second);
   put(m_context.permanent, ep.first, true);
 }
@@ -725,7 +724,7 @@ void OperationProcessor::update_operation(Vertex v, OperationPtr &operation) {
 void OperationProcessor::recompute_order() {
 
   // re-assign vertex indexes
-  property_map<OperationGraph, vertex_index_t>::type index = get(vertex_index, m_context.graph);
+  boost::property_map<OperationGraph, boost::vertex_index_t>::type index = get(boost::vertex_index, m_context.graph);
   int i=0;
   std::pair<GraphTraits::vertex_iterator, GraphTraits::vertex_iterator> vp;
   for (vp = vertices(m_context.graph); vp.first != vp.second; ++vp.first)

@@ -160,17 +160,7 @@ namespace Hypertable {
     /// Destructor.
     /// If #m_socket_internally_created is set to <i>true</i>, closes the socket
     /// descriptor #m_sd.
-    virtual ~IOHandler() {
-      HT_ASSERT(m_free_flag != 0xdeadbeef);
-      m_free_flag = 0xdeadbeef;
-      if (m_socket_internally_created)
-#ifndef _WIN32
-        close(m_sd);
-#else
-        close();
-#endif
-      return;
-    }
+	virtual ~IOHandler() throw(...);
 
     /** Convenience method for delivering event to application.
      * This method will deliver <code>event</code> to the application via the

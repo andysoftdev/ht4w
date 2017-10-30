@@ -271,9 +271,9 @@ void parse_command_line(int argc, char **argv, PropertiesPtr &props) {
       ptr = strchr(argv[i], '=');
       if (ptr) {
         key = String(argv[i], ptr-argv[i]);
-        trim_if(key, is_any_of("-"));
+        boost::trim_if(key, boost::is_any_of("-"));
         value = String(ptr+1);
-        trim_if(value, is_any_of("'\""));
+				boost::trim_if(value, boost::is_any_of("'\""));
         if (key == "delete-percentage") {
           props->set(key, boost::any( atoi(value.c_str()) ));
           props->set("DataGenerator.DeletePercentage", boost::any( atoi(value.c_str()) ));
@@ -299,7 +299,7 @@ void parse_command_line(int argc, char **argv, PropertiesPtr &props) {
       }
       else {
         key = String(argv[i]);
-        trim_if(key, is_any_of("-"));
+				boost::trim_if(key, boost::is_any_of("-"));
         if (!props->has(key))
           props->set(key, boost::any( true ));
       }

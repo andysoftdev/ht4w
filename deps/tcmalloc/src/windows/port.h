@@ -74,7 +74,7 @@
 #ifndef HAVE___INT64    /* we need to have all the __intX names */
 # error  Do not know how to set up type aliases.  Edit port.h for your system.
 #endif
-
+#if _MSC_VER < 1900
 typedef __int8 int8_t;
 typedef __int16 int16_t;
 typedef __int32 int32_t;
@@ -83,6 +83,7 @@ typedef unsigned __int8 uint8_t;
 typedef unsigned __int16 uint16_t;
 typedef unsigned __int32 uint32_t;
 typedef unsigned __int64 uint64_t;
+#endif
 #endif  // #ifndef HAVE_STDINT_H
 
 // I guess MSVC's <types.h> doesn't include ssize_t by default?
@@ -237,8 +238,10 @@ extern PERFTOOLS_DLL_DECL void RunManyInThreadWithId(void (*fn)(int), int count,
 // We can't just use _vsnprintf and _snprintf as drop-in-replacements,
 // because they don't always NUL-terminate. :-(  We also can't use the
 // name vsnprintf, since windows defines that (but not snprintf (!)).
+#if _MSC_VER < 1900
 extern PERFTOOLS_DLL_DECL int snprintf(char *str, size_t size,
                                        const char *format, ...);
+#endif
 extern PERFTOOLS_DLL_DECL int safe_vsnprintf(char *str, size_t size,
                                              const char *format, va_list ap);
 #define vsnprintf(str, size, format, ap)  safe_vsnprintf(str, size, format, ap)
@@ -303,10 +306,12 @@ extern PERFTOOLS_DLL_DECL int getpagesize();   // in port.cc
 #define random   rand
 #define sleep(t) Sleep(t * 1000)
 
+#if _MSC_VER < 1900
 struct timespec {
   int tv_sec;
   int tv_nsec;
 };
+#endif
 
 #define nanosleep(tm_ptr, ignored)  \
   Sleep((tm_ptr)->tv_sec * 1000 + (tm_ptr)->tv_nsec / 1000000)

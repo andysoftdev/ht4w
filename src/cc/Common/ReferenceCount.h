@@ -65,7 +65,7 @@ namespace Hypertable {
     }
 
     /** Destructor is virtual, can be overwritten */
-    virtual ~ReferenceCount() { return; }
+    virtual ~ReferenceCount() throw(...) { }
 
     friend void intrusive_ptr_add_ref(ReferenceCount *rc);
     friend void intrusive_ptr_release(ReferenceCount *rc);

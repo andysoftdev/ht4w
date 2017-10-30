@@ -76,6 +76,9 @@
     <ClCompile Include="PollEvent.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationQueue.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationHandler.h">

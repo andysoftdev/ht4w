@@ -16,6 +16,12 @@
   <?elseif $(var.VisualStudioVersion) = "12.0"?>
     <?define VCRedistTitle="Visual C++ 12.0 Runtime"?>
     <?define VCRedistVersion="VC120"?>
+  <?elseif $(var.VisualStudioVersion) = "14.0"?>
+    <?define VCRedistTitle="Visual C++ 14.0 Runtime"?>
+    <?define VCRedistVersion="VC140"?>
+  <?elseif $(var.VisualStudioVersion) = "15.0"?>
+    <?define VCRedistTitle="Visual C++ 15.0 Runtime"?>
+    <?define VCRedistVersion="VC141"?>
   <?endif?>
 
   <!-- ProductVersion/ProductCode passed by hypertable-msi.wixproj -->

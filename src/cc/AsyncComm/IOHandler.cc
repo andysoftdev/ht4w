@@ -53,6 +53,18 @@ extern "C" {
 using namespace Hypertable;
 using namespace std;
 
+IOHandler::~IOHandler() throw(...) {
+	HT_ASSERT(m_free_flag != 0xdeadbeef);
+	m_free_flag = 0xdeadbeef;
+	if (m_socket_internally_created)
+#ifndef _WIN32
+		close(m_sd);
+#else
+		close();
+#endif
+	return;
+}
+
 #ifndef _WIN32
 
 #define HANDLE_POLL_INTERFACE_MODIFY \

@@ -29,7 +29,9 @@
 #define HYPERTABLE_COMPAT_H
 
 #if _MSC_VER >= 1900
+
 #define _SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
+
 #endif
 
 /** @addtogroup Common
@@ -38,9 +40,6 @@
 
 // The same stuff for C code
 #include "compat-c.h"
-
-#include <cstddef> // for std::size_t and std::ptrdiff_t
-#include <memory>
 
 #if _MSC_VER <= 1800
 
@@ -76,8 +75,8 @@ namespace std {
         duration<Rep, Period>, ToDuration>()(fd);
     }
 
-    #define CHRONO_OPERATOR \
-      ::boost::chrono::operator
+	#define CHRONO_OPERATOR \
+		::boost::chrono::operator
 
   }
 
@@ -103,11 +102,19 @@ namespace std {
 
 }
 
+#else
+
+#include <chrono>
+#include <thr/xtimec.h>
+
+#define CHRONO_OPERATOR \
+	::std::chrono::operator
+
 #endif
 
 // C++ specific stuff
 #ifndef BOOST_SPIRIT_THREADSAFE
-#  define BOOST_SPIRIT_THREADSAFE
+#define BOOST_SPIRIT_THREADSAFE
 #endif
 
 #define BOOST_IOSTREAMS_USE_DEPRECATED

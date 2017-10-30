@@ -338,25 +338,11 @@ namespace Hypertable {
      * @param dynamic_threads Dynamically create temporary thread to carry out
      * requests if none available.
      */
-    ApplicationQueue(int worker_count, bool dynamic_threads=true) 
-      : joined(false), m_dynamic_threads(dynamic_threads) {
-      m_state.threads_total = worker_count;
-      Worker Worker(m_state);
-      assert (worker_count > 0);
-      for (int i=0; i<worker_count; ++i) {
-        m_thread_ids.push_back(m_threads.create_thread(Worker)->get_id());
-      }
-      //threads
-    }
+	ApplicationQueue(int worker_count, bool dynamic_threads = true);
 
     /** Destructor.
      */
-    virtual ~ApplicationQueue() {
-      if (!joined) {
-        shutdown();
-        join();
-      }
-    }
+	virtual ~ApplicationQueue();
 
     /**
      * Returns all the thread IDs for this threadgroup
@@ -384,40 +370,24 @@ namespace Hypertable {
      * @return <i>false</i> if <code>deadline</code> was reached before queue
      * became idle, <i>true</i> otherwise
      */
-    bool wait_for_idle(const std::chrono::time_point<std::chrono::steady_clock>& deadline,
-                       int reserve_threads=0) {
-      std::unique_lock<std::mutex> lock(m_state.mutex);
-      return m_state.quiesce_cond.wait_until(lock, deadline,
-               [this, reserve_threads](){ return m_state.threads_available >= (m_state.threads_total-reserve_threads); });
-    }
+	bool wait_for_idle(const std::chrono::time_point<std::chrono::steady_clock>& deadline,
+		int reserve_threads = 0);
 
     /**
      * Waits for a shutdown to complete.  This method returns when all
      * application queue threads exit.
      */
-    void join() {
-      if (!joined) {
-        m_threads.join_all();
-        joined = true;
-      }
-    }
+	void join();
 
     /** Starts application queue.
      */
-    void start() {
-      std::lock_guard<std::mutex> lock(m_state.mutex);
-      m_state.paused = false;
-      m_state.cond.notify_all();
-    }
+	void start();
 
     /** Stops (pauses) application queue, preventing non-urgent requests from
      * being executed.  Any requests that are being executed at the time of the
      * call are allowed to complete.
      */
-    void stop() {
-      std::lock_guard<std::mutex> lock(m_state.mutex);
-      m_state.paused = true;
-    }
+	void stop();
 
     /** Adds a request (application request handler) to the application queue.
      * The request queue is designed to support the serialization of related
@@ -426,42 +396,7 @@ namespace Hypertable {
      * Event object.
      * @param app_handler Pointer to request to add
      */
-    virtual void add(ApplicationHandler *app_handler) {
-      GroupStateMap::iterator uiter;
-      uint64_t group_id = app_handler->get_group_id();
-      RequestRec *rec = new RequestRec(app_handler);
-      rec->group_state = 0;
-
-      HT_ASSERT(app_handler);
-
-      if (group_id != 0) {
-        std::lock_guard<std::mutex> ulock(m_state.mutex);
-        if ((uiter = m_state.group_state_map.find(group_id))
-            != m_state.group_state_map.end()) {
-          rec->group_state = (*uiter).second;
-          rec->group_state->outstanding++;
-        }
-        else {
-          rec->group_state = new GroupState();
-          rec->group_state->group_id = group_id;
-          m_state.group_state_map[group_id] = rec->group_state;
-        }
-      }
-
-      {
-        std::lock_guard<std::mutex> lock(m_state.mutex);
-        if (app_handler->is_urgent()) {
-          m_state.urgent_queue.push_back(rec);
-          if (m_dynamic_threads && m_state.threads_available == 0) {
-            Worker worker(m_state, true);
-            Thread t(worker);
-          }
-        }
-        else
-          m_state.queue.push_back(rec);
-        m_state.cond.notify_one();
-      }
-    }
+	virtual void add(ApplicationHandler *app_handler);
 
     /** Adds a request (application request handler) to the application queue.
      * The request queue is designed to support the serialization of related
