@@ -1625,6 +1625,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Schema", "src\cc\Hypertable
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hypertable", "src\cc\Hypertable\Lib\Hypertable.vcxproj", "{0FB3EC20-0B6E-4E66-8FE2-D99E8E386BFA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimalloc", "deps\mimalloc\ide\vs2015\mimalloc.vcxproj", "{ABB5EAE7-B3E6-432E-B636-333449892EA6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -3433,6 +3435,20 @@ Global
 		{0FB3EC20-0B6E-4E66-8FE2-D99E8E386BFA}.Release|Win32.Build.0 = Release|Win32
 		{0FB3EC20-0B6E-4E66-8FE2-D99E8E386BFA}.Release|x64.ActiveCfg = Release|x64
 		{0FB3EC20-0B6E-4E66-8FE2-D99E8E386BFA}.Release|x64.Build.0 = Release|x64
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|Win32.Build.0 = Debug|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|x64.ActiveCfg = Debug|x64
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|x64.Build.0 = Debug|x64
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|Any CPU.ActiveCfg = Release|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|Win32.ActiveCfg = Release|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|Win32.Build.0 = Release|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|x64.ActiveCfg = Release|x64
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -3566,5 +3582,6 @@ Global
 		{B9C4C256-5E79-4941-9CAF-8CB6A98CFBCA} = {E5902737-D1E3-4A62-BBDB-4372604759E0}
 		{D91E70F0-780F-42F0-87A6-E442B007F77A} = {B5A4EA5B-903B-4645-8809-8CBC4975288C}
 		{0FB3EC20-0B6E-4E66-8FE2-D99E8E386BFA} = {B5A4EA5B-903B-4645-8809-8CBC4975288C}
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6} = {ADD17C28-8ECB-487F-9E75-AD694B5AA1DA}
 	EndGlobalSection
 EndGlobal

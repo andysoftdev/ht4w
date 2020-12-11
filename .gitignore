@@ -1,4 +1,4 @@
-
+.vs
 *.pyc
 .DS_Store
 src/rb/Monitoring/log/*
