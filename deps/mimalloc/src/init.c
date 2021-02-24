@@ -28,6 +28,9 @@ const mi_page_t _mi_page_empty = {
   ATOMIC_VAR_INIT(0), // xthread_free
   ATOMIC_VAR_INIT(0), // xheap
   NULL, NULL
+  #if MI_INTPTR_SIZE==8
+  , { 0 }  // padding
+  #endif
 };
 
 #define MI_PAGE_EMPTY() ((mi_page_t*)&_mi_page_empty)
@@ -54,8 +57,8 @@ const mi_page_t _mi_page_empty = {
     QNULL( 10240), QNULL( 12288), QNULL( 14336), QNULL( 16384), QNULL( 20480), QNULL( 24576), QNULL( 28672), QNULL( 32768), /* 56 */ \
     QNULL( 40960), QNULL( 49152), QNULL( 57344), QNULL( 65536), QNULL( 81920), QNULL( 98304), QNULL(114688), QNULL(131072), /* 64 */ \
     QNULL(163840), QNULL(196608), QNULL(229376), QNULL(262144), QNULL(327680), QNULL(393216), QNULL(458752), QNULL(524288), /* 72 */ \
-    QNULL(MI_LARGE_OBJ_WSIZE_MAX + 1  /* 655360, Huge queue */), \
-    QNULL(MI_LARGE_OBJ_WSIZE_MAX + 2) /* Full queue */ }
+    QNULL(MI_MEDIUM_OBJ_WSIZE_MAX + 1  /* 655360, Huge queue */), \
+    QNULL(MI_MEDIUM_OBJ_WSIZE_MAX + 2) /* Full queue */ }
 
 #define MI_STAT_COUNT_NULL()  {0,0,0,0}
 
@@ -73,10 +76,22 @@ const mi_page_t _mi_page_empty = {
   MI_STAT_COUNT_NULL(), MI_STAT_COUNT_NULL(), \
   MI_STAT_COUNT_NULL(), MI_STAT_COUNT_NULL(), \
   MI_STAT_COUNT_NULL(), MI_STAT_COUNT_NULL(), \
-  MI_STAT_COUNT_NULL(), \
-  { 0, 0 }, { 0, 0 }, { 0, 0 },  \
+  MI_STAT_COUNT_NULL(), MI_STAT_COUNT_NULL(), \
+  { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 },     \
   { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } \
   MI_STAT_COUNT_END_NULL()
+
+
+// Empty slice span queues for every bin
+#define SQNULL(sz)  { NULL, NULL, sz }
+#define MI_SEGMENT_SPAN_QUEUES_EMPTY \
+  { SQNULL(1), \
+    SQNULL(     1), SQNULL(     2), SQNULL(     3), SQNULL(     4), SQNULL(     5), SQNULL(     6), SQNULL(     7), SQNULL(    10), /*  8 */ \
+    SQNULL(    12), SQNULL(    14), SQNULL(    16), SQNULL(    20), SQNULL(    24), SQNULL(    28), SQNULL(    32), SQNULL(    40), /* 16 */ \
+    SQNULL(    48), SQNULL(    56), SQNULL(    64), SQNULL(    80), SQNULL(    96), SQNULL(   112), SQNULL(   128), SQNULL(   160), /* 24 */ \
+    SQNULL(   192), SQNULL(   224), SQNULL(   256), SQNULL(   320), SQNULL(   384), SQNULL(   448), SQNULL(   512), SQNULL(   640), /* 32 */ \
+    SQNULL(   768), SQNULL(   896), SQNULL(  1024) /* 35 */ }
+
 
 // --------------------------------------------------------
 // Statically allocate an empty heap as the initial
@@ -87,7 +102,7 @@ const mi_page_t _mi_page_empty = {
 // may lead to allocation itself on some platforms)
 // --------------------------------------------------------
 
-const mi_heap_t _mi_heap_empty = {
+mi_decl_cache_align const mi_heap_t _mi_heap_empty = {
   NULL,
   MI_SMALL_PAGES_EMPTY,
   MI_PAGE_QUEUES_EMPTY,
@@ -102,6 +117,18 @@ const mi_heap_t _mi_heap_empty = {
   false
 };
 
+#define tld_empty_stats  ((mi_stats_t*)((uint8_t*)&tld_empty + offsetof(mi_tld_t,stats)))
+#define tld_empty_os     ((mi_os_tld_t*)((uint8_t*)&tld_empty + offsetof(mi_tld_t,os)))
+
+mi_decl_cache_align static const mi_tld_t tld_empty = {
+  0,
+  false,
+  NULL, NULL,
+  { MI_SEGMENT_SPAN_QUEUES_EMPTY, 0, 0, 0, 0, 0, 0, NULL, tld_empty_stats, tld_empty_os }, // segments
+  { 0, tld_empty_stats }, // os
+  { MI_STATS_NULL }       // stats
+};
+
 // the thread-local default heap for allocation
 mi_decl_thread mi_heap_t* _mi_heap_default = (mi_heap_t*)&_mi_heap_empty;
 
@@ -109,11 +136,8 @@ extern mi_heap_t _mi_heap_main;
 
 static mi_tld_t tld_main = {
   0, false,
-  &_mi_heap_main, &_mi_heap_main,
-  { { NULL, NULL }, {NULL ,NULL}, {NULL ,NULL, 0},
-    0, 0, 0, 0, 0, 0, NULL,
-    &tld_main.stats, &tld_main.os
-  }, // segments
+  &_mi_heap_main, & _mi_heap_main,
+  { MI_SEGMENT_SPAN_QUEUES_EMPTY, 0, 0, 0, 0, 0, 0, NULL, &tld_main.stats, &tld_main.os }, // segments
   { 0, &tld_main.stats },  // os
   { MI_STATS_NULL }       // stats
 };
@@ -189,7 +213,8 @@ static bool _mi_heap_init(void) {
     // OS allocated so already zero initialized
     mi_tld_t*  tld = &td->tld;
     mi_heap_t* heap = &td->heap;
-    memcpy(heap, &_mi_heap_empty, sizeof(*heap));
+    _mi_memcpy_aligned(tld, &tld_empty, sizeof(*tld));
+    _mi_memcpy_aligned(heap, &_mi_heap_empty, sizeof(*heap));
     heap->thread_id = _mi_thread_id();
     _mi_random_init(&heap->random);
     heap->cookie  = _mi_heap_random_next(heap) | 1;
@@ -458,6 +483,22 @@ static void mi_process_load(void) {
   }
 }
 
+#if defined(_WIN32) && (defined(_M_IX86) || defined(_M_X64))
+#include <intrin.h>
+mi_decl_cache_align bool _mi_cpu_has_fsrm = false;
+
+static void mi_detect_cpu_features(void) {
+  // FSRM for fast rep movsb support (AMD Zen3+ (~2020) or Intel Ice Lake+ (~2017))
+  int32_t cpu_info[4];
+  __cpuid(cpu_info, 7);
+  _mi_cpu_has_fsrm = ((cpu_info[3] & (1 << 4)) != 0); // bit 4 of EDX : see <https ://en.wikipedia.org/wiki/CPUID#EAX=7,_ECX=0:_Extended_Features>
+}
+#else
+static void mi_detect_cpu_features(void) {
+  // nothing
+}
+#endif
+
 // Initialize the process; called by thread_init or the process loader
 void mi_process_init(void) mi_attr_noexcept {
   // ensure we are called once
@@ -466,6 +507,7 @@ void mi_process_init(void) mi_attr_noexcept {
   mi_process_setup_auto_thread_done();
 
   _mi_verbose_message("process init: 0x%zx\n", _mi_thread_id());
+  mi_detect_cpu_features();
   _mi_os_init();
   mi_heap_main_init();
   #if (MI_DEBUG)
@@ -478,6 +520,10 @@ void mi_process_init(void) mi_attr_noexcept {
   if (mi_option_is_enabled(mi_option_reserve_huge_os_pages)) {
     size_t pages = mi_option_get(mi_option_reserve_huge_os_pages);
     mi_reserve_huge_os_pages_interleave(pages, 0, pages*500);
+  } 
+  if (mi_option_is_enabled(mi_option_reserve_os_memory)) {
+    long ksize = mi_option_get(mi_option_reserve_os_memory);
+    if (ksize > 0) mi_reserve_os_memory((size_t)ksize*KiB, true, true);
   }
 }
 

@@ -34,64 +34,20 @@ terms of the MIT license. A copy of the license can be found in the file
 
 
 static inline bool mi_page_queue_is_huge(const mi_page_queue_t* pq) {
-  return (pq->block_size == (MI_LARGE_OBJ_SIZE_MAX+sizeof(uintptr_t)));
+  return (pq->block_size == (MI_MEDIUM_OBJ_SIZE_MAX+sizeof(uintptr_t)));
 }
 
 static inline bool mi_page_queue_is_full(const mi_page_queue_t* pq) {
-  return (pq->block_size == (MI_LARGE_OBJ_SIZE_MAX+(2*sizeof(uintptr_t))));
+  return (pq->block_size == (MI_MEDIUM_OBJ_SIZE_MAX+(2*sizeof(uintptr_t))));
 }
 
 static inline bool mi_page_queue_is_special(const mi_page_queue_t* pq) {
-  return (pq->block_size > MI_LARGE_OBJ_SIZE_MAX);
+  return (pq->block_size > MI_MEDIUM_OBJ_SIZE_MAX);
 }
 
 /* -----------------------------------------------------------
   Bins
 ----------------------------------------------------------- */
-
-// Bit scan reverse: return the index of the highest bit.
-static inline uint8_t mi_bsr32(uint32_t x);
-
-#if defined(_MSC_VER)
-#include <intrin.h>
-static inline uint8_t mi_bsr32(uint32_t x) {
-  uint32_t idx;
-  _BitScanReverse((DWORD*)&idx, x);
-  return (uint8_t)idx;
-}
-#elif defined(__GNUC__) || defined(__clang__)
-static inline uint8_t mi_bsr32(uint32_t x) {
-  return (31 - __builtin_clz(x));
-}
-#else
-static inline uint8_t mi_bsr32(uint32_t x) {
-  // de Bruijn multiplication, see <http://supertech.csail.mit.edu/papers/debruijn.pdf>
-  static const uint8_t debruijn[32] = {
-     31,  0, 22,  1, 28, 23, 18,  2, 29, 26, 24, 10, 19,  7,  3, 12,
-     30, 21, 27, 17, 25,  9,  6, 11, 20, 16,  8,  5, 15,  4, 14, 13,
-  };
-  x |= x >> 1;
-  x |= x >> 2;
-  x |= x >> 4;
-  x |= x >> 8;
-  x |= x >> 16;
-  x++;
-  return debruijn[(x*0x076be629) >> 27];
-}
-#endif
-
-// Bit scan reverse: return the index of the highest bit.
-uint8_t _mi_bsr(uintptr_t x) {
-  if (x == 0) return 0;
-#if MI_INTPTR_SIZE==8
-  uint32_t hi = (x >> 32);
-  return (hi == 0 ? mi_bsr32((uint32_t)x) : 32 + mi_bsr32(hi));
-#elif MI_INTPTR_SIZE==4
-  return mi_bsr32(x);
-#else
-# error "define bsr for non-32 or 64-bit platforms"
-#endif
-}
 
 // Return the bin for a given field size.
 // Returns MI_BIN_HUGE if the size is too large.
@@ -116,16 +72,16 @@ extern inline uint8_t _mi_bin(size_t size) {
     bin = (uint8_t)wsize;
   }
   #endif
-  else if (wsize > MI_LARGE_OBJ_WSIZE_MAX) {
+  else if (wsize > MI_MEDIUM_OBJ_WSIZE_MAX) {
     bin = MI_BIN_HUGE;
   }
   else {
-    #if defined(MI_ALIGN4W) 
+    #if defined(MI_ALIGN4W)
     if (wsize <= 16) { wsize = (wsize+3)&~3; } // round to 4x word sizes
     #endif
     wsize--;
     // find the highest bit
-    uint8_t b = mi_bsr32((uint32_t)wsize);
+    uint8_t b = (uint8_t)mi_bsr(wsize);  // note: wsize != 0
     // and use the top 3 bits to determine the bin (~12.5% worst internal fragmentation).
     // - adjust with 3 because we use do not round the first 8 sizes
     //   which each get an exact bin
@@ -148,7 +104,7 @@ size_t _mi_bin_size(uint8_t bin) {
 
 // Good size for allocation
 size_t mi_good_size(size_t size) mi_attr_noexcept {
-  if (size <= MI_LARGE_OBJ_SIZE_MAX) {
+  if (size <= MI_MEDIUM_OBJ_SIZE_MAX) {
     return _mi_bin_size(_mi_bin(size));
   }
   else {
@@ -246,8 +202,9 @@ static bool mi_page_queue_is_empty(mi_page_queue_t* queue) {
 static void mi_page_queue_remove(mi_page_queue_t* queue, mi_page_t* page) {
   mi_assert_internal(page != NULL);
   mi_assert_expensive(mi_page_queue_contains(queue, page));
-  mi_assert_internal(page->xblock_size == queue->block_size || (page->xblock_size > MI_LARGE_OBJ_SIZE_MAX && mi_page_queue_is_huge(queue))  || (mi_page_is_in_full(page) && mi_page_queue_is_full(queue)));
+  mi_assert_internal(page->xblock_size == queue->block_size || (page->xblock_size > MI_MEDIUM_OBJ_SIZE_MAX && mi_page_queue_is_huge(queue))  || (mi_page_is_in_full(page) && mi_page_queue_is_full(queue)));
   mi_heap_t* heap = mi_page_heap(page);
+
   if (page->prev != NULL) page->prev->next = page->next;
   if (page->next != NULL) page->next->prev = page->prev;
   if (page == queue->last)  queue->last = page->prev;
@@ -268,9 +225,10 @@ static void mi_page_queue_remove(mi_page_queue_t* queue, mi_page_t* page) {
 static void mi_page_queue_push(mi_heap_t* heap, mi_page_queue_t* queue, mi_page_t* page) {
   mi_assert_internal(mi_page_heap(page) == heap);
   mi_assert_internal(!mi_page_queue_contains(queue, page));
-  mi_assert_internal(_mi_page_segment(page)->page_kind != MI_PAGE_HUGE);
+
+  mi_assert_internal(_mi_page_segment(page)->kind != MI_SEGMENT_HUGE);
   mi_assert_internal(page->xblock_size == queue->block_size ||
-                      (page->xblock_size > MI_LARGE_OBJ_SIZE_MAX && mi_page_queue_is_huge(queue)) ||
+                      (page->xblock_size > MI_MEDIUM_OBJ_SIZE_MAX) ||
                         (mi_page_is_in_full(page) && mi_page_queue_is_full(queue)));
 
   mi_page_set_in_full(page, mi_page_queue_is_full(queue));
@@ -296,6 +254,7 @@ static void mi_page_queue_enqueue_from(mi_page_queue_t* to, mi_page_queue_t* fro
   mi_assert_internal(page != NULL);
   mi_assert_expensive(mi_page_queue_contains(from, page));
   mi_assert_expensive(!mi_page_queue_contains(to, page));
+
   mi_assert_internal((page->xblock_size == to->block_size && page->xblock_size == from->block_size) ||
                      (page->xblock_size == to->block_size && mi_page_queue_is_full(from)) ||
                      (page->xblock_size == from->block_size && mi_page_queue_is_full(to)) ||

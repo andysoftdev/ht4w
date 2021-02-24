@@ -220,12 +220,11 @@
     <ClCompile Include="..\..\src\alloc-posix.c" />
     <ClCompile Include="..\..\src\alloc.c" />
     <ClCompile Include="..\..\src\arena.c" />
-    <ClCompile Include="..\..\src\bitmap.inc.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\bitmap.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\heap.c" />
     <ClCompile Include="..\..\src\init.c" />
-    <ClCompile Include="..\..\src\region.c" />
     <ClCompile Include="..\..\src\options.c" />
     <ClCompile Include="..\..\src\page-queue.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -235,6 +234,7 @@
     </ClCompile>
     <ClCompile Include="..\..\src\page.c" />
     <ClCompile Include="..\..\src\random.c" />
+    <ClCompile Include="..\..\src\segment-cache.c" />
     <ClCompile Include="..\..\src\segment.c" />
     <ClCompile Include="..\..\src\os.c" />
     <ClCompile Include="..\..\src\stats.c" />
@@ -246,6 +246,7 @@
     <ClInclude Include="$(ProjectDir)..\..\include\mimalloc-override.h" />
     <ClInclude Include="$(ProjectDir)..\..\include\mimalloc-types.h" />
     <ClInclude Include="..\..\include\mimalloc-new-delete.h" />
+    <ClInclude Include="..\..\src\bitmap.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
