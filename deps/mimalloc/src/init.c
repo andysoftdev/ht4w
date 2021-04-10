@@ -265,7 +265,10 @@ static bool _mi_heap_done(mi_heap_t* heap) {
 
   // free if not the main thread
   if (heap != &_mi_heap_main) {
-    mi_assert_internal(heap->tld->segments.count == 0 || heap->thread_id != _mi_thread_id());
+    // the following assertion does not always hold for huge segments as those are always treated
+    // as abondened: one may allocate it in one thread, but deallocate in another in which case
+    // the count can be too large or negative. todo: perhaps not count huge segments? see issue #363
+    // mi_assert_internal(heap->tld->segments.count == 0 || heap->thread_id != _mi_thread_id());
     _mi_os_free(heap, sizeof(mi_thread_data_t), &_mi_stats_main);
   }
 #if 0  
@@ -309,7 +312,7 @@ static void _mi_thread_done(mi_heap_t* default_heap);
   // nothing to do as it is done in DllMain
 #elif defined(_WIN32) && !defined(MI_SHARED_LIB)
   // use thread local storage keys to detect thread ending
-  #include <Windows.h>
+  #include <windows.h>
   #include <fibersapi.h>
   #if (_WIN32_WINNT < 0x600)  // before Windows Vista 
   WINBASEAPI DWORD WINAPI FlsAlloc( _In_opt_ PFLS_CALLBACK_FUNCTION lpCallback );
