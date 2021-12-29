@@ -101,26 +101,26 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)dist\$(PlatformToolset)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformToolset)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ht_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)dist\$(PlatformToolset)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformToolset)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ht_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)dist\$(PlatformToolset)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformToolset)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ht_$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)build\$(VisualStudioVersion)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)dist\$(PlatformToolset)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformToolset)\tools\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ht_$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -141,7 +141,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;Hypertools.lib;Hyperspace.lib;Schema.lib;Hypertable.lib;RangeServer.lib;Master.lib;CommitLog.lib;expat.lib;re2.lib;snappy.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(PlatformToolset)\$(Platform)\lib;$(SolutionDir)dist\$(PlatformToolset)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -165,7 +165,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;Hypertools.lib;Hyperspace.lib;Schema.lib;Hypertable.lib;RangeServer.lib;Master.lib;CommitLog.lib;expat.lib;re2.lib;snappy.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(PlatformToolset)\$(Platform)\lib;$(SolutionDir)dist\$(PlatformToolset)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -197,7 +197,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;Hypertools.lib;Hyperspace.lib;Schema.lib;Hypertable.lib;RangeServer.lib;Master.lib;CommitLog.lib;expat.lib;re2.lib;snappy.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(PlatformToolset)\$(Platform)\lib;$(SolutionDir)dist\$(PlatformToolset)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <ProjectReference>
@@ -230,7 +230,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>Common.lib;SystemInfo.lib;Compression.lib;AsyncComm.lib;FsBroker.lib;Hypertools.lib;Hyperspace.lib;Schema.lib;Hypertable.lib;RangeServer.lib;Master.lib;CommitLog.lib;expat.lib;re2.lib;snappy.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(VisualStudioVersion)\$(Platform)\lib;$(SolutionDir)dist\$(VisualStudioVersion)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\boost\stage\$(PlatformToolset)\$(Platform)\lib;$(SolutionDir)dist\$(PlatformToolset)\$(Platform)\$(Configuration)\libs</AdditionalLibraryDirectories>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <ProjectReference>

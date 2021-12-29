@@ -1,272 +1,274 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Make" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0" DefaultTargets="Make">
 
-	<PropertyGroup>
-		<!-- Version and ProductCode (x86/x64), change for each version (update also src\wix\hypertable-msi.wixproj) -->
-		<Version>0.9.8.11</Version>
-		<ProductCode_x86>A531902C-A577-4F37-8224-1ACF7B6E776C</ProductCode_x86>
-		<ProductCode_x64>6E3E2314-0DCE-44B8-8F51-17DBF7F0E597</ProductCode_x64>
+    <PropertyGroup>
+        <!-- Version and ProductCode (x86/x64), change for each version (update also src\wix\hypertable-msi.wixproj) -->
+        <Version>0.9.8.11</Version>
+        <ProductCode_x86>A531902C-A577-4F37-8224-1ACF7B6E776C</ProductCode_x86>
+        <ProductCode_x64>6E3E2314-0DCE-44B8-8F51-17DBF7F0E597</ProductCode_x64>
 
-		<!-- Master files to make -->
-		<MasterServers_x86>dist\$(VisualStudioVersion)\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
-		<MasterTools_x86>dist\$(VisualStudioVersion)\ht4w-tools-$(Version)-win-x86.zip</MasterTools_x86>
-		<MasterMsi_x86>dist\$(VisualStudioVersion)\ht4w-$(Version)-win-x86.msi</MasterMsi_x86>
-		<MasterServers_x64>dist\$(VisualStudioVersion)\ht4w-$(Version)-win-x64.zip</MasterServers_x64>
-		<MasterTools_x64>dist\$(VisualStudioVersion)\ht4w-tools-$(Version)-win-x64.zip</MasterTools_x64>
-		<MasterMsi_x64>dist\$(VisualStudioVersion)\ht4w-$(Version)-win-x64.msi</MasterMsi_x64>
-		<MasterLibs>dist\$(VisualStudioVersion)\ht4w-libs-$(Version)-win.zip</MasterLibs>
-	</PropertyGroup>
+        <!-- Master files to make -->
+        <MasterServers_x86>dist\$(PlatformToolset)\ht4w-$(Version)-win-x86.zip</MasterServers_x86>
+        <MasterTools_x86>dist\$(PlatformToolset)\ht4w-tools-$(Version)-win-x86.zip</MasterTools_x86>
+        <MasterMsi_x86>dist\$(PlatformToolset)\ht4w-$(Version)-win-x86.msi</MasterMsi_x86>
+        <MasterServers_x64>dist\$(PlatformToolset)\ht4w-$(Version)-win-x64.zip</MasterServers_x64>
+        <MasterTools_x64>dist\$(PlatformToolset)\ht4w-tools-$(Version)-win-x64.zip</MasterTools_x64>
+        <MasterMsi_x64>dist\$(PlatformToolset)\ht4w-$(Version)-win-x64.msi</MasterMsi_x64>
+        <MasterLibs>dist\$(PlatformToolset)\ht4w-libs-$(Version)-win.zip</MasterLibs>
+    </PropertyGroup>
 
-	<!-- Check for MSBuildCommunityTasks -->
-	<PropertyGroup>
-		<MSBuildCommunityTasksTargets>$(MSBuildExtensionsPath)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets</MSBuildCommunityTasksTargets>
-		<HasMSBuildCommunityTasks>false</HasMSBuildCommunityTasks>
-		<HasMSBuildCommunityTasks Condition="Exists('$(MSBuildCommunityTasksTargets)')">true</HasMSBuildCommunityTasks>
-	</PropertyGroup>
+    <!-- Check for MSBuildCommunityTasks -->
+    <PropertyGroup>
+        <MSBuildCommunityTasksTargets>$(MSBuildExtensionsPath)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets</MSBuildCommunityTasksTargets>
+        <HasMSBuildCommunityTasks>false</HasMSBuildCommunityTasks>
+        <HasMSBuildCommunityTasks Condition="Exists('$(MSBuildCommunityTasksTargets)')">true</HasMSBuildCommunityTasks>
+    </PropertyGroup>
 
-	<!-- Get machine's architecture -->
-	<PropertyGroup>
-		<MachineProcessorArchitecture>$(registry:HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment@PROCESSOR_ARCHITECTURE)</MachineProcessorArchitecture>
-		<Is32Bit>False</Is32Bit>
-		<Is32Bit
-			Condition="'$(MachineProcessorArchitecture)' == 'x86'">true</Is32Bit>
-		<Is64Bit>False</Is64Bit>
-		<Is64Bit
-			Condition="'$(MachineProcessorArchitecture)' == 'AMD64'">true</Is64Bit>
-	</PropertyGroup>
+    <!-- Get machine's architecture -->
+    <PropertyGroup>
+        <MachineProcessorArchitecture>$(registry:HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment@PROCESSOR_ARCHITECTURE)</MachineProcessorArchitecture>
+        <Is32Bit>False</Is32Bit>
+        <Is32Bit Condition="'$(MachineProcessorArchitecture)' == 'x86'">true</Is32Bit>
+        <Is64Bit>False</Is64Bit>
+        <Is64Bit Condition="'$(MachineProcessorArchitecture)' == 'AMD64'">true</Is64Bit>
+    </PropertyGroup>
 
-	<!-- Platform toolset -->
-	<PropertyGroup>
-		<PlatformToolset Condition="'$(VisualStudioVersion)' == '10.0'">v100</PlatformToolset>
-		<PlatformToolset Condition="'$(VisualStudioVersion)' == '11.0'">v110</PlatformToolset>
-		<PlatformToolset Condition="'$(VisualStudioVersion)' == '12.0'">v120</PlatformToolset>
-		<PlatformToolset Condition="'$(VisualStudioVersion)' == '14.0'">v140</PlatformToolset>
-		<PlatformToolset Condition="'$(VisualStudioVersion)' == '15.0'">v141</PlatformToolset>
-	</PropertyGroup>
+    <!-- Platform toolset -->
+    <PropertyGroup>
+        <PlatformToolset Condition="'$(VisualStudioVersion)' == '10.0'">v100</PlatformToolset>
+        <PlatformToolset Condition="'$(VisualStudioVersion)' == '11.0'">v110</PlatformToolset>
+        <PlatformToolset Condition="'$(VisualStudioVersion)' == '12.0'">v120</PlatformToolset>
+        <PlatformToolset Condition="'$(VisualStudioVersion)' == '14.0'">v140</PlatformToolset>
+        <PlatformToolset Condition="'$(VisualStudioVersion)' == '15.0'">v140</PlatformToolset>
+        <PlatformToolset Condition="'$(VisualStudioVersion)' == '16.0'">v140</PlatformToolset>
+        <PlatformToolset Condition="'$(VisualStudioVersion)' == '17.0'">v140</PlatformToolset>
+    </PropertyGroup>
 
-	<!-- Target framework -->
-	<PropertyGroup>
-		<TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '10.0'">v4.0</TargetFrameworkVersion>
-		<TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '11.0'">v4.5</TargetFrameworkVersion>
-		<TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '12.0'">v4.5</TargetFrameworkVersion>
-		<TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '14.0'">v4.5.2</TargetFrameworkVersion>
-		<TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '15.0'">v4.6.1</TargetFrameworkVersion>
-	</PropertyGroup>
+    <!-- Target framework -->
+    <PropertyGroup>
+        <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '10.0'">v4.0</TargetFrameworkVersion>
+        <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '11.0'">v4.5</TargetFrameworkVersion>
+        <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '12.0'">v4.5</TargetFrameworkVersion>
+        <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '14.0'">v4.7.1</TargetFrameworkVersion>
+        <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '15.0'">v4.7.1</TargetFrameworkVersion>
+        <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '16.0'">v4.7.1</TargetFrameworkVersion>
+        <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '17.0'">v4.7.1</TargetFrameworkVersion>
+    </PropertyGroup>
 
-	<!-- Check for WiX -->
-	<PropertyGroup>
-		<HasMSBuildWiXTasks>false</HasMSBuildWiXTasks>
-		<HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
-		<HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
-	</PropertyGroup>
+    <!-- Check for WiX -->
+    <PropertyGroup>
+        <HasMSBuildWiXTasks>false</HasMSBuildWiXTasks>
+        <HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
+        <HasMSBuildWiXTasks Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets')">true</HasMSBuildWiXTasks>
+    </PropertyGroup>
 
-	<!-- Check for maven -->
-	<PropertyGroup>
-		<HasMaven>false</HasMaven>
-		<HasMaven Condition="Exists('$(MAVEN_HOME)\bin\mvn.bat')">true</HasMaven>
-	</PropertyGroup>
+    <!-- Check for maven -->
+    <PropertyGroup>
+        <HasMaven>false</HasMaven>
+        <HasMaven Condition="Exists('$(MAVEN_HOME)\bin\mvn.bat')">true</HasMaven>
+    </PropertyGroup>
 
-	<!-- Check for ant -->
-	<PropertyGroup>
-		<HasAnt>false</HasAnt>
-		<HasAnt Condition="Exists('$(ANT_HOME)\bin\ant.cmd')">true</HasAnt>
-	</PropertyGroup>
+    <!-- Check for ant -->
+    <PropertyGroup>
+        <HasAnt>false</HasAnt>
+        <HasAnt Condition="Exists('$(ANT_HOME)\bin\ant.cmd')">true</HasAnt>
+    </PropertyGroup>
 
-	<!-- Make configuration Debug or Release -->
-	<PropertyGroup>
-		<Debug>false</Debug>
-		<Debug Condition="'$(Configuration)' == '' Or '$(Configuration)' == 'Debug'">true</Debug>
-		<Release>false</Release>
-		<Release Condition="'$(Configuration)' == '' Or '$(Configuration)' == 'Release'">true</Release>
-	</PropertyGroup>
+    <!-- Make configuration Debug or Release -->
+    <PropertyGroup>
+        <Debug>false</Debug>
+        <Debug Condition="'$(Configuration)' == '' Or '$(Configuration)' == 'Debug'">true</Debug>
+        <Release>false</Release>
+        <Release Condition="'$(Configuration)' == '' Or '$(Configuration)' == 'Release'">true</Release>
+    </PropertyGroup>
 
-	<!-- Configuration group -->
-	<ItemGroup>
-		<MakeConfiguration Include="." Condition="$(Debug) == true" >
-			<Configuration>Debug</Configuration>
-			<Platform>Win32</Platform>
-		</MakeConfiguration>
-		<MakeConfiguration Include="." Condition="$(Release) == true" >
-			<Configuration>Release</Configuration>
-			<Platform>Win32</Platform>
-		</MakeConfiguration>
-		<MakeConfiguration Include="." Condition="$(Is64Bit) == true And $(Debug) == true" >
-			<Configuration>Debug</Configuration>
-			<Platform>x64</Platform>
-		</MakeConfiguration>
-		<MakeConfiguration Include="." Condition="$(Is64Bit) == true And $(Release) == true" >
-			<Configuration>Release</Configuration>
-			<Platform>x64</Platform>
-		</MakeConfiguration>
-	</ItemGroup>
+    <!-- Configuration group -->
+    <ItemGroup>
+        <MakeConfiguration Include="." Condition="$(Debug) == true" >
+            <Configuration>Debug</Configuration>
+            <Platform>Win32</Platform>
+        </MakeConfiguration>
+        <MakeConfiguration Include="." Condition="$(Release) == true" >
+            <Configuration>Release</Configuration>
+            <Platform>Win32</Platform>
+        </MakeConfiguration>
+        <MakeConfiguration Include="." Condition="$(Is64Bit) == true And $(Debug) == true" >
+            <Configuration>Debug</Configuration>
+            <Platform>x64</Platform>
+        </MakeConfiguration>
+        <MakeConfiguration Include="." Condition="$(Is64Bit) == true And $(Release) == true" >
+            <Configuration>Release</Configuration>
+            <Platform>x64</Platform>
+        </MakeConfiguration>
+    </ItemGroup>
 
-	<!-- Import MSBuildCommunityTasksTargets if available -->
-	<Import Project="$(MSBuildCommunityTasksTargets)"
-			Condition="$(HasMSBuildCommunityTasks) == true"/>
+    <!-- Import MSBuildCommunityTasksTargets if available -->
+    <Import Project="$(MSBuildCommunityTasksTargets)"
+            Condition="$(HasMSBuildCommunityTasks) == true"/>
 
-	<!-- Build and make master -->
-	<Target Name="Make"
-			DependsOnTargets="CleanMaster;Build;BuildJavaThriftClient;MakeMaster;MakeMsi">
-	</Target>
+    <!-- Build and make master -->
+    <Target Name="Make"
+            DependsOnTargets="CleanMaster;Build;BuildJavaThriftClient;MakeMaster;MakeMsi">
+    </Target>
 
-	<!-- Build -->
-	<Target Name="Build">
-		<MSBuild
-			Projects="ht4w.sln"
-			Targets="Build"
-			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
-			ContinueOnError="false" />
-	</Target>
+    <!-- Build -->
+    <Target Name="Build">
+        <MSBuild
+            Projects="ht4w.sln"
+            Targets="Build"
+            Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
+            ContinueOnError="false" />
+    </Target>
 
-	<!-- Build libs-->
-	<Target Name="BuildLibs">
-		<MSBuild
-			Projects="ht4w-libs.sln"
-			Targets="Build"
-			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
-			ContinueOnError="false" />
-	</Target>
+    <!-- Build libs-->
+    <Target Name="BuildLibs">
+        <MSBuild
+            Projects="ht4w-libs.sln"
+            Targets="Build"
+            Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
+            ContinueOnError="false" />
+    </Target>
 
-	<!-- Build libs-->
-	<Target Name="BuildLibsCore">
-		<MSBuild
-			Projects="ht4w-libs-core.sln"
-			Targets="Build"
-			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
-			ContinueOnError="false" />
-	</Target>
+    <!-- Build libs-->
+    <Target Name="BuildLibsCore">
+        <MSBuild
+            Projects="ht4w-libs-core.sln"
+            Targets="Build"
+            Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
+            ContinueOnError="false" />
+    </Target>
 
-	<!-- Build Java thrift client -->
-	<Target Name="BuildJavaThriftClient">
-		<Exec
-			Command='build-java-lib.cmd $(Version) $(VisualStudioVersion)'
-			ContinueOnError="false"
-			Condition="$(HasMaven) == true And $(HasAnt) == true" />
-	</Target>
+    <!-- Build Java thrift client -->
+    <Target Name="BuildJavaThriftClient">
+        <Exec
+            Command='build-java-lib.cmd $(Version) $(PlatformToolset)'
+            ContinueOnError="false"
+            Condition="$(HasMaven) == true And $(HasAnt) == true" />
+    </Target>
 
   <!-- Make master libs -->
   <Target Name="MakeMasterLibs"
-			Condition="$(HasMSBuildCommunityTasks) == true" >
+            Condition="$(HasMSBuildCommunityTasks) == true" >
 
     <ItemGroup>
-      <MasterLibsFiles Include="dist\$(VisualStudioVersion)\libs\java\*.*" />
+      <MasterLibsFiles Include="dist\$(PlatformToolset)\libs\java\*.*" />
     </ItemGroup>
 
     <Zip
-			Files="@(MasterLibsFiles)"
-			ZipFileName="$(MasterLibs)"
-			WorkingDirectory="dist\$(VisualStudioVersion)\libs\"
-			Condition="$(HasMaven) == true And $(HasAnt) == true And Exists('dist\$(VisualStudioVersion)\libs\java\hypertable-$(Version).jar')" />
+            Files="@(MasterLibsFiles)"
+            ZipFileName="$(MasterLibs)"
+            WorkingDirectory="dist\$(PlatformToolset)\libs\"
+            Condition="$(HasMaven) == true And $(HasAnt) == true And Exists('dist\$(PlatformToolset)\libs\java\hypertable-$(Version).jar')" />
   </Target>
 
-	<!-- Make master -->
-	<Target Name="MakeMaster"
+    <!-- Make master -->
+    <Target Name="MakeMaster"
       DependsOnTargets="MakeMasterLibs"
-			Condition="$(HasMSBuildCommunityTasks) == true" >
+            Condition="$(HasMSBuildCommunityTasks) == true" >
 
-		<ItemGroup>
-			<MasterServersFiles_x86 Include="dist\$(VisualStudioVersion)\Win32\Release\Hypertable.*.exe;dist\$(VisualStudioVersion)\Win32\Release\Hyperspace.Master.exe;dist\$(VisualStudioVersion)\Win32\Release\hypertable.exe;dist\$(VisualStudioVersion)\Win32\Release\conf\*.*" />
-		</ItemGroup>
+        <ItemGroup>
+            <MasterServersFiles_x86 Include="dist\$(PlatformToolset)\Win32\Release\Hypertable.*.exe;dist\$(PlatformToolset)\Win32\Release\Hyperspace.Master.exe;dist\$(PlatformToolset)\Win32\Release\hypertable.exe;dist\$(PlatformToolset)\Win32\Release\conf\*.*" />
+        </ItemGroup>
 
-		<ItemGroup>
-			<MasterServersFiles_x64 Include="dist\$(VisualStudioVersion)\x64\Release\Hypertable.*.exe;dist\$(VisualStudioVersion)\x64\Release\Hyperspace.Master.exe;dist\$(VisualStudioVersion)\x64\Release\hypertable.exe;dist\$(VisualStudioVersion)\x64\Release\conf\*.*" />
-		</ItemGroup>
-		
-		<ItemGroup>
-			<MasterToolsFiles_x86 Include="dist\$(VisualStudioVersion)\Win32\Release\*.exe;dist\$(VisualStudioVersion)\x86\Release\conf\*.*" Exclude="dist\$(VisualStudioVersion)\Win32\Release\Hypertable.*.exe;dist\$(VisualStudioVersion)\Win32\Release\Hyperspace.Master.exe;dist\$(VisualStudioVersion)\Win32\Release\hypertable.exe" />
-		</ItemGroup>
+        <ItemGroup>
+            <MasterServersFiles_x64 Include="dist\$(PlatformToolset)\x64\Release\Hypertable.*.exe;dist\$(PlatformToolset)\x64\Release\Hyperspace.Master.exe;dist\$(PlatformToolset)\x64\Release\hypertable.exe;dist\$(PlatformToolset)\x64\Release\conf\*.*" />
+        </ItemGroup>
+        
+        <ItemGroup>
+            <MasterToolsFiles_x86 Include="dist\$(PlatformToolset)\Win32\Release\*.exe;dist\$(PlatformToolset)\x86\Release\conf\*.*" Exclude="dist\$(PlatformToolset)\Win32\Release\Hypertable.*.exe;dist\$(PlatformToolset)\Win32\Release\Hyperspace.Master.exe;dist\$(PlatformToolset)\Win32\Release\hypertable.exe" />
+        </ItemGroup>
 
-		<ItemGroup>
-			<MasterToolsFiles_x64 Include="dist\$(VisualStudioVersion)\x64\Release\*.exe;dist\$(VisualStudioVersion)\x64\Release\conf\*.*" Exclude="dist\$(VisualStudioVersion)\x64\Release\Hypertable.*.exe;dist\$(VisualStudioVersion)\x64\Release\Hyperspace.Master.exe;dist\$(VisualStudioVersion)\x64\Release\hypertable.exe" />
-		</ItemGroup>
+        <ItemGroup>
+            <MasterToolsFiles_x64 Include="dist\$(PlatformToolset)\x64\Release\*.exe;dist\$(PlatformToolset)\x64\Release\conf\*.*" Exclude="dist\$(PlatformToolset)\x64\Release\Hypertable.*.exe;dist\$(PlatformToolset)\x64\Release\Hyperspace.Master.exe;dist\$(PlatformToolset)\x64\Release\hypertable.exe" />
+        </ItemGroup>
 
-		<ItemGroup>
-			<MasterLibsFiles Include="dist\$(VisualStudioVersion)\libs\java\*.*;dist\$(VisualStudioVersion)\libs\csharp\*.*" />
-		</ItemGroup>
+        <ItemGroup>
+            <MasterLibsFiles Include="dist\$(PlatformToolset)\libs\java\*.*;dist\$(PlatformToolset)\libs\csharp\*.*" />
+        </ItemGroup>
 
-		<Zip
-			Files="@(MasterServersFiles_x86)" 
-			ZipFileName="$(MasterServers_x86)"
-			WorkingDirectory="dist\$(VisualStudioVersion)\Win32\Release\" />
+        <Zip
+            Files="@(MasterServersFiles_x86)" 
+            ZipFileName="$(MasterServers_x86)"
+            WorkingDirectory="dist\$(PlatformToolset)\Win32\Release\" />
 
-		<Zip
-			Files="@(MasterServersFiles_x64)" 
-			ZipFileName="$(MasterServers_x64)"
-			WorkingDirectory="dist\$(VisualStudioVersion)\x64\Release\"
-			Condition="$(Is64Bit) == true" />
+        <Zip
+            Files="@(MasterServersFiles_x64)" 
+            ZipFileName="$(MasterServers_x64)"
+            WorkingDirectory="dist\$(PlatformToolset)\x64\Release\"
+            Condition="$(Is64Bit) == true" />
 
-		<Zip
-			Files="@(MasterToolsFiles_x86)" 
-			ZipFileName="$(MasterTools_x86)"
-			WorkingDirectory="dist\$(VisualStudioVersion)\Win32\Release\" />
+        <Zip
+            Files="@(MasterToolsFiles_x86)" 
+            ZipFileName="$(MasterTools_x86)"
+            WorkingDirectory="dist\$(PlatformToolset)\Win32\Release\" />
 
-		<Zip
-			Files="@(MasterToolsFiles_x64)" 
-			ZipFileName="$(MasterTools_x64)"
-			WorkingDirectory="dist\$(VisualStudioVersion)\x64\Release\"
-			Condition="$(Is64Bit) == true" />
+        <Zip
+            Files="@(MasterToolsFiles_x64)" 
+            ZipFileName="$(MasterTools_x64)"
+            WorkingDirectory="dist\$(PlatformToolset)\x64\Release\"
+            Condition="$(Is64Bit) == true" />
 
-		<Zip
-			Files="@(MasterLibsFiles)" 
-			ZipFileName="$(MasterLibs)"
-			WorkingDirectory="dist\$(VisualStudioVersion)\libs\"
-			Condition="$(HasMaven) == true And $(HasAnt) == true And Exists('dist\$(VisualStudioVersion)\libs\java\hypertable-$(Version).jar')" />
-	</Target>
-	
-	<!-- Make msi -->
-	<Target Name="MakeMsi"
-			Condition="$(HasMSBuildWiXTasks) == true">
+        <Zip
+            Files="@(MasterLibsFiles)" 
+            ZipFileName="$(MasterLibs)"
+            WorkingDirectory="dist\$(PlatformToolset)\libs\"
+            Condition="$(HasMaven) == true And $(HasAnt) == true And Exists('dist\$(PlatformToolset)\libs\java\hypertable-$(Version).jar')" />
+    </Target>
+    
+    <!-- Make msi -->
+    <Target Name="MakeMsi"
+            Condition="$(HasMSBuildWiXTasks) == true">
 
-		<ItemGroup>
-			<WixConfiguration Include="." >
-				<Configuration>Release</Configuration>
-				<Platform>x86</Platform>
-				<ProductCode>$(ProductCode_x86)</ProductCode>
-			</WixConfiguration>
-			<WixConfiguration Include="." Condition="$(Is64Bit) == true" >
-				<Configuration>Release</Configuration>
-				<Platform>x64</Platform>
-				<ProductCode>$(ProductCode_x64)</ProductCode>
-			</WixConfiguration>
-		</ItemGroup>
+        <ItemGroup>
+            <WixConfiguration Include="." >
+                <Configuration>Release</Configuration>
+                <Platform>x86</Platform>
+                <ProductCode>$(ProductCode_x86)</ProductCode>
+            </WixConfiguration>
+            <WixConfiguration Include="." Condition="$(Is64Bit) == true" >
+                <Configuration>Release</Configuration>
+                <Platform>x64</Platform>
+                <ProductCode>$(ProductCode_x64)</ProductCode>
+            </WixConfiguration>
+        </ItemGroup>
 
-		<MSBuild
-			Projects="src\wix\hypertable-msi.wixproj"
-			Targets="Build"
-			Properties="Configuration=%(WixConfiguration.Configuration);Platform=%(WixConfiguration.Platform);MsiProductVersion=$(Version);MsiProductCode=%(WixConfiguration.ProductCode)"
-			ContinueOnError="false" />
-	</Target>
+        <MSBuild
+            Projects="src\wix\hypertable-msi.wixproj"
+            Targets="Build"
+            Properties="Configuration=%(WixConfiguration.Configuration);Platform=%(WixConfiguration.Platform);MsiProductVersion=$(Version);MsiProductCode=%(WixConfiguration.ProductCode)"
+            ContinueOnError="false" />
+    </Target>
 
-	<!-- Cleans build and deletes the master files -->
-	<Target Name="Clean"
-			DependsOnTargets="CleanMaster">
-		<MSBuild
-			Projects="ht4w.sln"
-			Targets="Clean"
-			Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
-			ContinueOnError="false" />
-		<Exec
-			Command='clean-java-lib.cmd $(Version) $(VisualStudioVersion)'
-			ContinueOnError="false"
-			Condition="$(HasMaven) == true And $(HasAnt) == true" />
-	</Target>
+    <!-- Cleans build and deletes the master files -->
+    <Target Name="Clean"
+            DependsOnTargets="CleanMaster">
+        <MSBuild
+            Projects="ht4w.sln"
+            Targets="Clean"
+            Properties="Configuration=%(MakeConfiguration.Configuration);Platform=%(MakeConfiguration.Platform);PlatformToolset=$(PlatformToolset);TargetFrameworkVersion=$(TargetFrameworkVersion)"
+            ContinueOnError="false" />
+        <Exec
+            Command='clean-java-lib.cmd $(Version) $(PlatformToolset)'
+            ContinueOnError="false"
+            Condition="$(HasMaven) == true And $(HasAnt) == true" />
+    </Target>
 
-	<!-- Deletes the master files -->
-	<Target Name="CleanMaster">
-		<Delete
-			Files="$(MasterServers_x86)" />
-		<Delete
-			Files="$(MasterServers_x64)" />
-		<Delete
-			Files="$(MasterTools_x86)" />
-		<Delete
-			Files="$(MasterTools_x64)" />
-		<Delete
-			Files="$(MasterLibs)" />
-		<Delete
-			Files="$(MasterMsi_x86)" />
-		<Delete
-			Files="$(MasterMsi_x64)" />
-	</Target>
+    <!-- Deletes the master files -->
+    <Target Name="CleanMaster">
+        <Delete
+            Files="$(MasterServers_x86)" />
+        <Delete
+            Files="$(MasterServers_x64)" />
+        <Delete
+            Files="$(MasterTools_x86)" />
+        <Delete
+            Files="$(MasterTools_x64)" />
+        <Delete
+            Files="$(MasterLibs)" />
+        <Delete
+            Files="$(MasterMsi_x86)" />
+        <Delete
+            Files="$(MasterMsi_x64)" />
+    </Target>
 
 </Project>

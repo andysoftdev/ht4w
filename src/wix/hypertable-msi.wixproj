@@ -7,49 +7,49 @@
     <MsiProductCode Condition="'$(Platform)' == 'x64'">6E3E2314-0DCE-44B8-8F51-17DBF7F0E597</MsiProductCode>
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x86'">ProgramFilesFolder</MsiProgramFilesFolder>
     <MsiProgramFilesFolder Condition="'$(Platform)' == 'x64'">ProgramFiles64Folder</MsiProgramFilesFolder>
-    <MsiMasterDir Condition="'$(Platform)' == 'x86'">..\..\dist\$(VisualStudioVersion)\Win32\Release</MsiMasterDir>
-    <MsiMasterDir Condition="'$(Platform)' == 'x64'">..\..\dist\$(VisualStudioVersion)\x64\Release</MsiMasterDir>
+    <MsiMasterDir Condition="'$(Platform)' == 'x86'">..\..\dist\$(PlatformToolset)\Win32\Release</MsiMasterDir>
+    <MsiMasterDir Condition="'$(Platform)' == 'x64'">..\..\dist\$(PlatformToolset)\x64\Release</MsiMasterDir>
     <MsiMergeModluesFolder Condition="Exists('$(CommonProgramFiles)\Merge Modules\')">$(CommonProgramFiles)\Merge Modules</MsiMergeModluesFolder>
     <MsiMergeModluesFolder Condition="Exists('$(CommonProgramW6432)\Merge Modules\')">$(CommonProgramW6432)\Merge Modules</MsiMergeModluesFolder>
   </PropertyGroup>
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x86</Platform>
     <ProductVersion>3.5</ProductVersion>
     <ProjectGuid>{c5cb9dff-4822-44b1-aeff-513eb22a143b}</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>ht4w-$(MsiProductVersion)-win-$(Platform)</OutputName>
     <OutputType>Package</OutputType>
-    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
-    <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition="'$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != ''">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <WixTargetsPath Condition="'$(WixTargetsPath)' == ''">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <WixVariables>
     </WixVariables>
-    <OutputPath>..\..\dist\$(VisualStudioVersion)\</OutputPath>
-    <IntermediateOutputPath>..\..\build\$(VisualStudioVersion)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=no;MergeModulesDir=$(MsiMergeModluesFolder);VisualStudioVersion=$(VisualStudioVersion)</DefineConstants>
+    <OutputPath>..\..\dist\$(PlatformToolset)\</OutputPath>
+    <IntermediateOutputPath>..\..\build\$(PlatformToolset)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=no;MergeModulesDir=$(MsiMergeModluesFolder);PlatformToolset=$(PlatformToolset)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <WixVariables>
     </WixVariables>
-    <OutputPath>..\..\dist\$(VisualStudioVersion)\</OutputPath>
-    <IntermediateOutputPath>..\..\build\$(VisualStudioVersion)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=no;MergeModulesDir=$(MsiMergeModluesFolder);VisualStudioVersion=$(VisualStudioVersion)</DefineConstants>
+    <OutputPath>..\..\dist\$(PlatformToolset)\</OutputPath>
+    <IntermediateOutputPath>..\..\build\$(PlatformToolset)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=no;MergeModulesDir=$(MsiMergeModluesFolder);PlatformToolset=$(PlatformToolset)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <WixVariables>
     </WixVariables>
-    <OutputPath>..\..\dist\$(VisualStudioVersion)\</OutputPath>
-    <IntermediateOutputPath>..\..\build\$(VisualStudioVersion)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=yes;MergeModulesDir=$(MsiMergeModluesFolder);VisualStudioVersion=$(VisualStudioVersion)</DefineConstants>
+    <OutputPath>..\..\dist\$(PlatformToolset)\</OutputPath>
+    <IntermediateOutputPath>..\..\build\$(PlatformToolset)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=yes;MergeModulesDir=$(MsiMergeModluesFolder);PlatformToolset=$(PlatformToolset)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <WixVariables>
     </WixVariables>
-    <OutputPath>..\..\dist\$(VisualStudioVersion)\</OutputPath>
-    <IntermediateOutputPath>..\..\build\$(VisualStudioVersion)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=yes;MergeModulesDir=$(MsiMergeModluesFolder);VisualStudioVersion=$(VisualStudioVersion)</DefineConstants>
+    <OutputPath>..\..\dist\$(PlatformToolset)\</OutputPath>
+    <IntermediateOutputPath>..\..\build\$(PlatformToolset)\wix\$(ProjectName)\$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>ProgramFilesFolder=$(MsiProgramFilesFolder);ProductVersion=$(MsiProductVersion);MasterDir=$(MsiMasterDir);ProductCode=$(MsiProductCode);ProductPlatform=$(Platform);Win64=yes;MergeModulesDir=$(MsiMergeModluesFolder);PlatformToolset=$(PlatformToolset)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Hypertable.wxs" />
