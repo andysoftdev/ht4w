@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32602.291
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "deps", "deps", "{ADD17C28-8ECB-487F-9E75-AD694B5AA1DA}"
 EndProject
@@ -62,6 +62,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommitLog", "src\cc\Hypertable\Lib\CommitLog.vcxproj", "{1D2663B1-C901-49E7-835E-DBBE6182FA39}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Schema", "src\cc\Hypertable\Lib\Schema.vcxproj", "{D91E70F0-780F-42F0-87A6-E442B007F77A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimalloc", "deps\mimalloc\ide\vs2015\mimalloc.vcxproj", "{ABB5EAE7-B3E6-432E-B636-333449892EA6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -295,6 +297,14 @@ Global
 		{D91E70F0-780F-42F0-87A6-E442B007F77A}.Release|Win32.Build.0 = Release|Win32
 		{D91E70F0-780F-42F0-87A6-E442B007F77A}.Release|x64.ActiveCfg = Release|x64
 		{D91E70F0-780F-42F0-87A6-E442B007F77A}.Release|x64.Build.0 = Release|x64
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|Win32.Build.0 = Debug|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|x64.ActiveCfg = Debug|x64
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Debug|x64.Build.0 = Debug|x64
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|Win32.ActiveCfg = Release|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|Win32.Build.0 = Release|Win32
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|x64.ActiveCfg = Release|x64
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -328,5 +338,9 @@ Global
 		{FD045D60-ABAD-4A6C-9794-9BFB085FC3E7} = {ADD17C28-8ECB-487F-9E75-AD694B5AA1DA}
 		{1D2663B1-C901-49E7-835E-DBBE6182FA39} = {B5A4EA5B-903B-4645-8809-8CBC4975288C}
 		{D91E70F0-780F-42F0-87A6-E442B007F77A} = {B5A4EA5B-903B-4645-8809-8CBC4975288C}
+		{ABB5EAE7-B3E6-432E-B636-333449892EA6} = {ADD17C28-8ECB-487F-9E75-AD694B5AA1DA}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D5B70CC5-E111-4FCF-84A4-6933F644017D}
 	EndGlobalSection
 EndGlobal
