@@ -105,7 +105,11 @@ namespace std {
 #else
 
 #include <chrono>
+#if _MSC_VER < 1920
 #include <thr/xtimec.h>
+#else
+#include <xtimec.h>
+#endif
 
 #define CHRONO_OPERATOR \
 	::std::chrono::operator
