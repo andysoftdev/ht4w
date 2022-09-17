@@ -177,7 +177,11 @@ int main(int argc, char **argv) {
   if (system(cmd_str.c_str()) != 0)
     quick_exit(EXIT_FAILURE);
 
-  cmd_str = "sed.exe -e s/hypertable.exe/hypertable/ig hypertable_test.output > hypertable_test.sed.output";
+  cmd_str = "sed.exe " \
+    "-e s/hypertable.exe/hypertable/ig " \
+    "-e s/(.:\\\\\\(.*\\\\\\)*/(/ig " \
+    "hypertable_test.output > hypertable_test.sed.output";
+
   if (system(cmd_str.c_str()) != 0)
     quick_exit(EXIT_FAILURE);
 
