@@ -35,12 +35,12 @@
 
     <!-- Platform toolset -->
     <PropertyGroup>
-        <PlatformToolset Condition="'$(PlatformToolset)' == ''">v140</PlatformToolset>
+        <PlatformToolset Condition="'$(PlatformToolset)' == ''">v142</PlatformToolset>
     </PropertyGroup>
 
     <!-- Target framework -->
     <PropertyGroup>
-        <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.7.1</TargetFrameworkVersion>
+        <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.8</TargetFrameworkVersion>
     </PropertyGroup>
 
     <!-- Check for WiX -->
